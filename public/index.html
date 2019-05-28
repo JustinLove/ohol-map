@@ -82,14 +82,16 @@ body {
   var overlays = {graticule: null}
 
   serverlist.forEach(function(server) {
-    overlays[server] = L.layerGroup();
+    title = server + ' Monuments'
+    overlays[title] = L.layerGroup();
     fetch("data/" + server + ".onehouronelife.com_monuments.json").then(function(response) {
       response.json().then(function(data){
+        title = server + ' Monuments'
         data.forEach(function(point) {
-          L.marker([point[1], point[0]]).bindPopup(point[2]).addTo(overlays[server])
+          L.marker([point[1], point[0]]).bindPopup(point[2]).addTo(overlays[title])
         })
         if (server == 'bigserver2') {
-          overlays[server].addTo(map);
+          overlays[title].addTo(map);
           }
       })
     })
