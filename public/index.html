@@ -42,32 +42,10 @@ body {
   })
   var map = L.map('map', {
     crs: crs,
-    maxBounds: [[-2147483648, -2147483648], [2147483647, 2147483647]], // no work?
-    //center: [128, 128],
-    //minZoom: 11,
-    //maxZoom: 25,
+    maxBounds: [[-2147483648, -2147483648], [2147483647, 2147483647]],
+    minZoom: 2,
+    maxZoom: 26,
   })
-
-  L.Control.Scale.include({
-    _updateMetric: function (maxMeters) {
-      var meters = this._getRoundNum(maxMeters);
-      var label = meters;
-      if (meters < 1000) {
-        label = meters;
-      } else if (meters < 1000000) {
-        label = (meters / 1000) + 'K';
-      } else if (meters < 1000000000) {
-        label = (meters / 1000000) + 'M';
-      } else {
-        label = (meters / 1000000000) + 'G';
-      }
-
-      label = label + ' z' + this._map.getZoom();
-
-      this._updateScale(this._mScale, label, meters / maxMeters);
-    }
-  })
-  L.control.scale({imperial: false}).addTo(map);
 
   var tiles = L.tileLayer('tiles/{z}/{x}/{y}.png', {
     errorTileUrl: 'ground_U.png',
@@ -78,9 +56,7 @@ body {
     //zoomReverse: true, // tied to maxZoom, not maxNativeZoom
     attribution: '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible',
   }).addTo(map);
-  //map.fitBounds(bounds)
-  map.setView([0,0], 20)
-  //map.setView([-34090,-23963], 29)
+  map.setView([0,0], 15)
 
   var serverlist = [
     'bigserver1',
@@ -103,7 +79,36 @@ body {
     ]
 
   var icon = L.divIcon({className: 'birth'});
-  var monuments = {}
+  var overlays = {graticule: null}
+
+  serverlist.forEach(function(server) {
+    overlays[server] = L.layerGroup();
+    fetch("data/" + server + ".onehouronelife.com_monuments.json").then(function(response) {
+      response.json().then(function(data){
+        data.forEach(function(point) {
+          L.marker([point[1], point[0]]).bindPopup(point[2]).addTo(overlays[server])
+        })
+        if (server == 'bigserver2') {
+          overlays[server].addTo(map);
+          }
+      })
+    })
+  })
+
+
+  /*
+  fetch("data/bigserver2_points.json").then(function(response) {
+    response.json().then(function(data){
+      console.log(data.slice(0,100))
+      data.forEach(function(point) {
+        L.marker([point[1], point[0]], {icon: icon}).bindPopup(point[2]).addTo(map)
+        //L.marker([point[1], point[0]]).bindPopup(point[2]).addTo(map)
+      })
+    })
+  })
+  */
+
+  L.marker([0,0], {icon: icon}).addTo(map)
 
   var options = {
     showOriginLabel: false,
@@ -121,68 +126,32 @@ body {
     ]
   };
 
-  var grid = L.simpleGraticule(options)
-  monuments['grid'] = grid
+  var graticule = L.simpleGraticule(options)
+  overlays['graticule'] = graticule
 
-  serverlist.forEach(function(server) {
-    monuments[server] = L.layerGroup();
-    fetch("data/" + server + ".onehouronelife.com_monuments.json").then(function(response) {
-      response.json().then(function(data){
-        data.forEach(function(point) {
-          //L.marker([point[1], point[0]], {icon: icon}).addTo(map)
-          L.marker([point[1], point[0]]).bindPopup(point[2]).addTo(monuments[server])
-        })
-        if (server == 'bigserver2') {
-          monuments[server].addTo(map);
-          }
-      })
-    })
+  L.control.layers({}, overlays).addTo(map);
+
+  L.Control.Scale.include({
+    _updateMetric: function (maxMeters) {
+      var meters = this._getRoundNum(maxMeters);
+      var label = meters;
+      if (meters < 1000) {
+        label = meters;
+      } else if (meters < 1000000) {
+        label = (meters / 1000) + 'K';
+      } else if (meters < 1000000000) {
+        label = (meters / 1000000) + 'M';
+      } else {
+        label = (meters / 1000000000) + 'G';
+      }
+
+      label = label + ' z' + this._map.getZoom();
+
+      this._updateScale(this._mScale, label, meters / maxMeters);
+    }
   })
+  L.control.scale({imperial: false}).addTo(map);
 
-  L.control.layers({}, monuments).addTo(map);
-
-  /*
-  fetch("data/bigserver2_points.json").then(function(response) {
-    response.json().then(function(data){
-      console.log(data.slice(0,100))
-      data.forEach(function(point) {
-        L.marker([point[1], point[0]], {icon: icon}).bindPopup(point[2]).addTo(map)
-        //L.marker([point[1], point[0]]).bindPopup(point[2]).addTo(map)
-      })
-    })
-  })
-  */
-
-  L.marker([0,0], {icon: icon}).addTo(map)
-  //L.marker([-18863, -16764]).addTo(map)
-  //L.marker([-18900, -16868]).addTo(map)
-  //map.setView([-18900,-16868], 25)
-
-
-  L.rectangle([
-    [-37000, -28000],
-    [-30000, -20000],
-  ], {fill: false}).addTo(map);
-  L.rectangle([
-    [-4096, -4096],
-    [4096, 4096],
-  ], {fill: false}).addTo(map);
-
-  L.rectangle([
-    [-200, -200],
-    [200, 200],
-  ], {fill: false}).addTo(map);
-
-  L.rectangle([
-    [-34290, -24163],
-    [-33890, -23763],
-  ], {fill: false}).addTo(map);
-
-
-  L.rectangle([
-    [-72589, -72498],
-    [41330, 30836],
-  ], {fill: false}).bindPopup("bigserver2").addTo(map);
 </script>
 </html>
 
