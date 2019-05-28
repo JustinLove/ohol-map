@@ -26,18 +26,17 @@ L.SimpleGraticule = L.LayerGroup.extend({
         L.Util.setOptions(this, options);
     },
 
+    // remove/add patched https://github.com/ablakey/Leaflet.SimpleGraticule/issues/10
     onAdd: function(map) {
-        this._map = map;
-
-        var graticule = this.redraw();
-        this._map.on('viewreset ' + this.options.redraw, graticule.redraw, graticule);
-
-        this.eachLayer(map.addLayer, map);
+        this._map = map; // Just set inner var
+        this.redraw(); // Redraw
+        map.on('viewreset ' + this.options.redraw, this.redraw, this); //On the event 'viewreset x', run the redraw function on this.
+        this.eachLayer(map.addLayer, map); //For each of this layers, add them to the map
     },
 
     onRemove: function(map) {
-        map.off('viewreset '+ this.options.redraw, this.map);
-        this.eachLayer(this.removeLayer, this);
+        map.off('viewreset ' + this.options.redraw, this.redraw, this); //On the event 'viewreset x', stop the event to redraw this.
+        this.eachLayer(map.removeLayer, map);
     },
 
     hide: function() {
