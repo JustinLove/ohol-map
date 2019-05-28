@@ -6,6 +6,8 @@
   <title>OHOL Map</title>
   <link href="leaflet.css" rel="stylesheet" />
   <script type="text/javascript" src="leaflet.js"></script>
+  <link href="L.SimpleGraticule.css" rel="stylesheet" />
+  <script type="text/javascript" src="L.SimpleGraticule.js"></script>
   <style>
 body {
   background: white;
@@ -66,6 +68,7 @@ body {
     }
   })
   L.control.scale({imperial: false}).addTo(map);
+
   var tiles = L.tileLayer('tiles/{z}/{x}/{y}.png', {
     errorTileUrl: 'ground_U.png',
     minZoom: 2,
@@ -73,6 +76,7 @@ body {
     //minNativeZoom: 24,
     maxNativeZoom: 24,
     //zoomReverse: true, // tied to maxZoom, not maxNativeZoom
+    attribution: '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible',
   }).addTo(map);
   //map.fitBounds(bounds)
   map.setView([0,0], 20)
@@ -100,6 +104,25 @@ body {
 
   var icon = L.divIcon({className: 'birth'});
   var monuments = {}
+
+  var options = {
+    showOriginLabel: false,
+    redraw: 'move',
+    attribution: '<a href="https://github.com/ablakey/Leaflet.SimpleGraticule">ablakey/SimpleGraticle</a>',
+    zoomIntervals: [
+      {start: 0,  end: 3,  interval: 1000000000},
+      {start: 4,  end: 6,  interval: 100000000},
+      {start: 7,  end: 9,  interval: 10000000},
+      {start: 10, end: 13, interval: 1000000},
+      {start: 14, end: 16, interval: 100000},
+      {start: 17, end: 19, interval: 10000},
+      {start: 20, end: 23, interval: 1000},
+      {start: 24, end: 29, interval: 40},
+    ]
+  };
+
+  var grid = L.simpleGraticule(options)
+  monuments['grid'] = grid
 
   serverlist.forEach(function(server) {
     monuments[server] = L.layerGroup();
