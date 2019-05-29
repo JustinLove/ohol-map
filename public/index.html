@@ -28,6 +28,14 @@ body {
   background-color: red;
   opacity: 0.5;
 }
+img {
+  image-rendering: optimizeSpeed;             /*                     */
+  image-rendering: -moz-crisp-edges;          /* Firefox             */
+  image-rendering: -o-crisp-edges;            /* Opera               */
+  image-rendering: -webkit-optimize-contrast; /* Chrome (and Safari) */
+  image-rendering: optimize-contrast;         /* CSS3 Proposed       */
+  -ms-interpolation-mode: nearest-neighbor;   /* IE8+                */
+  }
   </style>
 </head>
 
@@ -44,19 +52,19 @@ body {
     crs: crs,
     maxBounds: [[-2147483648, -2147483648], [2147483647, 2147483647]],
     minZoom: 2,
-    maxZoom: 26,
+    maxZoom: 24,
   })
 
   var tiles = L.tileLayer('tiles/{z}/{x}/{y}.png', {
     errorTileUrl: 'ground_U.png',
     minZoom: 2,
-    maxZoom: 26,
+    maxZoom: 24,
     //minNativeZoom: 24,
-    maxNativeZoom: 24,
+    maxNativeZoom: 22,
     //zoomReverse: true, // tied to maxZoom, not maxNativeZoom
     attribution: '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible',
   }).addTo(map);
-  map.setView([0,0], 15)
+  map.setView([0,0], 17)
 
   var serverlist = [
     'bigserver1',
@@ -89,9 +97,12 @@ body {
         title = server + ' Monuments'
         data.forEach(function(point) {
           L.marker([point[1], point[0]]).bindPopup(point[2]).addTo(overlays[title])
+          //L.circle([point[1], point[0]], {radius: 21000, fill: false}).addTo(overlays[title])
         })
         if (server == 'bigserver2') {
           overlays[title].addTo(map);
+          var last = data[data.length-1]
+          map.setView([last[1], last[0]], 17)
           }
       })
     })
@@ -110,7 +121,7 @@ body {
   })
   */
 
-  L.marker([0,0], {icon: icon}).addTo(map)
+  //L.marker([0,0], {icon: icon}).addTo(map)
 
   var options = {
     showOriginLabel: false,
