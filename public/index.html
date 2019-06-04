@@ -28,6 +28,10 @@ body {
   background-color: red;
   opacity: 0.5;
 }
+.wondible {
+  background-color: blue;
+  opacity: 0.5;
+}
 img {
   image-rendering: optimizeSpeed;             /*                     */
   image-rendering: -moz-crisp-edges;          /* Firefox             */
@@ -52,18 +56,29 @@ img {
     crs: crs,
     maxBounds: [[-2147483648, -2147483648], [2147483647, 2147483647]],
     minZoom: 2,
-    maxZoom: 24,
+    maxZoom: 27,
   })
 
-  var tiles = L.tileLayer('tiles/{z}/{x}/{y}.png', {
+  var base = {};
+
+  base['Default'] = L.tileLayer('tiles/{z}/{x}/{y}.png', {
     errorTileUrl: 'ground_U.png',
     minZoom: 2,
-    maxZoom: 24,
+    maxZoom: 27,
     //minNativeZoom: 24,
-    maxNativeZoom: 22,
-    //zoomReverse: true, // tied to maxZoom, not maxNativeZoom
+    maxNativeZoom: 24,
     attribution: '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible',
   }).addTo(map);
+
+  base['Crucible'] = L.tileLayer('crucible/{z}/{x}/{y}.png', {
+    errorTileUrl: 'ground_U.png',
+    minZoom: 2,
+    maxZoom: 27,
+    //minNativeZoom: 24,
+    maxNativeZoom: 25,
+    attribution: '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible',
+  });
+
   map.setView([0,0], 17)
 
   var serverlist = [
@@ -86,7 +101,8 @@ img {
     'server15',
     ]
 
-  var icon = L.divIcon({className: 'birth'});
+  var birth = L.divIcon({className: 'birth'});
+  var wondible = L.divIcon({className: 'wondible'});
   var overlays = {graticule: null}
 
   serverlist.forEach(function(server) {
@@ -108,14 +124,23 @@ img {
     })
   })
 
+  /*
+  fetch("data/METALLO.json").then(function(response) {
+    response.json().then(function(data){
+      data.forEach(function(point) {
+        L.marker([point[1], point[0]], {icon: birth}).bindPopup(point[2]).addTo(map)
+        //L.marker([point[1], point[0]]).bindPopup(point[2]).addTo(map)
+      })
+    })
+  })
+  */
 
   /*
-  fetch("data/bigserver2_points.json").then(function(response) {
+  fetch("data/recent.json").then(function(response) {
     response.json().then(function(data){
-      console.log(data.slice(0,100))
       data.forEach(function(point) {
-        L.marker([point[1], point[0]], {icon: icon}).bindPopup(point[2]).addTo(map)
-        //L.marker([point[1], point[0]]).bindPopup(point[2]).addTo(map)
+        //L.marker([point[1], point[0]], {icon: wondible}).bindPopup(point[2]).addTo(map)
+        L.marker([point[1], point[0]]).bindPopup(point[2]).addTo(map)
       })
     })
   })
@@ -142,7 +167,7 @@ img {
   var graticule = L.simpleGraticule(options)
   overlays['graticule'] = graticule
 
-  L.control.layers({}, overlays).addTo(map);
+  L.control.layers(base, overlays).addTo(map);
 
   L.Control.Scale.include({
     _updateMetric: function (maxMeters) {

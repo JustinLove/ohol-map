@@ -1,4 +1,6 @@
 public/tiles
 public/opt
+public/tiles*
+public/crucible*
 public/data
 .~lock*
