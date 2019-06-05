@@ -32,6 +32,9 @@ body {
   background-color: blue;
   opacity: 0.5;
 }
+.trans {
+  opacity: 0.8;
+}
 img {
   image-rendering: optimizeSpeed;             /*                     */
   image-rendering: -moz-crisp-edges;          /* Firefox             */
@@ -79,6 +82,8 @@ img {
     attribution: '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible',
   });
 
+  //L.imageOverlay('lineages_sample.png', [[-51653, -53592],[-41415,-42287]], {className: 'trans'}).addTo(map);
+
   map.setView([0,0], 17)
 
   var serverlist = [
@@ -121,6 +126,55 @@ img {
           map.setView([last[1], last[0]], 17)
           }
       })
+    })
+  })
+
+  L.GridLayer.PointOverlay = L.GridLayer.extend({
+    createTile: function (coords) {
+
+      var tile = document.createElement('canvas');
+
+      var tileSize = this.getTileSize();
+      //console.log(tileSize)
+      tile.setAttribute('width', tileSize.x);
+      tile.setAttribute('height', tileSize.y);
+
+      var ctx = tile.getContext('2d');
+
+      var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
+      var pse = L.point(pnw.x + tileSize.x, pnw.y + tileSize.y)
+      //console.log(coords, pnw, pse)
+      llnw = crs.pointToLatLng(pnw, coords.z)
+      llse = crs.pointToLatLng(pse, coords.z)
+      //console.log(coords, llnw, llse)
+
+      this.options.data.forEach(function(point) {
+        //var point = this.options.data[0]
+        //console.log(point)
+
+        if ( llnw.lng < point[0] && point[0] < llse.lng && llse.lat < point[1] && point[1] < llnw.lat ) {
+          var ll = L.latLng(point[1], point[0])
+          var p = crs.latLngToPoint(ll, coords.z)
+          //console.log(ll, p, pnw)
+          p.x = p.x - pnw.x
+          p.y = p.y - pnw.y
+          //console.log(p)
+          // Draw whatever is needed in the canvas context
+          // For example, circles which get bigger as we zoom in
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 2, 0, 2*Math.PI, false);
+          ctx.fill();
+        }
+      })
+
+      return tile;
+    }
+  })
+
+
+  fetch("data/bigserver2_points_week.json").then(function(response) {
+    response.json().then(function(data){
+      map.addLayer(new L.GridLayer.PointOverlay({data: data}))
     })
   })
 
