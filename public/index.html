@@ -131,7 +131,6 @@ img {
 
   L.GridLayer.PointOverlay = L.GridLayer.extend({
     createTile: function (coords) {
-
       var tile = document.createElement('canvas');
 
       var tileSize = this.getTileSize();
@@ -140,6 +139,7 @@ img {
       tile.setAttribute('height', tileSize.y);
 
       var ctx = tile.getContext('2d');
+      //ctx.globalAlpha = 0.3
 
       var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
       var pse = L.point(pnw.x + tileSize.x, pnw.y + tileSize.y)
@@ -148,8 +148,11 @@ img {
       llse = crs.pointToLatLng(pse, coords.z)
       //console.log(coords, llnw, llse)
 
+      var timebase = this.options.min
+      var timescale = this.options.max - timebase
+      //var point = this.options.data[0]
+      //var t = (point[2] - timebase) * 100 / timescale
       this.options.data.forEach(function(point) {
-        //var point = this.options.data[0]
         //console.log(point)
 
         if ( llnw.lng < point[0] && point[0] < llse.lng && llse.lat < point[1] && point[1] < llnw.lat ) {
@@ -159,8 +162,8 @@ img {
           p.x = p.x - pnw.x
           p.y = p.y - pnw.y
           //console.log(p)
-          // Draw whatever is needed in the canvas context
-          // For example, circles which get bigger as we zoom in
+          var t = (point[2] - timebase) * 75 / timescale
+          ctx.fillStyle = "hsl(240, 100%, " + t + "%)"
           ctx.beginPath();
           ctx.arc(p.x, p.y, 2, 0, 2*Math.PI, false);
           ctx.fill();
@@ -174,7 +177,17 @@ img {
 
   fetch("data/bigserver2_points_week.json").then(function(response) {
     response.json().then(function(data){
-      map.addLayer(new L.GridLayer.PointOverlay({data: data}))
+      var min = null;
+      var max = null;
+      data.forEach(function(point) {
+        if (min == null || point[2] < min) {
+          min = point[2]
+        }
+        if (max == null || point[2] > max) {
+          max = point[2]
+        }
+      })
+      map.addLayer(new L.GridLayer.PointOverlay({data: data, min: min, max: max}))
     })
   })
 
