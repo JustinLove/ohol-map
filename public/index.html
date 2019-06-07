@@ -74,6 +74,16 @@ img {
     //minNativeZoom: 24,
     maxNativeZoom: 24,
     attribution: '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible',
+  })
+
+  base['Faded'] = L.tileLayer('tiles/{z}/{x}/{y}.png', {
+    errorTileUrl: 'ground_U.png',
+    minZoom: 2,
+    maxZoom: 27,
+    //minNativeZoom: 24,
+    maxNativeZoom: 24,
+    opacity: 0.2,
+    attribution: '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible',
   }).addTo(map);
 
   base['Crucible'] = L.tileLayer('crucible/{z}/{x}/{y}.png', {
@@ -167,6 +177,9 @@ img {
     timeDimension.on("timeload", points.updateTiles, points)
   }
 
+  var colormap = function(id) {
+    return '#' + (((id * 49157) % 12582917).toString(16))
+  }
 
   L.GridLayer.PointOverlay = L.GridLayer.extend({
     createTile: function (coords) {
@@ -185,18 +198,19 @@ img {
       var time = this._map.timeDimension.getCurrentTime()/1000
 
       var ctx = tile.getContext('2d');
-      //ctx.globalAlpha = 0.3
       ctx.clearRect(0, 0, tile.width, tile.height)
+      var padding = 10
 
-      var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
-      var pse = L.point(pnw.x + tileSize.x, pnw.y + tileSize.y)
+      var origin = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
+      var pnw = L.point(coords.x * tileSize.x - padding, coords.y * tileSize.y - padding)
+      var pse = L.point(pnw.x + tileSize.x + padding*2, pnw.y + tileSize.y + padding*2)
       //console.log(coords, pnw, pse)
       llnw = crs.pointToLatLng(pnw, coords.z)
       llse = crs.pointToLatLng(pse, coords.z)
       //console.log(coords, llnw, llse)
 
-      var timebase = this.options.min
-      var timescale = this.options.max - timebase
+      //var timebase = this.options.min
+      //var timescale = this.options.max - timebase
       //var point = this.options.data[0]
       //var t = (point[2] - timebase) * 100 / timescale
       var fadeTime = 60*60
@@ -209,18 +223,20 @@ img {
           var ll = L.latLng(point[1], point[0])
           var p = crs.latLngToPoint(ll, coords.z)
           //console.log(ll, p, pnw)
-          p.x = p.x - pnw.x
-          p.y = p.y - pnw.y
+          p.x = p.x - origin.x
+          p.y = p.y - origin.y
           //console.log(p)
           var a = 1 - (time - point[2]) / fadeTime
+          ctx.globalAlpha = a
           //var t = (point[2] - timebase) * 75 / timescale
           //ctx.fillStyle = "hsla(240, 100%, " + t + "%, " + a + ")"
+          ctx.fillStyle = point[4]
           var radius = 3
           if (point[3] == 1) {
-            ctx.fillStyle = "hsla(90, 100%, 50%, " + a + ")"
-            radius = 5
+            //ctx.fillStyle = "hsla(90, 100%, 50%, " + a + ")"
+            radius = 10
           } else {
-            ctx.fillStyle = "hsla(240, 100%, 50%, " + a + ")"
+            //ctx.fillStyle = "hsla(240, 100%, 50%, " + a + ")"
           }
           ctx.beginPath();
           ctx.arc(p.x, p.y, radius, 0, 2*Math.PI, false);
@@ -274,6 +290,7 @@ img {
           max = point[2]
         }
         times.push(point[2])
+        point[4] = colormap(point[4])
       })
       addTime(data, min, max)
     })
