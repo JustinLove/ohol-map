@@ -74,7 +74,7 @@ img {
     //minNativeZoom: 24,
     maxNativeZoom: 24,
     attribution: '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible',
-  })
+  }).addTo(map)
 
   base['Faded'] = L.tileLayer('tiles/{z}/{x}/{y}.png', {
     errorTileUrl: 'ground_U.png',
@@ -84,7 +84,7 @@ img {
     maxNativeZoom: 24,
     opacity: 0.2,
     attribution: '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible',
-  }).addTo(map);
+  })
 
   base['Crucible'] = L.tileLayer('crucible/{z}/{x}/{y}.png', {
     errorTileUrl: 'ground_U.png',
@@ -121,7 +121,7 @@ img {
 
   var birth = L.divIcon({className: 'birth'});
   var wondible = L.divIcon({className: 'wondible'});
-  var overlays = {graticule: null}
+  var overlays = {graticule: null, "Yesterday's Births": null}
 
   serverlist.forEach(function(server) {
     title = server + ' Monuments'
@@ -143,39 +143,6 @@ img {
   })
 
 
-  var addTime = function(data, min, max) {
-    var start = new Date(min * 1000)
-    var end = new Date(max * 1000)
-    var timeDimension = new L.TimeDimension({
-      timeInterval: start + "/" + end,
-      period: "PT1M",
-    });
-    // helper to share the timeDimension object between all layers
-    map.timeDimension = timeDimension; 
-
-    var player = new L.TimeDimension.Player({
-      transitionTime: 100, 
-      loop: false,
-      startOver:true
-    }, timeDimension);
-
-    var timeDimensionControlOptions = {
-      player: player,
-      timeDimension: timeDimension,
-      position: 'bottomleft',
-      autoPlay: true,
-      minSpeed: 1,
-      speedStep: 0.5,
-      maxSpeed: 30,
-      timeSliderDragUpdate: true
-    };
-
-    var timeDimensionControl = new L.Control.TimeDimension(timeDimensionControlOptions);
-    map.addControl(timeDimensionControl);
-
-    var points = new L.GridLayer.PointOverlay({data: data, min: min, max: max}).addTo(map)
-    timeDimension.on("timeload", points.updateTiles, points)
-  }
 
   var colormap = function(id) {
     return '#' + (((id * 49157) % 12582917).toString(16))
@@ -194,6 +161,9 @@ img {
       return tile;
     },
     drawTile(tile, coords) {
+      if (!this.options.data) {
+        return
+      }
       var tileSize = this.getTileSize();
       var time = this._map.timeDimension.getCurrentTime()/1000
 
@@ -253,27 +223,43 @@ img {
   })
 
 
-  L.AnimLayer = L.TimeDimension.Layer.extend({
-    _onNewTimeLoading: function(ev) {
-        // to be implemented for each type of layer
-        this.fire('timeload', {
-            time: ev.time
-        });
-        return;
-    },
+  var timeDimension = new L.TimeDimension({
+    //timeInterval: start + "/" + end,
+    //period: "PT1M",
+  });
+  // helper to share the timeDimension object between all layers
+  map.timeDimension = timeDimension; 
 
-    isReady: function(time) {
-        // to be implemented for each type of layer
-        return true;
-    },
+  var player = new L.TimeDimension.Player({
+    transitionTime: 100, 
+    loop: false,
+    startOver:true
+  }, timeDimension);
 
-    _update: function() {
-        this._baselayer.options.time = this._timeDimension.getCurrentTime();
-        this._baseLayer.redraw()
-        this._currentLayer = this._baseLayer
-        return true;
-    },
+  var timeDimensionControlOptions = {
+    player: player,
+    timeDimension: timeDimension,
+    position: 'bottomleft',
+    autoPlay: false,
+    minSpeed: 1,
+    speedStep: 0.5,
+    maxSpeed: 30,
+    timeSliderDragUpdate: true
+  };
 
+  var timeDimensionControl = new L.Control.TimeDimension(timeDimensionControlOptions);
+
+
+  //var points = new L.GridLayer.PointOverlay({data: data, min: min, max: max}).addTo(map)
+  var pointOverlay = new L.GridLayer.PointOverlay()
+  timeDimension.on("timeload", pointOverlay.updateTiles, pointOverlay)
+
+  overlays["Yesterday's Births"] = pointOverlay
+  pointOverlay.on('add', function(ev) {
+    map.addControl(timeDimensionControl)
+  })
+  pointOverlay.on('remove', function(ev) {
+    map.removeControl(timeDimensionControl)
   })
 
 
@@ -281,7 +267,6 @@ img {
     response.json().then(function(data){
       var min = null;
       var max = null;
-      var times = []
       data.forEach(function(point) {
         if (min == null || point[2] < min) {
           min = point[2]
@@ -289,10 +274,18 @@ img {
         if (max == null || point[2] > max) {
           max = point[2]
         }
-        times.push(point[2])
         point[4] = colormap(point[4])
       })
-      addTime(data, min, max)
+      var times = []
+      for (var t = min;t < max;t += 60) {
+        times.push(t * 1000)
+      }
+      timeDimension.setAvailableTimes(times, 'replace')
+      L.Util.setOptions(pointOverlay, {
+        data: data,
+        min: min,
+        max: max,
+      })
     })
   })
 
