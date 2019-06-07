@@ -8,6 +8,9 @@
   <script type="text/javascript" src="leaflet.js"></script>
   <link href="L.SimpleGraticule.css" rel="stylesheet" />
   <script type="text/javascript" src="L.SimpleGraticule.js"></script>
+  <link href="leaflet.timedimension.control.css" rel="stylesheet" />
+  <script type="text/javascript" src="iso8601.js"></script>
+  <script type="text/javascript" src="leaflet.timedimension.src.js"></script>
   <style>
 body {
   background: white;
@@ -129,17 +132,61 @@ img {
     })
   })
 
+
+  var addTime = function(data, min, max) {
+    var start = new Date(min * 1000)
+    var end = new Date(max * 1000)
+    var timeDimension = new L.TimeDimension({
+      timeInterval: start + "/" + end,
+      period: "PT1M",
+    });
+    // helper to share the timeDimension object between all layers
+    map.timeDimension = timeDimension; 
+
+    var player = new L.TimeDimension.Player({
+      transitionTime: 100, 
+      loop: false,
+      startOver:true
+    }, timeDimension);
+
+    var timeDimensionControlOptions = {
+      player: player,
+      timeDimension: timeDimension,
+      position: 'bottomleft',
+      autoPlay: true,
+      minSpeed: 1,
+      speedStep: 0.5,
+      maxSpeed: 30,
+      timeSliderDragUpdate: true
+    };
+
+    var timeDimensionControl = new L.Control.TimeDimension(timeDimensionControlOptions);
+    map.addControl(timeDimensionControl);
+
+    var points = new L.GridLayer.PointOverlay({data: data, min: min, max: max}).addTo(map)
+    timeDimension.on("timeload", points.updateTiles, points)
+  }
+
+
   L.GridLayer.PointOverlay = L.GridLayer.extend({
     createTile: function (coords) {
       var tile = document.createElement('canvas');
-
       var tileSize = this.getTileSize();
       //console.log(tileSize)
       tile.setAttribute('width', tileSize.x);
       tile.setAttribute('height', tileSize.y);
 
+      this.drawTile(tile, coords)
+
+      return tile;
+    },
+    drawTile(tile, coords) {
+      var tileSize = this.getTileSize();
+      var time = this._map.timeDimension.getCurrentTime()/1000
+
       var ctx = tile.getContext('2d');
       //ctx.globalAlpha = 0.3
+      ctx.clearRect(0, 0, tile.width, tile.height)
 
       var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
       var pse = L.point(pnw.x + tileSize.x, pnw.y + tileSize.y)
@@ -152,33 +199,73 @@ img {
       var timescale = this.options.max - timebase
       //var point = this.options.data[0]
       //var t = (point[2] - timebase) * 100 / timescale
+      var fadeTime = 60*60
       this.options.data.forEach(function(point) {
         //console.log(point)
 
-        if ( llnw.lng < point[0] && point[0] < llse.lng && llse.lat < point[1] && point[1] < llnw.lat ) {
+        if ( llnw.lng < point[0] && point[0] < llse.lng
+          && llse.lat < point[1] && point[1] < llnw.lat
+          && (time - fadeTime) < point[2] && point[2] < (time)) {
           var ll = L.latLng(point[1], point[0])
           var p = crs.latLngToPoint(ll, coords.z)
           //console.log(ll, p, pnw)
           p.x = p.x - pnw.x
           p.y = p.y - pnw.y
           //console.log(p)
-          var t = (point[2] - timebase) * 75 / timescale
-          ctx.fillStyle = "hsl(240, 100%, " + t + "%)"
+          var a = 1 - (time - point[2]) / fadeTime
+          //var t = (point[2] - timebase) * 75 / timescale
+          //ctx.fillStyle = "hsla(240, 100%, " + t + "%, " + a + ")"
+          var radius = 3
+          if (point[3] == 1) {
+            ctx.fillStyle = "hsla(90, 100%, 50%, " + a + ")"
+            radius = 5
+          } else {
+            ctx.fillStyle = "hsla(240, 100%, 50%, " + a + ")"
+          }
           ctx.beginPath();
-          ctx.arc(p.x, p.y, 2, 0, 2*Math.PI, false);
+          ctx.arc(p.x, p.y, radius, 0, 2*Math.PI, false);
           ctx.fill();
         }
       })
-
-      return tile;
-    }
+    },
+    updateTiles: function() {
+      for (key in this._tiles) {
+        var tile = this._tiles[key]
+        this.drawTile(tile.el, tile.coords)
+      }
+    },
   })
 
 
-  fetch("data/bigserver2_points_week.json").then(function(response) {
+  L.AnimLayer = L.TimeDimension.Layer.extend({
+    _onNewTimeLoading: function(ev) {
+        // to be implemented for each type of layer
+        this.fire('timeload', {
+            time: ev.time
+        });
+        return;
+    },
+
+    isReady: function(time) {
+        // to be implemented for each type of layer
+        return true;
+    },
+
+    _update: function() {
+        this._baselayer.options.time = this._timeDimension.getCurrentTime();
+        this._baseLayer.redraw()
+        this._currentLayer = this._baseLayer
+        return true;
+    },
+
+  })
+
+
+  fetch("data/bigserver2_points_day.json").then(function(response) {
     response.json().then(function(data){
       var min = null;
       var max = null;
+      var times = []
       data.forEach(function(point) {
         if (min == null || point[2] < min) {
           min = point[2]
@@ -186,8 +273,9 @@ img {
         if (max == null || point[2] > max) {
           max = point[2]
         }
+        times.push(point[2])
       })
-      map.addLayer(new L.GridLayer.PointOverlay({data: data, min: min, max: max}))
+      addTime(data, min, max)
     })
   })
 
