@@ -121,7 +121,11 @@ img {
 
   var birth = L.divIcon({className: 'birth'});
   var wondible = L.divIcon({className: 'wondible'});
-  var overlays = {graticule: null, "Yesterday's Births": null}
+  var overlays = {
+    graticule: null,
+    "Yesterday's Births": null,
+    "Yesterday's Births Anim": null,
+  }
 
   serverlist.forEach(function(server) {
     title = server + ' Monuments'
@@ -160,12 +164,11 @@ img {
 
       return tile;
     },
-    drawTile(tile, coords) {
+    drawTile(tile, coords, time) {
       if (!this.options.data) {
         return
       }
       var tileSize = this.getTileSize();
-      var time = this._map.timeDimension.getCurrentTime()/1000
 
       var ctx = tile.getContext('2d');
       ctx.clearRect(0, 0, tile.width, tile.height)
@@ -188,25 +191,29 @@ img {
         //console.log(point)
 
         if ( llnw.lng < point[0] && point[0] < llse.lng
-          && llse.lat < point[1] && point[1] < llnw.lat
-          && (time - fadeTime) < point[2] && point[2] < (time)) {
+          && llse.lat < point[1] && point[1] < llnw.lat) {
+          if (time) {
+            if (point[2] < (time - fadeTime) || time < point[2]) {
+              return
+            }
+
+            var a = 1 - (time - point[2]) / fadeTime
+            ctx.globalAlpha = a
+          } else {
+            ctx.globalAlpha = 0.5
+          }
           var ll = L.latLng(point[1], point[0])
           var p = crs.latLngToPoint(ll, coords.z)
           //console.log(ll, p, pnw)
           p.x = p.x - origin.x
           p.y = p.y - origin.y
           //console.log(p)
-          var a = 1 - (time - point[2]) / fadeTime
-          ctx.globalAlpha = a
           //var t = (point[2] - timebase) * 75 / timescale
           //ctx.fillStyle = "hsla(240, 100%, " + t + "%, " + a + ")"
           ctx.fillStyle = point[4]
           var radius = 3
           if (point[3] == 1) {
-            //ctx.fillStyle = "hsla(90, 100%, 50%, " + a + ")"
             radius = 10
-          } else {
-            //ctx.fillStyle = "hsla(240, 100%, 50%, " + a + ")"
           }
           ctx.beginPath();
           ctx.arc(p.x, p.y, radius, 0, 2*Math.PI, false);
@@ -214,10 +221,11 @@ img {
         }
       })
     },
-    updateTiles: function() {
+    updateTiles: function(ev) {
+      var time = ev.time/1000
       for (key in this._tiles) {
         var tile = this._tiles[key]
-        this.drawTile(tile.el, tile.coords)
+        this.drawTile(tile.el, tile.coords, time)
       }
     },
   })
@@ -249,16 +257,19 @@ img {
 
   var timeDimensionControl = new L.Control.TimeDimension(timeDimensionControlOptions);
 
-
-  //var points = new L.GridLayer.PointOverlay({data: data, min: min, max: max}).addTo(map)
   var pointOverlay = new L.GridLayer.PointOverlay()
-  timeDimension.on("timeload", pointOverlay.updateTiles, pointOverlay)
-
   overlays["Yesterday's Births"] = pointOverlay
-  pointOverlay.on('add', function(ev) {
+
+  var animOverlay = new L.GridLayer.PointOverlay({
+    attribution: '<a href="https://github.com/socib/Leaflet.TimeDimension">socib/Leaflet.TimeDimension</a>',
+  })
+  timeDimension.on("timeload", animOverlay.updateTiles, animOverlay)
+  overlays["Yesterday's Births Anim"] = animOverlay
+
+  animOverlay.on('add', function(ev) {
     map.addControl(timeDimensionControl)
   })
-  pointOverlay.on('remove', function(ev) {
+  animOverlay.on('remove', function(ev) {
     map.removeControl(timeDimensionControl)
   })
 
@@ -281,6 +292,11 @@ img {
         times.push(t * 1000)
       }
       timeDimension.setAvailableTimes(times, 'replace')
+      L.Util.setOptions(animOverlay, {
+        data: data,
+        min: min,
+        max: max,
+      })
       L.Util.setOptions(pointOverlay, {
         data: data,
         min: min,
