@@ -36,7 +36,7 @@ body {
   opacity: 0.5;
 }
 .trans {
-  opacity: 0.8;
+  opacity: 0.4;
 }
 img {
   image-rendering: optimizeSpeed;             /*                     */
@@ -95,7 +95,13 @@ img {
     attribution: '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible',
   });
 
-  //L.imageOverlay('lineages_sample.png', [[-51653, -53592],[-41415,-42287]], {className: 'trans'}).addTo(map);
+  /*
+  map.setView([-45120,-48760], 27)
+  L.imageOverlay('brave.png', [[-45133, -48767.5],[-45106,-48735.5]], {
+    className: 'xtrans',
+    minZoom: 25,
+  }).addTo(map);
+  */
 
   map.setView([0,0], 17)
 
@@ -123,9 +129,16 @@ img {
   var wondible = L.divIcon({className: 'wondible'});
   var overlays = {
     graticule: null,
-    "Yesterday's Births": null,
-    "Yesterday's Births Anim": null,
+    "48h Births": null,
+    "48h Births Anim": null,
   }
+
+  /*
+  overlays["pein"] = L.layerGroup()
+  L.marker([-50583, -45596]).bindPopup("LADD III").addTo(overlays["pein"])
+  L.marker([-45833, -49595]).bindPopup("YUM V").addTo(overlays["pein"])
+  L.marker([-45146, -49015]).bindPopup("BRAVE").addTo(overlays["pein"])
+  */
 
   serverlist.forEach(function(server) {
     title = server + ' Monuments'
@@ -150,6 +163,10 @@ img {
 
   var colormap = function(id) {
     return '#' + (((id * 49157) % 12582917).toString(16))
+  }
+
+  var colorhash = function(hash) {
+    return '#' + hash.slice(0,6)
   }
 
   L.GridLayer.PointOverlay = L.GridLayer.extend({
@@ -258,13 +275,13 @@ img {
   var timeDimensionControl = new L.Control.TimeDimension(timeDimensionControlOptions);
 
   var pointOverlay = new L.GridLayer.PointOverlay()
-  overlays["Yesterday's Births"] = pointOverlay
+  overlays["48h Births"] = pointOverlay
 
   var animOverlay = new L.GridLayer.PointOverlay({
     attribution: '<a href="https://github.com/socib/Leaflet.TimeDimension">socib/Leaflet.TimeDimension</a>',
   })
   timeDimension.on("timeload", animOverlay.updateTiles, animOverlay)
-  overlays["Yesterday's Births Anim"] = animOverlay
+  overlays["48h Births Anim"] = animOverlay
 
   animOverlay.on('add', function(ev) {
     map.addControl(timeDimensionControl)
@@ -274,8 +291,12 @@ img {
   })
 
 
-  fetch("data/bigserver2_points_day.json").then(function(response) {
+  fetch("data/bigserver2_points_48.json").then(function(response) {
+  //fetch("data/EVE COLIN.json").then(function(response) {
+  //fetch("data/bigserver2_points_hash.json").then(function(response) {
+  //fetch("http://localhost:3000/points").then(function(response) {
     response.json().then(function(data){
+      //console.log(data)
       var min = null;
       var max = null;
       data.forEach(function(point) {
@@ -286,6 +307,9 @@ img {
           max = point[2]
         }
         point[4] = colormap(point[4])
+        if (point[5]) {
+          point[5] = colorhash(point[5])
+        }
       })
       var times = []
       for (var t = min;t < max;t += 60) {
