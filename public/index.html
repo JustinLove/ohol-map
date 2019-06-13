@@ -146,8 +146,15 @@ img {
     fetch("data/" + server + ".onehouronelife.com_monuments.json").then(function(response) {
       response.json().then(function(data){
         title = server + ' Monuments'
+        var now = new Date()
         data.forEach(function(point) {
-          L.marker([point[1], point[0]]).bindPopup(point[2]).addTo(overlays[title])
+          var date = new Date(point[2])
+          var age = (now - date) / (24 * 60 * 60 * 1000)
+          L.marker([point[1], point[0]], {
+              opacity: Math.max(0.4, Math.min(1.0, 1.0 - (age / (age+30))))
+            })
+            .bindPopup(point[2])
+            .addTo(overlays[title])
           //L.circle([point[1], point[0]], {radius: 21000, fill: false}).addTo(overlays[title])
         })
         if (server == 'bigserver2') {
