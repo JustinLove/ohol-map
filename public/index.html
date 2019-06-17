@@ -136,19 +136,20 @@ img {
   serverlist.forEach(function(server) {
     title = server + ' Monuments'
     overlays[title] = L.layerGroup();
-    fetch("data/" + server + ".onehouronelife.com_monuments.json").then(function(response) {
+    //fetch("data/" + server + ".onehouronelife.com_monuments.json").then(function(response) {
+    fetch("http://localhost:5000/monuments?server_short=" + server).then(function(response) {
       response.json().then(function(data){
         title = server + ' Monuments'
         var now = new Date()
         data.forEach(function(point) {
-          var date = new Date(point[2])
+          var date = new Date(point.date)
           var age = (now - date) / (24 * 60 * 60 * 1000)
-          L.marker([point[1], point[0]], {
+          L.marker([point.y, point.x], {
               opacity: Math.max(0.4, Math.min(1.0, 1.0 - (age / (age+30))))
             })
-            .bindPopup(point[2])
+            .bindPopup(point.date)
             .addTo(overlays[title])
-          //L.circle([point[1], point[0]], {radius: 21000, fill: false}).addTo(overlays[title])
+          //L.circle([point.y, point.x], {radius: 21000, fill: false}).addTo(overlays[title])
         })
         if (server == 'bigserver2') {
           overlays[title].addTo(map);
