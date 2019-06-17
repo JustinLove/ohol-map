@@ -133,13 +133,6 @@ img {
     "48h Births Anim": null,
   }
 
-  /*
-  overlays["pein"] = L.layerGroup()
-  L.marker([-50583, -45596]).bindPopup("LADD III").addTo(overlays["pein"])
-  L.marker([-45833, -49595]).bindPopup("YUM V").addTo(overlays["pein"])
-  L.marker([-45146, -49015]).bindPopup("BRAVE").addTo(overlays["pein"])
-  */
-
   serverlist.forEach(function(server) {
     title = server + ' Monuments'
     overlays[title] = L.layerGroup();
@@ -209,34 +202,34 @@ img {
       //var timebase = this.options.min
       //var timescale = this.options.max - timebase
       //var point = this.options.data[0]
-      //var t = (point[2] - timebase) * 100 / timescale
+      //var t = (point.birth_time - timebase) * 100 / timescale
       var fadeTime = 60*60
       this.options.data.forEach(function(point) {
         //console.log(point)
 
-        if ( llnw.lng < point[0] && point[0] < llse.lng
-          && llse.lat < point[1] && point[1] < llnw.lat) {
+        if ( llnw.lng < point.birth_x && point.birth_x < llse.lng
+          && llse.lat < point.birth_y && point.birth_y < llnw.lat) {
           if (time) {
-            if (point[2] < (time - fadeTime) || time < point[2]) {
+            if (point.birth_time < (time - fadeTime) || time < point.birth_time) {
               return
             }
 
-            var a = 1 - (time - point[2]) / fadeTime
+            var a = 1 - (time - point.birth_time) / fadeTime
             ctx.globalAlpha = a
           } else {
             ctx.globalAlpha = 0.5
           }
-          var ll = L.latLng(point[1], point[0])
+          var ll = L.latLng(point.birth_y, point.birth_x)
           var p = crs.latLngToPoint(ll, coords.z)
           //console.log(ll, p, pnw)
           p.x = p.x - origin.x
           p.y = p.y - origin.y
           //console.log(p)
-          //var t = (point[2] - timebase) * 75 / timescale
+          //var t = (point.birth_time - timebase) * 75 / timescale
           //ctx.fillStyle = "hsla(240, 100%, " + t + "%, " + a + ")"
-          ctx.fillStyle = point[4]
+          ctx.fillStyle = point.lineage
           var radius = 3
-          if (point[3] == 1) {
+          if (point.chain == 1) {
             radius = 10
           }
           ctx.beginPath();
@@ -298,24 +291,24 @@ img {
   })
 
 
-  fetch("data/bigserver2_points_48.json").then(function(response) {
+  //fetch("data/bigserver2_points_48.json").then(function(response) {
   //fetch("data/EVE COLIN.json").then(function(response) {
   //fetch("data/bigserver2_points_hash.json").then(function(response) {
-  //fetch("http://localhost:3000/points").then(function(response) {
+  fetch("http://localhost:5000/lives?server_id=17&period=P2D").then(function(response) {
     response.json().then(function(data){
-      //console.log(data)
+      console.log(data)
       var min = null;
       var max = null;
       data.forEach(function(point) {
-        if (min == null || point[2] < min) {
-          min = point[2]
+        if (min == null || point.birth_time < min) {
+          min = point.birth_time
         }
-        if (max == null || point[2] > max) {
-          max = point[2]
+        if (max == null || point.birth_time > max) {
+          max = point.birth_time
         }
-        point[4] = colormap(point[4])
-        if (point[5]) {
-          point[5] = colorhash(point[5])
+        point.lineage = colormap(point.lineage)
+        if (point.hash) {
+          point.hash = colorhash(point.hash)
         }
       })
       var times = []
@@ -335,17 +328,6 @@ img {
       })
     })
   })
-
-  /*
-  fetch("data/METALLO.json").then(function(response) {
-    response.json().then(function(data){
-      data.forEach(function(point) {
-        L.marker([point[1], point[0]], {icon: birth}).bindPopup(point[2]).addTo(map)
-        //L.marker([point[1], point[0]]).bindPopup(point[2]).addTo(map)
-      })
-    })
-  })
-  */
 
   /*
   fetch("data/recent.json").then(function(response) {
