@@ -105,26 +105,6 @@ img {
 
   map.setView([0,0], 17)
 
-  var serverlist = [
-    'bigserver1',
-    'bigserver2',
-    'server1',
-    'server2',
-    'server3',
-    'server4',
-    'server5',
-    'server6',
-    'server7',
-    'server8',
-    'server9',
-    'server10',
-    'server11',
-    'server12',
-    'server13',
-    'server14',
-    'server15',
-    ]
-
   var birth = L.divIcon({className: 'birth'});
   var wondible = L.divIcon({className: 'wondible'});
   var overlays = {
@@ -138,10 +118,10 @@ img {
 
     if (layer.options.data) return
 
-    var server = layer.options.server
+    var server_id = layer.options.server_id
 
     //fetch("data/" + server + ".onehouronelife.com_monuments.json").then(function(response) {
-    fetch("http://localhost:5000/monuments?server_short=" + server).then(function(response) {
+    fetch("http://localhost:5000/monuments?server_id=" + server_id).then(function(response) {
       response.json().then(function(wrapper){
         //console.log('monuments', wrapper)
         var now = new Date()
@@ -157,7 +137,7 @@ img {
             .addTo(layer)
           //L.circle([point.y, point.x], {radius: 21000, fill: false}).addTo(layer)
         })
-        if (server == 'bigserver2') {
+        if (layer.options.startEnabled) {
           layer.addTo(map);
           var last = data[data.length-1]
           map.setView([last.y, last.x], 17)
@@ -165,16 +145,6 @@ img {
       })
     })
   }
-
-  serverlist.forEach(function(server) {
-    title = server + ' Monuments'
-    overlays[title] = L.layerGroup([], {server: server});
-    overlays[title].on('add', onMonumentLayerAdd)
-    if (server == 'bigserver2') {
-      overlays[title].addTo(map);
-    }
-  })
-
 
 
   var colormap = function(id) {
@@ -387,7 +357,28 @@ img {
   var graticule = L.simpleGraticule(options)
   overlays['graticule'] = graticule
 
-  L.control.layers(base, overlays).addTo(map);
+  var layersControl = L.control.layers(base, overlays).addTo(map);
+
+  fetch("http://localhost:5000/servers").then(function(response) {
+    response.json().then(function(wrapper){
+      //console.log('monuments', wrapper)
+      var data = wrapper.data
+      data.forEach(function(server) {
+        var short = server.server_name.replace('.onehouronelife.com', '')
+        title = short + ' Monuments'
+        overlays[title] = L.layerGroup([], {
+          server_id: server.id,
+          startEnabled: short == 'bigserver2',
+        });
+        overlays[title].on('add', onMonumentLayerAdd)
+        layersControl.addOverlay(overlays[title], title)
+        if (short == 'bigserver2') {
+          overlays[title].addTo(map);
+        }
+      })
+    })
+  })
+
 
   L.Control.Scale.include({
     _updateMetric: function (maxMeters) {
