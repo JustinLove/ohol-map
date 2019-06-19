@@ -133,16 +133,20 @@ img {
     "48h Births Anim": null,
   }
 
-  serverlist.forEach(function(server) {
-    title = server + ' Monuments'
-    overlays[title] = L.layerGroup();
+  onMonumentLayerAdd = function(e) {
+    var layer = e.target
+
+    if (layer.options.data) return
+
+    var server = layer.options.server
+
     //fetch("data/" + server + ".onehouronelife.com_monuments.json").then(function(response) {
     fetch("http://localhost:5000/monuments?server_short=" + server).then(function(response) {
       response.json().then(function(wrapper){
         //console.log('monuments', wrapper)
-        title = server + ' Monuments'
         var now = new Date()
         var data = wrapper.data
+        L.Util.setOptions(layer, {data: data})
         data.forEach(function(point) {
           var date = new Date(point.date)
           var age = (now - date) / (24 * 60 * 60 * 1000)
@@ -150,16 +154,25 @@ img {
               opacity: Math.max(0.4, Math.min(1.0, 1.0 - (age / (age+30))))
             })
             .bindPopup(point.date)
-            .addTo(overlays[title])
-          //L.circle([point.y, point.x], {radius: 21000, fill: false}).addTo(overlays[title])
+            .addTo(layer)
+          //L.circle([point.y, point.x], {radius: 21000, fill: false}).addTo(layer)
         })
         if (server == 'bigserver2') {
-          overlays[title].addTo(map);
+          layer.addTo(map);
           var last = data[data.length-1]
           map.setView([last.y, last.x], 17)
-          }
+        }
       })
     })
+  }
+
+  serverlist.forEach(function(server) {
+    title = server + ' Monuments'
+    overlays[title] = L.layerGroup([], {server: server});
+    overlays[title].on('add', onMonumentLayerAdd)
+    if (server == 'bigserver2') {
+      overlays[title].addTo(map);
+    }
   })
 
 
