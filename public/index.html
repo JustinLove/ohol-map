@@ -138,9 +138,11 @@ img {
     overlays[title] = L.layerGroup();
     //fetch("data/" + server + ".onehouronelife.com_monuments.json").then(function(response) {
     fetch("http://localhost:5000/monuments?server_short=" + server).then(function(response) {
-      response.json().then(function(data){
+      response.json().then(function(wrapper){
+        //console.log('monuments', wrapper)
         title = server + ' Monuments'
         var now = new Date()
+        var data = wrapper.data
         data.forEach(function(point) {
           var date = new Date(point.date)
           var age = (now - date) / (24 * 60 * 60 * 1000)
@@ -154,7 +156,7 @@ img {
         if (server == 'bigserver2') {
           overlays[title].addTo(map);
           var last = data[data.length-1]
-          map.setView([last[1], last[0]], 17)
+          map.setView([last.y, last.x], 17)
           }
       })
     })
@@ -296,10 +298,11 @@ img {
   //fetch("data/EVE COLIN.json").then(function(response) {
   //fetch("data/bigserver2_points_hash.json").then(function(response) {
   fetch("http://localhost:5000/lives?server_id=17&period=P2D").then(function(response) {
-    response.json().then(function(data){
-      console.log(data)
+    response.json().then(function(wrapper){
+      //console.log('lives', wrapper)
       var min = null;
       var max = null;
+      var data = wrapper.data;
       data.forEach(function(point) {
         if (min == null || point.birth_time < min) {
           min = point.birth_time
