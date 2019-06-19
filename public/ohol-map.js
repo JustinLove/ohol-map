@@ -1,4 +1,10 @@
 ;(function() {
+  var cachedApiUrl = oholMapConfig.cachedApiUrl
+  var apiUrl = oholMapConfig.apiUrl
+
+  //var cachedApiUrl = 'data-cache/'
+  //var apiUrl = 'http://ohol-data.wondible.com/'
+
   var scale = Math.pow(2, 24)
   var crs = L.extend({}, L.CRS.Simple, {
     transformation: new L.transformation(1/scale, 0.5/scale, -1/scale, -0.5/scale)
@@ -12,7 +18,7 @@
 
   var base = {};
 
-  base['Default'] = L.tileLayer('tiles/{z}/{x}/{y}.png', {
+  base['Default'] = L.tileLayer(oholMapConfig.mainTiles, {
     errorTileUrl: 'ground_U.png',
     minZoom: 2,
     maxZoom: 27,
@@ -21,7 +27,7 @@
     attribution: '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible',
   }).addTo(map)
 
-  base['Faded'] = L.tileLayer('tiles/{z}/{x}/{y}.png', {
+  base['Faded'] = L.tileLayer(oholMapConfig.mainTiles, {
     errorTileUrl: 'ground_U.png',
     minZoom: 2,
     maxZoom: 27,
@@ -31,7 +37,7 @@
     attribution: '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible',
   })
 
-  base['Crucible'] = L.tileLayer('crucible/{z}/{x}/{y}.png', {
+  base['Crucible'] = L.tileLayer(oholMapConfig.crucibleTiles, {
     errorTileUrl: 'ground_U.png',
     minZoom: 2,
     maxZoom: 27,
@@ -66,7 +72,7 @@
     var server_id = layer.options.server_id
 
     //fetch("data/" + server + ".onehouronelife.com_monuments.json").then(function(response) {
-    fetch("http://localhost:5000/monuments?server_id=" + server_id).then(function(response) {
+    fetch(cachedApiUrl + "monuments?server_id=" + server_id).then(function(response) {
       response.json().then(function(wrapper){
         //console.log('monuments', wrapper)
         var now = new Date()
@@ -220,7 +226,7 @@
     //fetch("data/bigserver2_points_48.json").then(function(response) {
     //fetch("data/EVE COLIN.json").then(function(response) {
     //fetch("data/bigserver2_points_hash.json").then(function(response) {
-    fetch("http://localhost:5000/lives?server_id=17&period=P2D").then(function(response) {
+    fetch(cachedApiUrl + "lives?server_id=17&period=P2D").then(function(response) {
       response.json().then(function(wrapper){
         //console.log('lives', wrapper)
         var min = null;
@@ -304,7 +310,7 @@
 
   var layersControl = L.control.layers(base, overlays).addTo(map);
 
-  fetch("http://localhost:5000/servers").then(function(response) {
+  fetch(cachedApiUrl + "servers").then(function(response) {
     response.json().then(function(wrapper){
       //console.log('monuments', wrapper)
       var data = wrapper.data
