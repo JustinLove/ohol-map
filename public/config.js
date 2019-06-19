@@ -4,5 +4,6 @@ var oholMapConfig = {
   cachedApiUrl: 'http://localhost:5000/',
   apiUrl: 'http://localhost:5000/',
   //cachedApiUrl: 'data-cache/',
+  //cachedApiUrl: 'http://ohol-data.wondible.com/',
   //apiUrl: 'http://ohol-data.wondible.com/',
 }

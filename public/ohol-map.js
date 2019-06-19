@@ -144,6 +144,7 @@
       this.options.data.forEach(function(point) {
         //console.log(point)
 
+        var t = 1
         if ( llnw.lng < point.birth_x && point.birth_x < llse.lng
           && llse.lat < point.birth_y && point.birth_y < llnw.lat) {
           if (time) {
@@ -153,7 +154,9 @@
 
             var a = 1 - (time - point.birth_time) / fadeTime
             ctx.globalAlpha = a
+            t = (time - point.birth_time) / fadeTime
           } else {
+            t = 1
             ctx.globalAlpha = 0.5
           }
           var ll = L.latLng(point.birth_y, point.birth_x)
@@ -165,13 +168,21 @@
           //var t = (point.birth_time - timebase) * 75 / timescale
           //ctx.fillStyle = "hsla(240, 100%, " + t + "%, " + a + ")"
           ctx.fillStyle = point.lineage
-          var radius = 3
-          if (point.chain == 1) {
-            radius = 10
-          }
+          ctx.strokeStyle = point.lineage
           ctx.beginPath();
-          ctx.arc(p.x, p.y, radius, 0, 2*Math.PI, false);
+          ctx.arc(p.x, p.y, 3, 0, 2*Math.PI, false);
           ctx.fill();
+
+          if (point.chain == 1) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 3 + 7 * t, 0, 2*Math.PI, false);
+            if (time) {
+              ctx.lineWidth = 1;
+            } else {
+              ctx.lineWidth = 0.5;
+            }
+            ctx.stroke();
+          }
         }
       })
     },
