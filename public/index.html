@@ -299,52 +299,61 @@ img {
   timeDimension.on("timeload", animOverlay.updateTiles, animOverlay)
   overlays["48h Births Anim"] = animOverlay
 
+  var requireRecentLives = function() {
+    if (animOverlay.options.data) return
+
+    //fetch("data/bigserver2_points_48.json").then(function(response) {
+    //fetch("data/EVE COLIN.json").then(function(response) {
+    //fetch("data/bigserver2_points_hash.json").then(function(response) {
+    fetch("http://localhost:5000/lives?server_id=17&period=P2D").then(function(response) {
+      response.json().then(function(wrapper){
+        //console.log('lives', wrapper)
+        var min = null;
+        var max = null;
+        var data = wrapper.data;
+        data.forEach(function(point) {
+          if (min == null || point.birth_time < min) {
+            min = point.birth_time
+          }
+          if (max == null || point.birth_time > max) {
+            max = point.birth_time
+          }
+          point.lineage = colormap(point.lineage)
+          if (point.hash) {
+            point.hash = colorhash(point.hash)
+          }
+        })
+        var times = []
+        for (var t = min;t < max;t += 60) {
+          times.push(t * 1000)
+        }
+        timeDimension.setAvailableTimes(times, 'replace')
+        L.Util.setOptions(animOverlay, {
+          data: data,
+          min: min,
+          max: max,
+        })
+        animOverlay.redraw()
+        L.Util.setOptions(pointOverlay, {
+          data: data,
+          min: min,
+          max: max,
+        })
+        pointOverlay.redraw()
+      })
+    })
+  }
+
   animOverlay.on('add', function(ev) {
     map.addControl(timeDimensionControl)
+    requireRecentLives()
   })
   animOverlay.on('remove', function(ev) {
     map.removeControl(timeDimensionControl)
   })
 
+  pointOverlay.on('add', requireRecentLives)
 
-  //fetch("data/bigserver2_points_48.json").then(function(response) {
-  //fetch("data/EVE COLIN.json").then(function(response) {
-  //fetch("data/bigserver2_points_hash.json").then(function(response) {
-  fetch("http://localhost:5000/lives?server_id=17&period=P2D").then(function(response) {
-    response.json().then(function(wrapper){
-      //console.log('lives', wrapper)
-      var min = null;
-      var max = null;
-      var data = wrapper.data;
-      data.forEach(function(point) {
-        if (min == null || point.birth_time < min) {
-          min = point.birth_time
-        }
-        if (max == null || point.birth_time > max) {
-          max = point.birth_time
-        }
-        point.lineage = colormap(point.lineage)
-        if (point.hash) {
-          point.hash = colorhash(point.hash)
-        }
-      })
-      var times = []
-      for (var t = min;t < max;t += 60) {
-        times.push(t * 1000)
-      }
-      timeDimension.setAvailableTimes(times, 'replace')
-      L.Util.setOptions(animOverlay, {
-        data: data,
-        min: min,
-        max: max,
-      })
-      L.Util.setOptions(pointOverlay, {
-        data: data,
-        min: min,
-        max: max,
-      })
-    })
-  })
 
   /*
   fetch("data/recent.json").then(function(response) {
