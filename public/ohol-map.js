@@ -2,9 +2,6 @@
   var cachedApiUrl = oholMapConfig.cachedApiUrl
   var apiUrl = oholMapConfig.apiUrl
 
-  //var cachedApiUrl = 'data-cache/'
-  //var apiUrl = 'http://ohol-data.wondible.com/'
-
   var scale = Math.pow(2, 24)
   var crs = L.extend({}, L.CRS.Simple, {
     transformation: new L.transformation(1/scale, 0.5/scale, -1/scale, -0.5/scale)
@@ -79,12 +76,12 @@
         var data = wrapper.data
         L.Util.setOptions(layer, {data: data})
         data.forEach(function(point) {
-          var date = new Date(point.date)
+          var date = new Date(point.date*1000)
           var age = (now - date) / (24 * 60 * 60 * 1000)
           L.marker([point.y, point.x], {
               opacity: Math.max(0.4, Math.min(1.0, 1.0 - (age / (age+30))))
             })
-            .bindPopup(point.date)
+            .bindPopup(date.toString())
             .addTo(layer)
           //L.circle([point.y, point.x], {radius: 21000, fill: false}).addTo(layer)
         })
@@ -145,6 +142,7 @@
         //console.log(point)
 
         var t = 1
+        var r = 1;
         if ( llnw.lng < point.birth_x && point.birth_x < llse.lng
           && llse.lat < point.birth_y && point.birth_y < llnw.lat) {
           if (time) {
@@ -155,6 +153,7 @@
             var a = 1 - (time - point.birth_time) / fadeTime
             ctx.globalAlpha = a
             t = (time - point.birth_time) / fadeTime
+            r = Math.pow(10 * t, -6 * t)
           } else {
             t = 1
             ctx.globalAlpha = 0.5
@@ -175,7 +174,7 @@
 
           if (point.chain == 1) {
             ctx.beginPath();
-            ctx.arc(p.x, p.y, 3 + 7 * t, 0, 2*Math.PI, false);
+            ctx.arc(p.x, p.y, 3 + 7 * r, 0, 2*Math.PI, false);
             if (time) {
               ctx.lineWidth = 1;
             } else {

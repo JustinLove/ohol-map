@@ -1,0 +1,12 @@
+- add elm project
+- jump to location
+- current location in url
+- search for lives
+- show data for other servers
+- show data for other time periods
+- different coloration methods
+  - time
+  - account
+  - cause of death
+- different map types (death)
+- grouped heat map
