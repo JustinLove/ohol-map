@@ -39,19 +39,21 @@ main = Browser.application
 
 init : () -> Url -> Navigation.Key -> (Model, Cmd Msg)
 init _ location key =
-  ( { location = location
-    , navigationKey = key
-    , center = Point 0 0 17
-    }
-  , Cmd.none
-  )
+  let
+    initialModel =
+      { location = location
+      , navigationKey = key
+      , center = Point 0 0 17
+      }
+  in
+    Debug.log "init" <| changeRouteTo location initialModel
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     UI (View.None) -> (model, Cmd.none)
     CurrentUrl location ->
-      changeRouteTo location model
+      Debug.log "url" <| changeRouteTo location model
     Navigate (Browser.Internal url) ->
       ( {model | location = url}
       , Navigation.pushUrl model.navigationKey (Url.toString url)
