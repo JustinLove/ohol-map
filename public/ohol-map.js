@@ -1,16 +1,12 @@
 ;(function() {
+  var app = Elm.MapUI.init()
+
   var cachedApiUrl = oholMapConfig.cachedApiUrl
   var apiUrl = oholMapConfig.apiUrl
 
   var scale = Math.pow(2, 24)
   var crs = L.extend({}, L.CRS.Simple, {
     transformation: new L.transformation(1/scale, 0.5/scale, -1/scale, -0.5/scale)
-  })
-  var map = L.map('map', {
-    crs: crs,
-    maxBounds: [[-2147483648, -2147483648], [2147483647, 2147483647]],
-    minZoom: 2,
-    maxZoom: 27,
   })
 
   var base = {};
@@ -22,7 +18,7 @@
     //minNativeZoom: 24,
     maxNativeZoom: 24,
     attribution: '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible',
-  }).addTo(map)
+  })
 
   base['Faded'] = L.tileLayer(oholMapConfig.mainTiles, {
     errorTileUrl: 'ground_U.png',
@@ -42,16 +38,6 @@
     maxNativeZoom: 25,
     attribution: '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible',
   });
-
-  /*
-  map.setView([-45120,-48760], 27)
-  L.imageOverlay('brave.png', [[-45133, -48767.5],[-45106,-48735.5]], {
-    className: 'xtrans',
-    minZoom: 25,
-  }).addTo(map);
-  */
-
-  map.setView([0,0], 17)
 
   var birth = L.divIcon({className: 'birth'});
   var wondible = L.divIcon({className: 'wondible'});
@@ -86,9 +72,9 @@
           //L.circle([point.y, point.x], {radius: 21000, fill: false}).addTo(layer)
         })
         if (layer.options.startEnabled) {
-          layer.addTo(map);
+          layer.addTo(layer._map);
           var last = data[data.length-1]
-          map.setView([last.y, last.x], 17)
+          layer._map.setView([last.y, last.x], 17)
         }
       })
     })
@@ -200,7 +186,6 @@
     //period: "PT1M",
   });
   // helper to share the timeDimension object between all layers
-  map.timeDimension = timeDimension; 
 
   var player = new L.TimeDimension.Player({
     transitionTime: 100, 
@@ -276,11 +261,11 @@
   }
 
   animOverlay.on('add', function(ev) {
-    map.addControl(timeDimensionControl)
+    ev.target._map.addControl(timeDimensionControl)
     requireRecentLives()
   })
   animOverlay.on('remove', function(ev) {
-    map.removeControl(timeDimensionControl)
+    ev.targtet._map.removeControl(timeDimensionControl)
   })
 
   pointOverlay.on('add', requireRecentLives)
@@ -296,8 +281,6 @@
     })
   })
   */
-
-  //L.marker([0,0], {icon: icon}).addTo(map)
 
   var options = {
     showOriginLabel: false,
@@ -318,28 +301,29 @@
   var graticule = L.simpleGraticule(options)
   overlays['graticule'] = graticule
 
-  var layersControl = L.control.layers(base, overlays).addTo(map);
+  layersControl = L.control.layers(base, overlays)
 
-  fetch(cachedApiUrl + "servers").then(function(response) {
-    response.json().then(function(wrapper){
-      //console.log('monuments', wrapper)
-      var data = wrapper.data
-      data.forEach(function(server) {
-        var short = server.server_name.replace('.onehouronelife.com', '')
-        title = short + ' Monuments'
-        overlays[title] = L.layerGroup([], {
-          server_id: server.id,
-          startEnabled: short == 'bigserver2',
-        });
-        overlays[title].on('add', onMonumentLayerAdd)
-        layersControl.addOverlay(overlays[title], title)
-        if (short == 'bigserver2') {
-          overlays[title].addTo(map);
-        }
+  var fetchMonuments = function fetchMonuments(map) {
+    fetch(cachedApiUrl + "servers").then(function(response) {
+      response.json().then(function(wrapper){
+        //console.log('monuments', wrapper)
+        var data = wrapper.data
+        data.forEach(function(server) {
+          var short = server.server_name.replace('.onehouronelife.com', '')
+          title = short + ' Monuments'
+          overlays[title] = L.layerGroup([], {
+            server_id: server.id,
+            startEnabled: short == 'bigserver2',
+          });
+          overlays[title].on('add', onMonumentLayerAdd)
+          layersControl.addOverlay(overlays[title], title)
+          if (short == 'bigserver2') {
+            overlays[title].addTo(map);
+          }
+        })
       })
     })
-  })
-
+  }
 
   L.Control.Scale.include({
     _updateMetric: function (maxMeters) {
@@ -360,5 +344,23 @@
       this._updateScale(this._mScale, label, meters / maxMeters);
     }
   })
-  L.control.scale({imperial: false}).addTo(map);
+
+  var inhabit = function inhabit(id) {
+    var map = L.map(id, {
+      crs: crs,
+      maxBounds: [[-2147483648, -2147483648], [2147483647, 2147483647]],
+      minZoom: 2,
+      maxZoom: 27,
+    })
+
+    base['Default'].addTo(map)
+
+    map.timeDimension = timeDimension; 
+    layersControl.addTo(map)
+    L.control.scale({imperial: false}).addTo(map)
+    map.setView([0,0], 17)
+    fetchMonuments(map)
+  }
+
+  inhabit('map')
 })()

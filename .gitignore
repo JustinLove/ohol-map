@@ -3,4 +3,7 @@ public/opt
 public/tiles*
 public/crucible*
 public/data
+public/map-ui.js
+public/leaflet-src.js*
 .~lock*
+elm-stuff
