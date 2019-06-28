@@ -1,6 +1,3 @@
-- add elm project
-- jump to location
-- current location in url
 - search for lives
 - show data for other servers
 - show data for other time periods

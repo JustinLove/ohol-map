@@ -361,12 +361,25 @@
     map.setView([0,0], 17)
     fetchMonuments(map)
 
-    var command = function(message) {
-      console.log(message)
+    if (app.ports.leafletEvent) {
+      map.on('moveend', function(ev) {
+        var center = ev.target.getCenter()
+        app.ports.leafletEvent.send({
+          kind: 'moveend',
+          x: Math.round(center.lng),
+          y: Math.round(center.lat),
+          z: ev.target.getZoom()
+        })
+      })
+    }
 
+    var command = function(message) {
       switch (message.kind) {
         case 'setView':
-          map.setView([message.y, message.x], message.z)
+          var center = map.getCenter()
+          if (center.lng != message.x || center.lat != message.y || map.getZoom() != message.z) {
+            map.setView([message.y, message.x], message.z)
+          }
           break
       }
     }
