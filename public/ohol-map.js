@@ -74,7 +74,7 @@
         if (layer.options.startEnabled) {
           layer.addTo(layer._map);
           var last = data[data.length-1]
-          layer._map.setView([last.y, last.x], 17)
+          //layer._map.setView([last.y, last.x], 17)
         }
       })
     })
@@ -360,7 +360,22 @@
     L.control.scale({imperial: false}).addTo(map)
     map.setView([0,0], 17)
     fetchMonuments(map)
+
+    var command = function(message) {
+      console.log(message)
+
+      switch (message.kind) {
+        case 'setView':
+          map.setView([message.y, message.x], message.z)
+          break
+      }
+    }
+
+    if (app.ports.leafletCommand) {
+      app.ports.leafletCommand.subscribe(command)
+    }
   }
+
 
   inhabit('map')
 })()

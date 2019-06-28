@@ -1,5 +1,6 @@
 module MapUI exposing (..)
 
+import Leaflet exposing (Point)
 import View
 
 import Browser
@@ -20,13 +21,6 @@ type alias Model =
   , navigationKey : Navigation.Key
   , center : Point
   }
-
-type alias Point =
-  { x : Int
-  , y : Int
-  , z : Int
-  }
-
 
 main = Browser.application
   { init = init
@@ -74,14 +68,14 @@ changeRouteTo location model =
           | location = location
           , center = Point x y z
           }
-        , Cmd.none
+        , Leaflet.setView (Point x y z)
         )
       (Just x, Just y, Nothing) ->
         ( { model
           | location = location
           , center = Point x y 24
           }
-        , Cmd.none
+        , Leaflet.setView (Point x y 24)
         )
       _ ->
         ( { model | location = location }, Cmd.none)
