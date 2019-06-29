@@ -400,6 +400,7 @@
           focusMarker = L.marker([life.birth_y, life.birth_x])
             .bindPopup(life.name)
             .addTo(overlays['Search'])
+            .openPopup()
           map.setView([life.birth_y, life.birth_x], 17)
           break
       }

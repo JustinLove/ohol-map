@@ -1,4 +1,3 @@
-- search for lives
 - show data for other servers
 - show data for other time periods
 - different coloration methods

@@ -141,50 +141,69 @@ twoPartMessage height header body =
 
 
 showMatchingLives model lives =
-  table [ spacing 10, padding 10, height fill, width fill, scrollbarY ]
-    { data = lives
-    , columns =
-      [ { header = text "Name"
-        , width = px 300
-        , view = \life ->
-          link
-            [ Events.onClick (SelectMatchingLife life)
-            , if Just life == model.focus then
-                Background.color highlight
-              else
-                Background.color background
-            ]
-            { url = ""
-            , label = 
-              life.name
-              |> Maybe.withDefault "nameless"
-              |> text
-            }
-        }
-      , { header = text "Age"
-        , width = px 40
-        , view = \life ->
-          life.age
+  column [ spacing 10, height fill, width fill, scrollbarY ]
+    (lives
+      |> List.map (showMatchingLife model)
+      |> (::) lifeListHeader
+    )
+
+lifeListHeader =
+  column
+    [ width fill
+    , padding 4
+    , Font.underline
+    ]
+    [ row
+      [ Font.size 16
+      , spacing 10
+      , width fill
+      ]
+      [ el [ width (px 40) ]
+        (text "Age")
+      , el [ width (px 200) ]
+        (text "Born")
+      , el [ width (px 40) ]
+        (text "Gen")
+      ]
+    ]
+
+showMatchingLife model life =
+  column
+    [ Events.onClick (SelectMatchingLife life)
+    , pointer
+    , if Just life == model.focus then
+        Background.color highlight
+      else
+        Background.color background
+    , width fill
+    , padding 4
+    ]
+    [ life.name
+        |> Maybe.withDefault "nameless"
+        |> text
+    , row
+      [ Font.size 16
+      , spacing 10
+      , width fill
+      ]
+      [ el [ width (px 40) ]
+        (life.age
           |> ceiling
           |> String.fromInt
           |> text
-        }
-      , { header = text "Born"
-        , width = px 200
-        , view = \life ->
-          life.birthTime
+        )
+      , el [ width (px 200) ]
+        ( life.birthTime
           |> date model.zone
           |> text
-        }
-      , { header = text "Gen"
-        , width = px 40
-        , view = \life ->
-          life.generation
+        )
+      , el [ width (px 40) ]
+        ( life.generation
           |> String.fromInt
           |> text
-        }
+        )
       ]
-    }
+    ]
 
 date : Time.Zone -> Posix -> String
 date zone time =
