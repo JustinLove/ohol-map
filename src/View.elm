@@ -54,7 +54,7 @@ view model =
     , Background.color background
     ] <|
     Keyed.row [ width fill, height fill ]
-      [ ( "map", el [ id "map", width fill, height fill ] none)
+      [ ( "map", el [ id "map", width fill, height fill, Font.size 12 ] none)
       , ( "sidebar"
         , if model.sidebarOpen then
             sidebar model
@@ -65,7 +65,7 @@ view model =
 
 -- sidebar : Model -> Element Msg
 sidebar model =
-  column [ width (fill |> maximum 300), alignTop ]
+  column [ width (fill |> maximum 300), height fill, alignTop ]
     [ searchBox model.searchTerm model.lives
     , showResult model model.lives
     ]
@@ -141,7 +141,7 @@ twoPartMessage height header body =
 
 
 showMatchingLives model lives =
-  column [ spacing 10, height fill, width fill, scrollbarY ]
+  column [ spacing 10, width fill, scrollbarY ]
     (lives
       |> List.map (showMatchingLife model)
       |> (::) lifeListHeader
@@ -160,7 +160,7 @@ lifeListHeader =
       ]
       [ el [ width (px 40) ]
         (text "Age")
-      , el [ width (px 200) ]
+      , el [ width (px 160) ]
         (text "Born")
       , el [ width (px 40) ]
         (text "Gen")
@@ -175,7 +175,6 @@ showMatchingLife model life =
         Background.color highlight
       else
         Background.color background
-    , width fill
     , padding 4
     ]
     [ life.name
@@ -184,7 +183,6 @@ showMatchingLife model life =
     , row
       [ Font.size 16
       , spacing 10
-      , width fill
       ]
       [ el [ width (px 40) ]
         (life.age
@@ -192,7 +190,7 @@ showMatchingLife model life =
           |> String.fromInt
           |> text
         )
-      , el [ width (px 200) ]
+      , el [ width (px 160) ]
         ( life.birthTime
           |> date model.zone
           |> text

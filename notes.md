@@ -1,5 +1,7 @@
+- lineage of character
 - show data for other servers
 - show data for other time periods
+- paging
 - different coloration methods
   - time
   - account
