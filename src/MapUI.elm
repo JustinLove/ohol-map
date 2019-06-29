@@ -86,6 +86,12 @@ update msg model =
         }
       , fetchMatchingLives model.apiUrl term
       )
+    UI (View.Typing term) ->
+      ( { model
+        | searchTerm = term
+        }
+      , Cmd.none
+      )
     Event (Leaflet.MoveEnd point) ->
       ( {model|center = point} 
       , Navigation.replaceUrl model.navigationKey <|

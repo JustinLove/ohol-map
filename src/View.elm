@@ -2,6 +2,7 @@ module View exposing (Msg(..), RemoteData(..), view, document)
 
 import Browser
 import Element exposing (..)
+import Element.Input as Input
 import Element.Keyed as Keyed
 import Html exposing (Html)
 import Html.Attributes
@@ -13,6 +14,7 @@ import Json.Decode
 type Msg
   = None
   | Search String
+  | Typing String
 
 type RemoteData a
   = NotRequested
@@ -42,26 +44,20 @@ view model =
 -- sidebar : Model -> Element Msg
 sidebar model =
   column [ width (fill |> maximum 300) ]
-    [ searchBox model.lives
+    [ searchBox model.searchTerm model.lives
     ]
 
-searchBox : RemoteData a -> Element Msg
-searchBox request =
-  el [ padding 2 ] <|
-    html <|
-      Html.div [ Html.Attributes.class "search" ]
-        [ Html.label [ Html.Attributes.for "search" ]
-          [ Html.text "Character Name or Hash" ]
-        , Html.text " "
-        , Html.input
-          [ Html.Attributes.type_ "search"
-          , Html.Attributes.size 42
-          , Html.Attributes.id "search"
-          , Html.Attributes.name "search"
-          , Html.Attributes.disabled (request == Loading)
-          , on "change" <| targetValue Json.Decode.string Search
-          ] []
-        ]
+searchBox : String -> RemoteData a -> Element Msg
+searchBox term request =
+  Input.text
+    [ padding 2
+    , htmlAttribute <| on "change" <| targetValue Json.Decode.string Search
+    ] <|
+    { onChange = Typing
+    , text = term
+    , placeholder = Nothing
+    , label = Input.labelAbove [] <| text "Character Name or Hash"
+    }
 
 targetValue : Json.Decode.Decoder a -> (a -> Msg) -> Json.Decode.Decoder Msg
 targetValue decoder tagger =
