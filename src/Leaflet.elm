@@ -22,6 +22,8 @@ setView {x, y, z} =
 type Event
   = Error
   | MoveEnd Point
+  | OverlayAdd String
+  | OverlayRemove String
 
 event : (Event -> msg) -> Sub msg
 event tagger =
@@ -39,6 +41,8 @@ eventDecoder =
     |> Decode.andThen (\kind ->
       case kind of
         "moveend" -> Decode.map MoveEnd pointDecoder
+        "overlayadd" -> Decode.map OverlayAdd (Decode.field "name" Decode.string)
+        "overlayremove" -> Decode.map OverlayRemove (Decode.field "name" Decode.string)
         _ -> Decode.succeed Error
       )
 

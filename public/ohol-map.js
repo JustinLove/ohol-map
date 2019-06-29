@@ -371,6 +371,18 @@
           z: ev.target.getZoom()
         })
       })
+      map.on('overlayadd', function(ev) {
+        app.ports.leafletEvent.send({
+          kind: 'overlayadd',
+          name: ev.name,
+        })
+      })
+      map.on('overlayremove', function(ev) {
+        app.ports.leafletEvent.send({
+          kind: 'overlayremove',
+          name: ev.name,
+        })
+      })
     }
 
     var command = function(message) {

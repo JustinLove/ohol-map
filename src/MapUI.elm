@@ -61,6 +61,12 @@ update msg model =
       , Navigation.replaceUrl model.navigationKey <|
         centerUrl model.location point
       )
+    Event (Leaflet.OverlayAdd name) ->
+      let _ = Debug.log "add" name in
+      (model, Cmd.none)
+    Event (Leaflet.OverlayRemove name) ->
+      let _ = Debug.log "remove" name in
+      (model, Cmd.none)
     Event (Leaflet.Error) ->
       let _ = Debug.log "error" "" in
       (model, Cmd.none)
