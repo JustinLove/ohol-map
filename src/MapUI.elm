@@ -21,6 +21,13 @@ type alias Model =
   { location : Url
   , navigationKey : Navigation.Key
   , center : Point
+  , cachedApiUrl: String
+  , apiUrl: String
+  }
+
+type alias Config =
+  { cachedApiUrl: String
+  , apiUrl: String
   }
 
 main = Browser.application
@@ -32,13 +39,15 @@ main = Browser.application
   , onUrlChange = CurrentUrl
   }
 
-init : () -> Url -> Navigation.Key -> (Model, Cmd Msg)
-init _ location key =
+init : Config -> Url -> Navigation.Key -> (Model, Cmd Msg)
+init config location key =
   let
     initialModel =
       { location = location
       , navigationKey = key
       , center = Point 0 0 17
+      , cachedApiUrl = config.cachedApiUrl
+      , apiUrl = config.apiUrl
       }
   in
     changeRouteTo location initialModel
