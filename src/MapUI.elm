@@ -21,8 +21,9 @@ type alias Model =
   { location : Url
   , navigationKey : Navigation.Key
   , center : Point
-  , cachedApiUrl: String
-  , apiUrl: String
+  , cachedApiUrl : String
+  , apiUrl : String
+  , sidebarOpen : Bool
   }
 
 type alias Config =
@@ -48,6 +49,7 @@ init config location key =
       , center = Point 0 0 17
       , cachedApiUrl = config.cachedApiUrl
       , apiUrl = config.apiUrl
+      , sidebarOpen = True
       }
   in
     changeRouteTo location initialModel
@@ -61,9 +63,13 @@ update msg model =
       , Navigation.replaceUrl model.navigationKey <|
         centerUrl model.location point
       )
+    Event (Leaflet.OverlayAdd "Search") ->
+      ({model | sidebarOpen = True}, Cmd.none)
     Event (Leaflet.OverlayAdd name) ->
       let _ = Debug.log "add" name in
       (model, Cmd.none)
+    Event (Leaflet.OverlayRemove "Search") ->
+      ({model | sidebarOpen = False}, Cmd.none)
     Event (Leaflet.OverlayRemove name) ->
       let _ = Debug.log "remove" name in
       (model, Cmd.none)

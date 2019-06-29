@@ -21,8 +21,13 @@ document tagger model =
 view model =
   layout [ width fill, height fill ] <|
     Keyed.row [ width fill, height fill ]
-      [ ("map", el [ id "map", width fill, height fill ] none)
-      , ("sidebar", el [ width (fill |> maximum 300) ] <| text "sidebar")
+      [ ( "map", el [ id "map", width fill, height fill ] none)
+      , ( "sidebar"
+        , if model.sidebarOpen then
+            el [ width (fill |> maximum 300) ] <| text "sidebar"
+          else
+            none
+        )
       ]
 
 id : String -> Attribute Msg

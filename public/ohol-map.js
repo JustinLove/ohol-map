@@ -43,6 +43,7 @@
   var wondible = L.divIcon({className: 'wondible'});
   var overlays = {
     graticule: null,
+    Search: L.layerGroup([]),
     "48h Births": null,
     "48h Births Anim": null,
   }
@@ -354,6 +355,7 @@
     })
 
     base['Default'].addTo(map)
+    overlays['Search'].addTo(map)
 
     map.timeDimension = timeDimension; 
     layersControl.addTo(map)
