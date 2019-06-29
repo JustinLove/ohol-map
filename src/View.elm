@@ -1,6 +1,8 @@
 module View exposing (Msg(..), view, document)
 
 import Browser
+import Element exposing (..)
+import Element.Keyed as Keyed
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events exposing (on)
@@ -17,5 +19,12 @@ document tagger model =
 
 -- view : model -> Html Msg
 view model =
-  Html.Keyed.node "div" [ Html.Attributes.id "mapcontainer" ]
-    [("map", Html.div [ Html.Attributes.id "map" ] []) ]
+  layout [ width fill, height fill ] <|
+    Keyed.row [ width fill, height fill ]
+      [ ("map", el [ id "map", width fill, height fill ] none)
+      , ("sidebar", el [ width (fill |> maximum 300) ] <| text "sidebar")
+      ]
+
+id : String -> Attribute Msg
+id =
+  htmlAttribute << Html.Attributes.id
