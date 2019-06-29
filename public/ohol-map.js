@@ -345,7 +345,7 @@
     })
 
     base['Default'].addTo(map)
-    overlays['Search'].addTo(map)
+    //overlays['Search'].addTo(map)
 
     map.timeDimension = timeDimension; 
     layersControl.addTo(map)
