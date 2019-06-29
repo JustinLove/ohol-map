@@ -1,11 +1,14 @@
 module MapUI exposing (..)
 
 import Leaflet exposing (Point)
-import View
+import OHOLData.Decode as Data
+import View exposing (RemoteData(..))
 
 import Browser
 --import Browser.Dom
 import Browser.Navigation as Navigation
+import Http
+import Time exposing (Posix)
 import Url exposing (Url)
 import Url.Builder as Url
 import Url.Parser
@@ -14,6 +17,7 @@ import Url.Parser.Query
 type Msg
   = UI View.Msg
   | Event Leaflet.Event
+  | MatchingLives (Result Http.Error (List Data.Life))
   | CurrentUrl Url
   | Navigate Browser.UrlRequest
 
@@ -24,6 +28,21 @@ type alias Model =
   , cachedApiUrl : String
   , apiUrl : String
   , sidebarOpen : Bool
+  , searchTerm : String
+  , lives : RemoteData (List Life)
+  }
+
+type alias Life =
+  { birthTime : Posix
+  , generation : Int
+  , playerid : Int
+  , lineage : Int
+  , name : Maybe String
+  , serverId : Int
+  , epoch : Int
+  , age : Float
+  , birthX : Int
+  , birthY : Int
   }
 
 type alias Config =
@@ -50,6 +69,8 @@ init config location key =
       , cachedApiUrl = config.cachedApiUrl
       , apiUrl = config.apiUrl
       , sidebarOpen = True
+      , searchTerm = ""
+      , lives = NotRequested
       }
   in
     changeRouteTo location initialModel
@@ -58,6 +79,13 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     UI (View.None) -> (model, Cmd.none)
+    UI (View.Search term) ->
+      ( { model
+        | searchTerm = term
+        , lives = Loading
+        }
+      , fetchMatchingLives model.apiUrl term
+      )
     Event (Leaflet.MoveEnd point) ->
       ( {model|center = point} 
       , Navigation.replaceUrl model.navigationKey <|
@@ -76,6 +104,13 @@ update msg model =
     Event (Leaflet.Error) ->
       let _ = Debug.log "error" "" in
       (model, Cmd.none)
+    MatchingLives (Ok lives) ->
+      ( {model | lives = lives |> List.map myLife |> Data}
+      , Cmd.none
+      )
+    MatchingLives (Err error) ->
+      let _ = Debug.log "fetch lives failed" error in
+      ({model | lives = Failed error}, Cmd.none)
     CurrentUrl location ->
       changeRouteTo location model
     Navigate (Browser.Internal url) ->
@@ -111,6 +146,30 @@ setView point model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
   Leaflet.event Event
+
+myLife : Data.Life -> Life
+myLife life =
+  { birthTime = life.birthTime
+  , generation = life.chain
+  , lineage = life.lineage
+  , playerid = life.playerid
+  , name = life.name
+  , serverId = life.serverId
+  , epoch = life.epoch
+  , age = life.age
+  , birthX = life.birthX
+  , birthY = life.birthY
+  }
+
+fetchMatchingLives : String -> String -> Cmd Msg
+fetchMatchingLives baseUrl term =
+  Http.get
+    { url = Url.crossOrigin baseUrl ["lives"]
+      [ Url.string "q" term
+      , Url.int "limit" 100
+      ]
+    , expect = Http.expectJson MatchingLives Data.lives
+    }
 
 centerUrl : Url -> Point-> String
 centerUrl location {x, y, z} =

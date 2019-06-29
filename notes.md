@@ -1,4 +1,3 @@
-- config consolidation
 - search for lives
 - show data for other servers
 - show data for other time periods
