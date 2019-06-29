@@ -8,6 +8,7 @@ import Browser
 --import Browser.Dom
 import Browser.Navigation as Navigation
 import Http
+import Task
 import Time exposing (Posix)
 import Url exposing (Url)
 import Url.Builder as Url
@@ -18,12 +19,14 @@ type Msg
   = UI View.Msg
   | Event Leaflet.Event
   | MatchingLives (Result Http.Error (List Data.Life))
+  | CurrentZone Time.Zone
   | CurrentUrl Url
   | Navigate Browser.UrlRequest
 
 type alias Model =
   { location : Url
   , navigationKey : Navigation.Key
+  , zone : Time.Zone
   , center : Point
   , cachedApiUrl : String
   , apiUrl : String
@@ -65,6 +68,7 @@ init config location key =
     initialModel =
       { location = location
       , navigationKey = key
+      , zone = Time.utc
       , center = Point 0 0 17
       , cachedApiUrl = config.cachedApiUrl
       , apiUrl = config.apiUrl
@@ -72,8 +76,14 @@ init config location key =
       , searchTerm = ""
       , lives = NotRequested
       }
+    (model, cmd) = changeRouteTo location initialModel
   in
-    changeRouteTo location initialModel
+    ( model
+    , Cmd.batch
+      [ cmd
+      , Time.here |> Task.perform CurrentZone
+      ]
+    )
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -117,6 +127,8 @@ update msg model =
     MatchingLives (Err error) ->
       let _ = Debug.log "fetch lives failed" error in
       ({model | lives = Failed error}, Cmd.none)
+    CurrentZone zone ->
+      ({model | zone = zone}, Cmd.none)
     CurrentUrl location ->
       changeRouteTo location model
     Navigate (Browser.Internal url) ->
