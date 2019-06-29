@@ -1,7 +1,9 @@
 module MapUI exposing (..)
 
 import Leaflet exposing (Point)
-import OHOLData.Decode as Data
+import OHOLData as Data
+import OHOLData.Decode as Decode
+import OHOLData.Encode as Encode
 import View exposing (RemoteData(..))
 
 import Browser
@@ -122,7 +124,7 @@ update msg model =
       (model, Cmd.none)
     MatchingLives (Ok lives) ->
       ( {model | lives = lives |> List.map myLife |> Data}
-      , Cmd.none
+      , Leaflet.displayResults lives
       )
     MatchingLives (Err error) ->
       let _ = Debug.log "fetch lives failed" error in
@@ -186,7 +188,7 @@ fetchMatchingLives baseUrl term =
       [ Url.string "q" term
       , Url.int "limit" 100
       ]
-    , expect = Http.expectJson MatchingLives Data.lives
+    , expect = Http.expectJson MatchingLives Decode.lives
     }
 
 centerUrl : Url -> Point-> String

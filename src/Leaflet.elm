@@ -1,4 +1,12 @@
-port module Leaflet exposing (Point, Event(..), setView, event)
+port module Leaflet exposing
+  ( Point
+  , Event(..)
+  , setView
+  , displayResults
+  , event)
+
+import OHOLData as Data
+import OHOLData.Encode as Encode
 
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -16,6 +24,14 @@ setView {x, y, z} =
     , ("x", Encode.int x)
     , ("y", Encode.int y)
     , ("z", Encode.int z)
+    ]
+    |> leafletCommand
+
+displayResults : List Data.Life -> Cmd msg
+displayResults lives =
+  Encode.object
+    [ ("kind", Encode.string "displayResults")
+    , ("lives", Encode.lives lives)
     ]
     |> leafletCommand
 

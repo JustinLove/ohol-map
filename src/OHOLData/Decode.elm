@@ -1,23 +1,11 @@
 module OHOLData.Decode exposing
-  ( Life
-  , lives
+  ( lives
   )
+
+import OHOLData exposing (Life)
 
 import Json.Decode exposing (..)
 import Time exposing (Posix)
-
-type alias Life =
-  { birthX : Int
-  , birthY : Int
-  , birthTime : Posix
-  , chain : Int
-  , lineage : Int
-  , name : Maybe String
-  , serverId : Int
-  , epoch : Int
-  , playerid : Int
-  , age : Float
-  }
 
 lives : Decoder (List Life)
 lives = 

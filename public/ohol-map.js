@@ -41,9 +41,10 @@
 
   var birth = L.divIcon({className: 'birth'});
   var wondible = L.divIcon({className: 'wondible'});
+  var resultsGroup = L.layerGroup([])
   var overlays = {
     graticule: null,
-    Search: L.layerGroup([]),
+    Search: L.layerGroup([resultsGroup]),
     "48h Births": null,
     "48h Births Anim": null,
   }
@@ -215,6 +216,8 @@
   })
   timeDimension.on("timeload", animOverlay.updateTiles, animOverlay)
   overlays["48h Births Anim"] = animOverlay
+
+  var resultPoints = new L.GridLayer.PointOverlay().addTo(overlays['Search'])
 
   var requireRecentLives = function() {
     if (animOverlay.options.data) return
@@ -394,6 +397,18 @@
           if (center.lng != message.x || center.lat != message.y || map.getZoom() != message.z) {
             map.setView([message.y, message.x], message.z)
           }
+          break
+        case 'displayResults':
+          var data = message.lives.data
+          L.Util.setOptions(resultPoints, {
+            data: data,
+          })
+          resultPoints.redraw()
+          /*
+          data.forEach(function(life) {
+            L.marker([life.birth_y, life.birth_x]).bindPopup(life.name).addTo(resultsGroup)
+          })
+          */
           break
       }
     }
