@@ -2,6 +2,7 @@ port module Leaflet exposing
   ( Point
   , Event(..)
   , setView
+  , focus
   , displayResults
   , event)
 
@@ -32,6 +33,14 @@ displayResults lives =
   Encode.object
     [ ("kind", Encode.string "displayResults")
     , ("lives", Encode.lives lives)
+    ]
+    |> leafletCommand
+
+focus : Data.Life -> Cmd msg
+focus life =
+  Encode.object
+    [ ("kind", Encode.string "focus")
+    , ("life", Encode.life life)
     ]
     |> leafletCommand
 

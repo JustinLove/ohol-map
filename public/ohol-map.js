@@ -39,15 +39,14 @@
     attribution: '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible',
   });
 
-  var birth = L.divIcon({className: 'birth'});
-  var wondible = L.divIcon({className: 'wondible'});
-  var resultsGroup = L.layerGroup([])
   var overlays = {
     graticule: null,
-    Search: L.layerGroup([resultsGroup]),
+    Search: L.layerGroup([]),
     "48h Births": null,
     "48h Births Anim": null,
   }
+
+  var focusMarker = null;
 
   onMonumentLayerAdd = function(e) {
     var layer = e.target
@@ -274,18 +273,6 @@
 
   pointOverlay.on('add', requireRecentLives)
 
-
-  /*
-  fetch("data/recent.json").then(function(response) {
-    response.json().then(function(data){
-      data.forEach(function(point) {
-        //L.marker([point[1], point[0]], {icon: wondible}).bindPopup(point[2]).addTo(map)
-        L.marker([point[1], point[0]]).bindPopup(point[2]).addTo(map)
-      })
-    })
-  })
-  */
-
   var options = {
     showOriginLabel: false,
     redraw: 'move',
@@ -404,11 +391,16 @@
             data: data,
           })
           resultPoints.redraw()
-          /*
-          data.forEach(function(life) {
-            L.marker([life.birth_y, life.birth_x]).bindPopup(life.name).addTo(resultsGroup)
-          })
-          */
+          break;
+        case 'focus':
+          var life = message.life;
+          if (focusMarker) {
+            focusMarker.remove();
+          }
+          focusMarker = L.marker([life.birth_y, life.birth_x])
+            .bindPopup(life.name)
+            .addTo(overlays['Search'])
+          map.setView([life.birth_y, life.birth_x], 17)
           break
       }
     }

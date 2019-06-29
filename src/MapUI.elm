@@ -4,7 +4,7 @@ import Leaflet exposing (Point)
 import OHOLData as Data
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
-import View exposing (RemoteData(..))
+import View exposing (RemoteData(..), Life)
 
 import Browser
 --import Browser.Dom
@@ -35,19 +35,7 @@ type alias Model =
   , sidebarOpen : Bool
   , searchTerm : String
   , lives : RemoteData (List Life)
-  }
-
-type alias Life =
-  { birthTime : Posix
-  , generation : Int
-  , playerid : Int
-  , lineage : Int
-  , name : Maybe String
-  , serverId : Int
-  , epoch : Int
-  , age : Float
-  , birthX : Int
-  , birthY : Int
+  , focus : Maybe Life
   }
 
 type alias Config =
@@ -77,6 +65,7 @@ init config location key =
       , sidebarOpen = True
       , searchTerm = ""
       , lives = NotRequested
+      , focus = Nothing
       }
     (model, cmd) = changeRouteTo location initialModel
   in
@@ -103,6 +92,12 @@ update msg model =
         | searchTerm = term
         }
       , Cmd.none
+      )
+    UI (View.SelectMatchingLife life) ->
+      ( { model
+        | focus = Just life
+        }
+      , Leaflet.focus (serverLife life)
       )
     Event (Leaflet.MoveEnd point) ->
       ( {model|center = point} 
@@ -171,6 +166,20 @@ myLife : Data.Life -> Life
 myLife life =
   { birthTime = life.birthTime
   , generation = life.chain
+  , lineage = life.lineage
+  , playerid = life.playerid
+  , name = life.name
+  , serverId = life.serverId
+  , epoch = life.epoch
+  , age = life.age
+  , birthX = life.birthX
+  , birthY = life.birthY
+  }
+
+serverLife : Life -> Data.Life
+serverLife life =
+  { birthTime = life.birthTime
+  , chain = life.generation
   , lineage = life.lineage
   , playerid = life.playerid
   , name = life.name

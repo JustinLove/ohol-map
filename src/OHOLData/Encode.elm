@@ -1,5 +1,6 @@
 module OHOLData.Encode exposing
   ( lives
+  , life
   )
 
 import OHOLData exposing (Life)

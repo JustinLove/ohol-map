@@ -1,7 +1,9 @@
-module View exposing (Msg(..), RemoteData(..), view, document)
+module View exposing (Msg(..), RemoteData(..), Life, view, document)
 
 import Browser
 import Element exposing (..)
+import Element.Background as Background
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
@@ -17,12 +19,26 @@ type Msg
   = None
   | Search String
   | Typing String
+  | SelectMatchingLife Life
 
 type RemoteData a
   = NotRequested
   | Loading
   | Data a
   | Failed Http.Error
+
+type alias Life =
+  { birthTime : Posix
+  , generation : Int
+  , playerid : Int
+  , lineage : Int
+  , name : Maybe String
+  , serverId : Int
+  , epoch : Int
+  , age : Float
+  , birthX : Int
+  , birthY : Int
+  }
 
 --document : (Msg -> msg) -> model -> Browser.Document msg
 document tagger model =
@@ -32,7 +48,11 @@ document tagger model =
 
 -- view : model -> Html Msg
 view model =
-  layout [ width fill, height fill ] <|
+  layout
+    [ width fill, height fill
+    , Font.color foreground
+    , Background.color background
+    ] <|
     Keyed.row [ width fill, height fill ]
       [ ( "map", el [ id "map", width fill, height fill ] none)
       , ( "sidebar"
@@ -127,7 +147,13 @@ showMatchingLives model lives =
       [ { header = text "Name"
         , width = px 300
         , view = \life ->
-          link []
+          link
+            [ Events.onClick (SelectMatchingLife life)
+            , if Just life == model.focus then
+                Background.color highlight
+              else
+                Background.color background
+            ]
             { url = ""
             , label = 
               life.name
@@ -195,5 +221,10 @@ targetValue decoder tagger =
 id : String -> Attribute Msg
 id =
   htmlAttribute << Html.Attributes.id
+
+
+foreground = rgb 0.1 0.1 0.1
+background = rgb 0.98 0.98 0.98
+highlight = rgb 0.8 0.8 0.8
 
 scaled height = modular (max ((toFloat height)/30) 15) 1.25 >> round
