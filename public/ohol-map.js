@@ -401,7 +401,7 @@
             .bindPopup(life.name)
             .addTo(overlays['Search'])
             .openPopup()
-          map.setView([life.birth_y, life.birth_x], 17)
+          map.setView([life.birth_y, life.birth_x], 24)
           break
       }
     }
