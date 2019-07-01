@@ -384,7 +384,7 @@
 
     base['Default'].addTo(map)
     //overlays['Search'].addTo(map)
-    pointOverlay.addTo(map)
+    //pointOverlay.addTo(map)
 
     map.timeDimension = timeDimension; 
     layersControl.addTo(map)
