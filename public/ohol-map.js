@@ -93,8 +93,6 @@
   L.GridLayer.PointOverlay = L.GridLayer.extend({
     options: {
       pane: 'overlayPane',
-      interactive: true,
-      className: 'point-layer',
     },
     createTile: function (coords) {
       var tile = document.createElement('canvas');
@@ -184,6 +182,30 @@
         this.drawTile(tile.el, tile.coords, time)
       }
     },
+    selectPoints: function(ev) {
+      var center = ev.layerPoint
+      var padding = 5
+      var pnw = L.point(center.x - padding, center.y - padding)
+      var pse = L.point(pnw.x + padding*2, pnw.y + padding*2)
+      //console.log(center, pnw, pse)
+      var layer = ev.target
+      var map = layer._map
+      var zoom = map.getZoom()
+      llnw = map.layerPointToLatLng(pnw, zoom)
+      llse = map.layerPointToLatLng(pse, zoom)
+      //console.log(center, llnw, llse)
+
+      var hit = layer.options.data.filter(function(point) {
+        return llnw.lng < point.birth_x && point.birth_x < llse.lng
+            && llse.lat < point.birth_y && point.birth_y < llnw.lat
+      })
+      if (hit.length > 0) {
+        app.ports.leafletEvent.send({
+          kind: 'selectPoints',
+          lives: { data: hit.slice(0, 100) },
+        })
+      }
+    },
   })
 
 
@@ -212,11 +234,12 @@
 
   var timeDimensionControl = new L.Control.TimeDimension(timeDimensionControlOptions);
 
-  var pointOverlay = new L.GridLayer.PointOverlay()
+  var pointOverlay = new L.GridLayer.PointOverlay({className: 'interactive'})
   overlays["48h Births"] = pointOverlay
 
   var animOverlay = new L.GridLayer.PointOverlay({
     attribution: '<a href="https://github.com/socib/Leaflet.TimeDimension">socib/Leaflet.TimeDimension</a>',
+    className: 'interactive',
   })
   timeDimension.on("timeload", animOverlay.updateTiles, animOverlay)
   overlays["48h Births Anim"] = animOverlay
@@ -270,16 +293,24 @@
 
   animOverlay.on('add', function(ev) {
     ev.target._map.addControl(timeDimensionControl)
+    ev.target.addInteractiveTarget(ev.target._container)
     requireRecentLives()
   })
   animOverlay.on('remove', function(ev) {
     ev.target._map.removeControl(timeDimensionControl)
   })
+  animOverlay.on('click', animOverlay.selectPoints)
 
   pointOverlay.on('add', requireRecentLives)
   pointOverlay.on('add', function(ev) {
-    pointOverlay.addInteractiveTarget(pointOverlay._container)
+    ev.target.addInteractiveTarget(ev.target._container)
   })
+  pointOverlay.on('click', pointOverlay.selectPoints)
+
+  resultPoints.on('add', function(ev) {
+    ev.target.setZIndex(450)
+  })
+
   var options = {
     showOriginLabel: false,
     redraw: 'move',
@@ -299,7 +330,7 @@
   var graticule = L.simpleGraticule(options)
   overlays['graticule'] = graticule
 
-  layersControl = L.control.layers(base, overlays)
+  layersControl = L.control.layers(base, overlays, {autoZIndex: false})
 
   var fetchMonuments = function fetchMonuments(map) {
     fetch(cachedApiUrl + "servers").then(function(response) {
@@ -382,30 +413,6 @@
           kind: 'overlayremove',
           name: ev.name,
         })
-      })
-      pointOverlay.on('click', function(ev) {
-        var center = ev.layerPoint
-        var padding = 10
-        var pnw = L.point(center.x - padding, center.y - padding)
-        var pse = L.point(pnw.x + padding*2, pnw.y + padding*2)
-        //console.log(center, pnw, pse)
-        var layer = ev.target
-        var map = layer._map
-        var zoom = map.getZoom()
-        llnw = map.layerPointToLatLng(pnw, zoom)
-        llse = map.layerPointToLatLng(pse, zoom)
-        //console.log(center, llnw, llse)
-
-        var hit = layer.options.data.filter(function(point) {
-          return llnw.lng < point.birth_x && point.birth_x < llse.lng
-              && llse.lat < point.birth_y && point.birth_y < llnw.lat
-        })
-        if (hit.length > 0) {
-          app.ports.leafletEvent.send({
-            kind: 'selectPoints',
-            lives: { data: hit.slice(0, 100) },
-          })
-        }
       })
     }
 
