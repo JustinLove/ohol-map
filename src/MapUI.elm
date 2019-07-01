@@ -117,7 +117,10 @@ update msg model =
         | lives = lives |> List.map myLife |> Data
         , sidebarOpen = True
         }
-      , Leaflet.displayResults lives
+      , Cmd.batch
+        [ Leaflet.displayResults lives
+        , Leaflet.searchOverlay True
+        ]
       )
     Event (Leaflet.Error) ->
       let _ = Debug.log "error" "" in

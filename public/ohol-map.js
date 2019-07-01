@@ -433,6 +433,13 @@
             .openPopup()
           map.setView([life.birth_y, life.birth_x], 24)
           break
+        case 'searchOverlay':
+          if (message.status) {
+            overlays['Search'].addTo(map)
+          } else {
+            overlays['Search'].remove()
+          }
+          break
       }
     }
 

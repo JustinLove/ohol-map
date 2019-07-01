@@ -4,6 +4,7 @@ port module Leaflet exposing
   , setView
   , focus
   , displayResults
+  , searchOverlay
   , event)
 
 import OHOLData as Data
@@ -44,6 +45,15 @@ focus life =
     , ("life", Encode.life life)
     ]
     |> leafletCommand
+
+searchOverlay : Bool -> Cmd msg
+searchOverlay status =
+  Encode.object
+    [ ("kind", Encode.string "searchOverlay")
+    , ("status", Encode.bool status)
+    ]
+    |> leafletCommand
+
 
 type Event
   = Error
