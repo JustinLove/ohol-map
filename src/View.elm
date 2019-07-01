@@ -54,7 +54,10 @@ view model =
     , Background.color background
     ] <|
     Keyed.row [ width fill, height fill ]
-      [ ( "map", el [ id "map", width fill, height fill, Font.size 12 ] none)
+      [ ( "map"
+        , el [ id "map", width fill, height fill, Font.size 12 ]
+          (html <| Html.div [ Html.Attributes.id "map" ] [])
+        )
       , ( "sidebar"
         , if model.sidebarOpen then
             sidebar model

@@ -1,10 +1,15 @@
+- select point to show who
 - lineage of character
+- managed downloads?
 - show data for other servers
 - show data for other time periods
-- paging
 - different coloration methods
   - time
   - account
   - cause of death
 - different map types (death)
+- paging
 - grouped heat map
+- custom layer methods
+  - single layer
+  - webworker
