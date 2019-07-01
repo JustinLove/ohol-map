@@ -111,7 +111,6 @@ update msg model =
     Event (Leaflet.OverlayRemove "Search") ->
       ({model | sidebarOpen = False}, Cmd.none)
     Event (Leaflet.OverlayRemove name) ->
-      let _ = Debug.log "remove" name in
       (model, Cmd.none)
     Event (Leaflet.Error) ->
       let _ = Debug.log "error" "" in

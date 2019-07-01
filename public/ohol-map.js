@@ -91,6 +91,11 @@
   }
 
   L.GridLayer.PointOverlay = L.GridLayer.extend({
+    options: {
+      pane: 'overlayPane',
+      interactive: true,
+      className: 'point-layer',
+    },
     createTile: function (coords) {
       var tile = document.createElement('canvas');
       var tileSize = this.getTileSize();
@@ -268,10 +273,32 @@
     requireRecentLives()
   })
   animOverlay.on('remove', function(ev) {
-    ev.targtet._map.removeControl(timeDimensionControl)
+    ev.target._map.removeControl(timeDimensionControl)
   })
 
   pointOverlay.on('add', requireRecentLives)
+  pointOverlay.on('add', function(ev) {
+    pointOverlay.addInteractiveTarget(pointOverlay._container)
+  })
+  pointOverlay.on('click', function(ev) {
+    var center = ev.layerPoint
+    var padding = 10
+    var pnw = L.point(center.x - padding, center.y - padding)
+    var pse = L.point(pnw.x + padding*2, pnw.y + padding*2)
+    //console.log(center, pnw, pse)
+    var layer = ev.target
+    var map = layer._map
+    var zoom = map.getZoom()
+    llnw = map.layerPointToLatLng(pnw, zoom)
+    llse = map.layerPointToLatLng(pse, zoom)
+    //console.log(center, llnw, llse)
+
+    var hit = layer.options.data.filter(function(point) {
+      return llnw.lng < point.birth_x && point.birth_x < llse.lng
+          && llse.lat < point.birth_y && point.birth_y < llnw.lat
+    })
+    console.log(hit)
+  })
 
   var options = {
     showOriginLabel: false,
@@ -346,6 +373,7 @@
 
     base['Default'].addTo(map)
     //overlays['Search'].addTo(map)
+    pointOverlay.addTo(map)
 
     map.timeDimension = timeDimension; 
     layersControl.addTo(map)
