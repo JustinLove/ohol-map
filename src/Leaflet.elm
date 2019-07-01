@@ -7,6 +7,7 @@ port module Leaflet exposing
   , event)
 
 import OHOLData as Data
+import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
 
 import Json.Decode as Decode
@@ -49,6 +50,7 @@ type Event
   | MoveEnd Point
   | OverlayAdd String
   | OverlayRemove String
+  | SelectPoints (List Data.Life)
 
 event : (Event -> msg) -> Sub msg
 event tagger =
@@ -65,10 +67,16 @@ eventDecoder =
   (Decode.field "kind" Decode.string)
     |> Decode.andThen (\kind ->
       case kind of
-        "moveend" -> Decode.map MoveEnd pointDecoder
-        "overlayadd" -> Decode.map OverlayAdd (Decode.field "name" Decode.string)
-        "overlayremove" -> Decode.map OverlayRemove (Decode.field "name" Decode.string)
-        _ -> Decode.succeed Error
+        "moveend" ->
+          Decode.map MoveEnd pointDecoder
+        "overlayadd" ->
+          Decode.map OverlayAdd (Decode.field "name" Decode.string)
+        "overlayremove" ->
+          Decode.map OverlayRemove (Decode.field "name" Decode.string)
+        "selectPoints" ->
+           Decode.map SelectPoints (Decode.field "lives" Decode.lives)
+        _ ->
+          Decode.succeed Error
       )
 
 pointDecoder : Decode.Decoder Point

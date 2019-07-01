@@ -112,6 +112,13 @@ update msg model =
       ({model | sidebarOpen = False}, Cmd.none)
     Event (Leaflet.OverlayRemove name) ->
       (model, Cmd.none)
+    Event (Leaflet.SelectPoints lives) ->
+      ( { model
+        | lives = lives |> List.map myLife |> Data
+        , sidebarOpen = True
+        }
+      , Leaflet.displayResults lives
+      )
     Event (Leaflet.Error) ->
       let _ = Debug.log "error" "" in
       (model, Cmd.none)

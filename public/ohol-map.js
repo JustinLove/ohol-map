@@ -158,8 +158,8 @@
           //console.log(p)
           //var t = (point.birth_time - timebase) * 75 / timescale
           //ctx.fillStyle = "hsla(240, 100%, " + t + "%, " + a + ")"
-          ctx.fillStyle = point.lineage
-          ctx.strokeStyle = point.lineage
+          ctx.fillStyle = point.lineageColor
+          ctx.strokeStyle = point.lineageColor
           ctx.beginPath();
           ctx.arc(p.x, p.y, 3, 0, 2*Math.PI, false);
           ctx.fill();
@@ -242,9 +242,9 @@
           if (max == null || point.birth_time > max) {
             max = point.birth_time
           }
-          point.lineage = colormap(point.lineage)
+          point.lineageColor = colormap(point.lineage)
           if (point.hash) {
-            point.hash = colorhash(point.hash)
+            point.hashColor = colorhash(point.hash)
           }
         })
         var times = []
@@ -280,26 +280,6 @@
   pointOverlay.on('add', function(ev) {
     pointOverlay.addInteractiveTarget(pointOverlay._container)
   })
-  pointOverlay.on('click', function(ev) {
-    var center = ev.layerPoint
-    var padding = 10
-    var pnw = L.point(center.x - padding, center.y - padding)
-    var pse = L.point(pnw.x + padding*2, pnw.y + padding*2)
-    //console.log(center, pnw, pse)
-    var layer = ev.target
-    var map = layer._map
-    var zoom = map.getZoom()
-    llnw = map.layerPointToLatLng(pnw, zoom)
-    llse = map.layerPointToLatLng(pse, zoom)
-    //console.log(center, llnw, llse)
-
-    var hit = layer.options.data.filter(function(point) {
-      return llnw.lng < point.birth_x && point.birth_x < llse.lng
-          && llse.lat < point.birth_y && point.birth_y < llnw.lat
-    })
-    console.log(hit)
-  })
-
   var options = {
     showOriginLabel: false,
     redraw: 'move',
@@ -401,6 +381,28 @@
         app.ports.leafletEvent.send({
           kind: 'overlayremove',
           name: ev.name,
+        })
+      })
+      pointOverlay.on('click', function(ev) {
+        var center = ev.layerPoint
+        var padding = 10
+        var pnw = L.point(center.x - padding, center.y - padding)
+        var pse = L.point(pnw.x + padding*2, pnw.y + padding*2)
+        //console.log(center, pnw, pse)
+        var layer = ev.target
+        var map = layer._map
+        var zoom = map.getZoom()
+        llnw = map.layerPointToLatLng(pnw, zoom)
+        llse = map.layerPointToLatLng(pse, zoom)
+        //console.log(center, llnw, llse)
+
+        var hit = layer.options.data.filter(function(point) {
+          return llnw.lng < point.birth_x && point.birth_x < llse.lng
+              && llse.lat < point.birth_y && point.birth_y < llnw.lat
+        })
+        app.ports.leafletEvent.send({
+          kind: 'selectPoints',
+          lives: { data: hit.slice(0, 100) },
         })
       })
     }
