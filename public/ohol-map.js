@@ -400,10 +400,12 @@
           return llnw.lng < point.birth_x && point.birth_x < llse.lng
               && llse.lat < point.birth_y && point.birth_y < llnw.lat
         })
-        app.ports.leafletEvent.send({
-          kind: 'selectPoints',
-          lives: { data: hit.slice(0, 100) },
-        })
+        if (hit.length > 0) {
+          app.ports.leafletEvent.send({
+            kind: 'selectPoints',
+            lives: { data: hit.slice(0, 100) },
+          })
+        }
       })
     }
 
