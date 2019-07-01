@@ -55,7 +55,7 @@ view model =
     ] <|
     Keyed.row [ width fill, height fill ]
       [ ( "map"
-        , el [ id "map", width fill, height fill, Font.size 12 ]
+        , el [ width fill, height fill, Font.size 12 ]
           (html <| Html.div [ Html.Attributes.id "map" ] [])
         )
       , ( "sidebar"
@@ -237,11 +237,6 @@ targetValue : Json.Decode.Decoder a -> (a -> Msg) -> Json.Decode.Decoder Msg
 targetValue decoder tagger =
   Json.Decode.map tagger
     (Json.Decode.at ["target", "value" ] decoder)
-
-id : String -> Attribute Msg
-id =
-  htmlAttribute << Html.Attributes.id
-
 
 foreground = rgb 0.1 0.1 0.1
 background = rgb 0.98 0.98 0.98
