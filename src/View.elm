@@ -166,24 +166,9 @@ lifeListHeader =
     , Font.size 10
     , Font.underline
     ]
-    [ el [ width (px 30) ] (el [ centerX ] (text "Tree"))
+    [ lifeDetailHeader
     , el [ width (px 30) ] (el [ centerX ] (text "Lin"))
-    , column
-      [ padding 4
-      ]
-      [ row
-        [ Font.size 16
-        , spacing 10
-        , width fill
-        ]
-        [ el [ width (px 30) ]
-          (text "Age")
-        , el [ width (px 140) ]
-          (text "Born")
-        , el [ width (px 40) ]
-          (text "Gen")
-        ]
-      ]
+    , el [ width (px 30) ] (el [ centerX ] (text "Tree"))
     ]
 
 showMatchingLife model life =
@@ -193,43 +178,62 @@ showMatchingLife model life =
       else
         Background.color background
     ]
-    [ newTabLink [ width(px 30), padding 10 ]
-      { url = lineageUrl model.lineageUrl life.serverId life.epoch life.playerid
-      , label = el [ centerX ] <| icon "tree"
+    [ Input.button []
+      { onPress = Just (SelectMatchingLife life)
+      , label = showMatchingLifeDetail model life
       }
     , Input.button [ width(px 30), padding 10 ]
       { onPress = Just (SelectLineage life)
       , label = el [ centerX ] <| icon "users"
       }
-    , Input.button []
-      { onPress = Just (SelectMatchingLife life)
-      , label = column [ padding 4 ]
-        [ life.name
-            |> Maybe.withDefault "nameless"
-            |> text
-        , row
-          [ Font.size 16
-          , spacing 10
-          ]
-          [ el [ width (px 30) ]
-            (life.age
-              |> ceiling
-              |> String.fromInt
-              |> text
-            )
-          , el [ width (px 140) ]
-            ( life.birthTime
-              |> date model.zone
-              |> text
-            )
-          , el [ width (px 40) ]
-            ( life.generation
-              |> String.fromInt
-              |> text
-            )
-          ]
-        ]
+    , newTabLink [ width(px 30), padding 10 ]
+      { url = lineageUrl model.lineageUrl life.serverId life.epoch life.playerid
+      , label = el [ centerX ] <| icon "tree"
       }
+    ]
+
+lifeDetailHeader =
+  column [ padding 4 ]
+    [ row
+      [ Font.size 16
+      , spacing 10
+      , width fill
+      ]
+      [ el [ width (px 30) ]
+        (text "Age")
+      , el [ width (px 140) ]
+        (text "Born")
+      , el [ width (px 30) ]
+        (text "Gen")
+      ]
+    ]
+
+showMatchingLifeDetail model life =
+  column [ padding 4 ]
+    [ life.name
+        |> Maybe.withDefault "nameless"
+        |> text
+    , row
+      [ Font.size 16
+      , spacing 10
+      ]
+      [ el [ width (px 30) ]
+        (life.age
+          |> ceiling
+          |> String.fromInt
+          |> text
+        )
+      , el [ width (px 140) ]
+        ( life.birthTime
+          |> date model.zone
+          |> text
+        )
+      , el [ width (px 30) ]
+        ( life.generation
+          |> String.fromInt
+          |> text
+        )
+      ]
     ]
 
 date : Time.Zone -> Posix -> String
