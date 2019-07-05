@@ -16,6 +16,8 @@ import Json.Decode
 import Svg exposing (svg, use)
 import Svg.Attributes exposing (xlinkHref)
 import Time exposing (Posix)
+import Url exposing (Url)
+import Url.Builder as Url
 
 type Msg
   = None
@@ -72,7 +74,7 @@ view model =
 -- sidebar : Model -> Element Msg
 sidebar model =
   column
-    [ width (fill |> maximum 300)
+    [ width (fill |> maximum 330)
     , height fill
     , alignTop
     , htmlAttribute (Html.Attributes.id "sidebar")
@@ -161,9 +163,11 @@ showMatchingLives model lives =
 lifeListHeader =
   row
     [ width fill
+    , Font.size 10
     , Font.underline
     ]
-    [ el [ width (px 30) ] none
+    [ el [ width (px 30) ] (el [ centerX ] (text "Tree"))
+    , el [ width (px 30) ] (el [ centerX ] (text "Lin"))
     , column
       [ padding 4
       ]
@@ -189,7 +193,11 @@ showMatchingLife model life =
       else
         Background.color background
     ]
-    [ Input.button [ width(px 30), padding 10 ]
+    [ newTabLink [ width(px 30), padding 10 ]
+      { url = lineageUrl model.lineageUrl life.serverId life.epoch life.playerid
+      , label = el [ centerX ] <| icon "tree"
+      }
+    , Input.button [ width(px 30), padding 10 ]
       { onPress = Just (SelectLineage life)
       , label = el [ centerX ] <| icon "users"
       }
@@ -250,6 +258,18 @@ formatMonth month =
     Time.Oct -> "10"
     Time.Nov -> "11"
     Time.Dec -> "12"
+
+lineageUrl : String -> Int -> Int -> Int -> String
+lineageUrl base serverId epoch playerid =
+  Url.custom (Url.CrossOrigin base) [] []
+    (Url.toQuery
+      [ Url.int "server_id" serverId
+      , Url.int "epoch" epoch
+      , Url.int "playerid" playerid
+      ]
+      |> String.dropLeft 1
+      |> Just
+    )
 
 icon : String -> Element msg
 icon name =

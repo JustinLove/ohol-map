@@ -32,6 +32,7 @@ type alias Model =
   , center : Point
   , cachedApiUrl : String
   , apiUrl : String
+  , lineageUrl: String
   , sidebarOpen : Bool
   , searchTerm : String
   , lives : RemoteData (List Life)
@@ -41,6 +42,7 @@ type alias Model =
 type alias Config =
   { cachedApiUrl: String
   , apiUrl: String
+  , lineageUrl: String
   }
 
 main = Browser.application
@@ -62,6 +64,7 @@ init config location key =
       , center = Point 0 0 17
       , cachedApiUrl = config.cachedApiUrl
       , apiUrl = config.apiUrl
+      , lineageUrl = config.lineageUrl
       , sidebarOpen = False
       , searchTerm = ""
       , lives = NotRequested

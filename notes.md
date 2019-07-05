@@ -18,3 +18,9 @@
 - custom layer methods
   - single layer
   - webworker
+
+## release
+
+- update server
+- update config
+- publish icon files
