@@ -13,6 +13,8 @@ import Html.Events exposing (on, stopPropagationOn)
 import Html.Keyed
 import Http
 import Json.Decode
+import Svg exposing (svg, use)
+import Svg.Attributes exposing (xlinkHref)
 import Time exposing (Posix)
 
 type Msg
@@ -69,7 +71,12 @@ view model =
 
 -- sidebar : Model -> Element Msg
 sidebar model =
-  column [ width (fill |> maximum 300), height fill, alignTop ]
+  column
+    [ width (fill |> maximum 300)
+    , height fill
+    , alignTop
+    , htmlAttribute (Html.Attributes.id "sidebar")
+    ]
     [ searchBox model.searchTerm model.lives
     , showResult model model.lives
     ]
@@ -182,40 +189,39 @@ showMatchingLife model life =
       else
         Background.color background
     ]
-    [ Input.button [ width(px 30) ]
+    [ Input.button [ width(px 30), padding 10 ]
       { onPress = Just (SelectLineage life)
-      , label = el [ centerX ] <| text "L"
+      , label = el [ centerX ] <| icon "users"
       }
-    , column
-      [ Events.onClick (SelectMatchingLife life)
-      , pointer
-      , padding 4
-      ]
-      [ life.name
-          |> Maybe.withDefault "nameless"
-          |> text
-      , row
-        [ Font.size 16
-        , spacing 10
+    , Input.button []
+      { onPress = Just (SelectMatchingLife life)
+      , label = column [ padding 4 ]
+        [ life.name
+            |> Maybe.withDefault "nameless"
+            |> text
+        , row
+          [ Font.size 16
+          , spacing 10
+          ]
+          [ el [ width (px 30) ]
+            (life.age
+              |> ceiling
+              |> String.fromInt
+              |> text
+            )
+          , el [ width (px 140) ]
+            ( life.birthTime
+              |> date model.zone
+              |> text
+            )
+          , el [ width (px 40) ]
+            ( life.generation
+              |> String.fromInt
+              |> text
+            )
+          ]
         ]
-        [ el [ width (px 30) ]
-          (life.age
-            |> ceiling
-            |> String.fromInt
-            |> text
-          )
-        , el [ width (px 140) ]
-          ( life.birthTime
-            |> date model.zone
-            |> text
-          )
-        , el [ width (px 40) ]
-          ( life.generation
-            |> String.fromInt
-            |> text
-          )
-        ]
-      ]
+      }
     ]
 
 date : Time.Zone -> Posix -> String
@@ -244,6 +250,12 @@ formatMonth month =
     Time.Oct -> "10"
     Time.Nov -> "11"
     Time.Dec -> "12"
+
+icon : String -> Element msg
+icon name =
+  svg [ Svg.Attributes.class ("icon icon-"++name) ]
+    [ use [ xlinkHref ("symbol-defs.svg#icon-"++name) ] [] ]
+  |> html
 
 targetValue : Json.Decode.Decoder a -> (a -> Msg) -> Json.Decode.Decoder Msg
 targetValue decoder tagger =
