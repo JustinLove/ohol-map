@@ -99,6 +99,10 @@ update msg model =
         }
       , Leaflet.focus (serverLife life)
       )
+    UI (View.SelectLineage life) ->
+      ( model
+      , fetchLineage model.apiUrl life
+      )
     Event (Leaflet.MoveEnd point) ->
       ( {model|center = point} 
       , Navigation.replaceUrl model.navigationKey <|
@@ -204,6 +208,17 @@ fetchMatchingLives baseUrl term =
     { url = Url.crossOrigin baseUrl ["lives"]
       [ Url.string "q" term
       , Url.int "limit" 100
+      ]
+    , expect = Http.expectJson MatchingLives Decode.lives
+    }
+
+fetchLineage : String -> Life -> Cmd Msg
+fetchLineage baseUrl life =
+  Http.get
+    { url = Url.crossOrigin baseUrl ["lives"]
+      [ Url.int "server_id" life.serverId
+      , Url.int "epoch" life.epoch
+      , Url.int "lineage" life.lineage
       ]
     , expect = Http.expectJson MatchingLives Decode.lives
     }

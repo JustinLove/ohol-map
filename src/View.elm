@@ -9,7 +9,7 @@ import Element.Input as Input
 import Element.Keyed as Keyed
 import Html exposing (Html)
 import Html.Attributes
-import Html.Events exposing (on)
+import Html.Events exposing (on, stopPropagationOn)
 import Html.Keyed
 import Http
 import Json.Decode
@@ -20,6 +20,7 @@ type Msg
   | Search String
   | Typing String
   | SelectMatchingLife Life
+  | SelectLineage Life
 
 type RemoteData a
   = NotRequested
@@ -151,58 +152,69 @@ showMatchingLives model lives =
     )
 
 lifeListHeader =
-  column
+  row
     [ width fill
-    , padding 4
     , Font.underline
     ]
-    [ row
-      [ Font.size 16
-      , spacing 10
-      , width fill
+    [ el [ width (px 30) ] none
+    , column
+      [ padding 4
       ]
-      [ el [ width (px 40) ]
-        (text "Age")
-      , el [ width (px 160) ]
-        (text "Born")
-      , el [ width (px 40) ]
-        (text "Gen")
+      [ row
+        [ Font.size 16
+        , spacing 10
+        , width fill
+        ]
+        [ el [ width (px 30) ]
+          (text "Age")
+        , el [ width (px 140) ]
+          (text "Born")
+        , el [ width (px 40) ]
+          (text "Gen")
+        ]
       ]
     ]
 
 showMatchingLife model life =
-  column
-    [ Events.onClick (SelectMatchingLife life)
-    , pointer
-    , if Just life == model.focus then
+  row
+    [ if Just life == model.focus then
         Background.color highlight
       else
         Background.color background
-    , padding 4
     ]
-    [ life.name
-        |> Maybe.withDefault "nameless"
-        |> text
-    , row
-      [ Font.size 16
-      , spacing 10
+    [ Input.button [ width(px 30) ]
+      { onPress = Just (SelectLineage life)
+      , label = el [ centerX ] <| text "L"
+      }
+    , column
+      [ Events.onClick (SelectMatchingLife life)
+      , pointer
+      , padding 4
       ]
-      [ el [ width (px 40) ]
-        (life.age
-          |> ceiling
-          |> String.fromInt
+      [ life.name
+          |> Maybe.withDefault "nameless"
           |> text
-        )
-      , el [ width (px 160) ]
-        ( life.birthTime
-          |> date model.zone
-          |> text
-        )
-      , el [ width (px 40) ]
-        ( life.generation
-          |> String.fromInt
-          |> text
-        )
+      , row
+        [ Font.size 16
+        , spacing 10
+        ]
+        [ el [ width (px 30) ]
+          (life.age
+            |> ceiling
+            |> String.fromInt
+            |> text
+          )
+        , el [ width (px 140) ]
+          ( life.birthTime
+            |> date model.zone
+            |> text
+          )
+        , el [ width (px 40) ]
+          ( life.generation
+            |> String.fromInt
+            |> text
+          )
+        ]
       ]
     ]
 

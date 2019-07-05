@@ -1,4 +1,3 @@
-- lineage of character
 - managed downloads?
 - show data for other servers
 - show data for other time periods
