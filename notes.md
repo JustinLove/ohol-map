@@ -1,4 +1,5 @@
 - managed downloads? - WIP
+- use other icons
 - show data for other servers
 - show data for other time periods
 - yesterday realtime
@@ -20,7 +21,3 @@
   - webworker
 
 ## release
-
-- update server
-- update config
-- publish icon files
