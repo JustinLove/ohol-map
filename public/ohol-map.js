@@ -202,6 +202,13 @@
         return llnw.lng < point.birth_x && point.birth_x < llse.lng
             && llse.lat < point.birth_y && point.birth_y < llnw.lat
       })
+      if (this.options.timeDimension) {
+        var end = this.options.timeDimension.getCurrentTime()/1000
+        var start = end - 60*60
+        hit = hit.filter(function(point) {
+          return start < point.birth_time && point.birth_time < end
+        })
+      }
       if (hit.length > 0) {
         app.ports.leafletEvent.send({
           kind: 'selectPoints',

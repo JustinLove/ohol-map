@@ -1,5 +1,3 @@
-- select point to show who
-  - time as selection factor
 - lineage of character
 - managed downloads?
 - show data for other servers
