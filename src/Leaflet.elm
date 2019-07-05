@@ -3,6 +3,7 @@ port module Leaflet exposing
   , Event(..)
   , setView
   , serverList
+  , monumentList
   , displayResults
   , focus
   , searchOverlay
@@ -39,6 +40,15 @@ serverList servers =
     ]
     |> leafletCommand
 
+monumentList : Int -> Encode.Value -> Cmd msg
+monumentList serverId monuments =
+  Encode.object
+    [ ("kind", Encode.string "monumentList")
+    , ("server_id", Encode.int serverId)
+    , ("monuments", monuments)
+    ]
+    |> leafletCommand
+
 displayResults : List Data.Life -> Cmd msg
 displayResults lives =
   Encode.object
@@ -67,7 +77,7 @@ searchOverlay status =
 type Event
   = Error
   | MoveEnd Point
-  | OverlayAdd String
+  | OverlayAdd String (Maybe Int)
   | OverlayRemove String
   | SelectPoints (List Data.Life)
 
@@ -89,7 +99,9 @@ eventDecoder =
         "moveend" ->
           Decode.map MoveEnd pointDecoder
         "overlayadd" ->
-          Decode.map OverlayAdd (Decode.field "name" Decode.string)
+          Decode.map2 OverlayAdd
+            (Decode.field "name" Decode.string)
+            (Decode.field "server_id" (Decode.maybe Decode.int))
         "overlayremove" ->
           Decode.map OverlayRemove (Decode.field "name" Decode.string)
         "selectPoints" ->

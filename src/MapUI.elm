@@ -10,6 +10,8 @@ import Browser
 --import Browser.Dom
 import Browser.Navigation as Navigation
 import Http
+import Json.Decode
+import Set exposing(Set)
 import Task
 import Time exposing (Posix)
 import Url exposing (Url)
@@ -22,6 +24,7 @@ type Msg
   | Event Leaflet.Event
   | MatchingLives (Result Http.Error (List Data.Life))
   | ServerList (Result Http.Error (List Data.Server))
+  | MonumentList Int (Result Http.Error Json.Decode.Value)
   | CurrentZone Time.Zone
   | CurrentUrl Url
   | Navigate Browser.UrlRequest
@@ -37,6 +40,7 @@ type alias Model =
   , sidebarOpen : Bool
   , searchTerm : String
   , servers : RemoteData (List Server)
+  , monumentsFetched : Set Int
   , lives : RemoteData (List Life)
   , focus : Maybe Life
   }
@@ -70,6 +74,7 @@ init config location key =
       , sidebarOpen = False
       , searchTerm = ""
       , servers = NotRequested
+      , monumentsFetched = Set.empty
       , lives = NotRequested
       , focus = Nothing
       }
@@ -115,9 +120,14 @@ update msg model =
       , Navigation.replaceUrl model.navigationKey <|
         centerUrl model.location point
       )
-    Event (Leaflet.OverlayAdd "Search") ->
+    Event (Leaflet.OverlayAdd "Search" _) ->
       ({model | sidebarOpen = True}, Cmd.none)
-    Event (Leaflet.OverlayAdd name) ->
+    Event (Leaflet.OverlayAdd name (Just serverId)) ->
+      if Set.member serverId model.monumentsFetched then
+        (model, Cmd.none)
+      else
+        (model, fetchMonuments model.cachedApiUrl serverId)
+    Event (Leaflet.OverlayAdd _ _) ->
       (model, Cmd.none)
     Event (Leaflet.OverlayRemove "Search") ->
       ({model | sidebarOpen = False}, Cmd.none)
@@ -145,11 +155,21 @@ update msg model =
       ({model | lives = Failed error}, Cmd.none)
     ServerList (Ok servers) ->
       ( {model | servers = servers |> Data}
-      , Leaflet.serverList servers
+      , Cmd.batch
+        [ Leaflet.serverList servers
+        , fetchMonuments model.cachedApiUrl 17
+        ]
       )
     ServerList (Err error) ->
       let _ = Debug.log "fetch servers failed" error in
-      ({model | lives = Failed error}, Cmd.none)
+      ({model | servers = Failed error}, Cmd.none)
+    MonumentList serverId (Ok monuments) ->
+      ( {model | monumentsFetched = Set.insert serverId model.monumentsFetched}
+      , Leaflet.monumentList serverId monuments
+      )
+    MonumentList serverId (Err error) ->
+      let _ = Debug.log "fetch monuments failed" error in
+      (model, Cmd.none)
     CurrentZone zone ->
       ({model | zone = zone}, Cmd.none)
     CurrentUrl location ->
@@ -243,6 +263,16 @@ fetchLineage baseUrl life =
       ]
     , expect = Http.expectJson MatchingLives Decode.lives
     }
+
+fetchMonuments : String -> Int -> Cmd Msg
+fetchMonuments baseUrl serverId =
+  Http.get
+    { url = Url.crossOrigin baseUrl ["monuments"]
+      [ Url.int "server_id" serverId
+      ]
+    , expect = Http.expectJson (MonumentList serverId) Json.Decode.value
+    }
+
 
 centerUrl : Url -> Point-> String
 centerUrl location {x, y, z} =

@@ -1,4 +1,4 @@
-- managed downloads?
+- managed downloads? - WIP
 - show data for other servers
 - show data for other time periods
 - yesterday realtime

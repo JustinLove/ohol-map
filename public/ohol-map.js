@@ -48,39 +48,21 @@
 
   var focusMarker = null;
 
-  onMonumentLayerAdd = function(e) {
-    var layer = e.target
-
-    if (layer.options.data) return
-
+  var updateMonumentLayer = function(layer, data) {
     var server_id = layer.options.server_id
-
-    //fetch("data/" + server + ".onehouronelife.com_monuments.json").then(function(response) {
-    fetch(cachedApiUrl + "monuments?server_id=" + server_id).then(function(response) {
-      response.json().then(function(wrapper){
-        //console.log('monuments', wrapper)
-        var now = new Date()
-        var data = wrapper.data
-        L.Util.setOptions(layer, {data: data})
-        data.forEach(function(point) {
-          var date = new Date(point.date*1000)
-          var age = (now - date) / (24 * 60 * 60 * 1000)
-          L.marker([point.y, point.x], {
-              opacity: Math.max(0.4, Math.min(1.0, 1.0 - (age / (age+30))))
-            })
-            .bindPopup(date.toString())
-            .addTo(layer)
-          //L.circle([point.y, point.x], {radius: 21000, fill: false}).addTo(layer)
+    var now = new Date()
+    L.Util.setOptions(layer, {data: data})
+    data.forEach(function(point) {
+      var date = new Date(point.date*1000)
+      var age = (now - date) / (24 * 60 * 60 * 1000)
+      L.marker([point.y, point.x], {
+          opacity: Math.max(0.4, Math.min(1.0, 1.0 - (age / (age+30))))
         })
-        if (layer.options.startEnabled) {
-          layer.addTo(layer._map);
-          var last = data[data.length-1]
-          //layer._map.setView([last.y, last.x], 17)
-        }
-      })
+        .bindPopup(date.toString())
+        .addTo(layer)
+      //L.circle([point.y, point.x], {radius: 21000, fill: false}).addTo(layer)
     })
   }
-
 
   var colormap = function(id) {
     return '#' + (((id * 49157) % 12582917).toString(16))
@@ -349,13 +331,8 @@
       title = short + ' Monuments'
       overlays[title] = L.layerGroup([], {
         server_id: server.id,
-        startEnabled: short == 'bigserver2',
       });
-      overlays[title].on('add', onMonumentLayerAdd)
       layersControl.addOverlay(overlays[title], title)
-      if (short == 'bigserver2') {
-        overlays[title].addTo(map);
-      }
     })
   }
 
@@ -380,7 +357,6 @@
   })
 
   var inhabit = function inhabit(id) {
-    console.log('map setup')
     var map = L.map(id, {
       crs: crs,
       maxBounds: [[-2147483648, -2147483648], [2147483647, 2147483647]],
@@ -411,6 +387,7 @@
         app.ports.leafletEvent.send({
           kind: 'overlayadd',
           name: ev.name,
+          server_id: ev.layer.options.server_id,
         })
       })
       map.on('overlayremove', function(ev) {
@@ -430,8 +407,15 @@
           }
           break
         case 'serverList':
-          console.log('serverlist')
           setupMonuments(map, message.servers.data)
+          break;
+        case 'monumentList':
+          for (var name in overlays) {
+            if (overlays[name].options.server_id == message.server_id) {
+              updateMonumentLayer(overlays[name], message.monuments.data)
+              overlays[name].addTo(map)
+            }
+          }
           break;
         case 'displayResults':
           var data = message.lives.data
