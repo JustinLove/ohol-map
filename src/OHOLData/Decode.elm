@@ -1,14 +1,15 @@
 module OHOLData.Decode exposing
   ( lives
+  , servers
   )
 
-import OHOLData exposing (Life)
+import OHOLData exposing (Life, Server)
 
 import Json.Decode exposing (..)
 import Time exposing (Posix)
 
 lives : Decoder (List Life)
-lives = 
+lives =
   field "data" (list life)
 
 life : Decoder Life
@@ -24,6 +25,16 @@ life =
     |> map2 (|>) (field "epoch" int)
     |> map2 (|>) (field "playerid" int)
     |> map2 (|>) (field "age" (oneOf [ float, null 0.0 ]))
+
+servers : Decoder (List Server)
+servers =
+  field "data" (list server)
+
+server : Decoder Server
+server =
+  succeed Server
+    |> map2 (|>) (field "id" int)
+    |> map2 (|>) (field "server_name" string)
 
 timeStamp : Decoder Posix
 timeStamp =

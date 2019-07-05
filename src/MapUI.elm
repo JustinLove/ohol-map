@@ -1,7 +1,7 @@
 module MapUI exposing (..)
 
 import Leaflet exposing (Point)
-import OHOLData as Data
+import OHOLData as Data exposing (Server)
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
 import View exposing (RemoteData(..), Life)
@@ -21,6 +21,7 @@ type Msg
   = UI View.Msg
   | Event Leaflet.Event
   | MatchingLives (Result Http.Error (List Data.Life))
+  | ServerList (Result Http.Error (List Data.Server))
   | CurrentZone Time.Zone
   | CurrentUrl Url
   | Navigate Browser.UrlRequest
@@ -35,6 +36,7 @@ type alias Model =
   , lineageUrl: String
   , sidebarOpen : Bool
   , searchTerm : String
+  , servers : RemoteData (List Server)
   , lives : RemoteData (List Life)
   , focus : Maybe Life
   }
@@ -67,6 +69,7 @@ init config location key =
       , lineageUrl = config.lineageUrl
       , sidebarOpen = False
       , searchTerm = ""
+      , servers = NotRequested
       , lives = NotRequested
       , focus = Nothing
       }
@@ -76,6 +79,7 @@ init config location key =
     , Cmd.batch
       [ cmd
       , Time.here |> Task.perform CurrentZone
+      , fetchServers model.cachedApiUrl
       ]
     )
 
@@ -139,6 +143,13 @@ update msg model =
     MatchingLives (Err error) ->
       let _ = Debug.log "fetch lives failed" error in
       ({model | lives = Failed error}, Cmd.none)
+    ServerList (Ok servers) ->
+      ( {model | servers = servers |> Data}
+      , Leaflet.serverList servers
+      )
+    ServerList (Err error) ->
+      let _ = Debug.log "fetch servers failed" error in
+      ({model | lives = Failed error}, Cmd.none)
     CurrentZone zone ->
       ({model | zone = zone}, Cmd.none)
     CurrentUrl location ->
@@ -176,6 +187,13 @@ setView point model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
   Leaflet.event Event
+
+fetchServers : String -> Cmd Msg
+fetchServers baseUrl =
+  Http.get
+    { url = Url.crossOrigin baseUrl ["servers"] []
+    , expect = Http.expectJson ServerList Decode.servers
+    }
 
 myLife : Data.Life -> Life
 myLife life =

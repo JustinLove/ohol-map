@@ -2,8 +2,9 @@ port module Leaflet exposing
   ( Point
   , Event(..)
   , setView
-  , focus
+  , serverList
   , displayResults
+  , focus
   , searchOverlay
   , event)
 
@@ -27,6 +28,14 @@ setView {x, y, z} =
     , ("x", Encode.int x)
     , ("y", Encode.int y)
     , ("z", Encode.int z)
+    ]
+    |> leafletCommand
+
+serverList : List Data.Server -> Cmd msg
+serverList servers =
+  Encode.object
+    [ ("kind", Encode.string "serverList")
+    , ("servers", Encode.servers servers)
     ]
     |> leafletCommand
 

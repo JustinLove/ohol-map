@@ -1,5 +1,7 @@
 module View exposing (Msg(..), RemoteData(..), Life, view, document)
 
+import OHOLData as Data
+
 import Browser
 import Element exposing (..)
 import Element.Background as Background

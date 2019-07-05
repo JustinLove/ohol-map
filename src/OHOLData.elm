@@ -1,4 +1,4 @@
-module OHOLData exposing (Life)
+module OHOLData exposing (Life, Server)
 
 import Time exposing (Posix)
 
@@ -15,3 +15,7 @@ type alias Life =
   , age : Float
   }
 
+type alias Server =
+  { id : Int
+  , serverName : String
+  }

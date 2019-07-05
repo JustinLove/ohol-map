@@ -343,25 +343,19 @@
 
   layersControl = L.control.layers(base, overlays, {autoZIndex: false})
 
-  var fetchMonuments = function fetchMonuments(map) {
-    fetch(cachedApiUrl + "servers").then(function(response) {
-      response.json().then(function(wrapper){
-        //console.log('monuments', wrapper)
-        var data = wrapper.data
-        data.forEach(function(server) {
-          var short = server.server_name.replace('.onehouronelife.com', '')
-          title = short + ' Monuments'
-          overlays[title] = L.layerGroup([], {
-            server_id: server.id,
-            startEnabled: short == 'bigserver2',
-          });
-          overlays[title].on('add', onMonumentLayerAdd)
-          layersControl.addOverlay(overlays[title], title)
-          if (short == 'bigserver2') {
-            overlays[title].addTo(map);
-          }
-        })
-      })
+  var setupMonuments = function setupMonuments(map, servers) {
+    servers.forEach(function(server) {
+      var short = server.server_name.replace('.onehouronelife.com', '')
+      title = short + ' Monuments'
+      overlays[title] = L.layerGroup([], {
+        server_id: server.id,
+        startEnabled: short == 'bigserver2',
+      });
+      overlays[title].on('add', onMonumentLayerAdd)
+      layersControl.addOverlay(overlays[title], title)
+      if (short == 'bigserver2') {
+        overlays[title].addTo(map);
+      }
     })
   }
 
@@ -386,6 +380,7 @@
   })
 
   var inhabit = function inhabit(id) {
+    console.log('map setup')
     var map = L.map(id, {
       crs: crs,
       maxBounds: [[-2147483648, -2147483648], [2147483647, 2147483647]],
@@ -401,7 +396,6 @@
     layersControl.addTo(map)
     L.control.scale({imperial: false}).addTo(map)
     map.setView([0,0], 17)
-    fetchMonuments(map)
 
     if (app.ports.leafletEvent) {
       map.on('moveend', function(ev) {
@@ -435,6 +429,10 @@
             map.setView([message.y, message.x], message.z)
           }
           break
+        case 'serverList':
+          console.log('serverlist')
+          setupMonuments(map, message.servers.data)
+          break;
         case 'displayResults':
           var data = message.lives.data
           L.Util.setOptions(resultPoints, {
@@ -467,7 +465,6 @@
       app.ports.leafletCommand.subscribe(command)
     }
   }
-
 
   inhabit('map')
 })()

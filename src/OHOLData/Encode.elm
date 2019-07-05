@@ -1,9 +1,11 @@
 module OHOLData.Encode exposing
   ( lives
   , life
+  , servers
+  , server
   )
 
-import OHOLData exposing (Life)
+import OHOLData exposing (Life, Server)
 
 import Json.Encode exposing (..)
 import Time exposing (Posix)
@@ -27,6 +29,19 @@ life l =
     , ("epoch", int l.epoch)
     , ("playerid", int l.playerid)
     , ("age", float l.age)
+    ]
+
+servers : List Server -> Value
+servers data =
+  object
+    [ ("data", list server data)
+    ]
+
+server : Server -> Value
+server s =
+  object
+    [ ("id", int s.id)
+    , ("server_name", string s.serverName)
     ]
 
 timeStamp : Posix -> Value
