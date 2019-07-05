@@ -109,6 +109,9 @@
       if (!this.options.data) {
         return
       }
+      if (this.options.timeDimension) {
+        time = time || this.options.timeDimension.getCurrentTime()/1000
+      }
       var tileSize = this.getTileSize();
 
       var ctx = tile.getContext('2d');
@@ -240,6 +243,7 @@
   var animOverlay = new L.GridLayer.PointOverlay({
     attribution: '<a href="https://github.com/socib/Leaflet.TimeDimension">socib/Leaflet.TimeDimension</a>',
     className: 'interactive',
+    timeDimension: timeDimension,
   })
   timeDimension.on("timeload", animOverlay.updateTiles, animOverlay)
   overlays["48h Births Anim"] = animOverlay

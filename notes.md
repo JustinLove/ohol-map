@@ -4,7 +4,14 @@
 - managed downloads?
 - show data for other servers
 - show data for other time periods
+- yesterday realtime
+  - 1fps
+  - include death info
+  - interpolate to death time and location
+  - interpolate to child birth locations
+- bookmarking layers
 - different coloration methods
+  - better lineage color (contrast)
   - time
   - account
   - cause of death
