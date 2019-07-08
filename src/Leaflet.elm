@@ -4,6 +4,7 @@ port module Leaflet exposing
   , setView
   , serverList
   , monumentList
+  , dataLayer
   , displayResults
   , focus
   , searchOverlay
@@ -46,6 +47,14 @@ monumentList serverId monuments =
     [ ("kind", Encode.string "monumentList")
     , ("server_id", Encode.int serverId)
     , ("monuments", monuments)
+    ]
+    |> leafletCommand
+
+dataLayer : Encode.Value -> Cmd msg
+dataLayer lives =
+  Encode.object
+    [ ("kind", Encode.string "dataLayer")
+    , ("lives", lives)
     ]
     |> leafletCommand
 

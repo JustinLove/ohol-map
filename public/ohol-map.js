@@ -238,62 +238,49 @@
 
   var resultPoints = new L.GridLayer.PointOverlay().addTo(overlays['Search'])
 
-  var requireRecentLives = function() {
-    if (animOverlay.options.data) return
-
-    //fetch("data/bigserver2_points_48.json").then(function(response) {
-    //fetch("data/EVE COLIN.json").then(function(response) {
-    //fetch("data/bigserver2_points_hash.json").then(function(response) {
-    fetch(cachedApiUrl + "lives?server_id=17&period=P2D").then(function(response) {
-      response.json().then(function(wrapper){
-        //console.log('lives', wrapper)
-        var min = null;
-        var max = null;
-        var data = wrapper.data;
-        data.forEach(function(point) {
-          if (min == null || point.birth_time < min) {
-            min = point.birth_time
-          }
-          if (max == null || point.birth_time > max) {
-            max = point.birth_time
-          }
-          point.lineageColor = colormap(point.lineage)
-          if (point.hash) {
-            point.hashColor = colorhash(point.hash)
-          }
-        })
-        var times = []
-        for (var t = min;t < max;t += 60) {
-          times.push(t * 1000)
-        }
-        timeDimension.setAvailableTimes(times, 'replace')
-        L.Util.setOptions(animOverlay, {
-          data: data,
-          min: min,
-          max: max,
-        })
-        animOverlay.redraw()
-        L.Util.setOptions(pointOverlay, {
-          data: data,
-          min: min,
-          max: max,
-        })
-        pointOverlay.redraw()
-      })
+  var setDataLayers = function(data) {
+    var min = null;
+    var max = null;
+    data.forEach(function(point) {
+      if (min == null || point.birth_time < min) {
+        min = point.birth_time
+      }
+      if (max == null || point.birth_time > max) {
+        max = point.birth_time
+      }
+      point.lineageColor = colormap(point.lineage)
+      if (point.hash) {
+        point.hashColor = colorhash(point.hash)
+      }
     })
+    var times = []
+    for (var t = min;t < max;t += 60) {
+      times.push(t * 1000)
+    }
+    timeDimension.setAvailableTimes(times, 'replace')
+    L.Util.setOptions(animOverlay, {
+      data: data,
+      min: min,
+      max: max,
+    })
+    animOverlay.redraw()
+    L.Util.setOptions(pointOverlay, {
+      data: data,
+      min: min,
+      max: max,
+    })
+    pointOverlay.redraw()
   }
 
   animOverlay.on('add', function(ev) {
     ev.target._map.addControl(timeDimensionControl)
     ev.target.addInteractiveTarget(ev.target._container)
-    requireRecentLives()
   })
   animOverlay.on('remove', function(ev) {
     ev.target._map.removeControl(timeDimensionControl)
   })
   animOverlay.on('click', animOverlay.selectPoints)
 
-  pointOverlay.on('add', requireRecentLives)
   pointOverlay.on('add', function(ev) {
     ev.target.addInteractiveTarget(ev.target._container)
   })
@@ -416,6 +403,9 @@
               overlays[name].addTo(map)
             }
           }
+          break;
+        case 'dataLayer':
+          setDataLayers(message.lives.data)
           break;
         case 'displayResults':
           var data = message.lives.data

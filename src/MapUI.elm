@@ -25,6 +25,7 @@ type Msg
   | MatchingLives (Result Http.Error (List Data.Life))
   | ServerList (Result Http.Error (List Data.Server))
   | MonumentList Int (Result Http.Error Json.Decode.Value)
+  | DataLayer (Result Http.Error Json.Decode.Value)
   | CurrentZone Time.Zone
   | CurrentUrl Url
   | Navigate Browser.UrlRequest
@@ -41,6 +42,7 @@ type alias Model =
   , searchTerm : String
   , servers : RemoteData (List Server)
   , monumentsFetched : Set Int
+  , dataLayer : RemoteData Bool
   , lives : RemoteData (List Life)
   , focus : Maybe Life
   }
@@ -75,6 +77,7 @@ init config location key =
       , searchTerm = ""
       , servers = NotRequested
       , monumentsFetched = Set.empty
+      , dataLayer = NotRequested
       , lives = NotRequested
       , focus = Nothing
       }
@@ -122,6 +125,10 @@ update msg model =
       )
     Event (Leaflet.OverlayAdd "Search" _) ->
       ({model | sidebarOpen = True}, Cmd.none)
+    Event (Leaflet.OverlayAdd "48h Births" _) ->
+      requireRecentLives model
+    Event (Leaflet.OverlayAdd "48h Births Anim" _) ->
+      requireRecentLives model
     Event (Leaflet.OverlayAdd name (Just serverId)) ->
       if Set.member serverId model.monumentsFetched then
         (model, Cmd.none)
@@ -170,6 +177,13 @@ update msg model =
     MonumentList serverId (Err error) ->
       let _ = Debug.log "fetch monuments failed" error in
       (model, Cmd.none)
+    DataLayer (Ok lives) ->
+      ( {model | dataLayer = Data True}
+      , Leaflet.dataLayer lives
+      )
+    DataLayer (Err error) ->
+      let _ = Debug.log "fetch data failed" error in
+      ({model | dataLayer = Failed error}, Cmd.none)
     CurrentZone zone ->
       ({model | zone = zone}, Cmd.none)
     CurrentUrl location ->
@@ -180,6 +194,20 @@ update msg model =
       )
     Navigate (Browser.External url) ->
       (model, Navigation.load url)
+
+requireRecentLives : Model -> (Model, Cmd Msg)
+requireRecentLives model =
+  case model.dataLayer of
+    NotRequested ->
+      ( {model | dataLayer = Loading}
+      , fetchRecentLives model.cachedApiUrl 17
+      )
+    Failed _ ->
+      ( {model | dataLayer = Loading}
+      , fetchRecentLives model.cachedApiUrl 17
+      )
+    _ ->
+      (model, Cmd.none)
 
 changeRouteTo : Url -> Model -> (Model, Cmd Msg)
 changeRouteTo location model =
@@ -273,6 +301,15 @@ fetchMonuments baseUrl serverId =
     , expect = Http.expectJson (MonumentList serverId) Json.Decode.value
     }
 
+fetchRecentLives : String -> Int -> Cmd Msg
+fetchRecentLives baseUrl serverId =
+  Http.get
+    { url = Url.crossOrigin baseUrl ["lives"]
+      [ Url.int "server_id" serverId
+      , Url.string "period" "P2D"
+      ]
+    , expect = Http.expectJson DataLayer Json.Decode.value
+    }
 
 centerUrl : Url -> Point-> String
 centerUrl location {x, y, z} =

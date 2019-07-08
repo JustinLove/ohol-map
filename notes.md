@@ -1,5 +1,3 @@
-- managed downloads? - WIP
-- use other icons
 - show data for other servers
 - show data for other time periods
 - yesterday realtime
@@ -7,6 +5,7 @@
   - include death info
   - interpolate to death time and location
   - interpolate to child birth locations
+- use other icons
 - bookmarking layers
 - different coloration methods
   - better lineage color (contrast)
