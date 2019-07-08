@@ -205,7 +205,6 @@
     //timeInterval: start + "/" + end,
     //period: "PT1M",
   });
-  // helper to share the timeDimension object between all layers
 
   var player = new L.TimeDimension.Player({
     transitionTime: 100, 
@@ -368,6 +367,7 @@
     //overlays['Search'].addTo(map)
     //pointOverlay.addTo(map)
 
+    // helper to share the timeDimension object between all layers
     map.timeDimension = timeDimension; 
     layersControl.addTo(map)
     L.control.scale({imperial: false}).addTo(map)
