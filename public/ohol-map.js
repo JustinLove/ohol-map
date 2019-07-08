@@ -342,6 +342,38 @@
     }
   })
 
+  L.Control.Sidebar = L.Control.extend({
+      onAdd: function(map) {
+        console.log('init')
+        return this._initLayout()
+      },
+      onRemove: function(map) {
+        // Nothing to do here
+      },
+      _initLayout: function () {
+        var className = 'leaflet-control-sidebar'
+        var container = this._container = L.DomUtil.create('div', className)
+
+        var link = this._layersLink = L.DomUtil.create('a', className + '-toggle', container);
+        link.href = '#';
+        link.title = 'Search';
+        link.innerHTML = 'Search';
+
+        L.DomEvent.on(link, 'click', this.toggle, this);
+
+        return container;
+      },
+      toggle: function() {
+        app.ports.leafletEvent.send({
+          kind: 'sidebarToggle',
+        })
+      },
+  });
+
+  L.control.sidebar = function(opts) {
+    return new L.Control.Sidebar(opts);
+  }
+
   var inhabit = function inhabit(id) {
     var map = L.map(id, {
       crs: crs,
@@ -358,6 +390,7 @@
     map.timeDimension = timeDimension; 
     layersControl.addTo(map)
     L.control.scale({imperial: false}).addTo(map)
+    L.control.sidebar({ position: 'bottomright' }).addTo(map);
     map.setView([0,0], 17)
 
     if (app.ports.leafletEvent) {

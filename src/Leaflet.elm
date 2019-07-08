@@ -84,21 +84,20 @@ searchOverlay status =
 
 
 type Event
-  = Error
-  | MoveEnd Point
+  = MoveEnd Point
   | OverlayAdd String (Maybe Int)
   | OverlayRemove String
   | SelectPoints (List Data.Life)
+  | SidebarToggle
 
-event : (Event -> msg) -> Sub msg
+event : (Result Decode.Error Event -> msg) -> Sub msg
 event tagger =
   leafletEvent (decodeEvent >> tagger)
 
-decodeEvent : Decode.Value -> Event
+decodeEvent : Decode.Value -> Result Decode.Error Event
 decodeEvent thing =
   Decode.decodeValue eventDecoder thing
     |> Result.mapError (Debug.log "map decode error")
-    |> Result.withDefault Error
 
 eventDecoder : Decode.Decoder Event
 eventDecoder =
@@ -115,8 +114,10 @@ eventDecoder =
           Decode.map OverlayRemove (Decode.field "name" Decode.string)
         "selectPoints" ->
            Decode.map SelectPoints (Decode.field "lives" Decode.lives)
+        "sidebarToggle" ->
+          Decode.succeed SidebarToggle
         _ ->
-          Decode.succeed Error
+          Decode.fail kind
       )
 
 pointDecoder : Decode.Decoder Point

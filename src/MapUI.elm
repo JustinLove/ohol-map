@@ -21,7 +21,7 @@ import Url.Parser.Query
 
 type Msg
   = UI View.Msg
-  | Event Leaflet.Event
+  | Event (Result Json.Decode.Error Leaflet.Event)
   | MatchingLives (Result Http.Error (List Data.Life))
   | ServerList (Result Http.Error (List Data.Server))
   | MonumentList Int (Result Http.Error Json.Decode.Value)
@@ -118,29 +118,29 @@ update msg model =
       ( model
       , fetchLineage model.apiUrl life
       )
-    Event (Leaflet.MoveEnd point) ->
+    Event (Ok (Leaflet.MoveEnd point)) ->
       ( {model|center = point} 
       , Navigation.replaceUrl model.navigationKey <|
         centerUrl model.location point
       )
-    Event (Leaflet.OverlayAdd "Search" _) ->
+    Event (Ok (Leaflet.OverlayAdd "Search" _)) ->
       ({model | sidebarOpen = True}, Cmd.none)
-    Event (Leaflet.OverlayAdd "48h Births" _) ->
+    Event (Ok (Leaflet.OverlayAdd "48h Births" _)) ->
       requireRecentLives model
-    Event (Leaflet.OverlayAdd "48h Births Anim" _) ->
+    Event (Ok (Leaflet.OverlayAdd "48h Births Anim" _)) ->
       requireRecentLives model
-    Event (Leaflet.OverlayAdd name (Just serverId)) ->
+    Event (Ok (Leaflet.OverlayAdd name (Just serverId))) ->
       if Set.member serverId model.monumentsFetched then
         (model, Cmd.none)
       else
         (model, fetchMonuments model.cachedApiUrl serverId)
-    Event (Leaflet.OverlayAdd _ _) ->
+    Event (Ok (Leaflet.OverlayAdd _ _)) ->
       (model, Cmd.none)
-    Event (Leaflet.OverlayRemove "Search") ->
+    Event (Ok (Leaflet.OverlayRemove "Search")) ->
       ({model | sidebarOpen = False}, Cmd.none)
-    Event (Leaflet.OverlayRemove name) ->
+    Event (Ok (Leaflet.OverlayRemove name)) ->
       (model, Cmd.none)
-    Event (Leaflet.SelectPoints lives) ->
+    Event (Ok (Leaflet.SelectPoints lives)) ->
       ( { model
         | lives = lives |> List.map myLife |> Data
         , sidebarOpen = True
@@ -150,12 +150,17 @@ update msg model =
         , Leaflet.searchOverlay True
         ]
       )
-    Event (Leaflet.Error) ->
-      let _ = Debug.log "error" "" in
+    Event (Ok (Leaflet.SidebarToggle)) ->
+      ({model | sidebarOpen = not model.sidebarOpen}, Cmd.none)
+    Event (Err err) ->
+      let _ = Debug.log "error" err in
       (model, Cmd.none)
     MatchingLives (Ok lives) ->
       ( {model | lives = lives |> List.map myLife |> Data}
-      , Leaflet.displayResults lives
+      , Cmd.batch
+        [ Leaflet.displayResults lives
+        , Leaflet.searchOverlay True
+        ]
       )
     MatchingLives (Err error) ->
       let _ = Debug.log "fetch lives failed" error in

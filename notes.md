@@ -15,8 +15,10 @@
 - different map types (death)
 - paging
 - grouped heat map
+- leaflet handlers - click events?
 - custom layer methods
   - single layer
   - webworker
 
 ## release
+- upload style.css
