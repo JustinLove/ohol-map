@@ -41,15 +41,22 @@ img {
 	background-clip: padding-box;
 	border: 2px solid rgba(0,0,0,0.2);
   border-radius: 5px;
-  width: 36px;
-  height: 36px;
 }
-.leaft-control-sidebar-toggle {
+.leaflet-control-sidebar-toggle {
+  font: bold 18px 'Lucida Console', Monaco, monospace;
+  font-size: 22px;
+  text-align: center;
+  text-indent: 1px;
   display: block;
   width: 36px;
   height: 36px;
+  position: relative;
 }
-.leaflet-touch .leaflet-control-sidebar,
+.leaflet-control-sidebar-toggle svg {
+  position: relative;
+  top: 10px;
+  color: #888;
+}
 .leaflet-touch .leaflet-control-sidebar-toggle {
   width: 44px;
   height: 44px;

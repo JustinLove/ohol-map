@@ -356,8 +356,8 @@
 
         var link = this._layersLink = L.DomUtil.create('a', className + '-toggle', container);
         link.href = '#';
-        link.title = 'Search';
-        link.innerHTML = 'Search';
+        link.title = 'Data';
+        link.innerHTML = '<svg class="icon icon-filter"><use xlink:href="symbol-defs.svg#icon-filter"></use></svg>'
 
         L.DomEvent.on(link, 'click', this.toggle, this);
 
