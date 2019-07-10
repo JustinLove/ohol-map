@@ -344,7 +344,6 @@
 
   L.Control.Sidebar = L.Control.extend({
       onAdd: function(map) {
-        console.log('init')
         return this._initLayout()
       },
       onRemove: function(map) {

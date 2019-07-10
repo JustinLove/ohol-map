@@ -39,6 +39,7 @@ type alias Model =
   , apiUrl : String
   , lineageUrl: String
   , sidebarOpen : Bool
+  , sidebarMode : View.Mode
   , searchTerm : String
   , servers : RemoteData (List Server)
   , monumentsFetched : Set Int
@@ -73,7 +74,8 @@ init config location key =
       , cachedApiUrl = config.cachedApiUrl
       , apiUrl = config.apiUrl
       , lineageUrl = config.lineageUrl
-      , sidebarOpen = False
+      , sidebarOpen = True
+      , sidebarMode = View.LifeSearch
       , searchTerm = ""
       , servers = NotRequested
       , monumentsFetched = Set.empty
@@ -117,6 +119,10 @@ update msg model =
     UI (View.SelectLineage life) ->
       ( model
       , fetchLineage model.apiUrl life
+      )
+    UI (View.SelectMode mode) ->
+      ( { model | sidebarMode = mode }
+      , Cmd.none
       )
     Event (Ok (Leaflet.MoveEnd point)) ->
       ( {model|center = point} 

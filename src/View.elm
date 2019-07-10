@@ -1,10 +1,11 @@
-module View exposing (Msg(..), RemoteData(..), Life, view, document)
+module View exposing (Msg(..), Mode(..), RemoteData(..), Life, view, document)
 
 import OHOLData as Data
 
 import Browser
 import Element exposing (..)
 import Element.Background as Background
+import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
@@ -27,6 +28,11 @@ type Msg
   | Typing String
   | SelectMatchingLife Life
   | SelectLineage Life
+  | SelectMode Mode
+
+type Mode
+  = LifeSearch
+  | DataFilter
 
 type RemoteData a
   = NotRequested
@@ -81,6 +87,49 @@ sidebar model =
     , alignTop
     , htmlAttribute (Html.Attributes.id "sidebar")
     ]
+    [ modeSelect model
+    , case model.sidebarMode of
+        LifeSearch -> lifeSearch model
+        DataFilter -> dataFilter model
+    ]
+
+-- modeSelect : Model -> Element Msg
+modeSelect model =
+  row
+    [ width fill
+    , Border.color divider
+    , Border.widthEach
+      { bottom = 1
+      , left = 0
+      , right = 0
+      , top = 0
+      }
+    ]
+    [ tabHeader "search" "Search" LifeSearch model.sidebarMode
+    , tabHeader "filter" "Data" DataFilter model.sidebarMode
+    ]
+
+tabHeader : String -> String -> Mode -> Mode -> Element Msg
+tabHeader ico name mode current =
+  Input.button [ width fill ]
+    { onPress = Just (SelectMode mode)
+    , label = 
+      el
+        [ width fill
+        , Background.color (if mode == current then highlight else background)
+        ] <|
+        row [ centerX, spacing 6 ]
+          [ el [ Font.size 16 ] <| icon ico
+          , text name
+          ]
+    }
+
+-- lifeSearch : Model -> Element Msg
+lifeSearch model =
+  column
+    [ width fill
+    , height fill
+    ]
     [ searchBox model.searchTerm model.lives
     , showResult model model.lives
     ]
@@ -107,52 +156,6 @@ showResult model remote =
       showMatchingLives model lives
     Failed error ->
       showError error
-
-showLoading : RemoteData a -> Element Msg
-showLoading remote =
-  case remote of
-    NotRequested ->
-      none
-    Loading ->
-      el [ centerX, centerY ] <| text "Loading"
-    Data _ ->
-      none
-    Failed error ->
-      showError error
-
-showError : Http.Error -> Element Msg
-showError error =
-  el [ centerX, centerY ] <|
-    case error of
-      Http.BadUrl url ->
-        twoPartMessage 500
-          "Bad Url"
-          "This *really* shouldn't happen."
-      Http.Timeout ->
-        twoPartMessage 500
-          "Timeout"
-          "Wondible is cheap and you are getting this for free."
-      Http.NetworkError ->
-        twoPartMessage 500
-          "Network Error"
-          "Either you or the server went offline"
-      Http.BadStatus code ->
-        twoPartMessage 500
-          (code |> String.fromInt)
-          "Server is being naughty again.'"
-      Http.BadBody body ->
-        twoPartMessage 500
-          "Bad Body"
-          body
-
-twoPartMessage : Int -> String -> String -> Element Msg
-twoPartMessage height header body =
-  column []
-    [ el [ centerX, Font.size (scaled height 2)] <|
-      text header
-    , el [ centerX, Font.size (scaled height 1)] <|
-      text body
-    ]
 
 
 showMatchingLives model lives =
@@ -277,6 +280,62 @@ lineageUrl base serverId epoch playerid =
       |> Just
     )
 
+-- dataFilter : Model -> Element Msg
+dataFilter model =
+  column
+    [ width fill
+    , height fill
+    ]
+    [
+    ]
+
+showLoading : RemoteData a -> Element Msg
+showLoading remote =
+  case remote of
+    NotRequested ->
+      none
+    Loading ->
+      el [ centerX, centerY ] <| text "Loading"
+    Data _ ->
+      none
+    Failed error ->
+      showError error
+
+showError : Http.Error -> Element Msg
+showError error =
+  el [ centerX, centerY ] <|
+    case error of
+      Http.BadUrl url ->
+        twoPartMessage 500
+          "Bad Url"
+          "This *really* shouldn't happen."
+      Http.Timeout ->
+        twoPartMessage 500
+          "Timeout"
+          "Wondible is cheap and you are getting this for free."
+      Http.NetworkError ->
+        twoPartMessage 500
+          "Network Error"
+          "Either you or the server went offline"
+      Http.BadStatus code ->
+        twoPartMessage 500
+          (code |> String.fromInt)
+          "Server is being naughty again.'"
+      Http.BadBody body ->
+        twoPartMessage 500
+          "Bad Body"
+          body
+
+twoPartMessage : Int -> String -> String -> Element Msg
+twoPartMessage height header body =
+  column []
+    [ el [ centerX, Font.size (scaled height 2)] <|
+      text header
+    , el [ centerX, Font.size (scaled height 1)] <|
+      text body
+    ]
+
+
 icon : String -> Element msg
 icon name =
   svg [ Svg.Attributes.class ("icon icon-"++name) ]
@@ -291,5 +350,6 @@ targetValue decoder tagger =
 foreground = rgb 0.1 0.1 0.1
 background = rgb 0.98 0.98 0.98
 highlight = rgb 0.8 0.8 0.8
+divider = rgb 0.7 0.7 0.7
 
 scaled height = modular (max ((toFloat height)/30) 15) 1.25 >> round
