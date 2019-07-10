@@ -41,6 +41,7 @@ type alias Model =
   , sidebarOpen : Bool
   , sidebarMode : View.Mode
   , searchTerm : String
+  , selectedServer : Maybe Server
   , servers : RemoteData (List Server)
   , monumentsFetched : Set Int
   , dataLayer : RemoteData Bool
@@ -75,8 +76,9 @@ init config location key =
       , apiUrl = config.apiUrl
       , lineageUrl = config.lineageUrl
       , sidebarOpen = True
-      , sidebarMode = View.LifeSearch
+      , sidebarMode = View.DataFilter
       , searchTerm = ""
+      , selectedServer = Nothing
       , servers = NotRequested
       , monumentsFetched = Set.empty
       , dataLayer = NotRequested
@@ -122,6 +124,10 @@ update msg model =
       )
     UI (View.SelectMode mode) ->
       ( { model | sidebarMode = mode }
+      , Cmd.none
+      )
+    UI (View.SelectServer server) ->
+      ( { model | selectedServer = Just server }
       , Cmd.none
       )
     Event (Ok (Leaflet.MoveEnd point)) ->

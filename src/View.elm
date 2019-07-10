@@ -1,6 +1,6 @@
 module View exposing (Msg(..), Mode(..), RemoteData(..), Life, view, document)
 
-import OHOLData as Data
+import OHOLData as Data exposing (Server)
 
 import Browser
 import Element exposing (..)
@@ -29,6 +29,7 @@ type Msg
   | SelectMatchingLife Life
   | SelectLineage Life
   | SelectMode Mode
+  | SelectServer Server
 
 type Mode
   = LifeSearch
@@ -286,8 +287,34 @@ dataFilter model =
     [ width fill
     , height fill
     ]
-    [
+    [ serverSelect model.servers model.selectedServer
     ]
+
+serverSelect : RemoteData (List Server) -> Maybe Server -> Element Msg
+serverSelect servers selectedServer =
+  case servers of
+    NotRequested -> none
+    Loading -> showLoading servers
+    Failed error -> showError error
+    Data list ->
+      Input.radio [ padding 10, spacing 2 ]
+        { onChange = SelectServer
+        , selected = selectedServer
+        , label = Input.labelAbove [] (text "Server")
+        , options = list |> List.map serverItem
+        }
+
+serverItem : Server -> Input.Option Server Msg
+serverItem server =
+  Input.option server
+    (text (serverDisplayName server))
+
+serverDisplayName : Server -> String
+serverDisplayName {serverName} =
+  serverName
+    |> String.split "."
+    |> List.head
+    |> Maybe.withDefault serverName
 
 showLoading : RemoteData a -> Element Msg
 showLoading remote =
