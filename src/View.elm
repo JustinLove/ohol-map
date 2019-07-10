@@ -26,6 +26,10 @@ type Msg
   = None
   | Search String
   | Typing String
+  | SetStartDate String
+  | TypingStartDate String
+  | SetEndDate String
+  | TypingEndDate String
   | SelectMatchingLife Life
   | SelectLineage Life
   | SelectMode Mode
@@ -287,8 +291,31 @@ dataFilter model =
     [ width fill
     , height fill
     ]
-    [ serverSelect model.servers model.selectedServer
+    [ dateRangeSelect model.startDateInput model.endDateInput
+    , serverSelect model.servers model.selectedServer
     ]
+
+dateRangeSelect : String -> String -> Element Msg
+dateRangeSelect start end =
+  row []
+    [ dateSelect TypingStartDate SetStartDate "Start Date" start
+    , dateSelect TypingEndDate SetEndDate "End Date" start
+    ]
+
+dateSelect : (String -> Msg) -> (String -> Msg) -> String -> String -> Element Msg
+dateSelect typing change label value =
+  Input.text
+    [ padding 2
+    , height (px 30)
+    , Font.size 14
+    , htmlAttribute <| on "change" <| targetValue Json.Decode.string change
+    , htmlAttribute <| Html.Attributes.type_ "date"
+    ] <|
+    { onChange = typing
+    , text = value
+    , placeholder = Nothing
+    , label = Input.labelAbove [] <| text label
+    }
 
 serverSelect : RemoteData (List Server) -> Maybe Server -> Element Msg
 serverSelect servers selectedServer =

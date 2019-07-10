@@ -41,6 +41,10 @@ type alias Model =
   , sidebarOpen : Bool
   , sidebarMode : View.Mode
   , searchTerm : String
+  , startDate : Maybe Posix
+  , startDateInput : String
+  , endDate : Maybe Posix
+  , endDateInput : String
   , selectedServer : Maybe Server
   , servers : RemoteData (List Server)
   , monumentsFetched : Set Int
@@ -78,6 +82,10 @@ init config location key =
       , sidebarOpen = True
       , sidebarMode = View.DataFilter
       , searchTerm = ""
+      , startDate = Nothing
+      , startDateInput = ""
+      , endDate = Nothing
+      , endDateInput = ""
       , selectedServer = Nothing
       , servers = NotRequested
       , monumentsFetched = Set.empty
@@ -109,6 +117,30 @@ update msg model =
     UI (View.Typing term) ->
       ( { model
         | searchTerm = term
+        }
+      , Cmd.none
+      )
+    UI (View.SetStartDate string) ->
+      ( { model
+        | startDateInput = string
+        }
+      , Cmd.none
+      )
+    UI (View.TypingStartDate string) ->
+      ( { model
+        | startDateInput = string
+        }
+      , Cmd.none
+      )
+    UI (View.SetEndDate string) ->
+      ( { model
+        | endDateInput = string
+        }
+      , Cmd.none
+      )
+    UI (View.TypingEndDate string) ->
+      ( { model
+        | endDateInput = string
         }
       , Cmd.none
       )
