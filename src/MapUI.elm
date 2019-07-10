@@ -127,8 +127,8 @@ update msg model =
       , Cmd.none
       )
     UI (View.SelectServer server) ->
-      ( { model | selectedServer = Just server }
-      , Cmd.none
+      ( {model | selectedServer = Just server, dataLayer = Loading}
+      , fetchRecentLives model.cachedApiUrl server.id
       )
     Event (Ok (Leaflet.MoveEnd point)) ->
       ( {model|center = point} 
@@ -217,11 +217,11 @@ requireRecentLives model =
   case model.dataLayer of
     NotRequested ->
       ( {model | dataLayer = Loading}
-      , fetchRecentLives model.cachedApiUrl 17
+      , fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
       )
     Failed _ ->
       ( {model | dataLayer = Loading}
-      , fetchRecentLives model.cachedApiUrl 17
+      , fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
       )
     _ ->
       (model, Cmd.none)

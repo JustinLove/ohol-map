@@ -438,6 +438,9 @@
           break;
         case 'dataLayer':
           setDataLayers(message.lives.data)
+          if( !map.hasLayer(pointOverlay) && !map.hasLayer(animOverlay) ) {
+            map.addLayer(pointOverlay)
+          }
           break;
         case 'displayResults':
           var data = message.lives.data
