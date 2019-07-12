@@ -350,18 +350,9 @@ dateRangeSelect model =
               |> text
             )
           ]
-      , min = model.minTimeRange
-        |> Time.posixToMillis
-        |> (\x -> x // 1000)
-        |> toFloat
-      , max = model.maxTimeRange
-        |> Time.posixToMillis
-        |> (\x -> x // 1000)
-        |> toFloat
-      , value = model.coarseEndTime
-        |> Time.posixToMillis
-        |> (\x -> x // 1000)
-        |> toFloat
+      , min = serverMinTime model.servers model.selectedServer
+      , max = serverMaxTime model.servers model.selectedServer
+      , value = model.coarseEndTime |> posixToFloat 0
       , thumb = Input.defaultThumb
       , step = Just 1
       }
@@ -379,22 +370,42 @@ dateRangeSelect model =
               |> text
             )
           ]
-      , min = model.coarseEndTime
-        |> Time.posixToMillis
-        |> (\x -> x // 1000 - 7*24*60*60)
-        |> toFloat
-      , max = model.coarseEndTime
-        |> Time.posixToMillis
-        |> (\x -> x // 1000 + 7*24*60*60)
-        |> toFloat
-      , value = model.endTime
-        |> Time.posixToMillis
-        |> (\x -> x // 1000)
-        |> toFloat
+      , min = model.coarseEndTime |> posixToFloat -7
+      , max = model.coarseEndTime |> posixToFloat 7
+      , value = model.endTime |> posixToFloat 0
       , thumb = Input.defaultThumb
       , step = Just 1
       }
     ]
+
+serverMinTime : RemoteData (List Server) -> Maybe Server -> Float
+serverMinTime =
+  serverTime .minTime List.minimum
+
+serverMaxTime : RemoteData (List Server) -> Maybe Server -> Float
+serverMaxTime =
+  serverTime .maxTime List.maximum
+
+serverTime : (Server -> Posix) -> (List Float -> Maybe Float) -> RemoteData (List Server) -> Maybe Server -> Float
+serverTime field aggragate servers current =
+  case current of
+    Just server ->
+      server |> field |> posixToFloat 0
+    Nothing ->
+      case servers of
+        Data list ->
+          list
+            |> List.map field
+            |> List.map (posixToFloat 0)
+            |> aggragate
+            |> Maybe.withDefault 0
+        _ -> 0
+
+posixToFloat : Int -> Posix -> Float
+posixToFloat offsetDays =
+  Time.posixToMillis
+    >> (\x -> x // 1000 + offsetDays*24*60*60)
+    >> toFloat
 
 serverSelect : RemoteData (List Server) -> Maybe Server -> Element Msg
 serverSelect servers selectedServer =

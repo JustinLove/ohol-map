@@ -18,4 +18,6 @@ type alias Life =
 type alias Server =
   { id : Int
   , serverName : String
+  , minTime: Posix
+  , maxTime: Posix
   }

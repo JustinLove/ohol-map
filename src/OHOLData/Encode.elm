@@ -42,6 +42,8 @@ server s =
   object
     [ ("id", int s.id)
     , ("server_name", string s.serverName)
+    , ("min_time", timeStamp s.minTime)
+    , ("max_time", timeStamp s.maxTime)
     ]
 
 timeStamp : Posix -> Value

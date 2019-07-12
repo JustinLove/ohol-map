@@ -35,6 +35,8 @@ server =
   succeed Server
     |> map2 (|>) (field "id" int)
     |> map2 (|>) (field "server_name" string)
+    |> map2 (|>) (field "min_time" timeStamp)
+    |> map2 (|>) (field "max_time" timeStamp)
 
 timeStamp : Decoder Posix
 timeStamp =

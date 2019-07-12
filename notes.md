@@ -3,8 +3,8 @@
   - compact icons?
   - collapse server
 - show data for other time periods
-  - slider
-  - try date pickers
+  - time period control
+  - server specific time range
   - time window range graph
 - yesterday realtime
   - 1fps
@@ -19,6 +19,8 @@
   - account
   - cause of death
 - different map types (death)
+- handle no server
+- better setting of default server
 - paging
 - grouped heat map
 - leaflet handlers - click events?
@@ -29,3 +31,4 @@
 ## release
 - upload style.css
 - update server
+- expire server response
