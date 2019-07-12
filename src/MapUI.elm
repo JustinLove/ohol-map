@@ -41,10 +41,10 @@ type alias Model =
   , sidebarOpen : Bool
   , sidebarMode : View.Mode
   , searchTerm : String
-  , startDate : Maybe Posix
-  , startDateInput : String
-  , endDate : Maybe Posix
-  , endDateInput : String
+  , minTimeRange : Posix
+  , maxTimeRange : Posix
+  , coarseEndTime : Posix
+  , endTime : Posix
   , selectedServer : Maybe Server
   , servers : RemoteData (List Server)
   , monumentsFetched : Set Int
@@ -82,10 +82,10 @@ init config location key =
       , sidebarOpen = True
       , sidebarMode = View.DataFilter
       , searchTerm = ""
-      , startDate = Nothing
-      , startDateInput = ""
-      , endDate = Nothing
-      , endDateInput = ""
+      , minTimeRange = Time.millisToPosix ((48*12+11)*30*24*60*60*1000)
+      , maxTimeRange = Time.millisToPosix ((50*12+3)*30*24*60*60*1000)
+      , coarseEndTime = Time.millisToPosix ((50*12 + 3)*30*24*60*60*1000)
+      , endTime = Time.millisToPosix ((50*12 + 3)*30*24*60*60*1000)
       , selectedServer = Nothing
       , servers = NotRequested
       , monumentsFetched = Set.empty
@@ -120,27 +120,16 @@ update msg model =
         }
       , Cmd.none
       )
-    UI (View.SetStartDate string) ->
+    UI (View.CoarseEndTime time) ->
       ( { model
-        | startDateInput = string
+        | coarseEndTime = time
+        , endTime = time
         }
       , Cmd.none
       )
-    UI (View.TypingStartDate string) ->
+    UI (View.EndTime time) ->
       ( { model
-        | startDateInput = string
-        }
-      , Cmd.none
-      )
-    UI (View.SetEndDate string) ->
-      ( { model
-        | endDateInput = string
-        }
-      , Cmd.none
-      )
-    UI (View.TypingEndDate string) ->
-      ( { model
-        | endDateInput = string
+        | endTime = time
         }
       , Cmd.none
       )

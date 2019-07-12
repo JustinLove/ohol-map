@@ -26,10 +26,8 @@ type Msg
   = None
   | Search String
   | Typing String
-  | SetStartDate String
-  | TypingStartDate String
-  | SetEndDate String
-  | TypingEndDate String
+  | CoarseEndTime Posix
+  | EndTime Posix
   | SelectMatchingLife Life
   | SelectLineage Life
   | SelectMode Mode
@@ -291,31 +289,72 @@ dataFilter model =
     [ width fill
     , height fill
     ]
-    [ dateRangeSelect model.startDateInput model.endDateInput
+    [ dateRangeSelect model
     , serverSelect model.servers model.selectedServer
     ]
 
-dateRangeSelect : String -> String -> Element Msg
-dateRangeSelect start end =
-  row []
-    [ dateSelect TypingStartDate SetStartDate "Start Date" start
-    , dateSelect TypingEndDate SetEndDate "End Date" start
+--dateRangeSelect : Model -> Element Msg
+dateRangeSelect model =
+  column [ width fill ]
+    [ Input.slider
+      [ Background.color control ]
+      { onChange = round
+        >> ((*) 1000)
+        >> Time.millisToPosix
+        >> CoarseEndTime
+      , label = Input.labelAbove [] <|
+        row []
+          [ text "Coarse End Date "
+          , ( model.coarseEndTime
+              |> date model.zone
+              |> text
+            )
+          ]
+      , min = model.minTimeRange
+        |> Time.posixToMillis
+        |> (\x -> x // 1000)
+        |> toFloat
+      , max = model.maxTimeRange
+        |> Time.posixToMillis
+        |> (\x -> x // 1000)
+        |> toFloat
+      , value = model.coarseEndTime
+        |> Time.posixToMillis
+        |> (\x -> x // 1000)
+        |> toFloat
+      , thumb = Input.defaultThumb
+      , step = Just 1
+      }
+    , Input.slider
+      [ Background.color control ]
+      { onChange = round
+        >> ((*) 1000)
+        >> Time.millisToPosix
+        >> EndTime
+      , label = Input.labelAbove [] <|
+        row []
+          [ text "Fine End Time "
+          , ( model.endTime
+              |> date model.zone
+              |> text
+            )
+          ]
+      , min = model.coarseEndTime
+        |> Time.posixToMillis
+        |> (\x -> x // 1000 - 7*24*60*60)
+        |> toFloat
+      , max = model.coarseEndTime
+        |> Time.posixToMillis
+        |> (\x -> x // 1000 + 7*24*60*60)
+        |> toFloat
+      , value = model.endTime
+        |> Time.posixToMillis
+        |> (\x -> x // 1000)
+        |> toFloat
+      , thumb = Input.defaultThumb
+      , step = Just 1
+      }
     ]
-
-dateSelect : (String -> Msg) -> (String -> Msg) -> String -> String -> Element Msg
-dateSelect typing change label value =
-  Input.text
-    [ padding 2
-    , height (px 30)
-    , Font.size 14
-    , htmlAttribute <| on "change" <| targetValue Json.Decode.string change
-    , htmlAttribute <| Html.Attributes.type_ "date"
-    ] <|
-    { onChange = typing
-    , text = value
-    , placeholder = Nothing
-    , label = Input.labelAbove [] <| text label
-    }
 
 serverSelect : RemoteData (List Server) -> Maybe Server -> Element Msg
 serverSelect servers selectedServer =
@@ -405,5 +444,6 @@ foreground = rgb 0.1 0.1 0.1
 background = rgb 0.98 0.98 0.98
 highlight = rgb 0.8 0.8 0.8
 divider = rgb 0.7 0.7 0.7
+control = rgb 0.90 0.90 0.90
 
 scaled height = modular (max ((toFloat height)/30) 15) 1.25 >> round
