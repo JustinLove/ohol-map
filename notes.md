@@ -28,3 +28,4 @@
 
 ## release
 - upload style.css
+- update server

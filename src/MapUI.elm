@@ -149,7 +149,13 @@ update msg model =
       )
     UI (View.SelectServer server) ->
       ( {model | selectedServer = Just server, dataLayer = Loading}
-      , fetchRecentLives model.cachedApiUrl server.id
+      , fetchDataLayer model.apiUrl server.id model.endTime
+      )
+    UI (View.SelectShow) ->
+      ( {model | dataLayer = Loading}
+      , fetchDataLayer model.apiUrl
+          (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
+          model.endTime
       )
     Event (Ok (Leaflet.MoveEnd point)) ->
       ( {model|center = point} 
@@ -345,6 +351,17 @@ fetchRecentLives baseUrl serverId =
     { url = Url.crossOrigin baseUrl ["lives"]
       [ Url.int "server_id" serverId
       , Url.string "period" "P2D"
+      ]
+    , expect = Http.expectJson DataLayer Json.Decode.value
+    }
+
+fetchDataLayer : String -> Int -> Posix -> Cmd Msg
+fetchDataLayer baseUrl serverId endTime =
+  Http.get
+    { url = Url.crossOrigin baseUrl ["lives"]
+      [ Url.int "server_id" serverId
+      , Url.string "period" "P2D"
+      , Url.int "end_time" (endTime |> Time.posixToMillis |> (\x -> x // 1000))
       ]
     , expect = Http.expectJson DataLayer Json.Decode.value
     }

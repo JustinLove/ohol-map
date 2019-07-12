@@ -32,6 +32,7 @@ type Msg
   | SelectLineage Life
   | SelectMode Mode
   | SelectServer Server
+  | SelectShow
 
 type Mode
   = LifeSearch
@@ -288,14 +289,53 @@ dataFilter model =
   column
     [ width fill
     , height fill
+    , spacing 10
     ]
-    [ dateRangeSelect model
+    [ dataAction model
+    , dateRangeSelect model
     , serverSelect model.servers model.selectedServer
     ]
 
+dataAction model =
+  el [ width fill, padding 5 ] <|
+    case model.dataLayer of
+      NotRequested -> dataButtonEnabled
+      Loading -> dataButtonDisabled
+      Data _ -> dataButtonEnabled
+      Failed _ -> dataButtonEnabled
+
+dataButtonEnabled : Element Msg
+dataButtonEnabled =
+    Input.button
+      [ width fill
+      , padding 5
+      , Border.color divider
+      , Border.width 1
+      , Border.rounded 6
+      , Background.color control
+      ]
+      { onPress = Just SelectShow
+      , label = el [ centerX ] <| text "Show"
+      }
+
+dataButtonDisabled : Element Msg
+dataButtonDisabled =
+    Input.button
+      [ width fill
+      , padding 5
+      , Border.color divider
+      , Border.width 1
+      , Border.rounded 6
+      , Background.color control
+      , Font.color divider
+      ]
+      { onPress = Nothing
+      , label = el [ centerX ] <| text "Show"
+      }
+
 --dateRangeSelect : Model -> Element Msg
 dateRangeSelect model =
-  column [ width fill ]
+  column [ width fill, spacing 2 ]
     [ Input.slider
       [ Background.color control ]
       { onChange = round
