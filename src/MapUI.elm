@@ -205,7 +205,10 @@ update msg model =
       let _ = Debug.log "fetch lives failed" error in
       ({model | lives = Failed error}, Cmd.none)
     ServerList (Ok servers) ->
-      ( {model | servers = servers |> Data}
+      ( { model
+        | servers = servers |> Data
+        , selectedServer = servers |> List.reverse |> List.head
+        }
       , Cmd.batch
         [ Leaflet.serverList servers
         , fetchMonuments model.cachedApiUrl 17
