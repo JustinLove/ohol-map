@@ -1,5 +1,11 @@
 - show data for other servers
+  - deselect server
+  - compact icons?
+  - collapse server
 - show data for other time periods
+  - slider
+  - try date pickers
+  - time window range graph
 - yesterday realtime
   - 1fps
   - include death info
