@@ -287,15 +287,16 @@ lineageUrl base serverId epoch playerid =
 
 -- dataFilter : Model -> Element Msg
 dataFilter model =
-  column
-    [ width fill
-    , height fill
-    , spacing 10
-    ]
-    [ dataAction model
-    , dateRangeSelect model
-    , serverSelect model.servers model.selectedServer
-    ]
+  el [ width fill, height fill, scrollbarY] <|
+    column
+      [ width (fill |> maximum 300)
+      , height fill
+      , spacing 10
+      ]
+      [ dataAction model
+      , dateRangeSelect model
+      , serverSelect model.servers model.selectedServer
+      ]
 
 dataAction model =
   el [ width fill, padding 5 ] <|
@@ -345,7 +346,7 @@ dateRangeSelect model =
         >> CoarseEndTime
       , label = Input.labelAbove [] <|
         row []
-          [ text "Coarse End Date "
+          [ text "Coarse End "
           , ( model.coarseEndTime
               |> date model.zone
               |> text
@@ -365,7 +366,7 @@ dateRangeSelect model =
         >> EndTime
       , label = Input.labelAbove [] <|
         row []
-          [ text "Fine End Time "
+          [ text "Fine End "
           , ( model.endTime
               |> date model.zone
               |> text
