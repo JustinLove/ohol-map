@@ -2,7 +2,6 @@
   - deselect server
   - compact icons?
   - collapse server
-- range?
 - yesterday realtime
   - 1fps
   - include death info

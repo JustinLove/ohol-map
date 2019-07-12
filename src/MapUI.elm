@@ -43,6 +43,7 @@ type alias Model =
   , searchTerm : String
   , coarseEndTime : Posix
   , endTime : Posix
+  , hoursBefore : Int
   , selectedServer : Maybe Server
   , servers : RemoteData (List Server)
   , monumentsFetched : Set Int
@@ -82,6 +83,7 @@ init config location key =
       , searchTerm = ""
       , coarseEndTime = Time.millisToPosix 0
       , endTime = Time.millisToPosix 0
+      , hoursBefore = 48
       , selectedServer = Nothing
       , servers = NotRequested
       , monumentsFetched = Set.empty
@@ -129,6 +131,12 @@ update msg model =
         }
       , Cmd.none
       )
+    UI (View.HoursBefore hours) ->
+      ( { model
+        | hoursBefore = hours
+        }
+      , Cmd.none
+      )
     UI (View.SelectMatchingLife life) ->
       ( { model
         | focus = Just life
@@ -150,13 +158,14 @@ update msg model =
         , endTime = inRange server.minTime model.endTime server.maxTime
         , dataLayer = Loading
         }
-      , fetchDataLayer model.apiUrl server.id model.endTime
+      , fetchDataLayer model.apiUrl server.id model.endTime model.hoursBefore
       )
     UI (View.SelectShow) ->
       ( {model | dataLayer = Loading}
       , fetchDataLayer model.apiUrl
           (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
           model.endTime
+          model.hoursBefore
       )
     Event (Ok (Leaflet.MoveEnd point)) ->
       ( {model|center = point} 
@@ -366,13 +375,14 @@ fetchRecentLives baseUrl serverId =
     , expect = Http.expectJson DataLayer Json.Decode.value
     }
 
-fetchDataLayer : String -> Int -> Posix -> Cmd Msg
-fetchDataLayer baseUrl serverId endTime =
+fetchDataLayer : String -> Int -> Posix -> Int -> Cmd Msg
+fetchDataLayer baseUrl serverId endTime hoursBefore =
   Http.get
     { url = Url.crossOrigin baseUrl ["lives"]
       [ Url.int "server_id" serverId
-      , Url.string "period" "P2D"
+      , Url.string "period" ("PT" ++ (String.fromInt hoursBefore) ++ "H")
       , Url.int "end_time" (endTime |> Time.posixToMillis |> (\x -> x // 1000))
+      , Url.string "limit" "70000"
       ]
     , expect = Http.expectJson DataLayer Json.Decode.value
     }

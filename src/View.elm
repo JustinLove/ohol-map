@@ -28,6 +28,7 @@ type Msg
   | Typing String
   | CoarseEndTime Posix
   | EndTime Posix
+  | HoursBefore Int
   | SelectMatchingLife Life
   | SelectLineage Life
   | SelectMode Mode
@@ -373,6 +374,20 @@ dateRangeSelect model =
       , min = model.coarseEndTime |> posixToFloat -7
       , max = model.coarseEndTime |> posixToFloat 7
       , value = model.endTime |> posixToFloat 0
+      , thumb = Input.defaultThumb
+      , step = Just 1
+      }
+    , Input.slider
+      [ Background.color control ]
+      { onChange = round >> HoursBefore
+      , label = Input.labelAbove [] <|
+        row []
+          [ model.hoursBefore |> String.fromInt |> text
+          , text " Hours Before"
+          ]
+      , min = 1
+      , max = 7*24
+      , value = model.hoursBefore |> toFloat
       , thumb = Input.defaultThumb
       , step = Just 1
       }
