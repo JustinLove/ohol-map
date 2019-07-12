@@ -2,10 +2,7 @@
   - deselect server
   - compact icons?
   - collapse server
-- show data for other time periods
-  - time period control
-  - server specific time range
-  - time window range graph
+- range?
 - yesterday realtime
   - 1fps
   - include death info
@@ -20,6 +17,7 @@
   - cause of death
 - different map types (death)
 - handle no server
+- time window range graph
 - better setting of default server
 - paging
 - grouped heat map

@@ -41,8 +41,6 @@ type alias Model =
   , sidebarOpen : Bool
   , sidebarMode : View.Mode
   , searchTerm : String
-  , minTimeRange : Posix
-  , maxTimeRange : Posix
   , coarseEndTime : Posix
   , endTime : Posix
   , selectedServer : Maybe Server
@@ -82,10 +80,8 @@ init config location key =
       , sidebarOpen = True
       , sidebarMode = View.DataFilter
       , searchTerm = ""
-      , minTimeRange = Time.millisToPosix ((48*12+11)*30*24*60*60*1000)
-      , maxTimeRange = Time.millisToPosix ((50*12+3)*30*24*60*60*1000)
-      , coarseEndTime = Time.millisToPosix ((50*12 + 3)*30*24*60*60*1000)
-      , endTime = Time.millisToPosix ((50*12 + 3)*30*24*60*60*1000)
+      , coarseEndTime = Time.millisToPosix 0
+      , endTime = Time.millisToPosix 0
       , selectedServer = Nothing
       , servers = NotRequested
       , monumentsFetched = Set.empty
@@ -148,7 +144,12 @@ update msg model =
       , Cmd.none
       )
     UI (View.SelectServer server) ->
-      ( {model | selectedServer = Just server, dataLayer = Loading}
+      ( { model
+        | selectedServer = Just server
+        , coarseEndTime = inRange server.minTime model.coarseEndTime server.maxTime
+        , endTime = inRange server.minTime model.endTime server.maxTime
+        , dataLayer = Loading
+        }
       , fetchDataLayer model.apiUrl server.id model.endTime
       )
     UI (View.SelectShow) ->
@@ -205,13 +206,20 @@ update msg model =
       let _ = Debug.log "fetch lives failed" error in
       ({model | lives = Failed error}, Cmd.none)
     ServerList (Ok servers) ->
+      let
+        bs2 = servers |> List.reverse |> List.head
+        endTime = bs2 |> Maybe.map .maxTime |> Maybe.withDefault (Time.millisToPosix 0)
+        id = bs2 |> Maybe.map .id |> Maybe.withDefault 17
+      in
       ( { model
         | servers = servers |> Data
-        , selectedServer = servers |> List.reverse |> List.head
+        , selectedServer = bs2
+        , coarseEndTime = endTime
+        , endTime = endTime
         }
       , Cmd.batch
         [ Leaflet.serverList servers
-        , fetchMonuments model.cachedApiUrl 17
+        , fetchMonuments model.cachedApiUrl id
         ]
       )
     ServerList (Err error) ->
@@ -387,3 +395,12 @@ extractHashArgument key location =
   { location | path = "", query = location.fragment }
     |> Url.Parser.parse (Url.Parser.query (Url.Parser.Query.int key))
     |> Maybe.withDefault Nothing
+
+inRange : Posix -> Posix -> Posix -> Posix
+inRange mint t maxt =
+  let
+    mini = Time.posixToMillis mint
+    i = Time.posixToMillis t
+    maxi = Time.posixToMillis maxt
+  in
+    Time.millisToPosix (min maxi (max mini i))
