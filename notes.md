@@ -3,6 +3,9 @@
   - compact icons?
   - collapse server
 - yesterday realtime
+  - url parameter
+  - too much hardcoded
+  - actual UI location?
   - center view on main area?
   - include death info
   - interpolate to death time and location
