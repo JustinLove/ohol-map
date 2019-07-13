@@ -26,6 +26,3 @@
   - webworker
 
 ## release
-- upload style.css
-- update server
-- expire server response
