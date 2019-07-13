@@ -50,11 +50,12 @@ monumentList serverId monuments =
     ]
     |> leafletCommand
 
-dataLayer : Encode.Value -> Cmd msg
-dataLayer lives =
+dataLayer : Encode.Value -> Int -> Cmd msg
+dataLayer lives gameSecondsPerFrame =
   Encode.object
     [ ("kind", Encode.string "dataLayer")
     , ("lives", lives)
+    , ("game_seconds_per_frame", Encode.int gameSecondsPerFrame)
     ]
     |> leafletCommand
 

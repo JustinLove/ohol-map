@@ -3,10 +3,12 @@
   - compact icons?
   - collapse server
 - yesterday realtime
-  - 1fps
+  - start at current time
   - include death info
   - interpolate to death time and location
   - interpolate to child birth locations
+- display of seconds/hours in larger units
+- logatrimthim slider scale
 - use other icons
 - bookmarking layers
 - different coloration methods

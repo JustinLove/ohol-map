@@ -44,6 +44,7 @@ type alias Model =
   , coarseEndTime : Posix
   , endTime : Posix
   , hoursBefore : Int
+  , gameSecondsPerFrame : Int
   , selectedServer : Maybe Server
   , servers : RemoteData (List Server)
   , monumentsFetched : Set Int
@@ -84,6 +85,7 @@ init config location key =
       , coarseEndTime = Time.millisToPosix 0
       , endTime = Time.millisToPosix 0
       , hoursBefore = 48
+      , gameSecondsPerFrame = 60
       , selectedServer = Nothing
       , servers = NotRequested
       , monumentsFetched = Set.empty
@@ -134,6 +136,12 @@ update msg model =
     UI (View.HoursBefore hours) ->
       ( { model
         | hoursBefore = hours
+        }
+      , Cmd.none
+      )
+    UI (View.GameSecondsPerFrame seconds) ->
+      ( { model
+        | gameSecondsPerFrame = seconds
         }
       , Cmd.none
       )
@@ -243,7 +251,7 @@ update msg model =
       (model, Cmd.none)
     DataLayer (Ok lives) ->
       ( {model | dataLayer = Data True}
-      , Leaflet.dataLayer lives
+      , Leaflet.dataLayer lives model.gameSecondsPerFrame
       )
     DataLayer (Err error) ->
       let _ = Debug.log "fetch data failed" error in

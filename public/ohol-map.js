@@ -218,8 +218,9 @@
     position: 'bottomleft',
     autoPlay: false,
     minSpeed: 1,
-    speedStep: 0.5,
+    speedStep: 1,
     maxSpeed: 30,
+    timeSteps: 1,
     timeSliderDragUpdate: true
   };
 
@@ -238,7 +239,7 @@
 
   var resultPoints = new L.GridLayer.PointOverlay().addTo(overlays['Search'])
 
-  var setDataLayers = function(data) {
+  var setDataLayers = function(data, game_seconds_per_frame) {
     var min = null;
     var max = null;
     data.forEach(function(point) {
@@ -254,10 +255,11 @@
       }
     })
     var times = []
-    for (var t = min;t < max;t += 60) {
+    for (var t = min;t < max;t += 1) {
       times.push(t * 1000)
     }
     timeDimension.setAvailableTimes(times, 'replace')
+    timeDimension.setCurrentTime(times[0])
     L.Util.setOptions(animOverlay, {
       data: data,
       min: min,
@@ -270,6 +272,8 @@
       max: max,
     })
     pointOverlay.redraw()
+    player.stop()
+    player.start(game_seconds_per_frame)
   }
 
   animOverlay.on('add', function(ev) {
@@ -437,7 +441,7 @@
           }
           break;
         case 'dataLayer':
-          setDataLayers(message.lives.data)
+          setDataLayers(message.lives.data, message.game_seconds_per_frame)
           if( !map.hasLayer(pointOverlay) && !map.hasLayer(animOverlay) ) {
             map.addLayer(pointOverlay)
           }

@@ -29,6 +29,7 @@ type Msg
   | CoarseEndTime Posix
   | EndTime Posix
   | HoursBefore Int
+  | GameSecondsPerFrame Int
   | SelectMatchingLife Life
   | SelectLineage Life
   | SelectMode Mode
@@ -389,6 +390,20 @@ dateRangeSelect model =
       , min = 1
       , max = 7*24
       , value = model.hoursBefore |> toFloat
+      , thumb = Input.defaultThumb
+      , step = Just 1
+      }
+    , Input.slider
+      [ Background.color control ]
+      { onChange = round >> GameSecondsPerFrame
+      , label = Input.labelAbove [] <|
+        row []
+          [ model.gameSecondsPerFrame |> String.fromInt |> text
+          , text " Game Seconds/Frame"
+          ]
+      , min = 1
+      , max = 60*60
+      , value = model.gameSecondsPerFrame |> toFloat
       , thumb = Input.defaultThumb
       , step = Just 1
       }
