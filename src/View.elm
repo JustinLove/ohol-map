@@ -1,4 +1,4 @@
-module View exposing (Msg(..), Mode(..), RemoteData(..), Life, view, document)
+module View exposing (Msg(..), Mode(..), EndTimeMode(..), RemoteData(..), Life, view, document)
 
 import OHOLData as Data exposing (Server)
 
@@ -26,6 +26,7 @@ type Msg
   = None
   | Search String
   | Typing String
+  | SelectEndTimeMode EndTimeMode
   | CoarseEndTime Posix
   | EndTime Posix
   | HoursBefore Int
@@ -39,6 +40,10 @@ type Msg
 type Mode
   = LifeSearch
   | DataFilter
+
+type EndTimeMode
+  = ServerRange
+  | FromNow
 
 type RemoteData a
   = NotRequested
@@ -339,46 +344,7 @@ dataButtonDisabled =
 --dateRangeSelect : Model -> Element Msg
 dateRangeSelect model =
   column [ width fill, spacing 2 ]
-    [ Input.slider
-      [ Background.color control ]
-      { onChange = round
-        >> ((*) 1000)
-        >> Time.millisToPosix
-        >> CoarseEndTime
-      , label = Input.labelAbove [] <|
-        row []
-          [ text "Coarse End "
-          , ( model.coarseEndTime
-              |> date model.zone
-              |> text
-            )
-          ]
-      , min = serverMinTime model.servers model.selectedServer
-      , max = serverMaxTime model.servers model.selectedServer
-      , value = model.coarseEndTime |> posixToFloat 0
-      , thumb = Input.defaultThumb
-      , step = Just 1
-      }
-    , Input.slider
-      [ Background.color control ]
-      { onChange = round
-        >> ((*) 1000)
-        >> Time.millisToPosix
-        >> EndTime
-      , label = Input.labelAbove [] <|
-        row []
-          [ text "Fine End "
-          , ( model.endTime
-              |> date model.zone
-              |> text
-            )
-          ]
-      , min = model.coarseEndTime |> posixToFloat -7
-      , max = model.coarseEndTime |> posixToFloat 7
-      , value = model.endTime |> posixToFloat 0
-      , thumb = Input.defaultThumb
-      , step = Just 1
-      }
+    [ endTimeSelect model
     , Input.slider
       [ Background.color control ]
       { onChange = round >> HoursBefore
@@ -408,6 +374,73 @@ dateRangeSelect model =
       , step = Just 1
       }
     ]
+
+
+
+--endTimeSelect : Model -> Element Msg
+endTimeSelect model =
+  column
+    [ width fill
+    , spacing 2
+    , padding 4
+    , Border.width 1
+    , Border.color divider
+    ]
+    [ Input.radioRow [ spacing 10 ]
+        { onChange = SelectEndTimeMode
+        , selected = Just model.endTimeMode
+        , label = Input.labelLeft [ paddingXY 10 0 ] (text "End Time")
+        , options = 
+          [ Input.option ServerRange (text "Server")
+          , Input.option FromNow (text "Now")
+          ]
+        }
+    , case model.endTimeMode of
+      FromNow -> none
+      ServerRange ->
+        column [ width fill, spacing 2 ]
+          [ Input.slider
+            [ Background.color control ]
+            { onChange = round
+              >> ((*) 1000)
+              >> Time.millisToPosix
+              >> CoarseEndTime
+            , label = Input.labelAbove [] <|
+              row []
+                [ text "Coarse End "
+                , ( model.coarseEndTime
+                    |> date model.zone
+                    |> text
+                  )
+                ]
+            , min = serverMinTime model.servers model.selectedServer
+            , max = serverMaxTime model.servers model.selectedServer
+            , value = model.coarseEndTime |> posixToFloat 0
+            , thumb = Input.defaultThumb
+            , step = Just 1
+            }
+          , Input.slider
+            [ Background.color control ]
+            { onChange = round
+              >> ((*) 1000)
+              >> Time.millisToPosix
+              >> EndTime
+            , label = Input.labelAbove [] <|
+              row []
+                [ text "Fine End "
+                , ( model.endTime
+                    |> date model.zone
+                    |> text
+                  )
+                ]
+            , min = model.coarseEndTime |> posixToFloat -7
+            , max = model.coarseEndTime |> posixToFloat 7
+            , value = model.endTime |> posixToFloat 0
+            , thumb = Input.defaultThumb
+            , step = Just 1
+            }
+          ]
+        ]
 
 serverMinTime : RemoteData (List Server) -> Maybe Server -> Float
 serverMinTime =

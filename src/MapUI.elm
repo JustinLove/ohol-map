@@ -4,7 +4,7 @@ import Leaflet exposing (Point)
 import OHOLData as Data exposing (Server)
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
-import View exposing (RemoteData(..), Life)
+import View exposing (RemoteData(..), Life, EndTimeMode(..))
 
 import Browser
 --import Browser.Dom
@@ -41,6 +41,7 @@ type alias Model =
   , sidebarOpen : Bool
   , sidebarMode : View.Mode
   , searchTerm : String
+  , endTimeMode : EndTimeMode
   , coarseEndTime : Posix
   , endTime : Posix
   , hoursBefore : Int
@@ -82,6 +83,7 @@ init config location key =
       , sidebarOpen = True
       , sidebarMode = View.DataFilter
       , searchTerm = ""
+      , endTimeMode = ServerRange
       , coarseEndTime = Time.millisToPosix 0
       , endTime = Time.millisToPosix 0
       , hoursBefore = 48
@@ -118,6 +120,10 @@ update msg model =
       ( { model
         | searchTerm = term
         }
+      , Cmd.none
+      )
+    UI (View.SelectEndTimeMode mode) ->
+      ( { model | endTimeMode = mode }
       , Cmd.none
       )
     UI (View.CoarseEndTime time) ->
