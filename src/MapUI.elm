@@ -26,6 +26,7 @@ type Msg
   | ServerList (Result Http.Error (List Data.Server))
   | MonumentList Int (Result Http.Error Json.Decode.Value)
   | DataLayer (Result Http.Error Json.Decode.Value)
+  | CurrentTime Posix
   | CurrentZone Time.Zone
   | CurrentUrl Url
   | Navigate Browser.UrlRequest
@@ -166,20 +167,18 @@ update msg model =
       , Cmd.none
       )
     UI (View.SelectServer server) ->
-      ( { model
-        | selectedServer = Just server
-        , coarseEndTime = inRange server.minTime model.coarseEndTime server.maxTime
-        , endTime = inRange server.minTime model.endTime server.maxTime
-        , dataLayer = Loading
-        }
-      , fetchDataLayer model.apiUrl server.id model.endTime model.hoursBefore
-      )
+      let
+        m2 = { model
+          | selectedServer = Just server
+          , coarseEndTime = inRange server.minTime model.coarseEndTime server.maxTime
+          , endTime = inRange server.minTime model.endTime server.maxTime
+          , dataLayer = Loading
+          }
+      in
+      ( m2, fetchDataForTime m2 )
     UI (View.SelectShow) ->
       ( {model | dataLayer = Loading}
-      , fetchDataLayer model.apiUrl
-          (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
-          model.endTime
-          model.hoursBefore
+      , fetchDataForTime model
       )
     Event (Ok (Leaflet.MoveEnd point)) ->
       ( {model|center = point} 
@@ -262,6 +261,13 @@ update msg model =
     DataLayer (Err error) ->
       let _ = Debug.log "fetch data failed" error in
       ({model | dataLayer = Failed error}, Cmd.none)
+    CurrentTime time ->
+      ( model
+      , fetchDataLayer model.apiUrl
+          (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
+          time
+          model.hoursBefore
+      )
     CurrentZone zone ->
       ({model | zone = zone}, Cmd.none)
     CurrentUrl location ->
@@ -309,6 +315,17 @@ setView point model =
     ({model|center = point}, Leaflet.setView point)
   else
     (model, Cmd.none)
+
+fetchDataForTime : Model -> Cmd Msg
+fetchDataForTime model =
+  case model.endTimeMode of
+    ServerRange ->
+      fetchDataLayer model.apiUrl
+        (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
+        model.endTime
+        model.hoursBefore
+    FromNow ->
+      Task.perform CurrentTime Time.now
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
