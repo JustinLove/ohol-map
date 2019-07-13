@@ -36,6 +36,7 @@ type Msg
   | SelectMode Mode
   | SelectServer Server
   | SelectShow
+  | SelectYesterday
 
 type Mode
   = LifeSearch
@@ -299,7 +300,19 @@ dataFilter model =
       , height fill
       , spacing 10
       ]
-      [ dataAction model
+      [ el [ width fill, padding 5 ] <|
+        Input.button
+          [ width fill
+          , padding 5
+          , Border.color divider
+          , Border.width 1
+          , Border.rounded 6
+          , Background.color control
+          ]
+          { onPress = Just SelectYesterday
+          , label = el [ centerX ] <| text "Yesterday"
+          }
+      , dataAction model
       , dateRangeSelect model
       , serverSelect model.servers model.selectedServer
       ]

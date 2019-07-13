@@ -26,7 +26,8 @@ type Msg
   | ServerList (Result Http.Error (List Data.Server))
   | MonumentList Int (Result Http.Error Json.Decode.Value)
   | DataLayer (Result Http.Error Json.Decode.Value)
-  | CurrentTime Posix
+  | FetchUpTo Posix
+  | PlayRelativeTo Posix
   | CurrentZone Time.Zone
   | CurrentUrl Url
   | Navigate Browser.UrlRequest
@@ -180,6 +181,15 @@ update msg model =
       ( {model | dataLayer = Loading}
       , fetchDataForTime model
       )
+    UI (View.SelectYesterday) ->
+      ( { model
+        | dataLayer = Loading
+        , endTimeMode = FromNow
+        , hoursBefore = 24
+        , gameSecondsPerFrame = 1
+        }
+      , fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
+      )
     Event (Ok (Leaflet.MoveEnd point)) ->
       ( {model|center = point} 
       , Navigation.replaceUrl model.navigationKey <|
@@ -256,17 +266,31 @@ update msg model =
       (model, Cmd.none)
     DataLayer (Ok lives) ->
       ( {model | dataLayer = Data True}
-      , Leaflet.dataLayer lives model.gameSecondsPerFrame
+      , Cmd.batch
+        [ Leaflet.dataLayer lives
+        , case model.endTimeMode of
+          ServerRange -> Cmd.none
+          FromNow -> Task.perform PlayRelativeTo Time.now
+        ]
       )
     DataLayer (Err error) ->
       let _ = Debug.log "fetch data failed" error in
       ({model | dataLayer = Failed error}, Cmd.none)
-    CurrentTime time ->
+    FetchUpTo time ->
       ( model
       , fetchDataLayer model.apiUrl
           (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
           time
           model.hoursBefore
+      )
+    PlayRelativeTo time ->
+      ( model
+      , Leaflet.beginPlayback model.gameSecondsPerFrame
+        (time
+          |> Time.posixToMillis
+          |> (\x -> x - model.hoursBefore * 60 * 60 * 1000)
+          |> Time.millisToPosix
+        )
       )
     CurrentZone zone ->
       ({model | zone = zone}, Cmd.none)
@@ -325,7 +349,7 @@ fetchDataForTime model =
         model.endTime
         model.hoursBefore
     FromNow ->
-      Task.perform CurrentTime Time.now
+      Task.perform FetchUpTo Time.now
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -401,7 +425,7 @@ fetchRecentLives baseUrl serverId =
   Http.get
     { url = Url.crossOrigin baseUrl ["lives"]
       [ Url.int "server_id" serverId
-      , Url.string "period" "P2D"
+
       ]
     , expect = Http.expectJson DataLayer Json.Decode.value
     }

@@ -3,7 +3,7 @@
   - compact icons?
   - collapse server
 - yesterday realtime
-  - start at current time
+  - center view on main area?
   - include death info
   - interpolate to death time and location
   - interpolate to child birth locations

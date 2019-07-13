@@ -5,6 +5,7 @@ port module Leaflet exposing
   , serverList
   , monumentList
   , dataLayer
+  , beginPlayback
   , displayResults
   , focus
   , searchOverlay
@@ -16,6 +17,7 @@ import OHOLData.Encode as Encode
 
 import Json.Decode as Decode
 import Json.Encode as Encode
+import Time exposing (Posix)
 
 type alias Point =
   { x : Int
@@ -50,11 +52,19 @@ monumentList serverId monuments =
     ]
     |> leafletCommand
 
-dataLayer : Encode.Value -> Int -> Cmd msg
-dataLayer lives gameSecondsPerFrame =
+dataLayer : Encode.Value -> Cmd msg
+dataLayer lives =
   Encode.object
     [ ("kind", Encode.string "dataLayer")
     , ("lives", lives)
+    ]
+    |> leafletCommand
+
+beginPlayback : Int -> Posix -> Cmd msg
+beginPlayback gameSecondsPerFrame startTime =
+  Encode.object
+    [ ("kind", Encode.string "beginPlayback")
+    , ("start_time", Encode.int (Time.posixToMillis startTime))
     , ("game_seconds_per_frame", Encode.int gameSecondsPerFrame)
     ]
     |> leafletCommand
