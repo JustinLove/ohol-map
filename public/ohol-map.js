@@ -449,6 +449,7 @@
             map.removeLayer(pointOverlay)
           }
           timeDimension.setCurrentTime(message.start_time)
+          player.setTransitionTime(1000 / (message.frame_rate || 1))
           player.stop()
           player.start(message.game_seconds_per_frame)
           break;

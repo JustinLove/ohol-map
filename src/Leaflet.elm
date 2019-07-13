@@ -60,12 +60,13 @@ dataLayer lives =
     ]
     |> leafletCommand
 
-beginPlayback : Int -> Posix -> Cmd msg
-beginPlayback gameSecondsPerFrame startTime =
+beginPlayback : Int -> Int -> Posix -> Cmd msg
+beginPlayback gameSecondsPerFrame frameRate startTime =
   Encode.object
     [ ("kind", Encode.string "beginPlayback")
     , ("start_time", Encode.int (Time.posixToMillis startTime))
     , ("game_seconds_per_frame", Encode.int gameSecondsPerFrame)
+    , ("frame_rate", Encode.int frameRate)
     ]
     |> leafletCommand
 

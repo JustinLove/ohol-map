@@ -48,6 +48,7 @@ type alias Model =
   , endTime : Posix
   , hoursBefore : Int
   , gameSecondsPerFrame : Int
+  , frameRate : Int
   , selectedServer : Maybe Server
   , servers : RemoteData (List Server)
   , monumentsFetched : Set Int
@@ -90,6 +91,7 @@ init config location key =
       , endTime = Time.millisToPosix 0
       , hoursBefore = 48
       , gameSecondsPerFrame = 60
+      , frameRate = 10
       , selectedServer = Nothing
       , servers = NotRequested
       , monumentsFetched = Set.empty
@@ -187,6 +189,7 @@ update msg model =
         , endTimeMode = FromNow
         , hoursBefore = 24
         , gameSecondsPerFrame = 1
+        , frameRate = 1
         }
       , fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
       )
@@ -285,7 +288,7 @@ update msg model =
       )
     PlayRelativeTo time ->
       ( model
-      , Leaflet.beginPlayback model.gameSecondsPerFrame
+      , Leaflet.beginPlayback model.gameSecondsPerFrame model.frameRate
         (time
           |> Time.posixToMillis
           |> (\x -> x - model.hoursBefore * 60 * 60 * 1000)
