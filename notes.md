@@ -3,6 +3,7 @@
   - compact icons?
   - collapse server
 - yesterday realtime
+  - rename data layer
   - url parameter
   - too much hardcoded
   - actual UI location?
