@@ -14,6 +14,7 @@ import Json.Decode
 import Set exposing(Set)
 import Task
 import Time exposing (Posix)
+import Tuple
 import Url exposing (Url)
 import Url.Builder as Url
 import Url.Parser
@@ -37,6 +38,7 @@ type alias Model =
   , navigationKey : Navigation.Key
   , zone : Time.Zone
   , center : Point
+  , layersVisible : Set String
   , cachedApiUrl : String
   , apiUrl : String
   , lineageUrl: String
@@ -80,6 +82,7 @@ init config location key =
       , navigationKey = key
       , zone = Time.utc
       , center = Point 0 0 17
+      , layersVisible = Set.empty
       , cachedApiUrl = config.cachedApiUrl
       , apiUrl = config.apiUrl
       , lineageUrl = config.lineageUrl
@@ -199,18 +202,18 @@ update msg model =
         centerUrl model.location point
       )
     Event (Ok (Leaflet.OverlayAdd "Life Data" _)) ->
-      requireRecentLives model
+      requireRecentLives {model | layersVisible = Set.insert "Life Data" model.layersVisible }
     Event (Ok (Leaflet.OverlayAdd "Life Data Anim" _)) ->
-      requireRecentLives model
+      requireRecentLives {model | layersVisible = Set.insert "Life Data Anim" model.layersVisible }
     Event (Ok (Leaflet.OverlayAdd name (Just serverId))) ->
       if Set.member serverId model.monumentsFetched then
-        (model, Cmd.none)
+        ({model | layersVisible = Set.insert name model.layersVisible }, Cmd.none)
       else
-        (model, fetchMonuments model.cachedApiUrl serverId)
-    Event (Ok (Leaflet.OverlayAdd _ _)) ->
-      (model, Cmd.none)
+        ({model | layersVisible = Set.insert name model.layersVisible }, fetchMonuments model.cachedApiUrl serverId)
+    Event (Ok (Leaflet.OverlayAdd name _)) ->
+      ({model | layersVisible = Set.insert name model.layersVisible }, Cmd.none)
     Event (Ok (Leaflet.OverlayRemove name)) ->
-      (model, Cmd.none)
+      ({model | layersVisible = Set.remove name model.layersVisible }, Cmd.none)
     Event (Ok (Leaflet.SelectPoints lives)) ->
       ( { model
         | lives = lives |> List.map myLife |> Data
@@ -272,9 +275,12 @@ update msg model =
       ( {model | dataLayer = Data True}
       , Cmd.batch
         [ Leaflet.dataLayer lives
-        , case model.endTimeMode of
-          ServerRange -> Cmd.none
-          FromNow -> Task.perform PlayRelativeTo Time.now
+        , if Set.member "Life Data Anim" model.layersVisible then
+            case model.endTimeMode of
+              ServerRange -> update (PlayRelativeTo model.endTime) model |> Tuple.second
+              FromNow -> Task.perform PlayRelativeTo Time.now
+          else
+            Cmd.none
         ]
       )
     DataLayer (Err error) ->
