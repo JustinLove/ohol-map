@@ -41,8 +41,8 @@
 
   var overlays = {
     graticule: null,
-    "48h Births": null,
-    "48h Births Anim": null,
+    "Life Data": null,
+    "Life Data Anim": null,
   }
 
   var searchOverlay = L.layerGroup([])
@@ -227,7 +227,7 @@
   var timeDimensionControl = new L.Control.TimeDimension(timeDimensionControlOptions);
 
   var pointOverlay = new L.GridLayer.PointOverlay({className: 'interactive'})
-  overlays["48h Births"] = pointOverlay
+  overlays["Life Data"] = pointOverlay
 
   var animOverlay = new L.GridLayer.PointOverlay({
     attribution: '<a href="https://github.com/socib/Leaflet.TimeDimension">socib/Leaflet.TimeDimension</a>',
@@ -235,7 +235,7 @@
     timeDimension: timeDimension,
   })
   timeDimension.on("timeload", animOverlay.updateTiles, animOverlay)
-  overlays["48h Births Anim"] = animOverlay
+  overlays["Life Data Anim"] = animOverlay
 
   var resultPoints = new L.GridLayer.PointOverlay().addTo(searchOverlay)
 

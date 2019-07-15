@@ -198,9 +198,9 @@ update msg model =
       , Navigation.replaceUrl model.navigationKey <|
         centerUrl model.location point
       )
-    Event (Ok (Leaflet.OverlayAdd "48h Births" _)) ->
+    Event (Ok (Leaflet.OverlayAdd "Life Data" _)) ->
       requireRecentLives model
-    Event (Ok (Leaflet.OverlayAdd "48h Births Anim" _)) ->
+    Event (Ok (Leaflet.OverlayAdd "Life Data Anim" _)) ->
       requireRecentLives model
     Event (Ok (Leaflet.OverlayAdd name (Just serverId))) ->
       if Set.member serverId model.monumentsFetched then

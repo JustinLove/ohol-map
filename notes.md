@@ -3,7 +3,6 @@
   - compact icons?
   - collapse server
 - yesterday realtime
-  - rename data layer
   - Only fetch reasonable amount of data for historical
   - url parameter
   - too much hardcoded
