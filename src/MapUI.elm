@@ -167,7 +167,7 @@ update msg model =
       )
     UI (View.SelectMode mode) ->
       ( { model | sidebarMode = mode }
-      , Cmd.none
+      , Leaflet.searchOverlay (mode == View.LifeSearch)
       )
     UI (View.SelectServer server) ->
       let
@@ -198,8 +198,6 @@ update msg model =
       , Navigation.replaceUrl model.navigationKey <|
         centerUrl model.location point
       )
-    Event (Ok (Leaflet.OverlayAdd "Search" _)) ->
-      ({model | sidebarOpen = True}, Cmd.none)
     Event (Ok (Leaflet.OverlayAdd "48h Births" _)) ->
       requireRecentLives model
     Event (Ok (Leaflet.OverlayAdd "48h Births Anim" _)) ->
@@ -211,14 +209,14 @@ update msg model =
         (model, fetchMonuments model.cachedApiUrl serverId)
     Event (Ok (Leaflet.OverlayAdd _ _)) ->
       (model, Cmd.none)
-    Event (Ok (Leaflet.OverlayRemove "Search")) ->
-      ({model | sidebarOpen = False}, Cmd.none)
     Event (Ok (Leaflet.OverlayRemove name)) ->
       (model, Cmd.none)
     Event (Ok (Leaflet.SelectPoints lives)) ->
       ( { model
         | lives = lives |> List.map myLife |> Data
         , sidebarOpen = True
+        , sidebarMode = View.LifeSearch
+        , searchTerm = ""
         }
       , Cmd.batch
         [ Leaflet.displayResults lives
@@ -226,7 +224,10 @@ update msg model =
         ]
       )
     Event (Ok (Leaflet.SidebarToggle)) ->
-      ({model | sidebarOpen = not model.sidebarOpen}, Cmd.none)
+      ( { model | sidebarOpen = not model.sidebarOpen }
+      , Leaflet.searchOverlay
+        (model.sidebarOpen == False && model.sidebarMode == View.LifeSearch)
+      )
     Event (Err err) ->
       let _ = Debug.log "error" err in
       (model, Cmd.none)

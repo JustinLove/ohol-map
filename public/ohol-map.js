@@ -41,11 +41,11 @@
 
   var overlays = {
     graticule: null,
-    Search: L.layerGroup([]),
     "48h Births": null,
     "48h Births Anim": null,
   }
 
+  var searchOverlay = L.layerGroup([])
   var focusMarker = null;
 
   var updateMonumentLayer = function(layer, data) {
@@ -237,7 +237,7 @@
   timeDimension.on("timeload", animOverlay.updateTiles, animOverlay)
   overlays["48h Births Anim"] = animOverlay
 
-  var resultPoints = new L.GridLayer.PointOverlay().addTo(overlays['Search'])
+  var resultPoints = new L.GridLayer.PointOverlay().addTo(searchOverlay)
 
   var setDataLayers = function(data) {
     var min = null;
@@ -383,7 +383,6 @@
     })
 
     base['Default'].addTo(map)
-    //overlays['Search'].addTo(map)
     //pointOverlay.addTo(map)
 
     // helper to share the timeDimension object between all layers
@@ -467,15 +466,15 @@
           }
           focusMarker = L.marker([life.birth_y, life.birth_x])
             .bindPopup(life.name)
-            .addTo(overlays['Search'])
+            .addTo(searchOverlay)
             .openPopup()
           map.setView([life.birth_y, life.birth_x], 24)
           break
         case 'searchOverlay':
           if (message.status) {
-            overlays['Search'].addTo(map)
+            searchOverlay.addTo(map)
           } else {
-            overlays['Search'].remove()
+            searchOverlay.remove()
           }
           break
       }
