@@ -443,10 +443,6 @@
           }
           break;
         case 'beginPlayback':
-          if( !map.hasLayer(animOverlay) ) {
-            map.addLayer(animOverlay)
-            map.removeLayer(pointOverlay)
-          }
           timeDimension.setCurrentTime(message.start_time)
           player.setTransitionTime(1000 / (message.frame_rate || 1))
           player.stop()
@@ -475,6 +471,14 @@
             searchOverlay.addTo(map)
           } else {
             searchOverlay.remove()
+          }
+          break
+        case 'animOverlay':
+          if (message.status) {
+            animOverlay.addTo(map)
+            map.removeLayer(pointOverlay)
+          } else {
+            animOverlay.remove()
           }
           break
       }

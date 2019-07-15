@@ -194,7 +194,10 @@ update msg model =
         , gameSecondsPerFrame = 1
         , frameRate = 1
         }
-      , fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
+      , Cmd.batch
+        [ fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
+        , Leaflet.animOverlay True
+        ]
       )
     Event (Ok (Leaflet.MoveEnd point)) ->
       ( {model|center = point} 
@@ -435,7 +438,7 @@ fetchRecentLives baseUrl serverId =
   Http.get
     { url = Url.crossOrigin baseUrl ["lives"]
       [ Url.int "server_id" serverId
-
+      , Url.string "period" "P2D"
       ]
     , expect = Http.expectJson DataLayer Json.Decode.value
     }

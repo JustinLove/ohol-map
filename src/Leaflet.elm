@@ -9,6 +9,7 @@ port module Leaflet exposing
   , displayResults
   , focus
   , searchOverlay
+  , animOverlay
   , event)
 
 import OHOLData as Data
@@ -94,6 +95,13 @@ searchOverlay status =
     ]
     |> leafletCommand
 
+animOverlay : Bool -> Cmd msg
+animOverlay status =
+  Encode.object
+    [ ("kind", Encode.string "animOverlay")
+    , ("status", Encode.bool status)
+    ]
+    |> leafletCommand
 
 type Event
   = MoveEnd Point
