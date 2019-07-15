@@ -372,20 +372,23 @@ dateRangeSelect model =
       , thumb = Input.defaultThumb
       , step = Just 1
       }
-    , Input.slider
-      [ Background.color control ]
-      { onChange = round >> GameSecondsPerFrame
-      , label = Input.labelAbove [] <|
-        row []
-          [ model.gameSecondsPerFrame |> String.fromInt |> text
-          , text " Game Seconds/Frame"
-          ]
-      , min = 1
-      , max = 60*60
-      , value = model.gameSecondsPerFrame |> toFloat
-      , thumb = Input.defaultThumb
-      , step = Just 1
-      }
+    , if model.dataAnimated then
+        Input.slider
+          [ Background.color control ]
+          { onChange = round >> GameSecondsPerFrame
+          , label = Input.labelAbove [] <|
+            row []
+              [ model.gameSecondsPerFrame |> String.fromInt |> text
+              , text " Game Seconds/Frame"
+              ]
+          , min = 1
+          , max = 60*60
+          , value = model.gameSecondsPerFrame |> toFloat
+          , thumb = Input.defaultThumb
+          , step = Just 1
+          }
+      else
+        none
     ]
 
 
