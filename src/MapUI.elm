@@ -38,7 +38,6 @@ type alias Model =
   , navigationKey : Navigation.Key
   , zone : Time.Zone
   , center : Point
-  , layersVisible : Set String
   , cachedApiUrl : String
   , apiUrl : String
   , lineageUrl: String
@@ -49,6 +48,7 @@ type alias Model =
   , coarseEndTime : Posix
   , endTime : Posix
   , hoursBefore : Int
+  , dataAnimated : Bool
   , gameSecondsPerFrame : Int
   , frameRate : Int
   , selectedServer : Maybe Server
@@ -82,7 +82,6 @@ init config location key =
       , navigationKey = key
       , zone = Time.utc
       , center = Point 0 0 17
-      , layersVisible = Set.empty
       , cachedApiUrl = config.cachedApiUrl
       , apiUrl = config.apiUrl
       , lineageUrl = config.lineageUrl
@@ -93,6 +92,7 @@ init config location key =
       , coarseEndTime = Time.millisToPosix 0
       , endTime = Time.millisToPosix 0
       , hoursBefore = 48
+      , dataAnimated = False
       , gameSecondsPerFrame = 60
       , frameRate = 10
       , selectedServer = Nothing
@@ -205,18 +205,20 @@ update msg model =
         centerUrl model.location point
       )
     Event (Ok (Leaflet.OverlayAdd "Life Data" _)) ->
-      requireRecentLives {model | layersVisible = Set.insert "Life Data" model.layersVisible }
+      requireRecentLives model
     Event (Ok (Leaflet.OverlayAdd "Life Data Anim" _)) ->
-      requireRecentLives {model | layersVisible = Set.insert "Life Data Anim" model.layersVisible }
+      requireRecentLives {model | dataAnimated = True }
     Event (Ok (Leaflet.OverlayAdd name (Just serverId))) ->
       if Set.member serverId model.monumentsFetched then
-        ({model | layersVisible = Set.insert name model.layersVisible }, Cmd.none)
+        (model, Cmd.none)
       else
-        ({model | layersVisible = Set.insert name model.layersVisible }, fetchMonuments model.cachedApiUrl serverId)
+        (model, fetchMonuments model.cachedApiUrl serverId)
     Event (Ok (Leaflet.OverlayAdd name _)) ->
-      ({model | layersVisible = Set.insert name model.layersVisible }, Cmd.none)
+      (model, Cmd.none)
+    Event (Ok (Leaflet.OverlayRemove "Life Data Anim")) ->
+      ({ model | dataAnimated = False }, Cmd.none)
     Event (Ok (Leaflet.OverlayRemove name)) ->
-      ({model | layersVisible = Set.remove name model.layersVisible }, Cmd.none)
+      (model, Cmd.none)
     Event (Ok (Leaflet.SelectPoints lives)) ->
       ( { model
         | lives = lives |> List.map myLife |> Data
@@ -278,7 +280,7 @@ update msg model =
       ( {model | dataLayer = Data True}
       , Cmd.batch
         [ Leaflet.dataLayer lives
-        , if Set.member "Life Data Anim" model.layersVisible then
+        , if model.dataAnimated then
             case model.endTimeMode of
               ServerRange -> update (PlayRelativeTo model.endTime) model |> Tuple.second
               FromNow -> Task.perform PlayRelativeTo Time.now
