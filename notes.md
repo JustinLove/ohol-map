@@ -2,16 +2,10 @@
   - deselect server
   - collapse server
 - yesterday realtime
-  - Only fetch reasonable amount of data for historical
   - url parameter
   - too much hardcoded
   - actual UI location?
-  - center view on main area?
-  - include death info
-  - interpolate to death time and location
-  - interpolate to child birth locations
 - display of seconds/hours in larger units
-- logatrimthim slider scale
 - use other icons
 - bookmarking layers
 - different coloration methods
@@ -19,8 +13,15 @@
   - time
   - account
   - cause of death
+- historical replay
+  - Only fetch reasonable amount of data for historical
+  - center view on main area?
+  - include death info
+  - interpolate to death time and location
+  - interpolate to child birth locations
 - different map types (death)
 - handle no server
+- more logatrimthim slider scale?
 - time window range graph
 - better setting of default server
 - paging

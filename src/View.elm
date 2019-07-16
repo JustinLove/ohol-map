@@ -358,7 +358,7 @@ dataButtonDisabled =
 dateRangeSelect model =
   column [ width fill, spacing 2 ]
     [ endTimeSelect model
-    , Input.slider
+    , logSlider
       [ Background.color control ]
       { onChange = round >> HoursBefore
       , label = Input.labelAbove [] <|
@@ -370,10 +370,10 @@ dateRangeSelect model =
       , max = 7*24
       , value = model.hoursBefore |> toFloat
       , thumb = Input.defaultThumb
-      , step = Just 1
+      , step = Nothing
       }
     , if model.dataAnimated then
-        Input.slider
+        logSlider
           [ Background.color control ]
           { onChange = round >> GameSecondsPerFrame
           , label = Input.labelAbove [] <|
@@ -385,12 +385,22 @@ dateRangeSelect model =
           , max = 60*60
           , value = model.gameSecondsPerFrame |> toFloat
           , thumb = Input.defaultThumb
-          , step = Just 1
+          , step = Nothing
           }
       else
         none
     ]
 
+logSlider attributes slider =
+  Input.slider
+    attributes
+    { slider
+    | onChange = (\x -> e^x) >> slider.onChange
+    , min = slider.min |> logBase e
+    , max = slider.max |> logBase e
+    , value = slider.value |> logBase e
+    , step = Nothing
+    }
 
 --endTimeSelect : Model -> Element Msg
 endTimeSelect model =
