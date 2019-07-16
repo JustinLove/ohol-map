@@ -35,6 +35,10 @@ img {
   background-color: #eee;
 }
 
+.server-select {
+  flex-wrap: wrap;
+}
+
 .leaflet-control-sidebar {
   background: #fff;
   background-clip: padding-box;

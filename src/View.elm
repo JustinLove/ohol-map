@@ -392,7 +392,6 @@ dateRangeSelect model =
     ]
 
 
-
 --endTimeSelect : Model -> Element Msg
 endTimeSelect model =
   column
@@ -494,7 +493,7 @@ serverSelect servers selectedServer =
     Loading -> showLoading servers
     Failed error -> showError error
     Data list ->
-      Input.radio [ padding 10, spacing 2 ]
+      Input.radioRow [ padding 10, spacing 2, htmlAttribute (Html.Attributes.class "server-select") ]
         { onChange = SelectServer
         , selected = selectedServer
         , label = Input.labelAbove [] (text "Server")
@@ -503,8 +502,8 @@ serverSelect servers selectedServer =
 
 serverItem : Server -> Input.Option Server Msg
 serverItem server =
-  Input.option server
-    (text (serverDisplayName server))
+  Input.optionWith server
+    (serverIcon server)
 
 serverDisplayName : Server -> String
 serverDisplayName {serverName} =
@@ -512,6 +511,45 @@ serverDisplayName {serverName} =
     |> String.split "."
     |> List.head
     |> Maybe.withDefault serverName
+
+serverIcon : Server -> Input.OptionState -> Element Msg
+serverIcon server =
+  server
+    |> serverDisplayName
+    |> serverIconForName
+
+serverIconForName : String -> Input.OptionState -> Element Msg
+serverIconForName name status =
+    el [ htmlAttribute (Html.Attributes.title name) ] <|
+  if String.startsWith "server" name then
+    let
+      number = String.replace "server" "" name
+    in
+      el
+        [ width (px 30)
+        , padding 3
+        , Border.width 1
+        , Border.color foreground
+        , Border.rounded 8
+        , Background.color (if status == Input.Selected then selected else background)
+        ]
+        (el [ centerX ] (text number))
+  else if String.startsWith "bigserver" name then
+    let
+      number = String.replace "bigserver" "" name
+    in
+      el
+        [ width (px 30)
+        , Border.width 4
+        , Border.color foreground
+        , Border.rounded 8
+        , Font.heavy
+        , Font.color (if status == Input.Selected then background else foreground)
+        , Background.color (if status == Input.Selected then selected else background)
+        ]
+        (el [ centerX ] (text number))
+  else
+    text name
 
 showLoading : RemoteData a -> Element Msg
 showLoading remote =
@@ -576,5 +614,6 @@ background = rgb 0.98 0.98 0.98
 highlight = rgb 0.8 0.8 0.8
 divider = rgb 0.7 0.7 0.7
 control = rgb 0.90 0.90 0.90
+selected = rgb 0.23 0.6 0.98
 
 scaled height = modular (max ((toFloat height)/30) 15) 1.25 >> round

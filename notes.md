@@ -1,6 +1,5 @@
 - show data for other servers
   - deselect server
-  - compact icons?
   - collapse server
 - yesterday realtime
   - Only fetch reasonable amount of data for historical
