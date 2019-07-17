@@ -4,7 +4,7 @@ import Leaflet exposing (Point)
 import OHOLData as Data exposing (Server)
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
-import View exposing (RemoteData(..), Life, EndTimeMode(..))
+import View exposing (RemoteData(..), Life, EndTimeMode(..), centerUrl)
 
 import Browser
 --import Browser.Dom
@@ -186,12 +186,10 @@ update msg model =
       ( {model | dataLayer = Loading}
       , fetchDataForTime model
       )
-    UI (View.SelectYesterday) ->
-      yesterday model
     Event (Ok (Leaflet.MoveEnd point)) ->
       ( {model|center = point} 
       , Navigation.replaceUrl model.navigationKey <|
-        centerUrl model.location point
+        centerUrl model.location (isYesterday model) point
       )
     Event (Ok (Leaflet.OverlayAdd "Life Data" _)) ->
       requireRecentLives model
@@ -338,6 +336,22 @@ yesterday model =
     ]
   )
 
+setYesterday : Model -> (Model, Cmd Msg)
+setYesterday model =
+  if isYesterday model then
+    (model, Cmd.none)
+  else
+    yesterday model
+
+isYesterday : Model -> Bool
+isYesterday model =
+  model.dataLayer /= NotRequested
+    && model.endTimeMode == FromNow
+    && model.hoursBefore == 24
+    && model.gameSecondsPerFrame == 1
+    && model.frameRate == 1
+    && model.dataAnimated
+
 changeRouteTo : Url -> Model -> (Model, Cmd Msg)
 changeRouteTo location model =
   let
@@ -345,7 +359,7 @@ changeRouteTo location model =
   in
     if mpreset == Just "yesterday" then
       let
-        (m2, c2) = yesterday model
+        (m2, c2) = setYesterday model
         (m3, c3) = coordinateRoute location m2
       in
         (m3, Cmd.batch [ c2, c3 ])
@@ -476,19 +490,6 @@ fetchDataLayer baseUrl serverId endTime hoursBefore =
       ]
     , expect = Http.expectJson DataLayer Json.Decode.value
     }
-
-centerUrl : Url -> Point-> String
-centerUrl location {x, y, z} =
-  { location
-  | fragment =
-    Url.toQuery
-      [ Url.int "x" x
-      , Url.int "y" y
-      , Url.int "z" z
-      ]
-      |> String.dropLeft 1
-      |> Just
-  } |> Url.toString
 
 extractHashInt : String -> Url -> Maybe Int
 extractHashInt key location =

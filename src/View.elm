@@ -1,5 +1,6 @@
-module View exposing (Msg(..), Mode(..), EndTimeMode(..), RemoteData(..), Life, view, document)
+module View exposing (Msg(..), Mode(..), EndTimeMode(..), RemoteData(..), Life, centerUrl, view, document)
 
+import Leaflet exposing (Point)
 import OHOLData as Data exposing (Server)
 
 import Browser
@@ -36,7 +37,6 @@ type Msg
   | SelectMode Mode
   | SelectServer Server
   | SelectShow
-  | SelectYesterday
 
 type Mode
   = LifeSearch
@@ -64,6 +64,24 @@ type alias Life =
   , birthX : Int
   , birthY : Int
   }
+
+centerUrl : Url -> Bool -> Point -> String
+centerUrl location yd {x, y, z} =
+  { location
+  | fragment =
+    [ Just <| Url.int "x" x
+    , Just <| Url.int "y" y
+    , Just <| Url.int "z" z
+    , if yd then
+        Just <| Url.string "preset" "yesterday"
+      else
+        Nothing
+    ]
+      |> List.filterMap identity
+      |> Url.toQuery
+      |> String.dropLeft 1
+      |> Just
+  } |> Url.toString
 
 --document : (Msg -> msg) -> model -> Browser.Document msg
 document tagger model =
@@ -300,21 +318,10 @@ dataFilter model =
       , height fill
       , spacing 10
       ]
-      [ el [ width fill, padding 5 ] <|
-        Input.button
-          [ width fill
-          , padding 5
-          , Border.color divider
-          , Border.width 1
-          , Border.rounded 6
-          , Background.color control
-          ]
-          { onPress = Just SelectYesterday
-          , label = el [ centerX ] <| text "Yesterday"
-          }
-      , dataAction model
+      [ dataAction model
       , dateRangeSelect model
       , serverSelect model.servers model.selectedServer
+      , presets model
       ]
 
 dataAction model =
@@ -560,6 +567,18 @@ serverIconForName name status =
         (el [ centerX ] (text number))
   else
     text name
+
+--presets : Model -> Element Msg
+presets model =
+  column []
+    [ text "Presets"
+    , wrappedRow [ padding 10 ]
+      [ link [ Font.color selected ]
+          { url = centerUrl model.location True model.center
+          , label = text "Ambient Yesterday"
+          }
+      ]
+    ]
 
 showLoading : RemoteData a -> Element Msg
 showLoading remote =
