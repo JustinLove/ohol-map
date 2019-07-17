@@ -481,6 +481,15 @@
             animOverlay.remove()
           }
           break
+        case 'baseLayer':
+          for (var name in base) {
+            if (name == message.layer) {
+              map.addLayer(base[name])
+            } else {
+              map.removeLayer(base[name])
+            }
+          }
+          break;
       }
     }
 

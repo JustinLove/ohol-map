@@ -10,6 +10,7 @@ port module Leaflet exposing
   , focus
   , searchOverlay
   , animOverlay
+  , baseLayer
   , event)
 
 import OHOLData as Data
@@ -100,6 +101,14 @@ animOverlay status =
   Encode.object
     [ ("kind", Encode.string "animOverlay")
     , ("status", Encode.bool status)
+    ]
+    |> leafletCommand
+
+baseLayer : String -> Cmd msg
+baseLayer layer =
+  Encode.object
+    [ ("kind", Encode.string "baseLayer")
+    , ("layer", Encode.string layer)
     ]
     |> leafletCommand
 

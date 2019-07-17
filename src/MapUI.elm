@@ -187,18 +187,7 @@ update msg model =
       , fetchDataForTime model
       )
     UI (View.SelectYesterday) ->
-      ( { model
-        | dataLayer = Loading
-        , endTimeMode = FromNow
-        , hoursBefore = 24
-        , gameSecondsPerFrame = 1
-        , frameRate = 1
-        }
-      , Cmd.batch
-        [ fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
-        , Leaflet.animOverlay True
-        ]
-      )
+      yesterday model
     Event (Ok (Leaflet.MoveEnd point)) ->
       ( {model|center = point} 
       , Navigation.replaceUrl model.navigationKey <|
@@ -332,12 +321,43 @@ requireRecentLives model =
     _ ->
       (model, Cmd.none)
 
+
+yesterday : Model -> (Model, Cmd Msg)
+yesterday model =
+  ( { model
+    | dataLayer = Loading
+    , endTimeMode = FromNow
+    , hoursBefore = 24
+    , gameSecondsPerFrame = 1
+    , frameRate = 1
+    }
+  , Cmd.batch
+    [ fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
+    , Leaflet.animOverlay True
+    , Leaflet.baseLayer "Faded"
+    ]
+  )
+
 changeRouteTo : Url -> Model -> (Model, Cmd Msg)
 changeRouteTo location model =
   let
-    mx = extractHashArgument "x" location
-    my = extractHashArgument "y" location
-    mz = extractHashArgument "z" location
+    mpreset = extractHashString "preset" location
+  in
+    if mpreset == Just "yesterday" then
+      let
+        (m2, c2) = yesterday model
+        (m3, c3) = coordinateRoute location m2
+      in
+        (m3, Cmd.batch [ c2, c3 ])
+    else
+      coordinateRoute location model
+
+coordinateRoute : Url -> Model -> (Model, Cmd Msg)
+coordinateRoute location model =
+  let
+    mx = extractHashInt "x" location
+    my = extractHashInt "y" location
+    mz = extractHashInt "z" location
     m2 = {model | location = location}
   in
     case (mx, my, mz) of
@@ -470,10 +490,16 @@ centerUrl location {x, y, z} =
       |> Just
   } |> Url.toString
 
-extractHashArgument : String -> Url -> Maybe Int
-extractHashArgument key location =
+extractHashInt : String -> Url -> Maybe Int
+extractHashInt key location =
   { location | path = "", query = location.fragment }
     |> Url.Parser.parse (Url.Parser.query (Url.Parser.Query.int key))
+    |> Maybe.withDefault Nothing
+
+extractHashString : String -> Url -> Maybe String
+extractHashString key location =
+  { location | path = "", query = location.fragment }
+    |> Url.Parser.parse (Url.Parser.query (Url.Parser.Query.string key))
     |> Maybe.withDefault Nothing
 
 inRange : Posix -> Posix -> Posix -> Posix

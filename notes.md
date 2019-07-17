@@ -1,9 +1,4 @@
-- show data for other servers
-  - deselect server
-  - collapse server
 - yesterday realtime
-  - url parameter
-  - too much hardcoded
   - actual UI location?
 - display of seconds/hours in larger units
 - use other icons
@@ -13,6 +8,9 @@
   - time
   - account
   - cause of death
+- show data for other servers
+  - deselect server
+  - collapse server
 - historical replay
   - Only fetch reasonable amount of data for historical
   - center view on main area?
