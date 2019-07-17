@@ -72,9 +72,9 @@
     return '#' + hash.slice(0,6)
   }
 
-  var colortime = function(time, timebase, timescale) {
-    var hue = (time - timebase) * 90 / timescale - 30
-    var light = (time - timebase) * 30 / timescale + 20
+  var colorlinear = function(time, base, scale) {
+    var hue = (time - base) * 90 / scale - 30
+    var light = (time - base) * 30 / scale + 20
     return "hsl(" + hue + ", 100%, " + light + "%)"
   }
 
@@ -242,6 +242,8 @@
   var setDataLayers = function(data) {
     var min = null;
     var max = null;
+    var minChain = null;
+    var maxChain = null;
     data.forEach(function(point) {
       if (min == null || point.birth_time < min) {
         min = point.birth_time
@@ -249,14 +251,23 @@
       if (max == null || point.birth_time > max) {
         max = point.birth_time
       }
+
+      if (minChain == null || point.chain < minChain) {
+        minChain = point.chain
+      }
+      if (maxChain == null || point.chain > maxChain) {
+        maxChain = point.chain
+      }
     })
+    var timescale = max - min
+    var chainscale = maxChain - minChain
     data.forEach(function(point) {
       point.lineageColor = colormap(point.lineage)
       if (point.hash) {
         point.hashColor = colorhash(point.hash)
       }
-      var timescale = max - min
-      point.birthTimeColor = colortime(point.birth_time, min, timescale)
+      point.birthTimeColor = colorlinear(point.birth_time, min, timescale)
+      point.chainColor = colorlinear(point.chain, minChain, chainscale)
     })
     var times = []
     for (var t = min;t < max;t += 1) {

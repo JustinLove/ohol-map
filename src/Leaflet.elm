@@ -32,6 +32,7 @@ type alias Point =
 type PointColor
   = LineageColor
   | BirthTimeColor
+  | ChainColor
 
 setView : Point -> Cmd msg
 setView {x, y, z} =
@@ -126,6 +127,7 @@ pointColor color =
       case color of
         LineageColor -> "lineageColor"
         BirthTimeColor -> "birthTimeColor"
+        ChainColor -> "chainColor"
       )
     ]
     |> leafletCommand
