@@ -72,6 +72,12 @@
     return '#' + hash.slice(0,6)
   }
 
+  var colortime = function(time, timebase, timescale) {
+    var hue = (time - timebase) * 90 / timescale - 30
+    var light = (time - timebase) * 30 / timescale + 20
+    return "hsl(" + hue + ", 100%, " + light + "%)"
+  }
+
   L.GridLayer.PointOverlay = L.GridLayer.extend({
     options: {
       pane: 'overlayPane',
@@ -108,10 +114,7 @@
       llse = crs.pointToLatLng(pse, coords.z)
       //console.log(coords, llnw, llse)
 
-      //var timebase = this.options.min
-      //var timescale = this.options.max - timebase
-      //var point = this.options.data[0]
-      //var t = (point.birth_time - timebase) * 100 / timescale
+      var color = this.options.color || 'lineageColor'
       var fadeTime = 60*60
       this.options.data.forEach(function(point) {
         //console.log(point)
@@ -139,10 +142,7 @@
           p.x = p.x - origin.x
           p.y = p.y - origin.y
           //console.log(p)
-          //var t = (point.birth_time - timebase) * 75 / timescale
-          //ctx.fillStyle = "hsla(240, 100%, " + t + "%, " + a + ")"
-          ctx.fillStyle = point.lineageColor
-          ctx.strokeStyle = point.lineageColor
+          ctx.fillStyle = point[color]
           ctx.beginPath();
           ctx.arc(p.x, p.y, 3, 0, 2*Math.PI, false);
           ctx.fill();
@@ -249,10 +249,14 @@
       if (max == null || point.birth_time > max) {
         max = point.birth_time
       }
+    })
+    data.forEach(function(point) {
       point.lineageColor = colormap(point.lineage)
       if (point.hash) {
         point.hashColor = colorhash(point.hash)
       }
+      var timescale = max - min
+      point.birthTimeColor = colortime(point.birth_time, min, timescale)
     })
     var times = []
     for (var t = min;t < max;t += 1) {
@@ -269,6 +273,17 @@
       data: data,
       min: min,
       max: max,
+    })
+    pointOverlay.redraw()
+  }
+
+  var setPointColor = function(color) {
+    L.Util.setOptions(animOverlay, {
+      color: color,
+    })
+    animOverlay.redraw()
+    L.Util.setOptions(pointOverlay, {
+      color: color,
     })
     pointOverlay.redraw()
   }
@@ -509,6 +524,9 @@
               map.removeLayer(base[name])
             }
           }
+          break;
+        case 'pointColor':
+          setPointColor(message.color)
           break;
       }
     }
