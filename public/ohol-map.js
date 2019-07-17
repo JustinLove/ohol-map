@@ -382,6 +382,26 @@
       maxZoom: 27,
     })
 
+    var idle = false
+    var setIdle = function() {
+      L.DomUtil.addClass(map._controlContainer, 'idle')
+      idle = true
+    }
+
+    var setActive = function() {
+      if (idle) {
+        L.DomUtil.removeClass(map._controlContainer, 'idle')
+      }
+      idle = false
+      if (idleTimer) {
+        clearTimeout(idleTimer)
+      }
+      idleTimer = setTimeout(setIdle, 1*60*1000)
+    }
+
+    var idleTimer = setTimeout(setIdle, 1*60*1000)
+    L.DomEvent.on(map, 'mousemove', setActive, map);
+
     base['Default'].addTo(map)
     //pointOverlay.addTo(map)
 

@@ -39,6 +39,16 @@ img {
   flex-wrap: wrap;
 }
 
+.leaflet-control {
+  opacity: 1;
+  transition: opacity .5s;
+}
+
+.idle .leaflet-control {
+  opacity: 0;
+  transition: opacity 10s;
+}
+
 .leaflet-control-sidebar {
   background: #fff;
   background-clip: padding-box;
