@@ -68,6 +68,17 @@
     return '#' + (((id * 49157) % 12582917).toString(16))
   }
 
+  var colorlineage = function(id) {
+    var hue = (id * 49157) % 359
+    var sat = (id * 24593) % 67 + 33
+    var light = (id * 12289) % 53 + 20
+    var greenish = Math.abs(hue - 120)
+    if (greenish < 60) {
+      light = Math.min(light, greenish * 30 / 60 + 20)
+    }
+    return "hsl(" + hue + ", " + sat + "%, " + light + "%)"
+  }
+
   var colorhash = function(hash) {
     return '#' + hash.slice(0,6)
   }
@@ -142,7 +153,7 @@
           p.x = p.x - origin.x
           p.y = p.y - origin.y
           //console.log(p)
-          ctx.fillStyle = point[color]
+          ctx.fillStyle = ctx.strokeStyle = point[color]
           ctx.beginPath();
           ctx.arc(p.x, p.y, 3, 0, 2*Math.PI, false);
           ctx.fill();
@@ -262,7 +273,7 @@
     var timescale = max - min
     var chainscale = maxChain - minChain
     data.forEach(function(point) {
-      point.lineageColor = colormap(point.lineage)
+      point.lineageColor = colorlineage(point.lineage)
       if (point.hash) {
         point.hashColor = colorhash(point.hash)
       }

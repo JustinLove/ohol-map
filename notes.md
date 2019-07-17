@@ -1,6 +1,4 @@
 - different coloration methods
-  - better lineage color (contrast)
-  - time
   - account
   - cause of death
 - display of seconds/hours in larger units
@@ -18,6 +16,8 @@
 - different map types (death)
 - handle no server
 - more logatrimthim slider scale?
+- better lineage color - bright except for problem colors
+- better generatoin color - longer on top?
 - time window range graph
 - better setting of default server
 - paging
