@@ -41,6 +41,7 @@ type Msg
 type Mode
   = LifeSearch
   | DataFilter
+  | Cosmetics
 
 type EndTimeMode
   = ServerRange
@@ -121,6 +122,7 @@ sidebar model =
     , case model.sidebarMode of
         LifeSearch -> lifeSearch model
         DataFilter -> dataFilter model
+        Cosmetics -> cosmetics model
     ]
 
 -- modeSelect : Model -> Element Msg
@@ -137,6 +139,7 @@ modeSelect model =
     ]
     [ tabHeader "search" "Search" LifeSearch model.sidebarMode
     , tabHeader "filter" "Data" DataFilter model.sidebarMode
+    , tabHeader "paint-format" "Format" Cosmetics model.sidebarMode
     ]
 
 tabHeader : String -> String -> Mode -> Mode -> Element Msg
@@ -379,23 +382,6 @@ dateRangeSelect model =
       , thumb = Input.defaultThumb
       , step = Nothing
       }
-    , if model.dataAnimated then
-        logSlider
-          [ Background.color control ]
-          { onChange = round >> GameSecondsPerFrame
-          , label = Input.labelAbove [] <|
-            row []
-              [ model.gameSecondsPerFrame |> String.fromInt |> text
-              , text " Game Seconds/Frame"
-              ]
-          , min = 1
-          , max = 60*60
-          , value = model.gameSecondsPerFrame |> toFloat
-          , thumb = Input.defaultThumb
-          , step = Nothing
-          }
-      else
-        none
     ]
 
 logSlider attributes slider =
@@ -579,6 +565,33 @@ presets model =
           }
       ]
     ]
+
+-- cosmetics : Model -> Element Msg
+cosmetics model =
+  el [ width fill, height fill, scrollbarY] <|
+    column
+      [ width (fill |> maximum 300)
+      , height fill
+      , spacing 10
+      ]
+      [ if model.dataAnimated then
+          logSlider
+            [ Background.color control ]
+            { onChange = round >> GameSecondsPerFrame
+            , label = Input.labelAbove [] <|
+              row []
+                [ model.gameSecondsPerFrame |> String.fromInt |> text
+                , text " Game Seconds/Frame"
+                ]
+            , min = 1
+            , max = 60*60
+            , value = model.gameSecondsPerFrame |> toFloat
+            , thumb = Input.defaultThumb
+            , step = Nothing
+            }
+        else
+          none
+        ]
 
 showLoading : RemoteData a -> Element Msg
 showLoading remote =

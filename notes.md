@@ -1,13 +1,11 @@
-- yesterday realtime
-  - actual UI location?
-- display of seconds/hours in larger units
-- use other icons
-- bookmarking layers
 - different coloration methods
   - better lineage color (contrast)
   - time
   - account
   - cause of death
+- display of seconds/hours in larger units
+- use other icons
+- bookmarking layers
 - show data for other servers
   - deselect server
   - collapse server
