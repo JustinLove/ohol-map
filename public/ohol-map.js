@@ -505,6 +505,10 @@
           player.stop()
           player.start(message.game_seconds_per_frame)
           break;
+        case 'playbackScale':
+          player.stop()
+          player.start(message.game_seconds_per_frame)
+          break;
         case 'displayResults':
           var data = message.lives.data
           L.Util.setOptions(resultPoints, {

@@ -86,8 +86,8 @@ init config location key =
       , cachedApiUrl = config.cachedApiUrl
       , apiUrl = config.apiUrl
       , lineageUrl = config.lineageUrl
-      , sidebarOpen = True
-      , sidebarMode = View.Cosmetics
+      , sidebarOpen = False
+      , sidebarMode = View.LifeSearch
       , searchTerm = ""
       , endTimeMode = ServerRange
       , coarseEndTime = Time.millisToPosix 0
@@ -158,7 +158,7 @@ update msg model =
       ( { model
         | gameSecondsPerFrame = seconds
         }
-      , Cmd.none
+      , Leaflet.playbackScale seconds
       )
     UI (View.SelectPointColor color) ->
       ( { model

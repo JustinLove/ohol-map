@@ -1,3 +1,4 @@
+- time toggle on cosmetics?
 - different coloration methods
   - account
   - cause of death

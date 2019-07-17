@@ -7,6 +7,7 @@ port module Leaflet exposing
   , monumentList
   , dataLayer
   , beginPlayback
+  , playbackScale
   , displayResults
   , focus
   , searchOverlay
@@ -76,6 +77,14 @@ beginPlayback gameSecondsPerFrame frameRate startTime =
     , ("start_time", Encode.int (Time.posixToMillis startTime))
     , ("game_seconds_per_frame", Encode.int gameSecondsPerFrame)
     , ("frame_rate", Encode.int frameRate)
+    ]
+    |> leafletCommand
+
+playbackScale : Int -> Cmd msg
+playbackScale gameSecondsPerFrame =
+  Encode.object
+    [ ("kind", Encode.string "playbackScale")
+    , ("game_seconds_per_frame", Encode.int gameSecondsPerFrame)
     ]
     |> leafletCommand
 
