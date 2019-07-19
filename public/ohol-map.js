@@ -231,7 +231,7 @@
     minSpeed: 1,
     speedStep: 1,
     maxSpeed: 30,
-    timeSteps: 1,
+    timeSteps: 60,
     timeSliderDragUpdate: true
   };
 

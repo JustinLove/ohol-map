@@ -654,7 +654,7 @@ twoPartMessage height header body =
 icon : String -> Element msg
 icon name =
   svg [ Svg.Attributes.class ("icon icon-"++name) ]
-    [ use [ xlinkHref ("symbol-defs.svg#icon-"++name) ] [] ]
+    [ use [ xlinkHref ("symbol-defs.svg?v=2#icon-"++name) ] [] ]
   |> html
 
 targetValue : Json.Decode.Decoder a -> (a -> Msg) -> Json.Decode.Decoder Msg
