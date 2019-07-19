@@ -215,8 +215,6 @@ update msg model =
       )
     Event (Ok (Leaflet.OverlayAdd "Life Data" _)) ->
       requireRecentLives model
-    Event (Ok (Leaflet.OverlayAdd "Life Data Anim" _)) ->
-      requireRecentLives {model | dataAnimated = True }
     Event (Ok (Leaflet.OverlayAdd name (Just serverId))) ->
       if Set.member serverId model.monumentsFetched then
         (model, Cmd.none)
@@ -224,8 +222,6 @@ update msg model =
         (model, fetchMonuments model.cachedApiUrl serverId)
     Event (Ok (Leaflet.OverlayAdd name _)) ->
       (model, Cmd.none)
-    Event (Ok (Leaflet.OverlayRemove "Life Data Anim")) ->
-      ({ model | dataAnimated = False }, Cmd.none)
     Event (Ok (Leaflet.OverlayRemove name)) ->
       (model, Cmd.none)
     Event (Ok (Leaflet.SelectPoints lives)) ->

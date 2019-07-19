@@ -39,10 +39,17 @@
     attribution: '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible',
   });
 
+  var dataOverlay = L.layerGroup([])
+  dataOverlay.on('add', function(ev) {
+    ev.target._map.addControl(colorScaleControl)
+  })
+  dataOverlay.on('remove', function(ev) {
+    ev.target._map.removeControl(colorScaleControl)
+  })
+
   var overlays = {
     graticule: null,
-    "Life Data": null,
-    "Life Data Anim": null,
+    "Life Data": dataOverlay,
   }
 
   var searchOverlay = L.layerGroup([])
@@ -265,8 +272,7 @@
 
   var timeDimensionControl = new L.Control.TimeDimension(timeDimensionControlOptions);
 
-  var pointOverlay = new L.GridLayer.PointOverlay({className: 'interactive'})
-  overlays["Life Data"] = pointOverlay
+  var pointOverlay = new L.GridLayer.PointOverlay({className: 'interactive'}).addTo(dataOverlay)
 
   var animOverlay = new L.GridLayer.PointOverlay({
     attribution: '<a href="https://github.com/socib/Leaflet.TimeDimension">socib/Leaflet.TimeDimension</a>',
@@ -274,7 +280,6 @@
     timeDimension: timeDimension,
   })
   timeDimension.on("timeload", animOverlay.updateTiles, animOverlay)
-  overlays["Life Data Anim"] = animOverlay
 
   var resultPoints = new L.GridLayer.PointOverlay().addTo(searchOverlay)
 
@@ -361,25 +366,15 @@
 
   animOverlay.on('add', function(ev) {
     ev.target._map.addControl(timeDimensionControl)
-    ev.target._map.addControl(colorScaleControl)
     ev.target.addInteractiveTarget(ev.target._container)
   })
   animOverlay.on('remove', function(ev) {
     ev.target._map.removeControl(timeDimensionControl)
-    if (!ev.target._map.hasLayer(pointOverlay)) {
-      ev.target._map.removeControl(colorScaleControl)
-    }
   })
   animOverlay.on('click', animOverlay.selectPoints)
 
   pointOverlay.on('add', function(ev) {
-    ev.target._map.addControl(colorScaleControl)
     ev.target.addInteractiveTarget(ev.target._container)
-  })
-  pointOverlay.on('remove', function(ev) {
-    if (!ev.target._map.hasLayer(animOverlay)) {
-      ev.target._map.removeControl(colorScaleControl)
-    }
   })
   pointOverlay.on('click', pointOverlay.selectPoints)
 
