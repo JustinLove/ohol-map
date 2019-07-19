@@ -156,6 +156,12 @@ update msg model =
         }
       , Cmd.none
       )
+    UI (View.ToggleAnimated animated) ->
+      ( { model
+        | dataAnimated = animated
+        }
+      , Leaflet.animOverlay animated
+      )
     UI (View.GameSecondsPerFrame seconds) ->
       ( { model
         | gameSecondsPerFrame = seconds

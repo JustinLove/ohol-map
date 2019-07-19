@@ -31,6 +31,7 @@ type Msg
   | CoarseEndTime Posix
   | EndTime Posix
   | HoursBefore Int
+  | ToggleAnimated Bool
   | GameSecondsPerFrame Int
   | SelectPointColor PointColor
   | SelectPointLocation PointLocation
@@ -595,6 +596,12 @@ cosmetics model =
           [ Input.option BirthLocation (text "Birth")
           , Input.option DeathLocation (text "Death")
           ]
+        }
+      , Input.checkbox [ padding 10, spacing 2 ]
+        { onChange = ToggleAnimated
+        , checked = model.dataAnimated
+        , label = Input.labelRight [ padding 6 ] (text "Animated")
+        , icon = Input.defaultCheckbox
         }
       , if model.dataAnimated then
           logSlider

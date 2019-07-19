@@ -664,6 +664,7 @@
             map.removeLayer(pointOverlay)
           } else {
             animOverlay.remove()
+            map.addLayer(pointOverlay)
           }
           break
         case 'baseLayer':
