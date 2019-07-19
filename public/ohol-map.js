@@ -134,14 +134,17 @@
         var r = 1;
         if ( llnw.lng < point.birth_x && point.birth_x < llse.lng
           && llse.lat < point.birth_y && point.birth_y < llnw.lat) {
+
+          var death_time = (point.death_time || (point.birth_time + fadeTime))
           if (time) {
-            if (point.birth_time < (time - fadeTime) || time < point.birth_time) {
+            if (time < point.birth_time || death_time < time) {
               return
             }
+            console.log('in bounds')
 
-            var a = 1 - (time - point.birth_time) / fadeTime
+            t = (time - point.birth_time) / (death_time - point.birth_time)
+            var a = 1 - t
             ctx.globalAlpha = a
-            t = (time - point.birth_time) / fadeTime
             r = Math.pow(10 * t, -6 * t)
           } else {
             t = 1
