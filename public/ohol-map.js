@@ -94,8 +94,8 @@
       return "#ff0000";
     }
     switch(cause) {
-      case 'hunger': return "hsl(30, 50%, 40%)"
-      case 'oldAge': return "hsl(0, 0%, 60%)"
+      case 'hunger': return "hsl(60, 50%, 40%)"
+      case 'oldAge': return "hsl(0, 0%, 20%)"
       case 'disconnect': return "hsla(180, 100%, 40%)"
       case 'unknown': return "hsl(290, 100%, 50%)"
       default: return "hsla(90, 100%, 50%, 0)"
@@ -466,6 +466,7 @@
       },
       redraw: function() {
         var container = this._container
+        if (!container) return
         while (container.firstChild) {
           container.removeChild(container.firstChild);
         }
