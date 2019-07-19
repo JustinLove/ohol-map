@@ -583,6 +583,7 @@ cosmetics model =
           [ Input.option LineageColor (text "Lineage")
           , Input.option BirthTimeColor (text "Birth Time")
           , Input.option ChainColor (text "Generation")
+          , Input.option CauseOfDeathColor (text "Cause of Death")
           ]
         }
       , if model.dataAnimated then

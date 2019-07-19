@@ -34,6 +34,7 @@ type PointColor
   = LineageColor
   | BirthTimeColor
   | ChainColor
+  | CauseOfDeathColor
 
 setView : Point -> Cmd msg
 setView {x, y, z} =
@@ -137,6 +138,7 @@ pointColor color =
         LineageColor -> "lineageColor"
         BirthTimeColor -> "birthTimeColor"
         ChainColor -> "chainColor"
+        CauseOfDeathColor -> "causeOfDeathColor"
       )
     ]
     |> leafletCommand

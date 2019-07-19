@@ -89,6 +89,19 @@
     return "hsl(" + hue + ", 100%, " + light + "%)"
   }
 
+  var colorcause = function(cause) {
+    if (cause && cause.match('killer')) {
+      return "#ff0000";
+    }
+    switch(cause) {
+      case 'hunger': return "hsl(30, 50%, 40%)"
+      case 'oldAge': return "hsl(0, 0%, 60%)"
+      case 'disconnect': return "hsla(180, 100%, 40%)"
+      case 'unknown': return "hsl(290, 100%, 50%)"
+      default: return "hsla(90, 100%, 50%, 0)"
+    }
+  }
+
   L.GridLayer.PointOverlay = L.GridLayer.extend({
     options: {
       pane: 'overlayPane',
@@ -282,6 +295,7 @@
       }
       point.birthTimeColor = colorlinear(point.birth_time, min, timescale)
       point.chainColor = colorlinear(point.chain, minChain, chainscale)
+      point.causeOfDeathColor = colorcause(point.cause)
     })
     var times = []
     for (var t = min;t < max;t += 1) {
