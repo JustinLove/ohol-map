@@ -83,9 +83,9 @@
     return '#' + hash.slice(0,6)
   }
 
-  var colorlinear = function(time, base, scale) {
-    var hue = (time - base) * 90 / scale - 30
-    var light = (time - base) * 30 / scale + 20
+  var colorlinear = function(time, min, max) {
+    var hue = (time - min) * 90 / (max-min) - 30
+    var light = (time - min) * 30 / (max-min) + 20
     return "hsl(" + hue + ", 100%, " + light + "%)"
   }
 
@@ -286,15 +286,13 @@
         maxChain = point.chain
       }
     })
-    var timescale = max - min
-    var chainscale = maxChain - minChain
     data.forEach(function(point) {
       point.lineageColor = colorlineage(point.lineage)
       if (point.hash) {
         point.hashColor = colorhash(point.hash)
       }
-      point.birthTimeColor = colorlinear(point.birth_time, min, timescale)
-      point.chainColor = colorlinear(point.chain, minChain, chainscale)
+      point.birthTimeColor = colorlinear(point.birth_time, min, max)
+      point.chainColor = colorlinear(point.chain, minChain, maxChain)
       point.causeOfDeathColor = colorcause(point.cause)
     })
     var times = []
@@ -314,6 +312,13 @@
       max: max,
     })
     pointOverlay.redraw()
+    L.Util.setOptions(colorScaleControl, {
+      min: min,
+      max: max,
+      minChain: minChain,
+      maxChain: maxChain,
+    })
+    pointOverlay.redraw()
   }
 
   var setPointColor = function(color) {
@@ -325,19 +330,33 @@
       color: color,
     })
     pointOverlay.redraw()
+    L.Util.setOptions(colorScaleControl, {
+      color: color,
+    })
+    colorScaleControl.redraw()
   }
 
   animOverlay.on('add', function(ev) {
     ev.target._map.addControl(timeDimensionControl)
+    ev.target._map.addControl(colorScaleControl)
     ev.target.addInteractiveTarget(ev.target._container)
   })
   animOverlay.on('remove', function(ev) {
     ev.target._map.removeControl(timeDimensionControl)
+    if (!ev.target._map.hasLayer(pointOverlay)) {
+      ev.target._map.removeControl(colorScaleControl)
+    }
   })
   animOverlay.on('click', animOverlay.selectPoints)
 
   pointOverlay.on('add', function(ev) {
+    ev.target._map.addControl(colorScaleControl)
     ev.target.addInteractiveTarget(ev.target._container)
+  })
+  pointOverlay.on('remove', function(ev) {
+    if (!ev.target._map.hasLayer(animOverlay)) {
+      ev.target._map.removeControl(colorScaleControl)
+    }
   })
   pointOverlay.on('click', pointOverlay.selectPoints)
 
@@ -408,7 +427,7 @@
         var className = 'leaflet-control-sidebar'
         var container = this._container = L.DomUtil.create('div', className)
 
-        var link = this._layersLink = L.DomUtil.create('a', className + '-toggle', container);
+        var link = L.DomUtil.create('a', className + '-toggle', container);
         link.href = '#';
         link.title = 'Data';
         link.innerHTML = '<svg class="icon icon-filter"><use xlink:href="symbol-defs.svg#icon-filter"></use></svg>'
@@ -427,6 +446,70 @@
   L.control.sidebar = function(opts) {
     return new L.Control.Sidebar(opts);
   }
+
+  L.Control.ColorScale = L.Control.extend({
+      options: {
+        color: 'lineageColor'
+      },
+      onAdd: function(map) {
+        return this._initLayout()
+      },
+      onRemove: function(map) {
+        // Nothing to do here
+      },
+      _initLayout: function () {
+        var className = 'leaflet-control-color-scale'
+        var container = this._container = L.DomUtil.create('div', className)
+        this.redraw()
+
+        return container;
+      },
+      redraw: function() {
+        var container = this._container
+        while (container.firstChild) {
+          container.removeChild(container.firstChild);
+        }
+        switch (this.options.color) {
+          case 'birthTimeColor':
+            var swatch = L.DomUtil.create('div', 'swatch', container)
+            swatch.style = 'background-color: ' + colorlinear(this.options.min, this.options.min, this.options.max)
+            swatch.innerHTML = 'older';
+
+            swatch = L.DomUtil.create('div', 'swatch', container)
+            swatch.style = 'background-color: ' + colorlinear(this.options.max, this.options.min, this.options.max) + '; color: black;'
+            swatch.innerHTML = 'newer';
+            break;
+          case 'chainColor':
+            var swatch = L.DomUtil.create('div', 'swatch', container)
+            swatch.style = 'background-color: ' + colorlinear(this.options.minChain, this.options.minChain, this.options.maxChain)
+            swatch.innerHTML = this.options.minChain;
+
+            swatch = L.DomUtil.create('div', 'swatch', container)
+            swatch.style = 'background-color: ' + colorlinear(this.options.maxChain, this.options.minChain, this.options.maxChain) + '; color: black;'
+            swatch.innerHTML = this.options.maxChain;
+            break;
+          case 'causeOfDeathColor':
+            [
+              'killer',
+              'hunger',
+              'oldAge',
+              'disconnect',
+              'unknown',
+            ].forEach(function(cause) {
+              var swatch = L.DomUtil.create('div', 'swatch', container)
+              swatch.style = 'background-color: ' + colorcause(cause)
+              swatch.innerHTML = cause;
+            })
+            break;
+        }
+      }
+  });
+
+  L.control.colorScale = function(opts) {
+    return new L.Control.ColorScale(opts);
+  }
+
+  var colorScaleControl = L.control.colorScale({ position: 'topleft' })
 
   var inhabit = function inhabit(id) {
     var map = L.map(id, {

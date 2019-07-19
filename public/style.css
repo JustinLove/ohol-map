@@ -35,6 +35,12 @@ img {
   background-color: #eee;
 }
 
+.swatch {
+  padding: 1px 4px;
+  margin-top: 2px;
+  color: white;
+}
+
 .server-select {
   flex-wrap: wrap;
 }
@@ -49,6 +55,11 @@ img {
   transition: opacity 10s;
 }
 
+.leaflet-control-color-scale {
+  padding: 4px;
+}
+
+.leaflet-control-color-scale,
 .leaflet-control-sidebar {
   background: #fff;
   background-clip: padding-box;
