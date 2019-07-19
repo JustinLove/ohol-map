@@ -1,6 +1,7 @@
 port module Leaflet exposing
   ( Point
   , PointColor(..)
+  , PointLocation(..)
   , Event(..)
   , setView
   , serverList
@@ -14,6 +15,7 @@ port module Leaflet exposing
   , animOverlay
   , baseLayer
   , pointColor
+  , pointLocation
   , event)
 
 import OHOLData as Data
@@ -35,6 +37,10 @@ type PointColor
   | BirthTimeColor
   | ChainColor
   | CauseOfDeathColor
+
+type PointLocation
+  = BirthLocation
+  | DeathLocation
 
 setView : Point -> Cmd msg
 setView {x, y, z} =
@@ -139,6 +145,18 @@ pointColor color =
         BirthTimeColor -> "birthTimeColor"
         ChainColor -> "chainColor"
         CauseOfDeathColor -> "causeOfDeathColor"
+      )
+    ]
+    |> leafletCommand
+
+pointLocation : PointLocation -> Cmd msg
+pointLocation location =
+  Encode.object
+    [ ("kind", Encode.string "pointLocation")
+    , ("location", Encode.string <|
+      case location of
+        BirthLocation -> "birth"
+        DeathLocation -> "death"
       )
     ]
     |> leafletCommand

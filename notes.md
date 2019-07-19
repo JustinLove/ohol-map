@@ -1,7 +1,4 @@
 - time toggle on cosmetics?
-- different coloration methods
-  - account
-  - cause of death
 - display of seconds/hours in larger units
 - use other icons
 - bookmarking layers
@@ -22,6 +19,8 @@
 - time window range graph
 - better setting of default server
 - paging
+- different coloration methods
+  - account
 - grouped heat map
 - leaflet handlers - click events?
 - custom layer methods

@@ -139,21 +139,27 @@
       //console.log(coords, llnw, llse)
 
       var color = this.options.color || 'lineageColor'
+      var location = this.options.location || 'birth'
       var fadeTime = 60*60
       this.options.data.forEach(function(point) {
         //console.log(point)
 
         var t = 1
         var r = 1;
-        if ( llnw.lng < point.birth_x && point.birth_x < llse.lng
-          && llse.lat < point.birth_y && point.birth_y < llnw.lat) {
+        var x = point.birth_x;
+        var y = point.birth_y;
+        if (location == 'death') {
+          x = point.death_x || x;
+          y = point.death_y || y;
+        }
+        if ( llnw.lng < x && x < llse.lng
+          && llse.lat < y && y < llnw.lat) {
 
           var death_time = (point.death_time || (point.birth_time + fadeTime))
           if (time) {
             if (time < point.birth_time || death_time < time) {
               return
             }
-            console.log('in bounds')
 
             t = (time - point.birth_time) / (death_time - point.birth_time)
             var a = 1 - t
@@ -163,7 +169,7 @@
             t = 1
             ctx.globalAlpha = 0.5
           }
-          var ll = L.latLng(point.birth_y, point.birth_x)
+          var ll = L.latLng(y, x)
           var p = crs.latLngToPoint(ll, coords.z)
           //console.log(ll, p, pnw)
           p.x = p.x - origin.x
@@ -206,16 +212,22 @@
       llnw = map.layerPointToLatLng(pnw, zoom)
       llse = map.layerPointToLatLng(pse, zoom)
       //console.log(center, llnw, llse)
+      var location = this.options.location || 'birth'
 
       var hit = layer.options.data.filter(function(point) {
-        return llnw.lng < point.birth_x && point.birth_x < llse.lng
-            && llse.lat < point.birth_y && point.birth_y < llnw.lat
+        var x = point.birth_x
+        var y = point.birth_y
+        if (location == 'death') {
+          x = point.death_x || x;
+          y = point.death_y || y;
+        }
+        return llnw.lng < x && x < llse.lng
+            && llse.lat < y && y < llnw.lat
       })
       if (this.options.timeDimension) {
-        var end = this.options.timeDimension.getCurrentTime()/1000
-        var start = end - 60*60
+        var time = this.options.timeDimension.getCurrentTime()/1000
         hit = hit.filter(function(point) {
-          return start < point.birth_time && point.birth_time < end
+          return point.birth_time < time && time < point.death_time
         })
       }
       if (hit.length > 0) {
@@ -334,6 +346,17 @@
       color: color,
     })
     colorScaleControl.redraw()
+  }
+
+  var setPointLocation = function(location) {
+    L.Util.setOptions(animOverlay, {
+      location: location,
+    })
+    animOverlay.redraw()
+    L.Util.setOptions(pointOverlay, {
+      location: location,
+    })
+    pointOverlay.redraw()
   }
 
   animOverlay.on('add', function(ev) {
@@ -654,6 +677,9 @@
           break;
         case 'pointColor':
           setPointColor(message.color)
+          break;
+        case 'pointLocation':
+          setPointLocation(message.location)
           break;
       }
     }

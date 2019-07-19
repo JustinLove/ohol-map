@@ -1,6 +1,6 @@
 module View exposing (Msg(..), Mode(..), EndTimeMode(..), RemoteData(..), Life, centerUrl, view, document)
 
-import Leaflet exposing (Point, PointColor(..))
+import Leaflet exposing (Point, PointColor(..), PointLocation(..))
 import OHOLData as Data exposing (Server)
 
 import Browser
@@ -33,6 +33,7 @@ type Msg
   | HoursBefore Int
   | GameSecondsPerFrame Int
   | SelectPointColor PointColor
+  | SelectPointLocation PointLocation
   | SelectMatchingLife Life
   | SelectLineage Life
   | SelectMode Mode
@@ -579,11 +580,20 @@ cosmetics model =
         { onChange = SelectPointColor
         , selected = Just model.pointColor
         , label = Input.labelAbove [] (text "Color")
-        , options = 
+        , options =
           [ Input.option LineageColor (text "Lineage")
           , Input.option BirthTimeColor (text "Birth Time")
           , Input.option ChainColor (text "Generation")
           , Input.option CauseOfDeathColor (text "Cause of Death")
+          ]
+        }
+      , Input.radio [ padding 10, spacing 2 ]
+        { onChange = SelectPointLocation
+        , selected = Just model.pointLocation
+        , label = Input.labelAbove [] (text "Location")
+        , options =
+          [ Input.option BirthLocation (text "Birth")
+          , Input.option DeathLocation (text "Death")
           ]
         }
       , if model.dataAnimated then

@@ -1,6 +1,6 @@
 module MapUI exposing (..)
 
-import Leaflet exposing (Point, PointColor(..))
+import Leaflet exposing (Point, PointColor(..), PointLocation(..))
 import OHOLData as Data exposing (Server)
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
@@ -52,6 +52,7 @@ type alias Model =
   , gameSecondsPerFrame : Int
   , frameRate : Int
   , pointColor : PointColor
+  , pointLocation : PointLocation
   , selectedServer : Maybe Server
   , servers : RemoteData (List Server)
   , monumentsFetched : Set Int
@@ -97,6 +98,7 @@ init config location key =
       , gameSecondsPerFrame = 60
       , frameRate = 10
       , pointColor = LineageColor
+      , pointLocation = BirthLocation
       , selectedServer = Nothing
       , servers = NotRequested
       , monumentsFetched = Set.empty
@@ -165,6 +167,12 @@ update msg model =
         | pointColor = color
         }
       , Leaflet.pointColor color
+      )
+    UI (View.SelectPointLocation location) ->
+      ( { model
+        | pointLocation = location
+        }
+      , Leaflet.pointLocation location
       )
     UI (View.SelectMatchingLife life) ->
       ( { model
