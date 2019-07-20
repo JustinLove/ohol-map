@@ -375,10 +375,7 @@ dateRangeSelect model =
       [ Background.color control ]
       { onChange = round >> HoursBefore
       , label = Input.labelAbove [] <|
-        row []
-          [ model.hoursBefore |> String.fromInt |> text
-          , text " Hours Before"
-          ]
+        text (hoursText model.hoursBefore)
       , min = 1
       , max = 7*24
       , value = model.hoursBefore |> toFloat
@@ -386,6 +383,26 @@ dateRangeSelect model =
       , step = Nothing
       }
     ]
+
+hoursText : Int -> String
+hoursText totalHours =
+  let
+    days = totalHours // 24
+    hours = totalHours |> modBy 24
+  in
+    [
+      if days > 0 then
+        Just ((days |> String.fromInt) ++ "d")
+      else
+        Nothing
+    , if hours > 0 then
+        Just ((hours |> String.fromInt) ++ "h")
+      else
+        Nothing
+    , Just "Before"
+  ]
+    |> List.filterMap identity
+    |> String.join " "
 
 logSlider attributes slider =
   Input.slider
@@ -608,10 +625,7 @@ cosmetics model =
             [ Background.color control ]
             { onChange = round >> GameSecondsPerFrame
             , label = Input.labelAbove [] <|
-              row []
-                [ model.gameSecondsPerFrame |> String.fromInt |> text
-                , text " Game Seconds/Frame"
-                ]
+              text (gameTimeText model.gameSecondsPerFrame)
             , min = 1
             , max = 60*60
             , value = model.gameSecondsPerFrame |> toFloat
@@ -621,6 +635,26 @@ cosmetics model =
         else
           none
         ]
+
+gameTimeText : Int -> String
+gameTimeText totalSeconds =
+  let
+    minutes = totalSeconds // 60
+    seconds = totalSeconds |> modBy 60
+  in
+    [
+      if minutes > 0 then
+        Just ((minutes |> String.fromInt) ++ "m")
+      else
+        Nothing
+    , if seconds > 0 then
+        Just ((seconds |> String.fromInt) ++ "s")
+      else
+        Nothing
+    , Just "Game Time/Frame"
+  ]
+    |> List.filterMap identity
+    |> String.join " "
 
 showLoading : RemoteData a -> Element Msg
 showLoading remote =

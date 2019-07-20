@@ -1,4 +1,3 @@
-- display of seconds/hours in larger units
 - bookmarking layers
 - show data for other servers
   - deselect server
