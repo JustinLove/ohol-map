@@ -1,5 +1,4 @@
 - condense monument layer?
-- on-map time toggle?
 - display of seconds/hours in larger units
 - use other icons
 - bookmarking layers

@@ -594,7 +594,6 @@
     L.DomEvent.on(map, 'mousemove', setActive, map);
 
     base['Default'].addTo(map)
-    //pointOverlay.addTo(map)
 
     // helper to share the timeDimension object between all layers
     map.timeDimension = timeDimension; 
@@ -649,8 +648,8 @@
           break;
         case 'dataLayer':
           setDataLayers(message.lives.data)
-          if( !map.hasLayer(pointOverlay) && !map.hasLayer(animOverlay) ) {
-            map.addLayer(pointOverlay)
+          if(!map.hasLayer(dataOverlay)) {
+            map.addLayer(dataOverlay)
           }
           break;
         case 'beginPlayback':
@@ -690,11 +689,11 @@
           break
         case 'animOverlay':
           if (message.status) {
-            animOverlay.addTo(map)
-            map.removeLayer(pointOverlay)
+            dataOverlay.addLayer(animOverlay)
+            dataOverlay.removeLayer(pointOverlay)
           } else {
-            animOverlay.remove()
-            map.addLayer(pointOverlay)
+            dataOverlay.removeLayer(animOverlay)
+            dataOverlay.addLayer(pointOverlay)
           }
           break
         case 'baseLayer':
