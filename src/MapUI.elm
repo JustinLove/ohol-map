@@ -244,7 +244,7 @@ update msg model =
     Event (Ok (Leaflet.AnimToggle)) ->
       ( { model | dataAnimated = not model.dataAnimated }
       , Leaflet.animOverlay
-        (model.sidebarOpen == True && model.dataAnimated == False)
+        (model.dataAnimated == False)
       )
     Event (Err err) ->
       let _ = Debug.log "error" err in

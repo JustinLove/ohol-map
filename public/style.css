@@ -66,13 +66,13 @@ img {
 }
 
 .leaflet-control-color-scale,
-.leaflet-control-sidebar {
+.leaflet-control-map-button {
   background: #fff;
   background-clip: padding-box;
   border: 2px solid rgba(0,0,0,0.2);
   border-radius: 5px;
 }
-.leaflet-control-sidebar-toggle {
+.leaflet-control-map-button-toggle {
   font: bold 18px 'Lucida Console', Monaco, monospace;
   font-size: 22px;
   text-align: center;
@@ -81,12 +81,12 @@ img {
   height: 36px;
   position: relative;
 }
-.leaflet-control-sidebar-toggle svg {
+.leaflet-control-map-button-toggle svg {
   position: relative;
   top: 10px;
   color: #aaa;
 }
-.leaflet-touch .leaflet-control-sidebar-toggle {
+.leaflet-touch .leaflet-control-map-button-toggle {
   width: 44px;
   height: 44px;
 }

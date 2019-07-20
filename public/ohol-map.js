@@ -388,6 +388,10 @@
 
   pointOverlay.on('add', function(ev) {
     ev.target.addInteractiveTarget(ev.target._container)
+    ev.target._map.addControl(animToggle)
+  })
+  pointOverlay.on('remove', function(ev) {
+    ev.target._map.removeControl(animToggle)
   })
   pointOverlay.on('click', pointOverlay.selectPoints)
 
@@ -447,7 +451,12 @@
     }
   })
 
-  L.Control.Sidebar = L.Control.extend({
+  L.Control.MapButton = L.Control.extend({
+      options: {
+        title: 'Button',
+        icon: 'filter',
+        message: 'mapButton',
+      },
       onAdd: function(map) {
         return this._initLayout()
       },
@@ -455,13 +464,13 @@
         // Nothing to do here
       },
       _initLayout: function () {
-        var className = 'leaflet-control-sidebar'
+        var className = 'leaflet-control-map-button'
         var container = this._container = L.DomUtil.create('div', className)
 
         var link = L.DomUtil.create('a', className + '-toggle', container);
         link.href = '#';
-        link.title = 'Data';
-        link.innerHTML = '<svg class="icon icon-filter"><use xlink:href="symbol-defs.svg#icon-filter"></use></svg>'
+        link.title = this.options.title
+        link.innerHTML = '<svg class="icon icon-filter"><use xlink:href="symbol-defs.svg#icon-' + this.options.icon + '"></use></svg>'
 
         L.DomEvent.on(link, 'click', this.toggle, this);
 
@@ -469,14 +478,27 @@
       },
       toggle: function() {
         app.ports.leafletEvent.send({
-          kind: 'sidebarToggle',
+          kind: this.options.message,
         })
       },
   });
 
-  L.control.sidebar = function(opts) {
-    return new L.Control.Sidebar(opts);
+  L.control.mapButton = function(opts) {
+    return new L.Control.MapButton(opts);
   }
+
+  var sidebarToggle = L.control.mapButton({
+    title: 'Data',
+    icon: 'filter',
+    message: 'sidebarToggle',
+    position: 'bottomright'
+  })
+  var animToggle = L.control.mapButton({
+    title: 'Time',
+    icon: 'time',
+    message: 'animToggle',
+    position: 'bottomleft'
+  })
 
   L.Control.ColorScale = L.Control.extend({
       options: {
@@ -578,7 +600,7 @@
     map.timeDimension = timeDimension; 
     layersControl.addTo(map)
     L.control.scale({imperial: false}).addTo(map)
-    L.control.sidebar({ position: 'bottomright' }).addTo(map);
+    sidebarToggle.addTo(map)
     map.setView([0,0], 17)
 
     if (app.ports.leafletEvent) {
