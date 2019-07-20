@@ -352,6 +352,7 @@ yesterday model =
   ( { model
     | dataLayer = Loading
     , endTimeMode = FromNow
+    , dataAnimated = True
     , hoursBefore = 24
     , gameSecondsPerFrame = 1
     , frameRate = 1
