@@ -11,13 +11,19 @@
 
   var base = {};
 
+  var attribution = '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible' +
+    '<a href="https://twitter.com/wondible" title="@wondible"><svg class="icon icon-twitter"><use xlink:href="symbol-defs.svg#icon-twitter"></use></svg></a>' +
+    '<a href="https://github.com/JustinLove/ohol-map" title="Frontend: ohol-map"><svg class="icon icon-github"><use xlink:href="symbol-defs.svg#icon-github"></use></svg></a>' +
+    '<a href="https://github.com/JustinLove/ohol-data-server" title="Backend: ohol-data-server"><svg class="icon icon-github"><use xlink:href="symbol-defs.svg#icon-github"></use></svg></a>' +
+    '<a href="https://github.com/JustinLove/OneLife/tree/mapping" title="Tile generation: OneLife/mapping"><svg class="icon icon-github"><use xlink:href="symbol-defs.svg#icon-github"></use></svg></a>'
+
   base['Default'] = L.tileLayer(oholMapConfig.mainTiles, {
     errorTileUrl: 'ground_U.png',
     minZoom: 2,
     maxZoom: 27,
     //minNativeZoom: 24,
     maxNativeZoom: 24,
-    attribution: '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible',
+    attribution: attribution,
   })
 
   base['Faded'] = L.tileLayer(oholMapConfig.mainTiles, {
@@ -27,7 +33,7 @@
     //minNativeZoom: 24,
     maxNativeZoom: 24,
     opacity: 0.2,
-    attribution: '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible',
+    attribution: attribution,
   })
 
   base['Crucible'] = L.tileLayer(oholMapConfig.crucibleTiles, {
@@ -36,7 +42,7 @@
     maxZoom: 27,
     //minNativeZoom: 24,
     maxNativeZoom: 25,
-    attribution: '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible',
+    attribution: attribution,
   });
 
   var dataOverlay = L.layerGroup([])
@@ -47,17 +53,20 @@
     ev.target._map.removeControl(colorScaleControl)
   })
 
+  var monumentOverlay = L.layerGroup([])
+
   var overlays = {
     graticule: null,
     "Life Data": dataOverlay,
+    "Monuments": monumentOverlay,
   }
 
   var searchOverlay = L.layerGroup([])
   var focusMarker = null;
 
   var updateMonumentLayer = function(layer, data) {
-    var server_id = layer.options.server_id
     var now = new Date()
+    layer.clearLayers()
     L.Util.setOptions(layer, {data: data})
     data.forEach(function(point) {
       var date = new Date(point.date*1000)
@@ -420,17 +429,6 @@
 
   layersControl = L.control.layers(base, overlays, {autoZIndex: false})
 
-  var setupMonuments = function setupMonuments(map, servers) {
-    servers.forEach(function(server) {
-      var short = server.server_name.replace('.onehouronelife.com', '')
-      title = short + ' Monuments'
-      overlays[title] = L.layerGroup([], {
-        server_id: server.id,
-      });
-      layersControl.addOverlay(overlays[title], title)
-    })
-  }
-
   L.Control.Scale.include({
     _updateMetric: function (maxMeters) {
       var meters = this._getRoundNum(maxMeters);
@@ -470,7 +468,7 @@
         var link = L.DomUtil.create('a', className + '-toggle', container);
         link.href = '#';
         link.title = this.options.title
-        link.innerHTML = '<svg class="icon icon-filter"><use xlink:href="symbol-defs.svg#icon-' + this.options.icon + '"></use></svg>'
+        link.innerHTML = '<svg class="icon icon-' + this.options.icon + '"><use xlink:href="symbol-defs.svg#icon-' + this.options.icon + '"></use></svg>'
 
         L.DomEvent.on(link, 'click', this.toggle, this);
 
@@ -635,16 +633,9 @@
             map.setView([message.y, message.x], message.z)
           }
           break
-        case 'serverList':
-          setupMonuments(map, message.servers.data)
-          break;
         case 'monumentList':
-          for (var name in overlays) {
-            if (overlays[name].options.server_id == message.server_id) {
-              updateMonumentLayer(overlays[name], message.monuments.data)
-              overlays[name].addTo(map)
-            }
-          }
+          updateMonumentLayer(monumentOverlay, message.monuments.data)
+          monumentOverlay.addTo(map)
           break;
         case 'dataLayer':
           setDataLayers(message.lives.data)
@@ -710,6 +701,9 @@
           break;
         case 'pointLocation':
           setPointLocation(message.location)
+          break;
+        default:
+          console.log('unknown message', message)
           break;
       }
     }

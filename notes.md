@@ -1,6 +1,4 @@
-- condense monument layer?
 - display of seconds/hours in larger units
-- use other icons
 - bookmarking layers
 - show data for other servers
   - deselect server

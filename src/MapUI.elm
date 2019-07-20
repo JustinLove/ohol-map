@@ -11,7 +11,7 @@ import Browser
 import Browser.Navigation as Navigation
 import Http
 import Json.Decode
-import Set exposing(Set)
+import Dict exposing(Dict)
 import Task
 import Time exposing (Posix)
 import Tuple
@@ -55,7 +55,7 @@ type alias Model =
   , pointLocation : PointLocation
   , selectedServer : Maybe Server
   , servers : RemoteData (List Server)
-  , monumentsFetched : Set Int
+  , monuments : Dict Int Json.Decode.Value
   , dataLayer : RemoteData Bool
   , lives : RemoteData (List Life)
   , focus : Maybe Life
@@ -101,7 +101,7 @@ init config location key =
       , pointLocation = BirthLocation
       , selectedServer = Nothing
       , servers = NotRequested
-      , monumentsFetched = Set.empty
+      , monuments = Dict.empty
       , dataLayer = NotRequested
       , lives = NotRequested
       , focus = Nothing
@@ -203,7 +203,11 @@ update msg model =
           , dataLayer = Loading
           }
       in
-      ( m2, fetchDataForTime m2 )
+      ( m2, Cmd.batch
+        [ fetchDataForTime m2
+        , fetchMonuments model.cachedApiUrl server.id
+        ]
+      )
     UI (View.SelectShow) ->
       ( {model | dataLayer = Loading}
       , fetchDataForTime model
@@ -216,7 +220,7 @@ update msg model =
     Event (Ok (Leaflet.OverlayAdd "Life Data" _)) ->
       requireRecentLives model
     Event (Ok (Leaflet.OverlayAdd name (Just serverId))) ->
-      if Set.member serverId model.monumentsFetched then
+      if Dict.member serverId model.monuments then
         (model, Cmd.none)
       else
         (model, fetchMonuments model.cachedApiUrl serverId)
@@ -280,7 +284,7 @@ update msg model =
       let _ = Debug.log "fetch servers failed" error in
       ({model | servers = Failed error}, Cmd.none)
     MonumentList serverId (Ok monuments) ->
-      ( {model | monumentsFetched = Set.insert serverId model.monumentsFetched}
+      ( {model | monuments = Dict.insert serverId monuments model.monuments}
       , Leaflet.monumentList serverId monuments
       )
     MonumentList serverId (Err error) ->
