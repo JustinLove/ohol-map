@@ -41,6 +41,12 @@ img {
   color: white;
 }
 
+.timecontrol-close:before {
+    width: 100%;
+    text-align: center;
+    content: "\e083";
+}
+
 .server-select {
   flex-wrap: wrap;
 }

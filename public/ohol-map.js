@@ -270,7 +270,20 @@
     timeSliderDragUpdate: true
   };
 
-  var timeDimensionControl = new L.Control.TimeDimension(timeDimensionControlOptions);
+  L.Control.ClosableTimeDimension = L.Control.TimeDimension.extend({
+    onAdd: function(map) {
+      var container = L.Control.TimeDimension.prototype.onAdd(map)
+      this._buttonClose = this._createButton('Close', container);
+      return container
+    },
+    _buttonCloseClicked: function() {
+      app.ports.leafletEvent.send({
+        kind: 'animToggle',
+      })
+    },
+  });
+
+  var timeDimensionControl = new L.Control.ClosableTimeDimension(timeDimensionControlOptions);
 
   var pointOverlay = new L.GridLayer.PointOverlay({className: 'interactive'}).addTo(dataOverlay)
 

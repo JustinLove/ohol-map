@@ -241,6 +241,11 @@ update msg model =
       , Leaflet.searchOverlay
         (model.sidebarOpen == False && model.sidebarMode == View.LifeSearch)
       )
+    Event (Ok (Leaflet.AnimToggle)) ->
+      ( { model | dataAnimated = not model.dataAnimated }
+      , Leaflet.animOverlay
+        (model.sidebarOpen == True && model.dataAnimated == False)
+      )
     Event (Err err) ->
       let _ = Debug.log "error" err in
       (model, Cmd.none)

@@ -12,8 +12,6 @@
   - include death info
   - interpolate to death time and location
   - interpolate to child birth locations
-- different map types (death)
-- handle no server
 - more logatrimthim slider scale?
 - better lineage color - bright except for problem colors
 - better generatoin color - longer on top?

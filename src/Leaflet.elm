@@ -167,6 +167,7 @@ type Event
   | OverlayRemove String
   | SelectPoints (List Data.Life)
   | SidebarToggle
+  | AnimToggle
 
 event : (Result Decode.Error Event -> msg) -> Sub msg
 event tagger =
@@ -194,6 +195,8 @@ eventDecoder =
            Decode.map SelectPoints (Decode.field "lives" Decode.lives)
         "sidebarToggle" ->
           Decode.succeed SidebarToggle
+        "animToggle" ->
+          Decode.succeed AnimToggle
         _ ->
           Decode.fail kind
       )
