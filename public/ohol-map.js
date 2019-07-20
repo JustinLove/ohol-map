@@ -47,10 +47,20 @@
 
   var dataOverlay = L.layerGroup([])
   dataOverlay.on('add', function(ev) {
-    ev.target._map.addControl(colorScaleControl)
+    var map = ev.target._map
+    map.addControl(colorScaleControl)
+    setTimeout(function() {
+      map.removeLayer(base['Default'])
+      map.addLayer(base['Faded'])
+    },0)
   })
   dataOverlay.on('remove', function(ev) {
-    ev.target._map.removeControl(colorScaleControl)
+    var map = ev.target._map
+    map.removeControl(colorScaleControl)
+    setTimeout(function() {
+      map.removeLayer(base['Faded'])
+      map.addLayer(base['Default'])
+    },0)
   })
 
   var monumentOverlay = L.layerGroup([])

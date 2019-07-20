@@ -276,8 +276,8 @@ update msg model =
         , endTime = endTime
         }
       , Cmd.batch
-        [ Leaflet.serverList servers
-        , fetchMonuments model.cachedApiUrl id
+        [ fetchMonuments model.cachedApiUrl id
+        --, Leaflet.serverList servers
         ]
       )
     ServerList (Err error) ->
@@ -359,7 +359,6 @@ yesterday model =
   , Cmd.batch
     [ fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
     , Leaflet.animOverlay True
-    , Leaflet.baseLayer "Faded"
     ]
   )
 
