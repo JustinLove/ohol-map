@@ -1,3 +1,4 @@
+- search/lineage reslts in data layer for coloring etc.
 - bookmarking layers
 - show data for other servers
   - deselect server
