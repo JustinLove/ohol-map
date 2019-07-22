@@ -129,7 +129,67 @@
   xxTweakedHash2D(0, 0)
   xxTweakedHash2D(1, 1)
 
+
+  var getXYRandomBN = function(inX, inY) {
+    var floorX = Math.floor(inX)
+    var ceilX = floorX + 1
+    var floorY = Math.floor(inY)
+    var ceilY = floorY + 1
+
+    var cornerA1 = xxTweakedHash2D(floorX, floorY)
+    var cornerA2 = xxTweakedHash2D(ceilX, floorY)
+
+    var cornerB1 = xxTweakedHash2D(floorX, ceilY)
+    var cornerB2 = xxTweakedHash2D(ceilX, ceilY)
+
+    var xOffset = inX - floorX
+    var yOffset = inY - floorY
+
+    var topBlend = cornerA2 * xOffset + (1-xOffset) * cornerA1
+    var bottomBlend = cornerB2 * xOffset + (1-xOffset) * cornerB1
+
+    return bottomBlend * yOffset + (1-yOffset) * topBlend
+  }
+
+
+  var oneOverIntMax = 1.0 / 4294967295;
+
+  var getXYFractal = function(inX, inY, inRoughness, inScale) {
+    var b = inRoughness
+    var a = 1 - b
+
+    var sum =
+      a * getXYRandomBN(inX / (32 * inScale), inY / (32 * inScale))
+      +
+      b * (
+        a * getXYRandomBN(inX / (16 * inScale), inY / (16 * inScale))
+        +
+        b * (
+          a * getXYRandomBN(inX / (8 * inScale), inY / (8 * inScale))
+          +
+          b * (
+            a * getXYRandomBN(inX / (4 * inScale), inY / (4 * inScale))
+            +
+            b * (
+              a * getXYRandomBN(inX / (2 * inScale), inY / (2 * inScale))
+              +
+              b * (
+                a * getXYRandomBN(inX / inScale, inY / inScale)
+              )
+            )
+          )
+        )
+      )
+
+    return sum * oneOverIntMax
+  }
+
   L.GridLayer.FractalLayer = L.GridLayer.extend({
+    options: {
+      biomeScale: 0.83332,
+      biomeOffset: 0.8333,
+      biomeFractalRoughness: 0.55,
+    },
     createTile: function (coords) {
       var tile = document.createElement('canvas');
       var tileSize = this.getTileSize();
@@ -158,6 +218,11 @@
       var startX = llnw.lng + 0.5
       var startY = llnw.lat - 0.5
 
+      //console.log(coords, startX, startY)
+
+      var scale = this.options.biomeOffset + this.options.biomeScale * 7
+      var roughness = this.options.biomeFractalRoughness
+
       var imageData = ctx.createImageData(tile.width, tile.height)
       var d = imageData.data
 
@@ -165,11 +230,11 @@
         for (var x = 0;x < w;x++) {
           var i = (y * w + x) * 4
           var wx = startX + x*stride
-          var wy = startY + ((h-1)-y)*stride
-          var v = xxTweakedHash2D(wx, wy)
-          d[i+0] = v % 256
-          d[i+1] = v % 256
-          d[i+2] = v % 256
+          var wy = startY - (y*stride)
+          var v = getXYFractal(wx, wy, roughness, scale)
+          d[i+0] = v * 256
+          d[i+1] = v * 256
+          d[i+2] = v * 256
           d[i+3] = 255
         }
       }
