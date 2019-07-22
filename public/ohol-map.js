@@ -90,6 +90,102 @@
     })
   }
 
+  // fractal generation copying https://github.com/jasonrohrer/OneLife/blob/master/commonSource/fractalNoise.cpp
+  // which cites https://bitbucket.org/runevision/random-numbers-testing/
+
+  var XX_PRIME32_1 = 2654435761
+  var XX_PRIME32_2 = 2246822519
+  var XX_PRIME32_3 = 3266489917
+  //var XX_PRIME32_4 = 668265263
+  var XX_PRIME32_5 = 374761393
+
+  var xxSeed = 0;
+
+  var hex = function(x) {
+    if (x < 0) {
+      return ((-x>>16 ^ 0xffff).toString(16) + (x&0xffff).toString(16)).padStart(8, '0') + ' ' + x
+    } else {
+      return x.toString(16).padStart(8, '0') + ' ' + x
+    }
+  }
+
+  var xxTweakedHash2D = function(inX, inY) {
+    //console.log('arg', hex(inX), hex(inY))
+    h32 = xxSeed + inX + XX_PRIME32_5
+    //console.log('a', hex(h32))
+    h32 += Math.imul(inY, XX_PRIME32_3)
+    //console.log('b', hex(h32))
+    h32 = Math.imul(h32, XX_PRIME32_2)
+    //console.log('c', hex(h32), hex(h32>>>13))
+    h32 ^= h32 >>> 13
+    //console.log('d', hex(h32))
+    h32 = Math.imul(h32, XX_PRIME32_3)
+    //console.log('e', hex(h32))
+    h32 ^= h32 >>> 16
+    //console.log('f', hex(h32))
+    return h32
+  }
+
+  xxTweakedHash2D(0, 0)
+  xxTweakedHash2D(1, 1)
+
+  L.GridLayer.FractalLayer = L.GridLayer.extend({
+    createTile: function (coords) {
+      var tile = document.createElement('canvas');
+      var tileSize = this.getTileSize();
+      //console.log(tileSize)
+      tile.setAttribute('width', tileSize.x);
+      tile.setAttribute('height', tileSize.y);
+
+      this.drawTile(tile, coords)
+
+      return tile;
+    },
+    drawTile(tile, coords, time) {
+      var tileSize = this.getTileSize();
+
+      var ctx = tile.getContext('2d');
+      ctx.clearRect(0, 0, tile.width, tile.height)
+
+      var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
+      //console.log(coords, pnw)
+      llnw = crs.pointToLatLng(pnw, coords.z)
+      //console.log(coords, llnw)
+
+      var stride = Math.pow(2, 24 - coords.z)
+      var w = tile.width
+      var h = tile.height
+      var startX = llnw.lng + 0.5
+      var startY = llnw.lat - 0.5
+
+      var imageData = ctx.createImageData(tile.width, tile.height)
+      var d = imageData.data
+
+      for (var y = 0;y < h;y++) {
+        for (var x = 0;x < w;x++) {
+          var i = (y * w + x) * 4
+          var wx = startX + x*stride
+          var wy = startY + ((h-1)-y)*stride
+          var v = xxTweakedHash2D(wx, wy)
+          d[i+0] = v % 256
+          d[i+1] = v % 256
+          d[i+2] = v % 256
+          d[i+3] = 255
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0)
+    },
+  })
+
+  base['Fractal'] = new L.GridLayer.FractalLayer({
+    minZoom: 2,
+    maxZoom: 27,
+    //minNativeZoom: 24,
+    maxNativeZoom: 24,
+    attribution: attribution,
+  })
+
   var colormap = function(id) {
     return '#' + (((id * 49157) % 12582917).toString(16))
   }
@@ -601,7 +697,8 @@
     var idleTimer = setTimeout(setIdle, 1*60*1000)
     L.DomEvent.on(map, 'mousemove', setActive, map);
 
-    base['Default'].addTo(map)
+    //base['Default'].addTo(map)
+    base['Fractal'].addTo(map)
 
     // helper to share the timeDimension object between all layers
     map.timeDimension = timeDimension; 
