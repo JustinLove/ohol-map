@@ -103,32 +103,22 @@
 
   var hex = function(x) {
     if (x < 0) {
-      return ((-x>>16 ^ 0xffff).toString(16) + (x&0xffff).toString(16)).padStart(8, '0') + ' ' + x
+      return (-x>>16 ^ 0xffff).toString(16).padStart(4, '0') + (x&0xffff).toString(16).padStart(4, '0') + ' ' + x
     } else {
       return x.toString(16).padStart(8, '0') + ' ' + x
     }
   }
 
   var xxTweakedHash2D = function(inX, inY) {
-    //console.log('arg', hex(inX), hex(inY))
     h32 = xxSeed + inX + XX_PRIME32_5
-    //console.log('a', hex(h32))
     h32 += Math.imul(inY, XX_PRIME32_3)
-    //console.log('b', hex(h32))
     h32 = Math.imul(h32, XX_PRIME32_2)
-    //console.log('c', hex(h32), hex(h32>>>13))
     h32 ^= h32 >>> 13
-    //console.log('d', hex(h32))
     h32 = Math.imul(h32, XX_PRIME32_3)
-    //console.log('e', hex(h32))
     h32 ^= h32 >>> 16
-    //console.log('f', hex(h32))
+    h32 >>>= 0
     return h32
   }
-
-  xxTweakedHash2D(0, 0)
-  xxTweakedHash2D(1, 1)
-
 
   var getXYRandomBN = function(inX, inY) {
     var floorX = Math.floor(inX)
@@ -150,7 +140,6 @@
 
     return bottomBlend * yOffset + (1-yOffset) * topBlend
   }
-
 
   var oneOverIntMax = 1.0 / 4294967295;
 
@@ -174,7 +163,7 @@
               a * getXYRandomBN(inX / (2 * inScale), inY / (2 * inScale))
               +
               b * (
-                a * getXYRandomBN(inX / inScale, inY / inScale)
+                getXYRandomBN(inX / inScale, inY / inScale)
               )
             )
           )
@@ -184,11 +173,42 @@
     return sum * oneOverIntMax
   }
 
+  var biomeMap = [
+    0,
+    3,
+    4,
+    5,
+    2,
+    1,
+    6,
+  ]
+
+  var computeMapBiomeIndex = function(inX, inY, options) {
+    var maxValue = -Number.MAX_VALUE
+    var pickedBiome = -1
+    var scale = options.biomeOffset + options.biomeScale * options.numBiomes
+    var roughness = options.biomeFractalRoughness
+    for (var i = 0;i < options.numBiomes;i++) {
+      var biome = biomeMap[i]
+
+      xxSeed = biome * options.biomeSeedScale + options.biomeSeedOffset
+      randVal = getXYFractal(inX, inY, roughness, scale)
+
+      if (randVal > maxValue) {
+        maxValue = randVal
+        pickedBiome = i
+      }
+    }
+
+    return pickedBiome
+  }
+
   L.GridLayer.FractalLayer = L.GridLayer.extend({
     options: {
-      biomeScale: 0.83332,
-      biomeOffset: 0.8333,
+      biomeOffset: 0.83332,
+      biomeScale: 0.08333,
       biomeFractalRoughness: 0.55,
+      seed: 0 * 263 + 723,
     },
     createTile: function (coords) {
       var tile = document.createElement('canvas');
@@ -204,7 +224,7 @@
     drawTile(tile, coords, time) {
       var tileSize = this.getTileSize();
 
-      var ctx = tile.getContext('2d');
+      var ctx = tile.getContext('2d', {alpha: false});
       ctx.clearRect(0, 0, tile.width, tile.height)
 
       var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
@@ -226,6 +246,8 @@
       var imageData = ctx.createImageData(tile.width, tile.height)
       var d = imageData.data
 
+      xxSeed = this.options.seed
+
       for (var y = 0;y < h;y++) {
         for (var x = 0;x < w;x++) {
           var i = (y * w + x) * 4
@@ -244,6 +266,127 @@
   })
 
   base['Fractal'] = new L.GridLayer.FractalLayer({
+    minZoom: 2,
+    maxZoom: 27,
+    //minNativeZoom: 24,
+    maxNativeZoom: 24,
+    attribution: attribution,
+  })
+
+  //http://axonflux.com/handy-rgb-to-hsl-and-rgb-to-hsv-color-model-c
+  /**
+  * Converts an HSV color value to RGB. Conversion formula
+  * adapted from http://en.wikipedia.org/wiki/HSV_color_space.
+  * Assumes h, s, and v are contained in the set [0, 1] and
+  * returns r, g, and b in the set [0, 255].
+  *
+  * @param   Number  h       The hue
+  * @param   Number  s       The saturation
+  * @param   Number  v       The value
+  * @return  Array           The RGB representation
+  */
+  function hsvToRgb(h, s, v){
+    var r, g, b;
+
+    var i = Math.floor(h * 6);
+    var f = h * 6 - i;
+    var p = v * (1 - s);
+    var q = v * (1 - f * s);
+    var t = v * (1 - (1 - f) * s);
+
+    switch(i % 6){
+      case 0: r = v, g = t, b = p; break;
+      case 1: r = q, g = v, b = p; break;
+      case 2: r = p, g = v, b = t; break;
+      case 3: r = p, g = q, b = v; break;
+      case 4: r = t, g = p, b = v; break;
+      case 5: r = v, g = p, b = q; break;
+    }
+
+    return [r * 255, g * 255, b * 255];
+  }
+
+  var greenColor = hsvToRgb(89/360, 0.49, 0.67)
+  var swampColor = hsvToRgb(253/360, 0.17, 0.65)
+  var plainsColor = hsvToRgb(36/360, 0.75, 0.90)
+  var badlandsColor = hsvToRgb(40/360, 0.16, 0.36)
+  var arcticColor = hsvToRgb(0/360, 0.00, 1.0)
+  var desertColor = hsvToRgb(37/360, 0.65, 0.62)
+  var jungleColor = hsvToRgb(90/360, 0.87, 0.48)
+
+  L.GridLayer.BiomeLayer = L.GridLayer.extend({
+    options: {
+      biomeOffset: 0.83332,
+      biomeScale: 0.08333,
+      biomeFractalRoughness: 0.55,
+      numBiomes: 7,
+      biomeSeedOffset: 723,
+      biomeSeedScale: 263,
+      biomeColors: [
+        greenColor,
+        swampColor,
+        plainsColor,
+        badlandsColor,
+        arcticColor,
+        desertColor,
+        jungleColor,
+      ]
+    },
+    createTile: function (coords) {
+      var tile = document.createElement('canvas');
+      var tileSize = this.getTileSize();
+      //console.log(tileSize)
+      tile.setAttribute('width', tileSize.x);
+      tile.setAttribute('height', tileSize.y);
+
+      this.drawTile(tile, coords)
+
+      return tile;
+    },
+    drawTile(tile, coords, time) {
+      var tileSize = this.getTileSize();
+
+      var ctx = tile.getContext('2d', {alpha: false});
+      ctx.clearRect(0, 0, tile.width, tile.height)
+
+      var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
+      //console.log(coords, pnw)
+      llnw = crs.pointToLatLng(pnw, coords.z)
+      //console.log(coords, llnw)
+
+      var stride = Math.pow(2, 24 - coords.z)
+      var w = tile.width
+      var h = tile.height
+      var startX = llnw.lng + 0.5
+      var startY = llnw.lat - 0.5
+
+      //console.log(coords, startX, startY)
+
+      var scale = this.options.biomeOffset + this.options.biomeScale * 7
+      var roughness = this.options.biomeFractalRoughness
+
+      var colors = this.options.biomeColors
+      var imageData = ctx.createImageData(tile.width, tile.height)
+      var d = imageData.data
+
+      for (var y = 0;y < h;y++) {
+        for (var x = 0;x < w;x++) {
+          var i = (y * w + x) * 4
+          var wx = startX + x*stride
+          var wy = startY - (y*stride)
+          var v = biomeMap[computeMapBiomeIndex(wx, wy, this.options)]
+          d[i+0] = colors[v][0]
+          d[i+1] = colors[v][1]
+          d[i+2] = colors[v][2]
+          d[i+3] = 255
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0)
+    },
+  })
+
+  base['Biome'] = new L.GridLayer.BiomeLayer({
     minZoom: 2,
     maxZoom: 27,
     //minNativeZoom: 24,
@@ -763,7 +906,9 @@
     L.DomEvent.on(map, 'mousemove', setActive, map);
 
     //base['Default'].addTo(map)
-    base['Fractal'].addTo(map)
+    //base['Faded'].addTo(map)
+    //base['Fractal'].addTo(map)
+    base['Biome'].addTo(map)
 
     // helper to share the timeDimension object between all layers
     map.timeDimension = timeDimension; 
