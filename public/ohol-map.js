@@ -221,7 +221,7 @@
 
       return tile;
     },
-    drawTile(tile, coords, time) {
+    drawTile(tile, coords) {
       var tileSize = this.getTileSize();
 
       var ctx = tile.getContext('2d', {alpha: false});
@@ -332,18 +332,18 @@
         jungleColor,
       ]
     },
-    createTile: function (coords) {
+    createTile: function (coords, done) {
       var tile = document.createElement('canvas');
       var tileSize = this.getTileSize();
       //console.log(tileSize)
       tile.setAttribute('width', tileSize.x);
       tile.setAttribute('height', tileSize.y);
 
-      this.drawTile(tile, coords)
+      setTimeout(this.drawTile.bind(this), 0, tile, coords, done)
 
       return tile;
     },
-    drawTile(tile, coords, time) {
+    drawTile(tile, coords, done) {
       var tileSize = this.getTileSize();
 
       var ctx = tile.getContext('2d', {alpha: false});
@@ -383,6 +383,7 @@
       }
 
       ctx.putImageData(imageData, 0, 0)
+      done(null, tile)
     },
   })
 
