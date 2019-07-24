@@ -121,9 +121,9 @@
   }
 
   var getXYRandomBN = function(inX, inY) {
-    var floorX = Math.floor(inX)
+    var floorX = inX + (inX < 0 ? -1 : 0) >> 0
     var ceilX = floorX + 1
-    var floorY = Math.floor(inY)
+    var floorY = inY + (inY < 0 ? -1 : 0) >> 0
     var ceilY = floorY + 1
 
     var cornerA1 = xxTweakedHash2D(floorX, floorY)
