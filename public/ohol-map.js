@@ -67,6 +67,7 @@
 
   var overlays = {
     graticule: null,
+    "Barrier": L.rectangle([[-250,-250], [250,250]], {fill: false}),
     "Life Data": dataOverlay,
     "Monuments": monumentOverlay,
   }
@@ -291,7 +292,7 @@
 
   L.Control.ClosableTimeDimension = L.Control.TimeDimension.extend({
     onAdd: function(map) {
-      var container = L.Control.TimeDimension.prototype.onAdd(map)
+      var container = L.Control.TimeDimension.prototype.onAdd.call(this, map)
       this._buttonClose = this._createButton('Close', container);
       return container
     },
@@ -602,13 +603,14 @@
     L.DomEvent.on(map, 'mousemove', setActive, map);
 
     base['Default'].addTo(map)
+    overlays['Barrier'].addTo(map)
 
     // helper to share the timeDimension object between all layers
     map.timeDimension = timeDimension; 
     layersControl.addTo(map)
     L.control.scale({imperial: false}).addTo(map)
     sidebarToggle.addTo(map)
-    map.setView([0,0], 17)
+    map.setView([0,0], 24)
 
     if (app.ports.leafletEvent) {
       map.on('moveend', function(ev) {
