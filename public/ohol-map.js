@@ -17,19 +17,32 @@
     '<a href="https://github.com/JustinLove/ohol-data-server" title="Backend: ohol-data-server"><svg class="icon icon-github"><use xlink:href="symbol-defs.svg#icon-github"></use></svg></a>' +
     '<a href="https://github.com/JustinLove/OneLife/tree/mapping" title="Tile generation: OneLife/mapping"><svg class="icon icon-github"><use xlink:href="symbol-defs.svg#icon-github"></use></svg></a>'
 
-  base['Default'] = L.tileLayer(oholMapConfig.mainTiles, {
+  var biomeImageLayer = L.tileLayer(oholMapConfig.mainTiles, {
     errorTileUrl: 'ground_U.png',
     minZoom: 2,
-    maxZoom: 27,
+    maxZoom: 31,
     //minNativeZoom: 24,
     maxNativeZoom: 24,
     attribution: attribution,
   })
 
+  var screenshotImageLayer = L.tileLayer(oholMapConfig.mainTiles, {
+    errorTileUrl: 'ground_U.png',
+    minZoom: 2,
+    minZoom: 25,
+    maxZoom: 31,
+    //minNativeZoom: 24,
+    maxNativeZoom: 29,
+    attribution: attribution,
+    bounds: [[-256, -256], [255, 255]],
+  })
+
+  base['Default'] = L.layerGroup([biomeImageLayer, screenshotImageLayer])
+
   base['Faded'] = L.tileLayer(oholMapConfig.mainTiles, {
     errorTileUrl: 'ground_U.png',
     minZoom: 2,
-    maxZoom: 27,
+    maxZoom: 31,
     //minNativeZoom: 24,
     maxNativeZoom: 24,
     opacity: 0.2,
@@ -579,7 +592,7 @@
       crs: crs,
       maxBounds: [[-2147483648, -2147483648], [2147483647, 2147483647]],
       minZoom: 2,
-      maxZoom: 27,
+      maxZoom: 31,
     })
 
     var idle = false
