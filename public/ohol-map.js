@@ -17,19 +17,32 @@
     '<a href="https://github.com/JustinLove/ohol-data-server" title="Backend: ohol-data-server"><svg class="icon icon-github"><use xlink:href="symbol-defs.svg#icon-github"></use></svg></a>' +
     '<a href="https://github.com/JustinLove/OneLife/tree/mapping" title="Tile generation: OneLife/mapping"><svg class="icon icon-github"><use xlink:href="symbol-defs.svg#icon-github"></use></svg></a>'
 
-  base['Default'] = L.tileLayer(oholMapConfig.mainTiles, {
+  var biomeImageLayer = L.tileLayer(oholMapConfig.mainTiles, {
     errorTileUrl: 'ground_U.png',
     minZoom: 2,
-    maxZoom: 27,
+    maxZoom: 31,
     //minNativeZoom: 24,
     maxNativeZoom: 24,
     attribution: attribution,
   })
 
+  var screenshotImageLayer = L.tileLayer(oholMapConfig.mainTiles, {
+    //errorTileUrl: 'ground_U.png',
+    minZoom: 2,
+    minZoom: 25,
+    maxZoom: 31,
+    //minNativeZoom: 24,
+    maxNativeZoom: 29,
+    attribution: attribution,
+    bounds: [[-512, -512], [511, 511]],
+  })
+
+  base['Default'] = L.layerGroup([biomeImageLayer, screenshotImageLayer])
+
   base['Faded'] = L.tileLayer(oholMapConfig.mainTiles, {
     errorTileUrl: 'ground_U.png',
     minZoom: 2,
-    maxZoom: 27,
+    maxZoom: 31,
     //minNativeZoom: 24,
     maxNativeZoom: 24,
     opacity: 0.2,
@@ -67,6 +80,11 @@
 
   var overlays = {
     graticule: null,
+    "Barrier": L.layerGroup([
+      L.rectangle([[-250,-250], [250,250]], {fill: false, color: '#888'}),
+      L.rectangle([[-500,-500], [500,500]], {fill: false, color: 'black'}),
+      L.rectangle([[-1000,-1000], [1000,1000]], {fill: false, color: '#888'}),
+    ]),
     "Life Data": dataOverlay,
     "Monuments": monumentOverlay,
   }
@@ -596,7 +614,7 @@
 
   L.Control.ClosableTimeDimension = L.Control.TimeDimension.extend({
     onAdd: function(map) {
-      var container = L.Control.TimeDimension.prototype.onAdd(map)
+      var container = L.Control.TimeDimension.prototype.onAdd.call(this, map)
       this._buttonClose = this._createButton('Close', container);
       return container
     },
@@ -883,7 +901,7 @@
       crs: crs,
       maxBounds: [[-2147483648, -2147483648], [2147483647, 2147483647]],
       minZoom: 2,
-      maxZoom: 27,
+      maxZoom: 31,
     })
 
     var idle = false
@@ -910,13 +928,14 @@
     //base['Faded'].addTo(map)
     //base['Fractal'].addTo(map)
     base['Biome'].addTo(map)
+    overlays['Barrier'].addTo(map)
 
     // helper to share the timeDimension object between all layers
     map.timeDimension = timeDimension; 
     layersControl.addTo(map)
     L.control.scale({imperial: false}).addTo(map)
     sidebarToggle.addTo(map)
-    map.setView([0,0], 17)
+    map.setView([0,0], 22)
 
     if (app.ports.leafletEvent) {
       map.on('moveend', function(ev) {
