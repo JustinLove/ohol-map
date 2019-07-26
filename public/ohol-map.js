@@ -205,6 +205,8 @@
     6,
   ]
 
+  var biomes = []
+
   var computeMapBiomeIndex = function(inX, inY, options) {
     var maxValue = -Number.MAX_VALUE
     var pickedBiome = -1
@@ -252,7 +254,7 @@
     density = sigmoid(density, options.densitySmoothness)
     density *= options.density
 
-    xxSeed = options.objectSeed
+    xxSeed = options.presentSeed
     if (getXYRandom(inX, inY) >= density) {
       return 0
     }
@@ -266,16 +268,42 @@
     }
 
     // second place check
+    // TODO
+
+    var biome = biomes[pickedBiome]
+    var objects = biome.objects
+    var numObjects = objects.length
 
     // jackpot chance
+    // TODO
 
     // weighted object pick
+    xxSeed = options.objectSeed
+    var randValue = getXYRandom(inX, inY)
+
+    var i = 0
+    var weightSum = 0
+
+    while (weightSum < randValue && i < numObjects) {
+      weightSum += objects[i].spawnChance
+      i++
+    }
+
+    i--
+
+    if (i < 0) {
+      return 0
+    }
+
+    var returnId = parseInt(objects[i].id, 10)
 
     // fix jackpot chance
+    // TODO
 
     // eliminate off-biome moving objects
+    // TODO
 
-    return 1
+    return returnId
   }
 
   L.GridLayer.FractalLayer = L.GridLayer.extend({
@@ -496,7 +524,8 @@
       densityScale: 0.25,
       densitySmoothness: 0.1,
       density: 0.4,
-      objectSeed: 9877,
+      presentSeed: 9877,
+      objectSeed: 4593873,
     },
     createTile: function (coords, done) {
       var tile = document.createElement('canvas');
@@ -512,7 +541,7 @@
     drawTile(tile, coords, done) {
       var tileSize = this.getTileSize();
 
-      var ctx = tile.getContext('2d', {alpha: false});
+      var ctx = tile.getContext('2d', {alpha: true});
       ctx.clearRect(0, 0, tile.width, tile.height)
 
       var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
@@ -540,10 +569,11 @@
           var wx = startX + x*stride
           var wy = startY - (y*stride)
           var v = getBaseMap(wx, wy, this.options)
-          d[i+0] = v * 256
-          d[i+1] = v * 256
-          d[i+2] = v * 256
-          d[i+3] = 255
+          var color = hsvToRgb(v / 2697, 1, 1)
+          d[i+0] = color[0]
+          d[i+1] = color[1]
+          d[i+2] = color[2]
+          d[i+3] = (v == 0 ? 0 : 255)
         }
       }
 
@@ -1076,7 +1106,6 @@
     //base['Faded'].addTo(map)
     //base['Fractal'].addTo(map)
     //base['Biome'].addTo(map)
-    overlays['Object'].addTo(map)
     overlays['Barrier'].addTo(map)
 
     // helper to share the timeDimension object between all layers
@@ -1085,6 +1114,22 @@
     L.control.scale({imperial: false}).addTo(map)
     sidebarToggle.addTo(map)
     map.setView([0,0], 22)
+
+    fetch('static/objects.json').then(function(response) {
+      response.json().then(function(wrapper) {
+        var pending = wrapper.biomeIds.length
+        wrapper.biomeIds.forEach(function(id) {
+          fetch('static/biomes/' + id + '.json').then(function(responseb) {
+            responseb.json().then(function(biome) {
+              biomes[id] = biome
+              if (--pending < 1) {
+                overlays['Object'].addTo(map)
+              }
+            })
+          })
+        })
+      })
+    })
 
     if (app.ports.leafletEvent) {
       map.on('moveend', function(ev) {
