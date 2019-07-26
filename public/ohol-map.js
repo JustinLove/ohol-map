@@ -27,14 +27,14 @@
   })
 
   var screenshotImageLayer = L.tileLayer(oholMapConfig.mainTiles, {
-    errorTileUrl: 'ground_U.png',
+    //errorTileUrl: 'ground_U.png',
     minZoom: 2,
     minZoom: 25,
     maxZoom: 31,
     //minNativeZoom: 24,
     maxNativeZoom: 29,
     attribution: attribution,
-    bounds: [[-256, -256], [255, 255]],
+    bounds: [[-512, -512], [511, 511]],
   })
 
   base['Default'] = L.layerGroup([biomeImageLayer, screenshotImageLayer])
