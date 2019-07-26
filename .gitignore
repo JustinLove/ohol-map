@@ -5,5 +5,6 @@ public/crucible*
 public/data
 public/map-ui.js
 public/leaflet-src.js*
+public/static
 .~lock*
 elm-stuff

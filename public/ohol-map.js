@@ -244,6 +244,9 @@
   }
 
   var getBaseMap = function(inX, inY, options) {
+
+    // grid objects
+
     xxSeed = options.densitySeed
     var density = getXYFractal(inX, inY, options.densityRoughness, options.densityScale);
     density = sigmoid(density, options.densitySmoothness)
@@ -253,6 +256,24 @@
     if (getXYRandom(inX, inY) >= density) {
       return 0
     }
+
+    var secondPlace
+    var secondPlaceGap
+
+    var pickedBiome = computeMapBiomeIndex(inX, inY, options)
+    if (pickedBiome == -1) {
+      return 0;
+    }
+
+    // second place check
+
+    // jackpot chance
+
+    // weighted object pick
+
+    // fix jackpot chance
+
+    // eliminate off-biome moving objects
 
     return 1
   }
