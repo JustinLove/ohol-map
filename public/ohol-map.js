@@ -52,7 +52,7 @@
   base['Crucible'] = L.tileLayer(oholMapConfig.crucibleTiles, {
     errorTileUrl: 'ground_U.png',
     minZoom: 2,
-    maxZoom: 27,
+    maxZoom: 31,
     //minNativeZoom: 24,
     maxNativeZoom: 25,
     attribution: attribution,
@@ -161,6 +161,10 @@
 
   var oneOverIntMax = 1.0 / 4294967295;
 
+  var getXYRandom = function(inX, inY) {
+    return xxTweakedHash2D(inX, inY) * oneOverIntMax
+  }
+
   var getXYFractal = function(inX, inY, inRoughness, inScale) {
     var b = inRoughness
     var a = 1 - b
@@ -219,6 +223,38 @@
     }
 
     return pickedBiome
+  }
+
+  // inKnee in 0..inf, smaller values make harder knees
+  // intput in 0..1
+  // output in 0..1
+
+  // from Simplest AI trick in the book:
+  // Normalized Tunable SIgmoid Function 
+  // Dino Dini, GDC 2013
+  var sigmoid = function(inInput, inKnee) {
+    // change in to -1..1
+    var shiftedInput = inInput * 2 - 1
+
+    var k = -1 - inKnee
+
+    var out = shiftedInput * k / (1 + k - Math.abs(shiftedInput))
+
+    return (out + 1) * 0.5
+  }
+
+  var getBaseMap = function(inX, inY, options) {
+    xxSeed = options.densitySeed
+    var density = getXYFractal(inX, inY, options.densityRoughness, options.densityScale);
+    density = sigmoid(density, options.densitySmoothness)
+    density *= options.density
+
+    xxSeed = options.objectSeed
+    if (getXYRandom(inX, inY) >= density) {
+      return 0
+    }
+
+    return 1
   }
 
   L.GridLayer.FractalLayer = L.GridLayer.extend({
@@ -285,10 +321,22 @@
 
   base['Fractal'] = new L.GridLayer.FractalLayer({
     minZoom: 2,
-    maxZoom: 27,
+    maxZoom: 31,
     //minNativeZoom: 24,
     maxNativeZoom: 24,
     attribution: attribution,
+  })
+
+  base['Density'] = new L.GridLayer.FractalLayer({
+    minZoom: 2,
+    maxZoom: 31,
+    //minNativeZoom: 24,
+    maxNativeZoom: 24,
+    attribution: attribution,
+    biomeOffset: 0.25,
+    biomeScale: 0,
+    biomeFractalRoughness: 0.1,
+    seed: 5379,
   })
 
   //http://axonflux.com/handy-rgb-to-hsl-and-rgb-to-hsv-color-model-c
@@ -407,10 +455,89 @@
 
   base['Biome'] = new L.GridLayer.BiomeLayer({
     minZoom: 2,
-    maxZoom: 27,
+    maxZoom: 31,
     //minNativeZoom: 24,
     maxNativeZoom: 24,
     attribution: attribution,
+  })
+
+  L.GridLayer.ObjectLayer = L.GridLayer.extend({
+    options: {
+      biomeOffset: 0.83332,
+      biomeScale: 0.08333,
+      biomeFractalRoughness: 0.55,
+      numBiomes: 7,
+      biomeSeedOffset: 723,
+      biomeSeedScale: 263,
+      gridSeed: 9753,
+      densitySeed: 5379,
+      densityRoughness: 0.1,
+      densityScale: 0.25,
+      densitySmoothness: 0.1,
+      density: 0.4,
+      objectSeed: 9877,
+    },
+    createTile: function (coords, done) {
+      var tile = document.createElement('canvas');
+      var tileSize = this.getTileSize();
+      //console.log(tileSize)
+      tile.setAttribute('width', tileSize.x);
+      tile.setAttribute('height', tileSize.y);
+
+      setTimeout(this.drawTile.bind(this), 0, tile, coords, done)
+
+      return tile;
+    },
+    drawTile(tile, coords, done) {
+      var tileSize = this.getTileSize();
+
+      var ctx = tile.getContext('2d', {alpha: false});
+      ctx.clearRect(0, 0, tile.width, tile.height)
+
+      var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
+      //console.log(coords, pnw)
+      llnw = crs.pointToLatLng(pnw, coords.z)
+      //console.log(coords, llnw)
+
+      var stride = Math.pow(2, 24 - coords.z)
+      var w = tile.width
+      var h = tile.height
+      var startX = llnw.lng + 0.5
+      var startY = llnw.lat - 0.5
+
+      //console.log(coords, startX, startY)
+
+      var scale = this.options.biomeOffset + this.options.biomeScale * 7
+      var roughness = this.options.biomeFractalRoughness
+
+      var imageData = ctx.createImageData(tile.width, tile.height)
+      var d = imageData.data
+
+      for (var y = 0;y < h;y++) {
+        for (var x = 0;x < w;x++) {
+          var i = (y * w + x) * 4
+          var wx = startX + x*stride
+          var wy = startY - (y*stride)
+          var v = getBaseMap(wx, wy, this.options)
+          d[i+0] = v * 256
+          d[i+1] = v * 256
+          d[i+2] = v * 256
+          d[i+3] = 255
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0)
+      done(null, tile)
+    },
+  })
+
+  overlays['Object'] = new L.GridLayer.ObjectLayer({
+    minZoom: 2,
+    maxZoom: 31,
+    //minNativeZoom: 24,
+    maxNativeZoom: 24,
+    attribution: attribution,
+    opacity: 0.5,
   })
 
   var colormap = function(id) {
@@ -924,10 +1051,11 @@
     var idleTimer = setTimeout(setIdle, 1*60*1000)
     L.DomEvent.on(map, 'mousemove', setActive, map);
 
-    //base['Default'].addTo(map)
+    base['Default'].addTo(map)
     //base['Faded'].addTo(map)
     //base['Fractal'].addTo(map)
-    base['Biome'].addTo(map)
+    //base['Biome'].addTo(map)
+    overlays['Object'].addTo(map)
     overlays['Barrier'].addTo(map)
 
     // helper to share the timeDimension object between all layers
