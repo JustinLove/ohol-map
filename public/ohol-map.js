@@ -81,8 +81,9 @@
   var overlays = {
     graticule: null,
     "Barrier": L.layerGroup([
-      L.rectangle([[-250,-250], [250,250]], {fill: false, color: 'black'}),
-      L.rectangle([[-1000,-1000], [1000,1000]], {fill: false, color: 'black'}),
+      L.rectangle([[-250,-250], [250,250]], {fill: false, color: '#888'}),
+      L.rectangle([[-500,-500], [500,500]], {fill: false, color: 'black'}),
+      L.rectangle([[-1000,-1000], [1000,1000]], {fill: false, color: '#888'}),
     ]),
     "Life Data": dataOverlay,
     "Monuments": monumentOverlay,
