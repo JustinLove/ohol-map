@@ -80,7 +80,10 @@
 
   var overlays = {
     graticule: null,
-    "Barrier": L.rectangle([[-250,-250], [250,250]], {fill: false}),
+    "Barrier": L.layerGroup([
+      L.rectangle([[-250,-250], [250,250]], {fill: false, color: 'black'}),
+      L.rectangle([[-1000,-1000], [1000,1000]], {fill: false, color: 'black'}),
+    ]),
     "Life Data": dataOverlay,
     "Monuments": monumentOverlay,
   }
@@ -623,7 +626,7 @@
     layersControl.addTo(map)
     L.control.scale({imperial: false}).addTo(map)
     sidebarToggle.addTo(map)
-    map.setView([0,0], 24)
+    map.setView([0,0], 22)
 
     if (app.ports.leafletEvent) {
       map.on('moveend', function(ev) {
