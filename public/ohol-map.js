@@ -206,6 +206,7 @@
   ]
 
   var biomes = []
+  var objects = []
 
   var computeMapBiomeIndex = function(inX, inY, options, secondPlace) {
     var maxValue = -Number.MAX_VALUE
@@ -287,8 +288,8 @@
     }
 
     var biome = biomes[pickedBiome]
-    var objects = biome.objects
-    var numObjects = objects.length
+    var biomeObject = biome.objects
+    var numObjects = biomeObject.length
 
     // jackpot chance
     var specialObjectIndex = -1
@@ -307,9 +308,9 @@
       }
     }
 
-    var oldSpecialChance = objects[specialObjectIndex].spawnChance
+    var oldSpecialChance = biomeObject[specialObjectIndex].mapChance
     var newSpecialChance = oldSpecialChance * 10
-    objects[specialObjectIndex].spawnChance = newSpecialChance
+    biomeObject[specialObjectIndex].mapChance = newSpecialChance
     var totalChance = biome.totalChanceWeight - oldSpecialChance + newSpecialChance
 
     // weighted object pick
@@ -320,23 +321,27 @@
     var weightSum = 0
 
     while (weightSum < randValue && i < numObjects) {
-      weightSum += objects[i].spawnChance
+      weightSum += biomeObject[i].mapChance
       i++
     }
 
     i--
 
+    // fix jackpot chance
+    biomeObject[specialObjectIndex].mapChance = oldSpecialChance
+
     if (i < 0) {
       return 0
     }
 
-    var returnId = parseInt(objects[i].id, 10)
-
-    // fix jackpot chance
-    objects[specialObjectIndex].spawnChance = oldSpecialChance
+    var returnId = biomeObject[i].id
 
     // eliminate off-biome moving objects
-    // TODO
+    if (pickedBiome == secondPlace.biome) {
+      if (objects[returnId].moving) {
+        return 0
+      }
+    }
 
     return returnId
   }
@@ -612,7 +617,7 @@
           var wx = startX + x*stride
           var wy = startY - (y*stride)
           var v = getBaseMap(wx, wy, this.options)
-          var color = hsvToRgb(v / 2697, 1, 1)
+          var color = hsvToRgb(v * 3769 % 359 / 360, 1, 1)
           d[i+0] = color[0]
           d[i+1] = color[1]
           d[i+2] = color[2]
@@ -1159,20 +1164,51 @@
     map.setView([0,0], 22)
 
     fetch('static/objects.json').then(function(response) {
-      response.json().then(function(wrapper) {
-        var pending = wrapper.biomeIds.length
-        wrapper.biomeIds.forEach(function(id) {
-          fetch('static/biomes/' + id + '.json').then(function(responseb) {
-            responseb.json().then(function(biome) {
-              biome.totalChanceWeight = biome.objects.map(function(o) {return o.spawnChance}).reduce(function(a,b) {return a+b})
-              biomes[id] = biome
-              if (--pending < 1) {
-                overlays['Object'].addTo(map)
-              }
-            })
-          })
+      return response.json()
+    }).then(function(wrapper) {
+      objects = new Array(wrapper.ids.length)
+      return Promise.all(wrapper.biomeIds.map(function(id) {
+        return fetch('static/biomes/' + id + '.json').then(function(response) {
+          return response.json()
         })
       })
+      )
+    }).then(function(biomeList) {
+      var toLoad = {}
+      biomeList.forEach(function(biome) {
+        biome.id = parseInt(biome.id, 10)
+        biomes[biome.id] = biome
+        biome.objects.forEach(function(object) {
+          toLoad[object.id] = true
+          object.id = parseInt(object.id, 10)
+        })
+      })
+      return Promise.all(Object.keys(toLoad).map(function(id) {
+        return fetch('static/objects/' + id + '.json').then(function(response) {
+          return response.json()
+        })
+      }))
+    }).then(function(objectList) {
+      objectList.forEach(function(object) {
+        object.id = parseInt(object.id,10)
+        objects[object.id] = object
+        object.transitionsTimed.forEach(function(trans) {
+          if (trans.move) {
+            object.moving = true
+          }
+        })
+      })
+      biomes.forEach(function(biome) {
+        biome.totalChanceWeight = 0
+        biome.objects.forEach(function(spawnable) {
+          var obj = objects[spawnable.id]
+          biome.totalChanceWeight += obj.mapChance
+          spawnable.mapChance = obj.mapChance
+        })
+      })
+      overlays['Object'].addTo(map)
+    }).catch(function(err) {
+      console.log(err)
     })
 
     if (app.ports.leafletEvent) {
