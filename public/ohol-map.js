@@ -310,10 +310,11 @@
     var oldSpecialChance = objects[specialObjectIndex].spawnChance
     var newSpecialChance = oldSpecialChance * 10
     objects[specialObjectIndex].spawnChance = newSpecialChance
+    var totalChance = biome.totalChanceWeight - oldSpecialChance + newSpecialChance
 
     // weighted object pick
     xxSeed = options.objectSeed
-    var randValue = getXYRandom(inX, inY)
+    var randValue = getXYRandom(inX, inY) * totalChance
 
     var i = 0
     var weightSum = 0
@@ -1163,6 +1164,7 @@
         wrapper.biomeIds.forEach(function(id) {
           fetch('static/biomes/' + id + '.json').then(function(responseb) {
             responseb.json().then(function(biome) {
+              biome.totalChanceWeight = biome.objects.map(function(o) {return o.spawnChance}).reduce(function(a,b) {return a+b})
               biomes[id] = biome
               if (--pending < 1) {
                 overlays['Object'].addTo(map)
