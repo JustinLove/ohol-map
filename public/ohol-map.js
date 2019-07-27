@@ -291,7 +291,25 @@
     var numObjects = objects.length
 
     // jackpot chance
-    // TODO
+    var specialObjectIndex = -1
+    var maxValue = -Number.MAX_VALUE
+
+    var roughness = options.jackpotRoughness
+    var scale = options.jackpotOffset + numObjects * options.jackpotScale
+
+    for (var i = 0;i < numObjects;i++) {
+      xxSeed = options.jackpotSeedOffset + i * options.jackpotSeedScale
+      var randVal = getXYRandom( inX, inY, roughness, scale)
+
+      if (randVal > maxValue) {
+        maxValue = randVal
+        specialObjectIndex = i
+      }
+    }
+
+    var oldSpecialChance = objects[specialObjectIndex].spawnChance
+    var newSpecialChance = oldSpecialChance * 10
+    objects[specialObjectIndex].spawnChance = newSpecialChance
 
     // weighted object pick
     xxSeed = options.objectSeed
@@ -314,7 +332,7 @@
     var returnId = parseInt(objects[i].id, 10)
 
     // fix jackpot chance
-    // TODO
+    objects[specialObjectIndex].spawnChance = oldSpecialChance
 
     // eliminate off-biome moving objects
     // TODO
@@ -545,6 +563,11 @@
       secondPlaceOffset: 0.5,
       secondPlaceScale: 10,
       secondPlaceSeed: 348763,
+      jackpotSeedOffset: 123,
+      jackpotSeedScale: 793,
+      jackpotRoughness: 0.3,
+      jackpotOffset: 0.15,
+      jackpotScale: 0.016666,
     },
     createTile: function (coords, done) {
       var tile = document.createElement('canvas');
