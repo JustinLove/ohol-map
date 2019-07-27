@@ -207,9 +207,11 @@
 
   var biomes = []
 
-  var computeMapBiomeIndex = function(inX, inY, options) {
+  var computeMapBiomeIndex = function(inX, inY, options, secondPlace) {
     var maxValue = -Number.MAX_VALUE
     var pickedBiome = -1
+    var secondPlaceBiome = -1
+    var secondPlaceGap = 0
     var scale = options.biomeOffset + options.biomeScale * options.numBiomes
     var roughness = options.biomeFractalRoughness
     for (var i = 0;i < options.numBiomes;i++) {
@@ -219,9 +221,20 @@
       randVal = getXYFractal(inX, inY, roughness, scale)
 
       if (randVal > maxValue) {
+        secondPlaceBiome = pickedBiome
+        secondPlaceGap = randVal - maxValue
+
         maxValue = randVal
         pickedBiome = i
+      } else if (randVal > maxValue - secondPlaceGap) {
+        secondPlaceBiome = i
+        secondPlaceGap = maxValue - randVal
       }
+    }
+
+    if (secondPlace) {
+      secondPlace.biome = secondPlaceBiome
+      secondPlace.gap = secondPlaceGap
     }
 
     return pickedBiome
@@ -248,6 +261,7 @@
   var getBaseMap = function(inX, inY, options) {
 
     // grid objects
+    // TODO
 
     xxSeed = options.densitySeed
     var density = getXYFractal(inX, inY, options.densityRoughness, options.densityScale);
@@ -259,16 +273,18 @@
       return 0
     }
 
-    var secondPlace
-    var secondPlaceGap
+    var secondPlace = {}
 
-    var pickedBiome = computeMapBiomeIndex(inX, inY, options)
+    var pickedBiome = computeMapBiomeIndex(inX, inY, options, secondPlace)
     if (pickedBiome == -1) {
       return 0;
     }
 
     // second place check
-    // TODO
+    var firstPlaceChance = options.secondPlaceOffset + options.secondPlaceScale * secondPlace.gap
+    if (getXYRandom(inX, inY) > firstPlaceChance) {
+      pickedBiome = secondPlace.biome
+    }
 
     var biome = biomes[pickedBiome]
     var objects = biome.objects
@@ -526,6 +542,9 @@
       density: 0.4,
       presentSeed: 9877,
       objectSeed: 4593873,
+      secondPlaceOffset: 0.5,
+      secondPlaceScale: 10,
+      secondPlaceSeed: 348763,
     },
     createTile: function (coords, done) {
       var tile = document.createElement('canvas');
