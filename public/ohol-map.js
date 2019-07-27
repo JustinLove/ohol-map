@@ -207,6 +207,7 @@
 
   var biomes = []
   var objects = []
+  var gridPlacements = []
 
   var computeMapBiomeIndex = function(inX, inY, options, secondPlace) {
     var maxValue = -Number.MAX_VALUE
@@ -261,8 +262,23 @@
 
   var getBaseMap = function(inX, inY, options) {
 
+    var pickedBiome = -1
+    var secondPlace = {}
+
     // grid objects
-    // TODO
+    for (var i = 0;i < gridPlacements.length;i++) {
+      var gp = gridPlacements[i]
+      if (inX % gp.spacing == 0 && inY % gp.spacing == 0) {
+        pickedBiome = computeMapBiomeIndex(inX, inY, options, secondPlace)
+        if (pickedBiome == -1) {
+          return 0;
+        }
+
+        if (gp.permittedBiomes.indexOf(pickedBiome) != -1) {
+          return gp.id
+        }
+      }
+    }
 
     xxSeed = options.densitySeed
     var density = getXYFractal(inX, inY, options.densityRoughness, options.densityScale);
@@ -274,9 +290,10 @@
       return 0
     }
 
-    var secondPlace = {}
+    if (pickedBiome == -1) {
+      pickedBiome = computeMapBiomeIndex(inX, inY, options, secondPlace)
+    }
 
-    var pickedBiome = computeMapBiomeIndex(inX, inY, options, secondPlace)
     if (pickedBiome == -1) {
       return 0;
     }
@@ -1167,6 +1184,16 @@
       return response.json()
     }).then(function(wrapper) {
       objects = new Array(wrapper.ids.length)
+      for (var i = 0;i < wrapper.ids.length;i++) {
+        if (wrapper.names[i].match('gridPlacement')) {
+          gridPlacements.push({
+            name: wrapper.names[i],
+            id: parseInt(wrapper.ids[i]),
+            spacing: parseInt(wrapper.names[i].match(/gridPlacement(\d+)/)[1], 10),
+            permittedBiomes: [],
+          })
+        }
+      }
       return Promise.all(wrapper.biomeIds.map(function(id) {
         return fetch('static/biomes/' + id + '.json').then(function(response) {
           return response.json()
@@ -1200,10 +1227,17 @@
       })
       biomes.forEach(function(biome) {
         biome.totalChanceWeight = 0
-        biome.objects.forEach(function(spawnable) {
+        biome.objects = biome.objects.filter(function(spawnable) {
+          for (var i = 0;i < gridPlacements.length;i++) {
+            if (gridPlacements[i].id == spawnable.id) {
+              gridPlacements[i].permittedBiomes.push(biomeMap.indexOf(biome.id))
+              return false
+            }
+          }
           var obj = objects[spawnable.id]
           biome.totalChanceWeight += obj.mapChance
           spawnable.mapChance = obj.mapChance
+          return true
         })
       })
       overlays['Object'].addTo(map)
