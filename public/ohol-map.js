@@ -80,9 +80,10 @@
 
   var overlays = {
     graticule: null,
-    "Barrier": L.layerGroup([
+    "Rift": L.layerGroup([
       L.rectangle([[-250,-250], [250,250]], {fill: false, color: '#888'}),
-      L.rectangle([[-500,-500], [500,500]], {fill: false, color: 'black'}),
+      L.rectangle([[-354,-354], [354,354]], {fill: false, color: 'black'}),
+      L.rectangle([[-500,-500], [500,500]], {fill: false, color: '#888'}),
       L.rectangle([[-1000,-1000], [1000,1000]], {fill: false, color: '#888'}),
     ]),
     "Life Data": dataOverlay,
@@ -620,14 +621,14 @@
     L.DomEvent.on(map, 'mousemove', setActive, map);
 
     base['Default'].addTo(map)
-    overlays['Barrier'].addTo(map)
+    overlays['Rift'].addTo(map)
 
     // helper to share the timeDimension object between all layers
     map.timeDimension = timeDimension; 
     layersControl.addTo(map)
     L.control.scale({imperial: false}).addTo(map)
     sidebarToggle.addTo(map)
-    map.setView([0,0], 22)
+    map.setView([0,0], 24)
 
     if (app.ports.leafletEvent) {
       map.on('moveend', function(ev) {
