@@ -4,6 +4,8 @@
   var cachedApiUrl = oholMapConfig.cachedApiUrl
   var apiUrl = oholMapConfig.apiUrl
 
+  var endOfFixedSeed = Date.parse("Jul 27 2019 21:00:00 GMT-0000")
+
   var scale = Math.pow(2, 24)
   var crs = L.extend({}, L.CRS.Simple, {
     transformation: new L.transformation(1/scale, 0.5/scale, -1/scale, -0.5/scale)
@@ -38,16 +40,7 @@
   })
 
   base['Default'] = L.layerGroup([biomeImageLayer, screenshotImageLayer])
-
-  base['Faded'] = L.tileLayer(oholMapConfig.mainTiles, {
-    errorTileUrl: 'ground_U.png',
-    minZoom: 2,
-    maxZoom: 31,
-    //minNativeZoom: 24,
-    maxNativeZoom: 24,
-    opacity: 0.2,
-    attribution: attribution,
-  })
+  base['Uncertainty'] = L.layerGroup([])
 
   base['Crucible'] = L.tileLayer(oholMapConfig.crucibleTiles, {
     errorTileUrl: 'ground_U.png',
@@ -62,18 +55,22 @@
   dataOverlay.on('add', function(ev) {
     var map = ev.target._map
     map.addControl(colorScaleControl)
-    setTimeout(function() {
-      map.removeLayer(base['Default'])
-      map.addLayer(base['Faded'])
-    },0)
+    map.addLayer(baseFade)
   })
   dataOverlay.on('remove', function(ev) {
     var map = ev.target._map
     map.removeControl(colorScaleControl)
-    setTimeout(function() {
-      map.removeLayer(base['Faded'])
-      map.addLayer(base['Default'])
-    },0)
+    map.removeLayer(baseFade)
+  })
+
+  var baseFade = L.layerGroup([])
+  baseFade.on('add', function(ev) {
+    var map = ev.target._map
+    L.DomUtil.setOpacity(map.getPane('tilePane'), 0.3)
+  })
+  baseFade.on('remove', function(ev) {
+    var map = ev.target._map
+    L.DomUtil.setOpacity(map.getPane('tilePane'), 1.0)
   })
 
   var monumentOverlay = L.layerGroup([])
@@ -88,6 +85,7 @@
     ]),
     "Life Data": dataOverlay,
     "Monuments": monumentOverlay,
+    "Fade": baseFade,
   }
 
   var searchOverlay = L.layerGroup([])
@@ -426,6 +424,7 @@
     },
   })
 
+  /*
   base['Fractal'] = new L.GridLayer.FractalLayer({
     minZoom: 2,
     maxZoom: 31,
@@ -445,6 +444,7 @@
     biomeFractalRoughness: 0.1,
     seed: 5379,
   })
+  */
 
   //http://axonflux.com/handy-rgb-to-hsl-and-rgb-to-hsv-color-model-c
   /**
@@ -561,6 +561,7 @@
   })
 
   base['Biome'] = new L.GridLayer.BiomeLayer({
+    biomeSeedOffset: 723,
     minZoom: 2,
     maxZoom: 31,
     //minNativeZoom: 24,
@@ -648,7 +649,7 @@
     },
   })
 
-  overlays['Object'] = new L.GridLayer.ObjectLayer({
+  objectOverlay = new L.GridLayer.ObjectLayer({
     minZoom: 2,
     maxZoom: 31,
     //minNativeZoom: 24,
@@ -656,6 +657,7 @@
     attribution: attribution,
     opacity: 0.5,
   })
+  //overlays['Object'] = objectLayer
 
   var colormap = function(id) {
     return '#' + (((id * 49157) % 12582917).toString(16))
@@ -928,6 +930,10 @@
       max: max,
     })
     pointOverlay.redraw()
+    L.Util.setOptions(dataOverlay, {
+      min: min,
+      max: max,
+    })
     L.Util.setOptions(colorScaleControl, {
       min: min,
       max: max,
@@ -1140,47 +1146,7 @@
 
   var colorScaleControl = L.control.colorScale({ position: 'topleft' })
 
-  var inhabit = function inhabit(id) {
-    var map = L.map(id, {
-      crs: crs,
-      maxBounds: [[-2147483648, -2147483648], [2147483647, 2147483647]],
-      minZoom: 2,
-      maxZoom: 31,
-    })
-
-    var idle = false
-    var setIdle = function() {
-      L.DomUtil.addClass(map._controlContainer, 'idle')
-      idle = true
-    }
-
-    var setActive = function() {
-      if (idle) {
-        L.DomUtil.removeClass(map._controlContainer, 'idle')
-      }
-      idle = false
-      if (idleTimer) {
-        clearTimeout(idleTimer)
-      }
-      idleTimer = setTimeout(setIdle, 1*60*1000)
-    }
-
-    var idleTimer = setTimeout(setIdle, 1*60*1000)
-    L.DomEvent.on(map, 'mousemove', setActive, map);
-
-    base['Default'].addTo(map)
-    overlays['Rift'].addTo(map)
-    //base['Faded'].addTo(map)
-    //base['Fractal'].addTo(map)
-    //base['Biome'].addTo(map)
-
-    // helper to share the timeDimension object between all layers
-    map.timeDimension = timeDimension; 
-    layersControl.addTo(map)
-    L.control.scale({imperial: false}).addTo(map)
-    sidebarToggle.addTo(map)
-    map.setView([0,0], 24)
-
+  var objectLoad = function(map) {
     fetch('static/objects.json').then(function(response) {
       return response.json()
     }).then(function(wrapper) {
@@ -1241,10 +1207,53 @@
           return true
         })
       })
-      overlays['Object'].addTo(map)
+      objectLayer.addTo(map)
     }).catch(function(err) {
       console.log(err)
     })
+  }
+
+  var inhabit = function inhabit(id) {
+    var map = L.map(id, {
+      crs: crs,
+      maxBounds: [[-2147483648, -2147483648], [2147483647, 2147483647]],
+      minZoom: 2,
+      maxZoom: 31,
+    })
+
+    var idle = false
+    var setIdle = function() {
+      L.DomUtil.addClass(map._controlContainer, 'idle')
+      idle = true
+    }
+
+    var setActive = function() {
+      if (idle) {
+        L.DomUtil.removeClass(map._controlContainer, 'idle')
+      }
+      idle = false
+      if (idleTimer) {
+        clearTimeout(idleTimer)
+      }
+      idleTimer = setTimeout(setIdle, 1*60*1000)
+    }
+
+    var idleTimer = setTimeout(setIdle, 1*60*1000)
+    L.DomEvent.on(map, 'mousemove', setActive, map);
+
+    base['Default'].addTo(map)
+    overlays['Rift'].addTo(map)
+    //base['Fractal'].addTo(map)
+    //base['Biome'].addTo(map)
+
+    // helper to share the timeDimension object between all layers
+    map.timeDimension = timeDimension; 
+    layersControl.addTo(map)
+    L.control.scale({imperial: false}).addTo(map)
+    sidebarToggle.addTo(map)
+    map.setView([0,0], 24)
+
+    //objectLoad(map)
 
     if (app.ports.leafletEvent) {
       map.on('moveend', function(ev) {
@@ -1281,7 +1290,7 @@
           break
         case 'monumentList':
           updateMonumentLayer(monumentOverlay, message.monuments.data)
-          monumentOverlay.addTo(map)
+          //monumentOverlay.addTo(map)
           break;
         case 'dataLayer':
           setDataLayers(message.lives.data)
