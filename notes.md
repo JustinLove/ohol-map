@@ -24,4 +24,13 @@
   - single layer
   - webworker
 
+- might be suitable for close in views
+  - layer group
+- might be sufficient for closer views
+- seeming data match, but too slow, espeically at larger scales
+  - typed arrays allow setting whole palette color at once
+  - cross compilation/webassembly
+- significant UI lag
+  - webworker?
+
 ## release

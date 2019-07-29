@@ -52,7 +52,7 @@
   base['Crucible'] = L.tileLayer(oholMapConfig.crucibleTiles, {
     errorTileUrl: 'ground_U.png',
     minZoom: 2,
-    maxZoom: 27,
+    maxZoom: 31,
     //minNativeZoom: 24,
     maxNativeZoom: 25,
     attribution: attribution,
@@ -108,6 +108,554 @@
       //L.circle([point.y, point.x], {radius: 21000, fill: false}).addTo(layer)
     })
   }
+
+  // fractal generation copying https://github.com/jasonrohrer/OneLife/blob/master/commonSource/fractalNoise.cpp
+  // which cites https://bitbucket.org/runevision/random-numbers-testing/
+
+  var XX_PRIME32_1 = 2654435761
+  var XX_PRIME32_2 = 2246822519
+  var XX_PRIME32_3 = 3266489917
+  //var XX_PRIME32_4 = 668265263
+  var XX_PRIME32_5 = 374761393
+
+  var xxSeed = 0;
+
+  var hex = function(x) {
+    if (x < 0) {
+      return (-x>>16 ^ 0xffff).toString(16).padStart(4, '0') + (x&0xffff).toString(16).padStart(4, '0') + ' ' + x
+    } else {
+      return x.toString(16).padStart(8, '0') + ' ' + x
+    }
+  }
+
+  var xxTweakedHash2D = function(inX, inY) {
+    h32 = xxSeed + inX + XX_PRIME32_5
+    h32 += Math.imul(inY, XX_PRIME32_3)
+    h32 = Math.imul(h32, XX_PRIME32_2)
+    h32 ^= h32 >>> 13
+    h32 = Math.imul(h32, XX_PRIME32_3)
+    h32 ^= h32 >>> 16
+    h32 >>>= 0
+    return h32
+  }
+
+  var getXYRandomBN = function(inX, inY) {
+    var floorX = inX + (inX < 0 ? -1 : 0) >> 0
+    var ceilX = floorX + 1
+    var floorY = inY + (inY < 0 ? -1 : 0) >> 0
+    var ceilY = floorY + 1
+
+    var cornerA1 = xxTweakedHash2D(floorX, floorY)
+    var cornerA2 = xxTweakedHash2D(ceilX, floorY)
+
+    var cornerB1 = xxTweakedHash2D(floorX, ceilY)
+    var cornerB2 = xxTweakedHash2D(ceilX, ceilY)
+
+    var xOffset = inX - floorX
+    var yOffset = inY - floorY
+
+    var topBlend = cornerA2 * xOffset + (1-xOffset) * cornerA1
+    var bottomBlend = cornerB2 * xOffset + (1-xOffset) * cornerB1
+
+    return bottomBlend * yOffset + (1-yOffset) * topBlend
+  }
+
+  var oneOverIntMax = 1.0 / 4294967295;
+
+  var getXYRandom = function(inX, inY) {
+    return xxTweakedHash2D(inX, inY) * oneOverIntMax
+  }
+
+  var getXYFractal = function(inX, inY, inRoughness, inScale) {
+    var b = inRoughness
+    var a = 1 - b
+
+    var sum =
+      a * getXYRandomBN(inX / (32 * inScale), inY / (32 * inScale))
+      +
+      b * (
+        a * getXYRandomBN(inX / (16 * inScale), inY / (16 * inScale))
+        +
+        b * (
+          a * getXYRandomBN(inX / (8 * inScale), inY / (8 * inScale))
+          +
+          b * (
+            a * getXYRandomBN(inX / (4 * inScale), inY / (4 * inScale))
+            +
+            b * (
+              a * getXYRandomBN(inX / (2 * inScale), inY / (2 * inScale))
+              +
+              b * (
+                getXYRandomBN(inX / inScale, inY / inScale)
+              )
+            )
+          )
+        )
+      )
+
+    return sum * oneOverIntMax
+  }
+
+  var biomeMap = [
+    0,
+    3,
+    4,
+    5,
+    2,
+    1,
+    6,
+  ]
+
+  var biomes = []
+  var objects = []
+  var gridPlacements = []
+
+  var computeMapBiomeIndex = function(inX, inY, options, secondPlace) {
+    var maxValue = -Number.MAX_VALUE
+    var pickedBiome = -1
+    var secondPlaceBiome = -1
+    var secondPlaceGap = 0
+    var scale = options.biomeOffset + options.biomeScale * options.numBiomes
+    var roughness = options.biomeFractalRoughness
+    for (var i = 0;i < options.numBiomes;i++) {
+      var biome = biomeMap[i]
+
+      xxSeed = biome * options.biomeSeedScale + options.biomeSeedOffset
+      randVal = getXYFractal(inX, inY, roughness, scale)
+
+      if (randVal > maxValue) {
+        secondPlaceBiome = pickedBiome
+        secondPlaceGap = randVal - maxValue
+
+        maxValue = randVal
+        pickedBiome = i
+      } else if (randVal > maxValue - secondPlaceGap) {
+        secondPlaceBiome = i
+        secondPlaceGap = maxValue - randVal
+      }
+    }
+
+    if (secondPlace) {
+      secondPlace.biome = secondPlaceBiome
+      secondPlace.gap = secondPlaceGap
+    }
+
+    return pickedBiome
+  }
+
+  // inKnee in 0..inf, smaller values make harder knees
+  // intput in 0..1
+  // output in 0..1
+
+  // from Simplest AI trick in the book:
+  // Normalized Tunable SIgmoid Function 
+  // Dino Dini, GDC 2013
+  var sigmoid = function(inInput, inKnee) {
+    // change in to -1..1
+    var shiftedInput = inInput * 2 - 1
+
+    var k = -1 - inKnee
+
+    var out = shiftedInput * k / (1 + k - Math.abs(shiftedInput))
+
+    return (out + 1) * 0.5
+  }
+
+  var getBaseMap = function(inX, inY, options) {
+
+    var pickedBiome = -1
+    var secondPlace = {}
+
+    // grid objects
+    for (var i = 0;i < gridPlacements.length;i++) {
+      var gp = gridPlacements[i]
+      if (inX % gp.spacing == 0 && inY % gp.spacing == 0) {
+        pickedBiome = computeMapBiomeIndex(inX, inY, options, secondPlace)
+        if (pickedBiome == -1) {
+          return 0;
+        }
+
+        if (gp.permittedBiomes.indexOf(pickedBiome) != -1) {
+          return gp.id
+        }
+      }
+    }
+
+    xxSeed = options.densitySeed
+    var density = getXYFractal(inX, inY, options.densityRoughness, options.densityScale);
+    density = sigmoid(density, options.densitySmoothness)
+    density *= options.density
+
+    xxSeed = options.presentSeed
+    if (getXYRandom(inX, inY) >= density) {
+      return 0
+    }
+
+    if (pickedBiome == -1) {
+      pickedBiome = computeMapBiomeIndex(inX, inY, options, secondPlace)
+    }
+
+    if (pickedBiome == -1) {
+      return 0;
+    }
+
+    // second place check
+    var firstPlaceChance = options.secondPlaceOffset + options.secondPlaceScale * secondPlace.gap
+    if (getXYRandom(inX, inY) > firstPlaceChance) {
+      pickedBiome = secondPlace.biome
+    }
+
+    var biome = biomes[pickedBiome]
+    var biomeObject = biome.objects
+    var numObjects = biomeObject.length
+
+    // jackpot chance
+    var specialObjectIndex = -1
+    var maxValue = -Number.MAX_VALUE
+
+    var roughness = options.jackpotRoughness
+    var scale = options.jackpotOffset + numObjects * options.jackpotScale
+
+    for (var i = 0;i < numObjects;i++) {
+      xxSeed = options.jackpotSeedOffset + i * options.jackpotSeedScale
+      var randVal = getXYRandom( inX, inY, roughness, scale)
+
+      if (randVal > maxValue) {
+        maxValue = randVal
+        specialObjectIndex = i
+      }
+    }
+
+    var oldSpecialChance = biomeObject[specialObjectIndex].mapChance
+    var newSpecialChance = oldSpecialChance * 10
+    biomeObject[specialObjectIndex].mapChance = newSpecialChance
+    var totalChance = biome.totalChanceWeight - oldSpecialChance + newSpecialChance
+
+    // weighted object pick
+    xxSeed = options.objectSeed
+    var randValue = getXYRandom(inX, inY) * totalChance
+
+    var i = 0
+    var weightSum = 0
+
+    while (weightSum < randValue && i < numObjects) {
+      weightSum += biomeObject[i].mapChance
+      i++
+    }
+
+    i--
+
+    // fix jackpot chance
+    biomeObject[specialObjectIndex].mapChance = oldSpecialChance
+
+    if (i < 0) {
+      return 0
+    }
+
+    var returnId = biomeObject[i].id
+
+    // eliminate off-biome moving objects
+    if (pickedBiome == secondPlace.biome) {
+      if (objects[returnId].moving) {
+        return 0
+      }
+    }
+
+    return returnId
+  }
+
+  L.GridLayer.FractalLayer = L.GridLayer.extend({
+    options: {
+      biomeOffset: 0.83332,
+      biomeScale: 0.08333,
+      biomeFractalRoughness: 0.55,
+      seed: 0 * 263 + 723,
+    },
+    createTile: function (coords) {
+      var tile = document.createElement('canvas');
+      var tileSize = this.getTileSize();
+      //console.log(tileSize)
+      tile.setAttribute('width', tileSize.x);
+      tile.setAttribute('height', tileSize.y);
+
+      this.drawTile(tile, coords)
+
+      return tile;
+    },
+    drawTile(tile, coords) {
+      var tileSize = this.getTileSize();
+
+      var ctx = tile.getContext('2d', {alpha: false});
+      ctx.clearRect(0, 0, tile.width, tile.height)
+
+      var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
+      //console.log(coords, pnw)
+      llnw = crs.pointToLatLng(pnw, coords.z)
+      //console.log(coords, llnw)
+
+      var stride = Math.pow(2, 24 - coords.z)
+      var w = tile.width
+      var h = tile.height
+      var startX = llnw.lng + 0.5
+      var startY = llnw.lat - 0.5
+
+      //console.log(coords, startX, startY)
+
+      var scale = this.options.biomeOffset + this.options.biomeScale * 7
+      var roughness = this.options.biomeFractalRoughness
+
+      var imageData = ctx.createImageData(tile.width, tile.height)
+      var d = imageData.data
+
+      xxSeed = this.options.seed
+
+      for (var y = 0;y < h;y++) {
+        for (var x = 0;x < w;x++) {
+          var i = (y * w + x) * 4
+          var wx = startX + x*stride
+          var wy = startY - (y*stride)
+          var v = getXYFractal(wx, wy, roughness, scale)
+          d[i+0] = v * 256
+          d[i+1] = v * 256
+          d[i+2] = v * 256
+          d[i+3] = 255
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0)
+    },
+  })
+
+  base['Fractal'] = new L.GridLayer.FractalLayer({
+    minZoom: 2,
+    maxZoom: 31,
+    //minNativeZoom: 24,
+    maxNativeZoom: 24,
+    attribution: attribution,
+  })
+
+  base['Density'] = new L.GridLayer.FractalLayer({
+    minZoom: 2,
+    maxZoom: 31,
+    //minNativeZoom: 24,
+    maxNativeZoom: 24,
+    attribution: attribution,
+    biomeOffset: 0.25,
+    biomeScale: 0,
+    biomeFractalRoughness: 0.1,
+    seed: 5379,
+  })
+
+  //http://axonflux.com/handy-rgb-to-hsl-and-rgb-to-hsv-color-model-c
+  /**
+  * Converts an HSV color value to RGB. Conversion formula
+  * adapted from http://en.wikipedia.org/wiki/HSV_color_space.
+  * Assumes h, s, and v are contained in the set [0, 1] and
+  * returns r, g, and b in the set [0, 255].
+  *
+  * @param   Number  h       The hue
+  * @param   Number  s       The saturation
+  * @param   Number  v       The value
+  * @return  Array           The RGB representation
+  */
+  function hsvToRgb(h, s, v){
+    var r, g, b;
+
+    var i = Math.floor(h * 6);
+    var f = h * 6 - i;
+    var p = v * (1 - s);
+    var q = v * (1 - f * s);
+    var t = v * (1 - (1 - f) * s);
+
+    switch(i % 6){
+      case 0: r = v, g = t, b = p; break;
+      case 1: r = q, g = v, b = p; break;
+      case 2: r = p, g = v, b = t; break;
+      case 3: r = p, g = q, b = v; break;
+      case 4: r = t, g = p, b = v; break;
+      case 5: r = v, g = p, b = q; break;
+    }
+
+    return [r * 255, g * 255, b * 255];
+  }
+
+  var greenColor = hsvToRgb(89/360, 0.49, 0.67)
+  var swampColor = hsvToRgb(253/360, 0.17, 0.65)
+  var plainsColor = hsvToRgb(36/360, 0.75, 0.90)
+  var badlandsColor = hsvToRgb(40/360, 0.16, 0.36)
+  var arcticColor = hsvToRgb(0/360, 0.00, 1.0)
+  var desertColor = hsvToRgb(37/360, 0.65, 0.62)
+  var jungleColor = hsvToRgb(90/360, 0.87, 0.48)
+
+  L.GridLayer.BiomeLayer = L.GridLayer.extend({
+    options: {
+      biomeOffset: 0.83332,
+      biomeScale: 0.08333,
+      biomeFractalRoughness: 0.55,
+      numBiomes: 7,
+      biomeSeedOffset: 723,
+      biomeSeedScale: 263,
+      biomeColors: [
+        greenColor,
+        swampColor,
+        plainsColor,
+        badlandsColor,
+        arcticColor,
+        desertColor,
+        jungleColor,
+      ]
+    },
+    createTile: function (coords, done) {
+      var tile = document.createElement('canvas');
+      var tileSize = this.getTileSize();
+      //console.log(tileSize)
+      tile.setAttribute('width', tileSize.x);
+      tile.setAttribute('height', tileSize.y);
+
+      setTimeout(this.drawTile.bind(this), 0, tile, coords, done)
+
+      return tile;
+    },
+    drawTile(tile, coords, done) {
+      var tileSize = this.getTileSize();
+
+      var ctx = tile.getContext('2d', {alpha: false});
+      ctx.clearRect(0, 0, tile.width, tile.height)
+
+      var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
+      //console.log(coords, pnw)
+      llnw = crs.pointToLatLng(pnw, coords.z)
+      //console.log(coords, llnw)
+
+      var stride = Math.pow(2, 24 - coords.z)
+      var w = tile.width
+      var h = tile.height
+      var startX = llnw.lng + 0.5
+      var startY = llnw.lat - 0.5
+
+      //console.log(coords, startX, startY)
+
+      var scale = this.options.biomeOffset + this.options.biomeScale * 7
+      var roughness = this.options.biomeFractalRoughness
+
+      var colors = this.options.biomeColors
+      var imageData = ctx.createImageData(tile.width, tile.height)
+      var d = imageData.data
+
+      for (var y = 0;y < h;y++) {
+        for (var x = 0;x < w;x++) {
+          var i = (y * w + x) * 4
+          var wx = startX + x*stride
+          var wy = startY - (y*stride)
+          var v = biomeMap[computeMapBiomeIndex(wx, wy, this.options)]
+          d[i+0] = colors[v][0]
+          d[i+1] = colors[v][1]
+          d[i+2] = colors[v][2]
+          d[i+3] = 255
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0)
+      done(null, tile)
+    },
+  })
+
+  base['Biome'] = new L.GridLayer.BiomeLayer({
+    minZoom: 2,
+    maxZoom: 31,
+    //minNativeZoom: 24,
+    maxNativeZoom: 24,
+    attribution: attribution,
+  })
+
+  L.GridLayer.ObjectLayer = L.GridLayer.extend({
+    options: {
+      biomeOffset: 0.83332,
+      biomeScale: 0.08333,
+      biomeFractalRoughness: 0.55,
+      numBiomes: 7,
+      biomeSeedOffset: 723,
+      biomeSeedScale: 263,
+      gridSeed: 9753,
+      densitySeed: 5379,
+      densityRoughness: 0.1,
+      densityScale: 0.25,
+      densitySmoothness: 0.1,
+      density: 0.4,
+      presentSeed: 9877,
+      objectSeed: 4593873,
+      secondPlaceOffset: 0.5,
+      secondPlaceScale: 10,
+      secondPlaceSeed: 348763,
+      jackpotSeedOffset: 123,
+      jackpotSeedScale: 793,
+      jackpotRoughness: 0.3,
+      jackpotOffset: 0.15,
+      jackpotScale: 0.016666,
+    },
+    createTile: function (coords, done) {
+      var tile = document.createElement('canvas');
+      var tileSize = this.getTileSize();
+      //console.log(tileSize)
+      tile.setAttribute('width', tileSize.x);
+      tile.setAttribute('height', tileSize.y);
+
+      setTimeout(this.drawTile.bind(this), 0, tile, coords, done)
+
+      return tile;
+    },
+    drawTile(tile, coords, done) {
+      var tileSize = this.getTileSize();
+
+      var ctx = tile.getContext('2d', {alpha: true});
+      ctx.clearRect(0, 0, tile.width, tile.height)
+
+      var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
+      //console.log(coords, pnw)
+      llnw = crs.pointToLatLng(pnw, coords.z)
+      //console.log(coords, llnw)
+
+      var stride = Math.pow(2, 24 - coords.z)
+      var w = tile.width
+      var h = tile.height
+      var startX = llnw.lng + 0.5
+      var startY = llnw.lat - 0.5
+
+      //console.log(coords, startX, startY)
+
+      var scale = this.options.biomeOffset + this.options.biomeScale * 7
+      var roughness = this.options.biomeFractalRoughness
+
+      var imageData = ctx.createImageData(tile.width, tile.height)
+      var d = imageData.data
+
+      for (var y = 0;y < h;y++) {
+        for (var x = 0;x < w;x++) {
+          var i = (y * w + x) * 4
+          var wx = startX + x*stride
+          var wy = startY - (y*stride)
+          var v = getBaseMap(wx, wy, this.options)
+          var color = hsvToRgb(v * 3769 % 359 / 360, 1, 1)
+          d[i+0] = color[0]
+          d[i+1] = color[1]
+          d[i+2] = color[2]
+          d[i+3] = (v == 0 ? 0 : 255)
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0)
+      done(null, tile)
+    },
+  })
+
+  overlays['Object'] = new L.GridLayer.ObjectLayer({
+    minZoom: 2,
+    maxZoom: 31,
+    //minNativeZoom: 24,
+    maxNativeZoom: 24,
+    attribution: attribution,
+    opacity: 0.5,
+  })
 
   var colormap = function(id) {
     return '#' + (((id * 49157) % 12582917).toString(16))
@@ -622,6 +1170,9 @@
 
     base['Default'].addTo(map)
     overlays['Rift'].addTo(map)
+    //base['Faded'].addTo(map)
+    //base['Fractal'].addTo(map)
+    //base['Biome'].addTo(map)
 
     // helper to share the timeDimension object between all layers
     map.timeDimension = timeDimension; 
@@ -629,6 +1180,71 @@
     L.control.scale({imperial: false}).addTo(map)
     sidebarToggle.addTo(map)
     map.setView([0,0], 24)
+
+    fetch('static/objects.json').then(function(response) {
+      return response.json()
+    }).then(function(wrapper) {
+      objects = new Array(wrapper.ids.length)
+      for (var i = 0;i < wrapper.ids.length;i++) {
+        if (wrapper.names[i].match('gridPlacement')) {
+          gridPlacements.push({
+            name: wrapper.names[i],
+            id: parseInt(wrapper.ids[i]),
+            spacing: parseInt(wrapper.names[i].match(/gridPlacement(\d+)/)[1], 10),
+            permittedBiomes: [],
+          })
+        }
+      }
+      return Promise.all(wrapper.biomeIds.map(function(id) {
+        return fetch('static/biomes/' + id + '.json').then(function(response) {
+          return response.json()
+        })
+      })
+      )
+    }).then(function(biomeList) {
+      var toLoad = {}
+      biomeList.forEach(function(biome) {
+        biome.id = parseInt(biome.id, 10)
+        biomes[biome.id] = biome
+        biome.objects.forEach(function(object) {
+          toLoad[object.id] = true
+          object.id = parseInt(object.id, 10)
+        })
+      })
+      return Promise.all(Object.keys(toLoad).map(function(id) {
+        return fetch('static/objects/' + id + '.json').then(function(response) {
+          return response.json()
+        })
+      }))
+    }).then(function(objectList) {
+      objectList.forEach(function(object) {
+        object.id = parseInt(object.id,10)
+        objects[object.id] = object
+        object.transitionsTimed.forEach(function(trans) {
+          if (trans.move) {
+            object.moving = true
+          }
+        })
+      })
+      biomes.forEach(function(biome) {
+        biome.totalChanceWeight = 0
+        biome.objects = biome.objects.filter(function(spawnable) {
+          for (var i = 0;i < gridPlacements.length;i++) {
+            if (gridPlacements[i].id == spawnable.id) {
+              gridPlacements[i].permittedBiomes.push(biomeMap.indexOf(biome.id))
+              return false
+            }
+          }
+          var obj = objects[spawnable.id]
+          biome.totalChanceWeight += obj.mapChance
+          spawnable.mapChance = obj.mapChance
+          return true
+        })
+      })
+      overlays['Object'].addTo(map)
+    }).catch(function(err) {
+      console.log(err)
+    })
 
     if (app.ports.leafletEvent) {
       map.on('moveend', function(ev) {

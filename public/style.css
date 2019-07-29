@@ -21,7 +21,7 @@ body {
 .trans {
   opacity: 0.4;
 }
-img {
+img, canvas {
   image-rendering: optimizeSpeed;             /*                     */
   image-rendering: -moz-crisp-edges;          /* Firefox             */
   image-rendering: -o-crisp-edges;            /* Opera               */
