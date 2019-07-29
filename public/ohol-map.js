@@ -1,10 +1,12 @@
+"use strict";
+
 ;(function() {
   var app = Elm.MapUI.init({flags: oholMapConfig})
 
   var cachedApiUrl = oholMapConfig.cachedApiUrl
   var apiUrl = oholMapConfig.apiUrl
 
-  var endOfFixedSeed = Date.parse("Jul 27 2019 21:00:00 GMT-0000")
+  var msEndOfFixedSeed = Date.parse("Jul 27 2019 21:00:00 GMT-0000")
 
   var scale = Math.pow(2, 24)
   var crs = L.extend({}, L.CRS.Simple, {
@@ -55,12 +57,16 @@
   dataOverlay.on('add', function(ev) {
     var map = ev.target._map
     map.addControl(colorScaleControl)
-    map.addLayer(baseFade)
+    setTimeout(function() {
+      map.addLayer(baseFade)
+    }, 0)
   })
   dataOverlay.on('remove', function(ev) {
     var map = ev.target._map
     map.removeControl(colorScaleControl)
-    map.removeLayer(baseFade)
+    setTimeout(function() {
+      map.removeLayer(baseFade)
+    })
   })
 
   var baseFade = L.layerGroup([])
@@ -388,7 +394,7 @@
 
       var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
       //console.log(coords, pnw)
-      llnw = crs.pointToLatLng(pnw, coords.z)
+      var llnw = crs.pointToLatLng(pnw, coords.z)
       //console.log(coords, llnw)
 
       var stride = Math.pow(2, 24 - coords.z)
@@ -524,7 +530,7 @@
 
       var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
       //console.log(coords, pnw)
-      llnw = crs.pointToLatLng(pnw, coords.z)
+      var llnw = crs.pointToLatLng(pnw, coords.z)
       //console.log(coords, llnw)
 
       var stride = Math.pow(2, 24 - coords.z)
@@ -613,7 +619,7 @@
 
       var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
       //console.log(coords, pnw)
-      llnw = crs.pointToLatLng(pnw, coords.z)
+      var llnw = crs.pointToLatLng(pnw, coords.z)
       //console.log(coords, llnw)
 
       var stride = Math.pow(2, 24 - coords.z)
@@ -649,7 +655,7 @@
     },
   })
 
-  objectOverlay = new L.GridLayer.ObjectLayer({
+  var objectOverlay = new L.GridLayer.ObjectLayer({
     minZoom: 2,
     maxZoom: 31,
     //minNativeZoom: 24,
@@ -729,8 +735,8 @@
       var pnw = L.point(coords.x * tileSize.x - padding, coords.y * tileSize.y - padding)
       var pse = L.point(pnw.x + tileSize.x + padding*2, pnw.y + tileSize.y + padding*2)
       //console.log(coords, pnw, pse)
-      llnw = crs.pointToLatLng(pnw, coords.z)
-      llse = crs.pointToLatLng(pse, coords.z)
+      var llnw = crs.pointToLatLng(pnw, coords.z)
+      var llse = crs.pointToLatLng(pse, coords.z)
       //console.log(coords, llnw, llse)
 
       var color = this.options.color || 'lineageColor'
@@ -804,8 +810,8 @@
       var layer = ev.target
       var map = layer._map
       var zoom = map.getZoom()
-      llnw = map.layerPointToLatLng(pnw, zoom)
-      llse = map.layerPointToLatLng(pse, zoom)
+      var llnw = map.layerPointToLatLng(pnw, zoom)
+      var llse = map.layerPointToLatLng(pse, zoom)
       //console.log(center, llnw, llse)
       var location = this.options.location || 'birth'
 
@@ -941,6 +947,17 @@
       maxChain: maxChain,
     })
     pointOverlay.redraw()
+    baseLayerByTime(pointOverlay._map, min*1000)
+  }
+
+  var baseLayerByTime = function(map, ms) {
+    if (ms < msEndOfFixedSeed) {
+      map.addLayer(base['Default'])
+      map.removeLayer(base['Uncertainty'])
+    } else {
+      map.addLayer(base['Uncertainty'])
+      map.removeLayer(base['Default'])
+    }
   }
 
   var setPointColor = function(color) {
@@ -1010,7 +1027,7 @@
   var graticule = L.simpleGraticule(options)
   overlays['graticule'] = graticule
 
-  layersControl = L.control.layers(base, overlays, {autoZIndex: false})
+  var layersControl = L.control.layers(base, overlays, {autoZIndex: false})
 
   L.Control.Scale.include({
     _updateMetric: function (maxMeters) {
@@ -1241,7 +1258,8 @@
     var idleTimer = setTimeout(setIdle, 1*60*1000)
     L.DomEvent.on(map, 'mousemove', setActive, map);
 
-    base['Default'].addTo(map)
+    baseLayerByTime(map, Date.now())
+    //base['Default'].addTo(map)
     overlays['Rift'].addTo(map)
     //base['Fractal'].addTo(map)
     //base['Biome'].addTo(map)
