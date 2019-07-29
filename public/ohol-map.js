@@ -1432,6 +1432,7 @@
           setDataLayers(message.lives.data)
           if(!map.hasLayer(dataOverlay)) {
             map.addLayer(dataOverlay)
+            baseLayerByTime(map, pointOverlay.options.min*1000)
           }
           break;
         case 'beginPlayback':
