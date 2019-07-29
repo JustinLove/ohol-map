@@ -796,9 +796,12 @@
     },
     updateTiles: function(ev) {
       var time = ev.time/1000
-      for (key in this._tiles) {
+      for (var key in this._tiles) {
         var tile = this._tiles[key]
         this.drawTile(tile.el, tile.coords, time)
+      }
+      if (this._map) {
+        baseLayerByTime(this._map, ev.time)
       }
     },
     selectPoints: function(ev) {
@@ -951,13 +954,23 @@
   }
 
   var baseLayerByTime = function(map, ms) {
+    var targetLayer
     if (ms < msEndOfFixedSeed) {
-      map.addLayer(base['Default'])
-      map.removeLayer(base['Uncertainty'])
+      targetLayer = 'Default'
     } else {
-      map.addLayer(base['Uncertainty'])
-      map.removeLayer(base['Default'])
+      targetLayer = 'Uncertainty'
     }
+    Object.keys(base).forEach(function(key) {
+      if (map.hasLayer(base[key])) {
+        if (key != targetLayer) {
+          map.removeLayer(base[key])
+        }
+      } else {
+        if (key == targetLayer) {
+          map.addLayer(base[key])
+        }
+      }
+    })
   }
 
   var setPointColor = function(color) {
