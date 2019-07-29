@@ -1,3 +1,4 @@
+- more accurate biome age times
 - # links override url
 - search/lineage reslts in data layer for coloring etc.
 - bookmarking layers

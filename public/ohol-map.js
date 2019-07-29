@@ -6,7 +6,10 @@
   var cachedApiUrl = oholMapConfig.cachedApiUrl
   var apiUrl = oholMapConfig.apiUrl
 
-  var msEndOfFixedSeed = Date.parse("Jul 27 2019 21:00:00 GMT-0000")
+  var msStartOfArcticAge = Date.parse("2018-03-08")
+  var msStartOfDesertAge = Date.parse("2018-03-31")
+  var msStartOfJungleAge = Date.parse("2018-11-19")
+  var msStartOfRandomAge = Date.parse("Jul 27 2019 21:00:00 GMT-0000")
 
   var scale = Math.pow(2, 24)
   var crs = L.extend({}, L.CRS.Simple, {
@@ -998,15 +1001,23 @@
       maxChain: maxChain,
     })
     pointOverlay.redraw()
-    baseLayerByTime(pointOverlay._map, min*1000)
+    if (pointOverlay._map) {
+      baseLayerByTime(pointOverlay._map, min*1000)
+    }
   }
 
   var baseLayerByTime = function(map, ms) {
     var targetLayer
-    if (ms < msEndOfFixedSeed) {
-      targetLayer = 'Jungle Age'
-    } else {
+    if (ms > msStartOfRandomAge) {
       targetLayer = 'Uncertainty'
+    } else if (ms > msStartOfJungleAge) {
+      targetLayer = 'Jungle Age'
+    } else if (ms > msStartOfDesertAge) {
+      targetLayer = 'Desert Age'
+    } else if (ms > msStartOfArcticAge) {
+      targetLayer = 'Arctic Age'
+    } else {
+      targetLayer = 'Badlands Age'
     }
     Object.keys(base).forEach(function(key) {
       if (map.hasLayer(base[key])) {
