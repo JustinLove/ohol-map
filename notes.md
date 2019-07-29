@@ -1,3 +1,5 @@
+- rift should show multiple boxes based on time range
+- time url parameter?
 - more accurate biome age times
 - # links override url
 - search/lineage reslts in data layer for coloring etc.
