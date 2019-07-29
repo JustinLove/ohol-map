@@ -41,7 +41,10 @@
     bounds: [[-512, -512], [511, 511]],
   })
 
-  base['Default'] = L.layerGroup([biomeImageLayer, screenshotImageLayer])
+  base['Badlands Age'] = null
+  base['Arctic Age'] = null
+  base['Desert Age'] = null
+  base['Jungle Age'] = L.layerGroup([biomeImageLayer, screenshotImageLayer])
   base['Uncertainty'] = L.layerGroup([])
 
   base['Crucible'] = L.tileLayer(oholMapConfig.crucibleTiles, {
@@ -133,7 +136,7 @@
   }
 
   var xxTweakedHash2D = function(inX, inY) {
-    h32 = xxSeed + inX + XX_PRIME32_5
+    var h32 = xxSeed + inX + XX_PRIME32_5
     h32 += Math.imul(inY, XX_PRIME32_3)
     h32 = Math.imul(h32, XX_PRIME32_2)
     h32 ^= h32 >>> 13
@@ -200,16 +203,6 @@
     return sum * oneOverIntMax
   }
 
-  var biomeMap = [
-    0,
-    3,
-    4,
-    5,
-    2,
-    1,
-    6,
-  ]
-
   var biomes = []
   var objects = []
   var gridPlacements = []
@@ -222,10 +215,10 @@
     var scale = options.biomeOffset + options.biomeScale * options.numBiomes
     var roughness = options.biomeFractalRoughness
     for (var i = 0;i < options.numBiomes;i++) {
-      var biome = biomeMap[i]
+      var biome = options.biomeMap[i]
 
       xxSeed = biome * options.biomeSeedScale + options.biomeSeedOffset
-      randVal = getXYFractal(inX, inY, roughness, scale)
+      var randVal = getXYFractal(inX, inY, roughness, scale)
 
       if (randVal > maxValue) {
         secondPlaceBiome = pickedBiome
@@ -485,6 +478,37 @@
     return [r * 255, g * 255, b * 255];
   }
 
+  var jungleBiomeMap = [
+    0,
+    3,
+    4,
+    5,
+    2,
+    1,
+    6,
+  ]
+  var desertBiomeMap = [
+    0,
+    3,
+    4,
+    5,
+    2,
+    1,
+  ]
+  var arcticBiomeMap = [
+    0,
+    3,
+    4,
+    2,
+    1,
+  ]
+  var badlandsBiomeMap = [
+    0,
+    3,
+    2,
+    1,
+  ]
+
   var greenColor = hsvToRgb(89/360, 0.49, 0.67)
   var swampColor = hsvToRgb(253/360, 0.17, 0.65)
   var plainsColor = hsvToRgb(36/360, 0.75, 0.90)
@@ -498,9 +522,10 @@
       biomeOffset: 0.83332,
       biomeScale: 0.08333,
       biomeFractalRoughness: 0.55,
-      numBiomes: 7,
+      numBiomes: jungleBiomeMap.length,
       biomeSeedOffset: 723,
       biomeSeedScale: 263,
+      biomeMap: jungleBiomeMap,
       biomeColors: [
         greenColor,
         swampColor,
@@ -544,6 +569,7 @@
       var scale = this.options.biomeOffset + this.options.biomeScale * 7
       var roughness = this.options.biomeFractalRoughness
 
+      var biomeMap = this.options.biomeMap
       var colors = this.options.biomeColors
       var imageData = ctx.createImageData(tile.width, tile.height)
       var d = imageData.data
@@ -566,8 +592,29 @@
     },
   })
 
-  base['Biome'] = new L.GridLayer.BiomeLayer({
-    biomeSeedOffset: 723,
+  base['Desert Age'] = new L.GridLayer.BiomeLayer({
+    biomeMap: desertBiomeMap,
+    numBiomes: desertBiomeMap.length,
+    minZoom: 2,
+    maxZoom: 31,
+    //minNativeZoom: 24,
+    maxNativeZoom: 24,
+    attribution: attribution,
+  })
+
+  base['Arctic Age'] = new L.GridLayer.BiomeLayer({
+    biomeMap: arcticBiomeMap,
+    numBiomes: arcticBiomeMap.length,
+    minZoom: 2,
+    maxZoom: 31,
+    //minNativeZoom: 24,
+    maxNativeZoom: 24,
+    attribution: attribution,
+  })
+
+  base['Badlands Age'] = new L.GridLayer.BiomeLayer({
+    biomeMap: badlandsBiomeMap,
+    numBiomes: badlandsBiomeMap.length,
     minZoom: 2,
     maxZoom: 31,
     //minNativeZoom: 24,
@@ -580,7 +627,8 @@
       biomeOffset: 0.83332,
       biomeScale: 0.08333,
       biomeFractalRoughness: 0.55,
-      numBiomes: 7,
+      biomeMap: jungleBiomeMap,
+      numBiomes: jungleBiomeMap.length,
       biomeSeedOffset: 723,
       biomeSeedScale: 263,
       gridSeed: 9753,
@@ -956,7 +1004,7 @@
   var baseLayerByTime = function(map, ms) {
     var targetLayer
     if (ms < msEndOfFixedSeed) {
-      targetLayer = 'Default'
+      targetLayer = 'Jungle Age'
     } else {
       targetLayer = 'Uncertainty'
     }
@@ -1227,7 +1275,7 @@
         biome.objects = biome.objects.filter(function(spawnable) {
           for (var i = 0;i < gridPlacements.length;i++) {
             if (gridPlacements[i].id == spawnable.id) {
-              gridPlacements[i].permittedBiomes.push(biomeMap.indexOf(biome.id))
+              gridPlacements[i].permittedBiomes.push(jungleBiomeMap.indexOf(biome.id))
               return false
             }
           }
@@ -1272,7 +1320,6 @@
     L.DomEvent.on(map, 'mousemove', setActive, map);
 
     baseLayerByTime(map, Date.now())
-    //base['Default'].addTo(map)
     overlays['Rift'].addTo(map)
     //base['Fractal'].addTo(map)
     //base['Biome'].addTo(map)
