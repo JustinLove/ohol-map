@@ -49,6 +49,7 @@
   base['Desert Age'] = null
   base['Jungle Age'] = L.layerGroup([biomeImageLayer, screenshotImageLayer])
   base['Uncertainty'] = L.layerGroup([])
+  //base['Arc Age'] = null
 
   base['Crucible'] = L.tileLayer(oholMapConfig.crucibleTiles, {
     errorTileUrl: 'ground_U.png',
@@ -87,14 +88,23 @@
 
   var monumentOverlay = L.layerGroup([])
 
+  var rift250 = L.rectangle([[-250,-250], [250,250]], {fill: false, color: 'black'})
+  var rift354 = L.rectangle([[-354,-354], [354,354]], {fill: false, color: 'black'})
+  var rift500 = L.rectangle([[-500,-500], [500,500]], {fill: false, color: 'black'})
+  var rift1000 = L.rectangle([[-1000,-1000], [1000,1000]], {fill: false, color: 'black'})
+  var riftOverlay = L.layerGroup([
+    rift354,
+  ])
+  var riftHistory = [
+    { ms: Date.parse("2019-07-25 20:00:00-05:00"), layer: rift250 },
+    { ms: Date.parse("2019-07-25 23:06:38-05:00"), layer: rift1000 },
+    { ms: Date.parse("2019-07-26 02:00:00-05:00"), layer: rift500 },
+    { ms: Date.parse("2019-07-26 17:30:00-05:00"), layer: rift354 },
+  ]
+
   var overlays = {
     graticule: null,
-    "Rift": L.layerGroup([
-      L.rectangle([[-250,-250], [250,250]], {fill: false, color: '#888'}),
-      L.rectangle([[-354,-354], [354,354]], {fill: false, color: 'black'}),
-      L.rectangle([[-500,-500], [500,500]], {fill: false, color: '#888'}),
-      L.rectangle([[-1000,-1000], [1000,1000]], {fill: false, color: '#888'}),
-    ]),
+    "Rift": riftOverlay,
     "Life Data": dataOverlay,
     "Monuments": monumentOverlay,
     "Fade": baseFade,
@@ -595,6 +605,19 @@
     },
   })
 
+  /*
+  base['Arc Age'] = new L.GridLayer.BiomeLayer({
+    biomeSeedOffset: 727,
+    biomeMap: jungleBiomeMap,
+    numBiomes: jungleBiomeMap.length,
+    minZoom: 2,
+    maxZoom: 31,
+    //minNativeZoom: 24,
+    maxNativeZoom: 24,
+    attribution: attribution,
+  })
+  */
+
   base['Desert Age'] = new L.GridLayer.BiomeLayer({
     biomeMap: desertBiomeMap,
     numBiomes: desertBiomeMap.length,
@@ -854,6 +877,7 @@
       if (this._map) {
         baseLayerByTime(this._map, ev.time)
       }
+      riftLayerByTime(ev.time)
     },
     selectPoints: function(ev) {
       var center = ev.layerPoint
@@ -1004,6 +1028,7 @@
     if (pointOverlay._map) {
       baseLayerByTime(pointOverlay._map, min*1000)
     }
+    riftLayerByTime(min*1000)
   }
 
   var baseLayerByTime = function(map, ms) {
@@ -1027,6 +1052,27 @@
       } else {
         if (key == targetLayer) {
           map.addLayer(base[key])
+        }
+      }
+    })
+  }
+
+  var riftLayerByTime = function(ms) {
+    var targetLayer = null
+    for (var i = riftHistory.length - 1;i >= 0;i--) {
+      if (ms > riftHistory[i].ms) {
+        targetLayer = riftHistory[i].layer
+        break
+      }
+    }
+    riftHistory.forEach(function(rh) {
+      if (riftOverlay.hasLayer(rh.layer)) {
+        if (rh.layer != targetLayer) {
+          riftOverlay.removeLayer(rh.layer)
+        }
+      } else {
+        if (rh.layer == targetLayer) {
+          riftOverlay.addLayer(rh.layer)
         }
       }
     })
@@ -1331,6 +1377,7 @@
     L.DomEvent.on(map, 'mousemove', setActive, map);
 
     baseLayerByTime(map, Date.now())
+    riftLayerByTime(Date.now())
     overlays['Rift'].addTo(map)
     //base['Fractal'].addTo(map)
     //base['Biome'].addTo(map)

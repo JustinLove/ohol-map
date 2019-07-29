@@ -1,3 +1,4 @@
+- initial time set when search makes data visible
 - more accurate biome age times
 - # links override url
 - search/lineage reslts in data layer for coloring etc.
