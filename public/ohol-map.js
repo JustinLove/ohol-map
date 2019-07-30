@@ -10,6 +10,13 @@
   var msStartOfDesertAge = Date.parse("2018-03-31")
   var msStartOfJungleAge = Date.parse("2018-11-19")
   var msStartOfRandomAge = Date.parse("Jul 27 2019 21:00:00 GMT-0000")
+  var arcs = [
+    { msStart: 1564439084550, msLength: 18841340, seed: 2082599763 },
+  ]
+  arcs.forEach(function(arc, i) {
+    arc.msEnd = arc.msStart + arc.msLength
+    arc.name = 'Arc '+(i+1)
+  })
 
   var scale = Math.pow(2, 24)
   var crs = L.extend({}, L.CRS.Simple, {
@@ -48,8 +55,10 @@
   base['Arctic Age'] = null
   base['Desert Age'] = null
   base['Jungle Age'] = L.layerGroup([biomeImageLayer, screenshotImageLayer])
+  arcs.forEach(function(arc) {
+    base[arc.name] = null
+  })
   base['Uncertainty'] = L.layerGroup([])
-  //base['Arc Age'] = null
 
   base['Crucible'] = L.tileLayer(oholMapConfig.crucibleTiles, {
     errorTileUrl: 'ground_U.png',
@@ -605,18 +614,18 @@
     },
   })
 
-  /*
-  base['Arc Age'] = new L.GridLayer.BiomeLayer({
-    biomeSeedOffset: 727,
-    biomeMap: jungleBiomeMap,
-    numBiomes: jungleBiomeMap.length,
-    minZoom: 2,
-    maxZoom: 31,
-    //minNativeZoom: 24,
-    maxNativeZoom: 24,
-    attribution: attribution,
+  arcs.forEach(function(arc) {
+    base[arc.name] = new L.GridLayer.BiomeLayer({
+      biomeSeedOffset: arc.seed,
+      biomeMap: jungleBiomeMap,
+      numBiomes: jungleBiomeMap.length,
+      minZoom: 2,
+      maxZoom: 31,
+      //minNativeZoom: 24,
+      maxNativeZoom: 24,
+      attribution: attribution,
+    })
   })
-  */
 
   base['Desert Age'] = new L.GridLayer.BiomeLayer({
     biomeMap: desertBiomeMap,
@@ -1033,7 +1042,14 @@
 
   var baseLayerByTime = function(map, ms) {
     var targetLayer
-    if (ms > msStartOfRandomAge) {
+    arcs.forEach(function(arc) {
+      if (ms > arc.msStart && ms < arc.msEnd) {
+        targetLayer = arc.name
+      }
+    })
+    if (targetLayer) {
+      //skip
+    } else if (ms > msStartOfRandomAge) {
       targetLayer = 'Uncertainty'
     } else if (ms > msStartOfJungleAge) {
       targetLayer = 'Jungle Age'
