@@ -68,6 +68,7 @@
     maxNativeZoom: 25,
     attribution: attribution,
   });
+  base['Topographic Test'] = null
 
   var dataOverlay = L.layerGroup([])
   dataOverlay.on('add', function(ev) {
@@ -229,7 +230,7 @@
   var objects = []
   var gridPlacements = []
 
-  var computeMapBiomeIndex = function(inX, inY, options, secondPlace) {
+  var competeMapBiomeIndex = function(inX, inY, options, secondPlace) {
     var maxValue = -Number.MAX_VALUE
     var pickedBiome = -1
     var secondPlaceBiome = -1
@@ -262,6 +263,40 @@
     return pickedBiome
   }
 
+  var topographicMapBiomeIndex = function(inX, inY, options, secondPlace) {
+    var scale = options.biomeOffset + options.biomeScale * options.numBiomes
+    var roughness = options.biomeFractalRoughness
+    var weights = options.biomeCumuWeights
+
+    xxSeed = options.biomeSeedOffset
+    var randVal = getXYFractal(inX, inY, roughness, scale)
+    //console.log('initial', randVal)
+
+    randVal -= 0.099668
+    randVal *= 1.268963
+    //console.log('scaled', randVal)
+
+    var i = randVal * options.biomeTotalWeight
+    //console.log('weighted', i)
+
+    var pickedBiome = 0
+    while (pickedBiome < options.numBiomes-1 &&
+           i > weights[pickedBiome]) {
+      pickedBiome++
+    }
+    //console.log('picked', pickedBiome)
+
+    if (secondPlace) {
+      secondPlace.biome = pickedBiome - 1
+      if (secondPlace.biome < 0) {
+        secondPlace.biome = pickedBiome + 1
+      }
+      secondPlace.gap = 0.1
+    }
+
+    return pickedBiome
+  }
+
   // inKnee in 0..inf, smaller values make harder knees
   // intput in 0..1
   // output in 0..1
@@ -289,7 +324,7 @@
     for (var i = 0;i < gridPlacements.length;i++) {
       var gp = gridPlacements[i]
       if (inX % gp.spacing == 0 && inY % gp.spacing == 0) {
-        pickedBiome = computeMapBiomeIndex(inX, inY, options, secondPlace)
+        pickedBiome = competeMapBiomeIndex(inX, inY, options, secondPlace)
         if (pickedBiome == -1) {
           return 0;
         }
@@ -311,7 +346,7 @@
     }
 
     if (pickedBiome == -1) {
-      pickedBiome = computeMapBiomeIndex(inX, inY, options, secondPlace)
+      pickedBiome = competeMapBiomeIndex(inX, inY, options, secondPlace)
     }
 
     if (pickedBiome == -1) {
@@ -531,6 +566,33 @@
     1,
   ]
 
+  var topographicBiomeMap = [
+    1,
+    0,
+    2,
+    6,
+    5,
+    3,
+    4,
+  ]
+
+  var biomeWeights = [
+    0.32,
+    0.11,
+    0.08,
+    0.05,
+    0.05,
+    0.13,
+    0.25,
+  ]
+
+  var biomeTotalWeight = 0
+  var biomeCumuWeights = []
+  biomeWeights.forEach(function(weight, i) {
+    biomeTotalWeight += biomeWeights[i]
+    biomeCumuWeights[i] = biomeTotalWeight
+  })
+
   var greenColor = hsvToRgb(89/360, 0.49, 0.67)
   var swampColor = hsvToRgb(253/360, 0.17, 0.65)
   var plainsColor = hsvToRgb(36/360, 0.75, 0.90)
@@ -541,6 +603,7 @@
 
   L.GridLayer.BiomeLayer = L.GridLayer.extend({
     options: {
+      computeMapBiomeIndex: competeMapBiomeIndex,
       biomeOffset: 0.83332,
       biomeScale: 0.08333,
       biomeFractalRoughness: 0.55,
@@ -556,7 +619,9 @@
         arcticColor,
         desertColor,
         jungleColor,
-      ]
+      ],
+      biomeTotalWeight: biomeTotalWeight,
+      biomeCumuWeights: biomeCumuWeights,
     },
     createTile: function (coords, done) {
       var tile = document.createElement('canvas');
@@ -601,7 +666,8 @@
           var i = (y * w + x) * 4
           var wx = startX + x*stride
           var wy = startY - (y*stride)
-          var v = biomeMap[computeMapBiomeIndex(wx, wy, this.options)]
+          var bi = this.options.computeMapBiomeIndex(wx, wy, this.options)
+          var v = biomeMap[bi]
           d[i+0] = colors[v][0]
           d[i+1] = colors[v][1]
           d[i+2] = colors[v][2]
@@ -625,6 +691,18 @@
       maxNativeZoom: 24,
       attribution: attribution,
     })
+  })
+
+  base['Topographic Test'] = new L.GridLayer.BiomeLayer({
+    computeMapBiomeIndex: topographicMapBiomeIndex,
+    //biomeSeedOffset: 723,
+    biomeMap: topographicBiomeMap,
+    numBiomes: topographicBiomeMap.length,
+    minZoom: 2,
+    maxZoom: 31,
+    //minNativeZoom: 24,
+    maxNativeZoom: 24,
+    attribution: attribution,
   })
 
   base['Desert Age'] = new L.GridLayer.BiomeLayer({
@@ -1424,6 +1502,7 @@
     L.DomEvent.on(map, 'mousemove', setActive, map);
 
     baseLayerByTime(map, Date.now())
+    //base['Topographic Test'].addTo(map)
     riftLayerByTime(Date.now())
     overlays['Rift'].addTo(map)
     //base['Fractal'].addTo(map)
