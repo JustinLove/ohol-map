@@ -206,6 +206,7 @@ update msg model =
       ( m2, Cmd.batch
         [ fetchDataForTime m2
         , fetchMonuments model.cachedApiUrl server.id
+        , Leaflet.currentServer server
         ]
       )
     UI (View.SelectShow) ->

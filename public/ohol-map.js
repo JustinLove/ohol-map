@@ -18,6 +18,8 @@
     arc.name = 'Arc '+(i+1)
   })
 
+  var currentServer = 17
+
   var scale = Math.pow(2, 24)
   var crs = L.extend({}, L.CRS.Simple, {
     transformation: new L.transformation(1/scale, 0.5/scale, -1/scale, -0.5/scale)
@@ -1088,7 +1090,12 @@
     } else if (ms > msStartOfArcticAge) {
       targetLayer = 'Arctic Age'
     } else {
-      targetLayer = 'Badlands Age'
+
+      if (currentServer == 3) {
+        targetLayer = 'Old Server 3'
+      } else {
+        targetLayer = 'Badlands Age'
+      }
     }
     Object.keys(base).forEach(function(key) {
       if (map.hasLayer(base[key])) {
@@ -1470,6 +1477,9 @@
             map.setView([message.y, message.x], message.z)
           }
           break
+        case 'currentServer':
+          currentServer = message.server.id
+          break;
         case 'monumentList':
           updateMonumentLayer(monumentOverlay, message.monuments.data)
           //monumentOverlay.addTo(map)

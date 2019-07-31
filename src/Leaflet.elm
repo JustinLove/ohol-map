@@ -4,7 +4,7 @@ port module Leaflet exposing
   , PointLocation(..)
   , Event(..)
   , setView
-  , serverList
+  , currentServer
   , monumentList
   , dataLayer
   , beginPlayback
@@ -52,11 +52,11 @@ setView {x, y, z} =
     ]
     |> leafletCommand
 
-serverList : List Data.Server -> Cmd msg
-serverList servers =
+currentServer : Data.Server -> Cmd msg
+currentServer server =
   Encode.object
-    [ ("kind", Encode.string "serverList")
-    , ("servers", Encode.servers servers)
+    [ ("kind", Encode.string "currentServer")
+    , ("server", Encode.server server)
     ]
     |> leafletCommand
 
