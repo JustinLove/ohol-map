@@ -10,8 +10,12 @@
   var msStartOfDesertAge = Date.parse("2018-03-31")
   var msStartOfJungleAge = Date.parse("2018-11-19")
   var msStartOfRandomAge = Date.parse("Jul 27 2019 21:00:00 GMT-0000")
+  var msStartOfTopographicAge = Date.parse("Jul 31 2019 01:25:24 GMT-0000")
+
   var arcs = [
     { msStart: 1564439084550, msLength: 18841340, seed: 2082599763 },
+    { msStart: 1564457929470, msLength: 33560870, seed: 1521396640 },
+    { msStart: 1564571256510, msLength: 10694660, seed: 1973867226 },
   ]
   arcs.forEach(function(arc, i) {
     arc.msEnd = arc.msStart + arc.msLength
@@ -68,7 +72,6 @@
     maxNativeZoom: 25,
     attribution: attribution,
   });
-  base['Topographic Test'] = null
 
   var dataOverlay = L.layerGroup([])
   dataOverlay.on('add', function(ev) {
@@ -681,28 +684,30 @@
   })
 
   arcs.forEach(function(arc) {
-    base[arc.name] = new L.GridLayer.BiomeLayer({
-      biomeSeedOffset: arc.seed,
-      biomeMap: jungleBiomeMap,
-      numBiomes: jungleBiomeMap.length,
-      minZoom: 2,
-      maxZoom: 31,
-      //minNativeZoom: 24,
-      maxNativeZoom: 24,
-      attribution: attribution,
-    })
-  })
-
-  base['Topographic Test'] = new L.GridLayer.BiomeLayer({
-    computeMapBiomeIndex: topographicMapBiomeIndex,
-    //biomeSeedOffset: 723,
-    biomeMap: topographicBiomeMap,
-    numBiomes: topographicBiomeMap.length,
-    minZoom: 2,
-    maxZoom: 31,
-    //minNativeZoom: 24,
-    maxNativeZoom: 24,
-    attribution: attribution,
+    if (arc.msStart > msStartOfTopographicAge) {
+      base[arc.name] = new L.GridLayer.BiomeLayer({
+        computeMapBiomeIndex: topographicMapBiomeIndex,
+        biomeSeedOffset: arc.seed,
+        biomeMap: topographicBiomeMap,
+        numBiomes: topographicBiomeMap.length,
+        minZoom: 2,
+        maxZoom: 31,
+        //minNativeZoom: 24,
+        maxNativeZoom: 24,
+        attribution: attribution,
+      })
+    } else {
+      base[arc.name] = new L.GridLayer.BiomeLayer({
+        biomeSeedOffset: arc.seed,
+        biomeMap: jungleBiomeMap,
+        numBiomes: jungleBiomeMap.length,
+        minZoom: 2,
+        maxZoom: 31,
+        //minNativeZoom: 24,
+        maxNativeZoom: 24,
+        attribution: attribution,
+      })
+    }
   })
 
   base['Desert Age'] = new L.GridLayer.BiomeLayer({
