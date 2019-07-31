@@ -59,6 +59,7 @@
     base[arc.name] = null
   })
   base['Uncertainty'] = L.layerGroup([])
+  base['Old Server 3'] = null
 
   base['Crucible'] = L.tileLayer(oholMapConfig.crucibleTiles, {
     errorTileUrl: 'ground_U.png',
@@ -656,6 +657,35 @@
     maxNativeZoom: 24,
     attribution: attribution,
   })
+
+  var greenColor3 = [50, 200, 50]
+  var swampColor3 = [150, 70, 150]
+  var plainsColor3 = [250, 250, 30]
+  var badlandsColor3 = [150, 150, 150]
+
+  var server3Biome = new L.GridLayer.BiomeLayer({
+    biomeMap: badlandsBiomeMap,
+    numBiomes: badlandsBiomeMap.length,
+    minZoom: 2,
+    maxZoom: 31,
+    //minNativeZoom: 24,
+    maxNativeZoom: 24,
+    attribution: attribution,
+    biomeColors: [
+      greenColor3,
+      swampColor3,
+      plainsColor3,
+      badlandsColor3,
+    ]
+  })
+
+  var server3Map = L.imageOverlay('overlays/server3.png',
+    [[-1170.5, -695.5], [-401.5, 1252.5 - 695]], {
+      pane: 'tilePane',
+      attribution: '<a href="https://onehouronelife.com/forums/viewtopic.php?id=236">rosden</a>',
+    })
+
+  base['Old Server 3'] = new L.layerGroup([server3Biome, server3Map])
 
   L.GridLayer.ObjectLayer = L.GridLayer.extend({
     options: {
