@@ -18,8 +18,6 @@
     arc.name = 'Arc '+(i+1)
   })
 
-  var currentServer = 17
-
   var scale = Math.pow(2, 24)
   var crs = L.extend({}, L.CRS.Simple, {
     transformation: new L.transformation(1/scale, 0.5/scale, -1/scale, -0.5/scale)
@@ -61,7 +59,6 @@
     base[arc.name] = null
   })
   base['Uncertainty'] = L.layerGroup([])
-  base['Old Server 3'] = null
 
   base['Crucible'] = L.tileLayer(oholMapConfig.crucibleTiles, {
     errorTileUrl: 'ground_U.png',
@@ -650,7 +647,7 @@
     attribution: attribution,
   })
 
-  base['Badlands Age'] = new L.GridLayer.BiomeLayer({
+  var badlandsAge = new L.GridLayer.BiomeLayer({
     biomeMap: badlandsBiomeMap,
     numBiomes: badlandsBiomeMap.length,
     minZoom: 2,
@@ -687,7 +684,9 @@
       attribution: '<a href="https://onehouronelife.com/forums/viewtopic.php?id=236">rosden</a>',
     })
 
-  base['Old Server 3'] = new L.layerGroup([server3Biome, server3Map])
+  var server3 = new L.layerGroup([server3Biome, server3Map])
+
+  base['Badlands Age'] = new L.layerGroup([badlandsAge])
 
   L.GridLayer.ObjectLayer = L.GridLayer.extend({
     options: {
@@ -1090,12 +1089,7 @@
     } else if (ms > msStartOfArcticAge) {
       targetLayer = 'Arctic Age'
     } else {
-
-      if (currentServer == 3) {
-        targetLayer = 'Old Server 3'
-      } else {
-        targetLayer = 'Badlands Age'
-      }
+      targetLayer = 'Badlands Age'
     }
     Object.keys(base).forEach(function(key) {
       if (map.hasLayer(base[key])) {
@@ -1478,7 +1472,18 @@
           }
           break
         case 'currentServer':
-          currentServer = message.server.id
+          var targetLayer
+          if (message.server.id == 3) {
+            if (base['Badlands Age'].hasLayer(badlandsAge)) {
+              base['Badlands Age'].addLayer(server3)
+              base['Badlands Age'].removeLayer(badlandsAge)
+            }
+          } else {
+            if (base['Badlands Age'].hasLayer(server3)) {
+              base['Badlands Age'].addLayer(badlandsAge)
+              base['Badlands Age'].removeLayer(server3)
+            }
+          }
           break;
         case 'monumentList':
           updateMonumentLayer(monumentOverlay, message.monuments.data)
