@@ -18,9 +18,6 @@ body {
   pointer-events: auto;
 }
 
-.trans {
-  opacity: 0.4;
-}
 img, canvas {
   image-rendering: optimizeSpeed;             /*                     */
   image-rendering: -moz-crisp-edges;          /* Firefox             */
@@ -29,6 +26,10 @@ img, canvas {
   image-rendering: optimize-contrast;         /* CSS3 Proposed       */
   -ms-interpolation-mode: nearest-neighbor;   /* IE8+                */
   }
+
+.invalid canvas {
+  filter: blur(5px);
+}
 
 #sidebar [role="button"]:hover,
 #sidebar a:hover {

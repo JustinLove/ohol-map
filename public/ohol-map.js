@@ -11,15 +11,23 @@
   var msStartOfJungleAge = Date.parse("2018-11-19")
   var msStartOfRandomAge = Date.parse("Jul 27 2019 21:00:00 GMT-0000")
   var msStartOfTopographicAge = Date.parse("Jul 31 2019 01:25:24 GMT-0000")
+  var msStartOfSpecialAge = Date.parse("Aug 1 2019 02:08:47 GMT-0000")
 
   var arcs = [
     { msStart: 1564439084550, msLength: 18841340, seed: 2082599763 },
-    { msStart: 1564457929470, msLength: 33560870, seed: 1521396640 },
-    { msStart: 1564571256510, msLength: 10694660, seed: 1973867226 },
+    { msStart: 1564457929470, msLength: 79691770, seed: 1521396640 },
+    { msStart: 1564537695080, msLength: 33560870, seed: 1521396640 },
+    { msStart: 1564571256510, msLength: 54070840, seed: 1973867226 },
+    { msStart: 1564625380120, msLength:  7362980, seed: 1151446675 },
   ]
   arcs.forEach(function(arc, i) {
     arc.msEnd = arc.msStart + arc.msLength
     arc.name = 'Arc '+(i+1)
+    /*
+    console.log(arc.name)
+    console.log('Fr:', new Date(arc.msStart).toString())
+    console.log('To:', new Date(arc.msEnd).toString())
+    */
   })
 
   var scale = Math.pow(2, 24)
@@ -684,7 +692,20 @@
   })
 
   arcs.forEach(function(arc) {
-    if (arc.msStart > msStartOfTopographicAge) {
+    if (arc.msStart > msStartOfSpecialAge) {
+      base[arc.name] = new L.GridLayer.BiomeLayer({
+        className: 'invalid',
+        computeMapBiomeIndex: topographicMapBiomeIndex,
+        biomeSeedOffset: arc.seed,
+        biomeMap: topographicBiomeMap,
+        numBiomes: topographicBiomeMap.length,
+        minZoom: 2,
+        maxZoom: 31,
+        //minNativeZoom: 24,
+        maxNativeZoom: 24,
+        attribution: attribution,
+      })
+    } else if (arc.msStart > msStartOfTopographicAge) {
       base[arc.name] = new L.GridLayer.BiomeLayer({
         computeMapBiomeIndex: topographicMapBiomeIndex,
         biomeSeedOffset: arc.seed,
