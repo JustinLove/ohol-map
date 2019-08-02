@@ -246,9 +246,10 @@
     var pickedBiome = -1
     var secondPlaceBiome = -1
     var secondPlaceGap = 0
-    var scale = options.biomeOffset + options.biomeScale * options.numBiomes
+    var numBiomes = options.biomeMap.length
+    var scale = options.biomeOffset + options.biomeScale * numBiomes
     var roughness = options.biomeFractalRoughness
-    for (var i = 0;i < options.numBiomes;i++) {
+    for (var i = 0;i < numBiomes;i++) {
       var biome = options.biomeMap[i]
 
       xxSeed = biome * options.biomeSeedScale + options.biomeSeedOffset
@@ -275,7 +276,9 @@
   }
 
   var topographicMapBiomeIndex = function(inX, inY, options, secondPlace) {
-    var scale = options.biomeOffset + options.biomeScale * options.numBiomes
+    var numBiomes = options.biomeMap.length
+    var regularBiomesLimit = numBiomes - options.numSpecialBiomes
+    var scale = options.biomeOffset + options.biomeScale * numBiomes
     var roughness = options.biomeFractalRoughness
     var weights = options.biomeCumuWeights
 
@@ -291,17 +294,52 @@
     //console.log('weighted', i)
 
     var pickedBiome = 0
-    while (pickedBiome < options.numBiomes-1 &&
+    while (pickedBiome < numBiomes-1 &&
            i > weights[pickedBiome]) {
       pickedBiome++
     }
     //console.log('picked', pickedBiome)
 
-    if (secondPlace) {
-      secondPlace.biome = pickedBiome - 1
-      if (secondPlace.biome < 0) {
-        secondPlace.biome = pickedBiome + 1
+    if (pickedBiome >= regularBiomesLimit) {
+      pickedBiome = -1
+      scale = options.biomeSpecialOffset + options.biomeSpecialScale * options.numSpecialBiomes
+      roughness = options.biomeSpecialRoughness
+
+      var maxValue = -10
+      var secondMaxValue = -10
+      var secondPlaceBiome = -1
+
+      for (var i = regularBiomesLimit;i < numBiomes;i++) {
+        var biome = options.biomeMap[i]
+
+        xxSeed = biome * options.biomeSeedScale + options.biomeSeedOffset + options.biomeSeedSpecialOffset
+
+        var randVal = getXYFractal(inX, inY, roughness, scale)
+
+        if (randVal > maxValue) {
+          if (maxValue != -10) {
+            secondMaxValue = maxValue
+          }
+          maxValue = randVal
+          pickedBiome = i
+        }
       }
+
+      if (maxValue - secondMaxValue < options.biomeSpecialBoundary) {
+        secondPlaceBiome = pickedBiome
+        pickedBiome = regularBiomesLimit - 1
+      } else {
+        secondPlaceBiome = regularBiomesLimit - 1
+      }
+    } else {
+      secondPlaceBiome = pickedBiome - 1
+      if (secondPlaceBiome < 0) {
+        secondPlaceBiome = pickedBiome + 1
+      }
+    }
+
+    if (secondPlace) {
+      secondPlace.biome = secondPlaceBiome
       secondPlace.gap = 0.1
     }
 
@@ -587,7 +625,7 @@
     4,
   ]
 
-  var biomeWeights = [
+  var topographicBiomeWeights = [
     0.32,
     0.11,
     0.08,
@@ -597,12 +635,42 @@
     0.25,
   ]
 
-  var biomeTotalWeight = 0
-  var biomeCumuWeights = []
-  biomeWeights.forEach(function(weight, i) {
-    biomeTotalWeight += biomeWeights[i]
-    biomeCumuWeights[i] = biomeTotalWeight
+  var topographicBiomeTotalWeight = 0
+  var topographicBiomeCumuWeights = []
+  topographicBiomeWeights.forEach(function(weight, i) {
+    topographicBiomeTotalWeight += weight
+    topographicBiomeCumuWeights[i] = topographicBiomeTotalWeight
   })
+
+  var specialBiomeMap = [
+    1,
+    0,
+    2,
+    3,
+    6,
+    5,
+    4,
+  ]
+
+  var specialBiomeWeights = [
+    0.32,
+    0.12,
+    0.09,
+    0.11,
+    0.11,
+    0.11,
+    0.13,
+  ]
+
+  var specialBiomeTotalWeight = 0
+  var specialBiomeCumuWeights = []
+  specialBiomeWeights.forEach(function(weight, i) {
+    specialBiomeTotalWeight += weight
+    specialBiomeCumuWeights[i] = specialBiomeTotalWeight
+  })
+
+  var numSpecialBiomes = 3
+  var regularBiomesLimit = specialBiomeMap.length - numSpecialBiomes
 
   var greenColor = hsvToRgb(89/360, 0.49, 0.67)
   var swampColor = hsvToRgb(253/360, 0.17, 0.65)
@@ -618,10 +686,15 @@
       biomeOffset: 0.83332,
       biomeScale: 0.08333,
       biomeFractalRoughness: 0.55,
-      numBiomes: jungleBiomeMap.length,
       biomeSeedOffset: 723,
       biomeSeedScale: 263,
       biomeMap: jungleBiomeMap,
+      numSpecialBiomes: 0,
+      biomeSeedSpecialOffset: 38475,
+      biomeSpecialOffset: 2.4999,
+      biomeSpecialScale: 0.2499,
+      biomeSpecialRoughness: 0.55,
+      biomeSpecialBoundary: 0.03,
       biomeColors: [
         greenColor,
         swampColor,
@@ -631,8 +704,8 @@
         desertColor,
         jungleColor,
       ],
-      biomeTotalWeight: biomeTotalWeight,
-      biomeCumuWeights: biomeCumuWeights,
+      biomeTotalWeight: topographicBiomeTotalWeight,
+      biomeCumuWeights: topographicBiomeCumuWeights,
     },
     createTile: function (coords, done) {
       var tile = document.createElement('canvas');
@@ -694,11 +767,12 @@
   arcs.forEach(function(arc) {
     if (arc.msStart > msStartOfSpecialAge) {
       base[arc.name] = new L.GridLayer.BiomeLayer({
-        className: 'invalid',
         computeMapBiomeIndex: topographicMapBiomeIndex,
+        biomeTotalWeight: specialBiomeTotalWeight,
+        biomeCumuWeights: specialBiomeCumuWeights,
         biomeSeedOffset: arc.seed,
-        biomeMap: topographicBiomeMap,
-        numBiomes: topographicBiomeMap.length,
+        biomeMap: specialBiomeMap,
+        numSpecialBiomes: 3,
         minZoom: 2,
         maxZoom: 31,
         //minNativeZoom: 24,
@@ -708,9 +782,10 @@
     } else if (arc.msStart > msStartOfTopographicAge) {
       base[arc.name] = new L.GridLayer.BiomeLayer({
         computeMapBiomeIndex: topographicMapBiomeIndex,
+        biomeTotalWeight: topographicBiomeTotalWeight,
+        biomeCumuWeights: topographicBiomeCumuWeights,
         biomeSeedOffset: arc.seed,
         biomeMap: topographicBiomeMap,
-        numBiomes: topographicBiomeMap.length,
         minZoom: 2,
         maxZoom: 31,
         //minNativeZoom: 24,
@@ -721,7 +796,6 @@
       base[arc.name] = new L.GridLayer.BiomeLayer({
         biomeSeedOffset: arc.seed,
         biomeMap: jungleBiomeMap,
-        numBiomes: jungleBiomeMap.length,
         minZoom: 2,
         maxZoom: 31,
         //minNativeZoom: 24,
@@ -733,7 +807,6 @@
 
   base['Desert Age'] = new L.GridLayer.BiomeLayer({
     biomeMap: desertBiomeMap,
-    numBiomes: desertBiomeMap.length,
     minZoom: 2,
     maxZoom: 31,
     //minNativeZoom: 24,
@@ -743,7 +816,6 @@
 
   base['Arctic Age'] = new L.GridLayer.BiomeLayer({
     biomeMap: arcticBiomeMap,
-    numBiomes: arcticBiomeMap.length,
     minZoom: 2,
     maxZoom: 31,
     //minNativeZoom: 24,
@@ -753,7 +825,6 @@
 
   var badlandsAge = new L.GridLayer.BiomeLayer({
     biomeMap: badlandsBiomeMap,
-    numBiomes: badlandsBiomeMap.length,
     minZoom: 2,
     maxZoom: 31,
     //minNativeZoom: 24,
@@ -768,7 +839,6 @@
 
   var server3Biome = new L.GridLayer.BiomeLayer({
     biomeMap: badlandsBiomeMap,
-    numBiomes: badlandsBiomeMap.length,
     minZoom: 2,
     maxZoom: 31,
     //minNativeZoom: 24,
@@ -798,7 +868,6 @@
       biomeScale: 0.08333,
       biomeFractalRoughness: 0.55,
       biomeMap: jungleBiomeMap,
-      numBiomes: jungleBiomeMap.length,
       biomeSeedOffset: 723,
       biomeSeedScale: 263,
       gridSeed: 9753,
