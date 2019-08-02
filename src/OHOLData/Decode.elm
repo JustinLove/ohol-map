@@ -19,7 +19,7 @@ life =
     |> map2 (|>) (field "birth_y" int)
     |> map2 (|>) (field "birth_time" timeStamp)
     |> map2 (|>) (field "chain" int)
-    |> map2 (|>) (field "lineage" int)
+    |> map2 (|>) (field "lineage" (oneOf [ int, null 0 ]))
     |> map2 (|>) (field "name" (nullable string))
     |> map2 (|>) (field "server_id" int)
     |> map2 (|>) (field "epoch" int)
