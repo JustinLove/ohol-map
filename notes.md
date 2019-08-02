@@ -1,12 +1,15 @@
-- rift should show multiple boxes based on time range
+- selecting a life should set map time
+- legend for lineage color
 - time url parameter?
 - more accurate biome age times
 - # links override url
 - search/lineage reslts in data layer for coloring etc.
 - bookmarking layers
+- in-app help
 - show data for other servers
   - deselect server
   - collapse server
+- handle null lineage?
 - historical replay
   - Only fetch reasonable amount of data for historical
   - center view on main area?
