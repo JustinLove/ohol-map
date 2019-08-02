@@ -165,6 +165,7 @@ lifeSearch model =
   column
     [ width fill
     , height fill
+    , htmlAttribute <| Html.Attributes.style "height" "100%"
     ]
     [ searchBox model.searchTerm model.lives
     , showResult model model.lives
