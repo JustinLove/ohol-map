@@ -1,4 +1,3 @@
-- selecting a life should set map time
 - legend for lineage color
 - time url parameter?
 - more accurate biome age times

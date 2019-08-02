@@ -1711,6 +1711,7 @@
             .addTo(searchOverlay)
             .openPopup()
           map.setView([life.birth_y, life.birth_x], 24)
+          baseLayerByTime(map, life.birth_time*1000)
           break
         case 'searchOverlay':
           if (message.status) {
