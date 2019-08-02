@@ -101,10 +101,15 @@
   baseFade.on('add', function(ev) {
     var map = ev.target._map
     L.DomUtil.setOpacity(map.getPane('tilePane'), 0.3)
+    // moving the map at 28+ (varies with blur radius?) causes the current tile to blank out with blur
+    if (map.getZoom() < 28) {
+      L.DomUtil.addClass(map.getPane('tilePane'), 'blur')
+    }
   })
   baseFade.on('remove', function(ev) {
     var map = ev.target._map
     L.DomUtil.setOpacity(map.getPane('tilePane'), 1.0)
+    L.DomUtil.removeClass(map.getPane('tilePane'), 'blur')
   })
 
   var monumentOverlay = L.layerGroup([])
@@ -1574,6 +1579,15 @@
       maxBounds: [[-2147483648, -2147483648], [2147483647, 2147483647]],
       minZoom: 2,
       maxZoom: 31,
+    })
+
+    map.on('zoomend', function(ev) {
+      // moving the map at 28+ (varies with blur radius?) causes the current tile to blank out with blur
+      if (map.getZoom() > 27) {
+        L.DomUtil.removeClass(map.getPane('tilePane'), 'blur')
+      } else if (map.hasLayer(baseFade)) {
+        L.DomUtil.addClass(map.getPane('tilePane'), 'blur')
+      }
     })
 
     var idle = false

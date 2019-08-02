@@ -27,6 +27,10 @@ img, canvas {
   -ms-interpolation-mode: nearest-neighbor;   /* IE8+                */
   }
 
+.blur {
+  filter: blur(2px);
+}
+
 .invalid canvas {
   filter: blur(5px);
 }
