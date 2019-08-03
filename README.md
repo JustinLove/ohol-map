@@ -23,6 +23,8 @@ Hover to open panel. There are two sections:
 
 Different stages of the games development, (or other community servers) Only one may be selected at a time. Base layers can automatically change when viewing data to the appropriate map for the selected time period.
 
+The "Arc Age" layer will change depending the current time, and may not be blank at the current time.
+
 The "Jungle Age" layer is somewhat special. It was the first map type, and is based on pre-rendered images. There is much higher detail available in a small area around origin from the early days of the limited rift box.
 
 Uncertainty is just blank map, for use at times without a known map seed.
@@ -60,12 +62,13 @@ Filter and select life data for display on the map.
 
 Show: runs the currently selected search. This may be slow, please be patient.
 
-The time in history to show is currently set by the end of the period. This can operate in two modes
+The time in history to show is primarily set by the end of the period. This can operate in three modes. Updating the should also set the corresponding map.
 
-- Server: the time selection depends on the currently selected server and when it has been operating. Since these time periods can be very large, it is selected in two stages: "coarse" selects the time over all possible values with very low precision, "fine" can then select a more precise end point within a week to either side.
-- Now: select the most recent data. Due to lifelog delays, there may be no data recent enough, but it is useful for selecting that starts "24 hours ago" etc.
+- Server: The time selection depends on the currently selected server and when it has been operating. Since these time periods can be very large, it is selected in two stages: "coarse" selects the time over all possible values with very low precision, "fine" can then select a more precise end point within a week to either side.
+- Now: Select the most recent data. Due to lifelog delays, there may be no data recent enough, but it is useful for selecting that starts "24 hours ago" etc.
+- Arc: Select the time range of one of the game arcs.
 
-Range control: e.g. "2d Before": Picks the amount of history to be shown. The end time selected above, backed up by this amount, will the selection start time.
+Range control: e.g. "2d Before": Picks the amount of history to be shown. The end time selected, backed up by this amount, will the selection start time.
 
 Server: Picks the game server to retrieve data for. Servers are iconified; smaller 1-15 are server1-server15, larger 1-2 are bigserver1 and bigserver2. As of this writing, most people play on bigserver2, which is the default.
 
