@@ -5,6 +5,7 @@ module OHOLData.Encode exposing
   , server
   , arcs
   , arc
+  , timeStamp
   )
 
 import OHOLData exposing (Life, Server, Arc)

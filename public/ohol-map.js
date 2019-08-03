@@ -1664,6 +1664,9 @@
             map.setView([message.y, message.x], message.z)
           }
           break
+        case 'currentTime':
+          baseLayerByTime(map, message.time * 1000)
+          break;
         case 'currentServer':
           var targetLayer
           if (message.server.id == 3) {

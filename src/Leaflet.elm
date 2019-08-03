@@ -4,6 +4,7 @@ port module Leaflet exposing
   , PointLocation(..)
   , Event(..)
   , setView
+  , currentTime
   , currentServer
   , arcList
   , monumentList
@@ -50,6 +51,14 @@ setView {x, y, z} =
     , ("x", Encode.int x)
     , ("y", Encode.int y)
     , ("z", Encode.int z)
+    ]
+    |> leafletCommand
+
+currentTime : Posix -> Cmd msg
+currentTime time =
+  Encode.object
+    [ ("kind", Encode.string "currentTime")
+    , ("time", Encode.timeStamp time)
     ]
     |> leafletCommand
 

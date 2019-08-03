@@ -144,13 +144,13 @@ update msg model =
         | coarseEndTime = time
         , endTime = time
         }
-      , Cmd.none
+      , Leaflet.currentTime time
       )
     UI (View.EndTime time) ->
       ( { model
         | endTime = time
         }
-      , Cmd.none
+      , Leaflet.currentTime time
       )
     UI (View.HoursBefore hours) ->
       ( { model
