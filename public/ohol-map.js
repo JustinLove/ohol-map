@@ -52,6 +52,7 @@
   base['Arctic Age'] = null
   base['Desert Age'] = null
   base['Jungle Age'] = L.layerGroup([biomeImageLayer, screenshotImageLayer])
+  base['Arc Age'] = L.layerGroup([])
   base['Uncertainty'] = L.layerGroup([])
 
   base['Crucible'] = L.tileLayer(oholMapConfig.crucibleTiles, {
@@ -758,9 +759,9 @@
         msEnd: arc.end * 1000,
         seed: arc.seed,
         name: 'Arc '+(i+1),
+        layer: createArcLayer(arc.start * 1000, arc.seed),
       }
     })
-    arcs.forEach(addArcLayer)
     /*
     arcs.forEach(function(arc, i) {
       console.log(arc.name)
@@ -770,13 +771,13 @@
     */
   }
 
-  var addArcLayer = function(arc) {
-    if (arc.msStart > msStartOfSpecialAge) {
-      base[arc.name] = new L.GridLayer.BiomeLayer({
+  var createArcLayer = function(msStart, seed) {
+    if (msStart > msStartOfSpecialAge) {
+      return new L.GridLayer.BiomeLayer({
         computeMapBiomeIndex: topographicMapBiomeIndex,
         biomeTotalWeight: specialBiomeTotalWeight,
         biomeCumuWeights: specialBiomeCumuWeights,
-        biomeSeedOffset: arc.seed,
+        biomeSeedOffset: seed,
         biomeMap: specialBiomeMap,
         numSpecialBiomes: 3,
         minZoom: 2,
@@ -785,12 +786,12 @@
         maxNativeZoom: 24,
         attribution: attribution,
       })
-    } else if (arc.msStart > msStartOfTopographicAge) {
-      base[arc.name] = new L.GridLayer.BiomeLayer({
+    } else if (msStart > msStartOfTopographicAge) {
+      return new L.GridLayer.BiomeLayer({
         computeMapBiomeIndex: topographicMapBiomeIndex,
         biomeTotalWeight: topographicBiomeTotalWeight,
         biomeCumuWeights: topographicBiomeCumuWeights,
-        biomeSeedOffset: arc.seed,
+        biomeSeedOffset: seed,
         biomeMap: topographicBiomeMap,
         minZoom: 2,
         maxZoom: 31,
@@ -799,8 +800,8 @@
         attribution: attribution,
       })
     } else {
-      base[arc.name] = new L.GridLayer.BiomeLayer({
-        biomeSeedOffset: arc.seed,
+      return new L.GridLayer.BiomeLayer({
+        biomeSeedOffset: seed,
         biomeMap: jungleBiomeMap,
         minZoom: 2,
         maxZoom: 31,
@@ -809,7 +810,6 @@
         attribution: attribution,
       })
     }
-    layersControl.addBaseLayer(base[arc.name], arc.name)
   }
 
   base['Desert Age'] = new L.GridLayer.BiomeLayer({
@@ -1255,7 +1255,10 @@
     var targetLayer
     arcs.forEach(function(arc) {
       if (ms > arc.msStart && ms < arc.msEnd) {
-        targetLayer = arc.name
+        targetLayer = 'Arc Age'
+        base['Arc Age'].addLayer(arc.layer)
+      } else {
+        base['Arc Age'].removeLayer(arc.layer)
       }
     })
     if (targetLayer) {
