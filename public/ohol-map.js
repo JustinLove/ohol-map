@@ -1254,7 +1254,7 @@
   var baseLayerByTime = function(map, ms) {
     var targetLayer
     arcs.forEach(function(arc) {
-      if (ms > arc.msStart && ms < arc.msEnd) {
+      if (ms >= arc.msStart && ms <= arc.msEnd) {
         targetLayer = 'Arc Age'
         base['Arc Age'].addLayer(arc.layer)
       } else {

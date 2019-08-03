@@ -217,16 +217,28 @@ update msg model =
       )
     UI (View.SelectArc index) ->
       let
-        arc = case model.arcs of
+        marc = case model.arcs of
           Data list ->
             list
               |> List.drop index
               |> List.head
           _ -> Nothing
       in
-      ( {model | currentArc = arc}
-      , Cmd.none
-      )
+      case marc of
+        Just arc ->
+          ( { model
+            | currentArc = marc
+            , coarseEndTime = arc.end
+            , endTime = arc.end
+            }
+          , Leaflet.currentTime arc.end
+          )
+        Nothing ->
+          ( { model
+            | currentArc = marc
+            }
+          , Cmd.none
+          )
     UI (View.SelectShow) ->
       ( {model | dataLayer = Loading}
       , fetchDataForTime model
