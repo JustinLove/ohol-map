@@ -39,6 +39,7 @@ type Msg
   | SelectLineage Life
   | SelectMode Mode
   | SelectServer Server
+  | SelectArc Int
   | SelectShow
 
 type Mode
@@ -49,6 +50,7 @@ type Mode
 type EndTimeMode
   = ServerRange
   | FromNow
+  | ArcRange
 
 type RemoteData a
   = NotRequested
@@ -368,21 +370,80 @@ dataButtonDisabled =
       , label = el [ centerX ] <| text "Show"
       }
 
+--endTimeSelect : Model -> Element Msg
+endTimeSelect model =
+  column [ width fill, spacing 2 ]
+    [ Input.slider
+      [ Background.color control ]
+      { onChange = round
+        >> ((*) 1000)
+        >> Time.millisToPosix
+        >> CoarseEndTime
+      , label = Input.labelAbove [] <|
+        row []
+          [ text "Coarse End "
+          , ( model.coarseEndTime
+              |> date model.zone
+              |> text
+            )
+          ]
+      , min = serverMinTime model.servers model.selectedServer
+      , max = serverMaxTime model.servers model.selectedServer
+      , value = model.coarseEndTime |> posixToFloat 0
+      , thumb = Input.defaultThumb
+      , step = Just 1
+      }
+    , Input.slider
+      [ Background.color control ]
+      { onChange = round
+        >> ((*) 1000)
+        >> Time.millisToPosix
+        >> EndTime
+      , label = Input.labelAbove [] <|
+        row []
+          [ text "Fine End "
+          , ( model.endTime
+              |> date model.zone
+              |> text
+            )
+          ]
+      , min = model.coarseEndTime |> posixToFloat -7
+      , max = model.coarseEndTime |> posixToFloat 7
+      , value = model.endTime |> posixToFloat 0
+      , thumb = Input.defaultThumb
+      , step = Just 1
+      }
+    ]
+
 --dateRangeSelect : Model -> Element Msg
 dateRangeSelect model =
-  column [ width fill, spacing 2 ]
-    [ endTimeSelect model
-    , logSlider
-      [ Background.color control ]
-      { onChange = round >> HoursBefore
-      , label = Input.labelAbove [] <|
-        text (hoursText model.hoursBefore)
-      , min = 1
-      , max = 7*24
-      , value = model.hoursBefore |> toFloat
-      , thumb = Input.defaultThumb
-      , step = Nothing
-      }
+  column
+    [ width fill
+    , spacing 2
+    , padding 4
+    , Border.width 1
+    , Border.color divider
+    ]
+    [ Input.radioRow [ spacing 10 ]
+        { onChange = SelectEndTimeMode
+        , selected = Just model.endTimeMode
+        , label = Input.labelAbove [ paddingXY 10 0 ] (text "End Time")
+        , options = 
+          [ Input.option ServerRange (text "Server")
+          , Input.option FromNow (text "Now")
+          , Input.option ArcRange (text "Arc")
+          ]
+        }
+    , case model.endTimeMode of
+      FromNow ->
+        timeBeforeSelect model
+      ServerRange ->
+        column [ width fill, spacing 2 ]
+          [ endTimeSelect model
+          , timeBeforeSelect model
+          ]
+      ArcRange ->
+        arcSelect model
     ]
 
 hoursText : Int -> String
@@ -416,70 +477,52 @@ logSlider attributes slider =
     , step = Nothing
     }
 
---endTimeSelect : Model -> Element Msg
-endTimeSelect model =
-  column
-    [ width fill
-    , spacing 2
-    , padding 4
-    , Border.width 1
-    , Border.color divider
-    ]
-    [ Input.radioRow [ spacing 10 ]
-        { onChange = SelectEndTimeMode
-        , selected = Just model.endTimeMode
-        , label = Input.labelLeft [ paddingXY 10 0 ] (text "End Time")
-        , options = 
-          [ Input.option ServerRange (text "Server")
-          , Input.option FromNow (text "Now")
-          ]
+
+--timeBeforeSelect : Model -> Element Msg
+timeBeforeSelect model =
+  logSlider
+    [ Background.color control ]
+    { onChange = round >> HoursBefore
+    , label = Input.labelAbove [] <|
+      text (hoursText model.hoursBefore)
+    , min = 1
+    , max = 7*24
+    , value = model.hoursBefore |> toFloat
+    , thumb = Input.defaultThumb
+    , step = Nothing
+    }
+
+--arcSelect : Model -> Element Msg
+arcSelect model =
+  case model.arcs of
+    NotRequested -> none
+    Loading -> showLoading model.arcs
+    Failed error -> showError error
+    Data list ->
+      Input.slider
+        [ Background.color control ]
+        { onChange = round >> SelectArc
+        , label = Input.labelAbove [] <|
+          text (model.currentArc
+            |> Maybe.map (.end >> (date model.zone))
+            |> Maybe.withDefault "Arc"
+          )
+        , min = 1
+        , max = ((List.length list) - 1) |> toFloat
+        , value = list
+          |> List.indexedMap (\i a -> (i, a))
+          |> List.filterMap (\(i,a) ->
+            if Just a == model.currentArc then
+              Just i
+            else
+              Nothing
+            )
+          |> List.head
+          |> Maybe.withDefault 0
+          |> toFloat
+        , thumb = Input.defaultThumb
+        , step = Nothing
         }
-    , case model.endTimeMode of
-      FromNow -> none
-      ServerRange ->
-        column [ width fill, spacing 2 ]
-          [ Input.slider
-            [ Background.color control ]
-            { onChange = round
-              >> ((*) 1000)
-              >> Time.millisToPosix
-              >> CoarseEndTime
-            , label = Input.labelAbove [] <|
-              row []
-                [ text "Coarse End "
-                , ( model.coarseEndTime
-                    |> date model.zone
-                    |> text
-                  )
-                ]
-            , min = serverMinTime model.servers model.selectedServer
-            , max = serverMaxTime model.servers model.selectedServer
-            , value = model.coarseEndTime |> posixToFloat 0
-            , thumb = Input.defaultThumb
-            , step = Just 1
-            }
-          , Input.slider
-            [ Background.color control ]
-            { onChange = round
-              >> ((*) 1000)
-              >> Time.millisToPosix
-              >> EndTime
-            , label = Input.labelAbove [] <|
-              row []
-                [ text "Fine End "
-                , ( model.endTime
-                    |> date model.zone
-                    |> text
-                  )
-                ]
-            , min = model.coarseEndTime |> posixToFloat -7
-            , max = model.coarseEndTime |> posixToFloat 7
-            , value = model.endTime |> posixToFloat 0
-            , thumb = Input.defaultThumb
-            , step = Just 1
-            }
-          ]
-        ]
 
 serverMinTime : RemoteData (List Server) -> Maybe Server -> Float
 serverMinTime =

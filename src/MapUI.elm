@@ -49,6 +49,7 @@ type alias Model =
   , coarseEndTime : Posix
   , endTime : Posix
   , hoursBefore : Int
+  , currentArc : Maybe Arc
   , dataAnimated : Bool
   , gameSecondsPerFrame : Int
   , frameRate : Int
@@ -56,6 +57,7 @@ type alias Model =
   , pointLocation : PointLocation
   , selectedServer : Maybe Server
   , servers : RemoteData (List Server)
+  , arcs : RemoteData (List Arc)
   , monuments : Dict Int Json.Decode.Value
   , dataLayer : RemoteData Bool
   , lives : RemoteData (List Life)
@@ -95,6 +97,7 @@ init config location key =
       , coarseEndTime = Time.millisToPosix 0
       , endTime = Time.millisToPosix 0
       , hoursBefore = 48
+      , currentArc = Nothing
       , dataAnimated = False
       , gameSecondsPerFrame = 60
       , frameRate = 10
@@ -102,6 +105,7 @@ init config location key =
       , pointLocation = BirthLocation
       , selectedServer = Nothing
       , servers = NotRequested
+      , arcs = NotRequested
       , monuments = Dict.empty
       , dataLayer = NotRequested
       , lives = NotRequested
@@ -211,6 +215,18 @@ update msg model =
         , Leaflet.currentServer server
         ]
       )
+    UI (View.SelectArc index) ->
+      let
+        arc = case model.arcs of
+          Data list ->
+            list
+              |> List.drop index
+              |> List.head
+          _ -> Nothing
+      in
+      ( {model | currentArc = arc}
+      , Cmd.none
+      )
     UI (View.SelectShow) ->
       ( {model | dataLayer = Loading}
       , fetchDataForTime model
@@ -287,12 +303,12 @@ update msg model =
       let _ = Debug.log "fetch servers failed" error in
       ({model | servers = Failed error}, Cmd.none)
     ArcList (Ok arcs) ->
-      ( model
+      ( {model | arcs = Data arcs, currentArc = List.head arcs}
       , Leaflet.arcList arcs
       )
     ArcList (Err error) ->
       let _ = Debug.log "fetch arcs failed" error in
-      (model, Cmd.none)
+      ({model | arcs = Failed error, currentArc = Nothing}, Cmd.none)
     MonumentList serverId (Ok monuments) ->
       ( {model | monuments = Dict.insert serverId monuments model.monuments}
       , Leaflet.monumentList serverId monuments
@@ -308,6 +324,7 @@ update msg model =
             case model.endTimeMode of
               ServerRange -> update (PlayRelativeTo model.endTime) model |> Tuple.second
               FromNow -> Task.perform PlayRelativeTo Time.now
+              ArcRange -> Task.perform PlayRelativeTo Time.now
           else
             Cmd.none
         ]
@@ -319,17 +336,13 @@ update msg model =
       ( model
       , fetchDataLayer model.apiUrl
           (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
+          (relativeStartTime time model.hoursBefore)
           time
-          model.hoursBefore
       )
     PlayRelativeTo time ->
       ( model
       , Leaflet.beginPlayback model.gameSecondsPerFrame model.frameRate
-        (time
-          |> Time.posixToMillis
-          |> (\x -> x - model.hoursBefore * 60 * 60 * 1000)
-          |> Time.millisToPosix
-        )
+        (relativeStartTime time model.hoursBefore)
       )
     CurrentZone zone ->
       ({model | zone = zone}, Cmd.none)
@@ -432,10 +445,19 @@ fetchDataForTime model =
     ServerRange ->
       fetchDataLayer model.apiUrl
         (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
+        (relativeStartTime model.endTime model.hoursBefore)
         model.endTime
-        model.hoursBefore
     FromNow ->
       Task.perform FetchUpTo Time.now
+    ArcRange ->
+      case model.currentArc of
+        Just arc ->
+          fetchDataLayer model.apiUrl
+            arc.serverId
+            arc.start
+            arc.end
+        Nothing ->
+          Cmd.none
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -523,12 +545,19 @@ fetchRecentLives baseUrl serverId =
     , expect = Http.expectJson DataLayer Json.Decode.value
     }
 
-fetchDataLayer : String -> Int -> Posix -> Int -> Cmd Msg
-fetchDataLayer baseUrl serverId endTime hoursBefore =
+relativeStartTime : Posix -> Int -> Posix
+relativeStartTime endTime hoursBefore =
+  endTime
+    |> Time.posixToMillis
+    |> (\x -> x - hoursBefore * 60 * 60 * 1000)
+    |> Time.millisToPosix
+
+fetchDataLayer : String -> Int -> Posix -> Posix -> Cmd Msg
+fetchDataLayer baseUrl serverId startTime endTime =
   Http.get
     { url = Url.crossOrigin baseUrl ["lives"]
       [ Url.int "server_id" serverId
-      , Url.string "period" ("PT" ++ (String.fromInt hoursBefore) ++ "H")
+      , Url.int "start_time" (startTime |> Time.posixToMillis |> (\x -> x // 1000))
       , Url.int "end_time" (endTime |> Time.posixToMillis |> (\x -> x // 1000))
       , Url.string "limit" "70000"
       ]
