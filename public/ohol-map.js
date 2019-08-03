@@ -1666,6 +1666,7 @@
           break
         case 'currentTime':
           baseLayerByTime(map, message.time * 1000)
+          riftLayerByTime(message.time * 1000)
           break;
         case 'currentServer':
           var targetLayer
