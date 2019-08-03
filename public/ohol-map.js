@@ -13,23 +13,7 @@
   var msStartOfTopographicAge = Date.parse("Jul 31 2019 01:25:24 GMT-0000")
   var msStartOfSpecialAge = Date.parse("Aug 1 2019 02:08:47 GMT-0000")
 
-  var arcs = [
-    { msStart: 1564439084550, msLength: 18841340, seed: 2082599763 },
-    { msStart: 1564457929470, msLength: 79691770, seed: 1521396640 },
-    { msStart: 1564537695080, msLength: 33560870, seed: 1521396640 },
-    { msStart: 1564571256510, msLength: 54070840, seed: 1973867226 },
-    { msStart: 1564625380120, msLength:  7362980, seed: 1151446675 },
-    { msStart: 1564632743620, msLength:159160190, seed:  492170999 },
-  ]
-  arcs.forEach(function(arc, i) {
-    arc.msEnd = arc.msStart + arc.msLength
-    arc.name = 'Arc '+(i+1)
-    /*
-    console.log(arc.name)
-    console.log('Fr:', new Date(arc.msStart).toString())
-    console.log('To:', new Date(arc.msEnd).toString())
-    */
-  })
+  var arcs = []
 
   var scale = Math.pow(2, 24)
   var crs = L.extend({}, L.CRS.Simple, {
@@ -68,9 +52,6 @@
   base['Arctic Age'] = null
   base['Desert Age'] = null
   base['Jungle Age'] = L.layerGroup([biomeImageLayer, screenshotImageLayer])
-  arcs.forEach(function(arc) {
-    base[arc.name] = null
-  })
   base['Uncertainty'] = L.layerGroup([])
 
   base['Crucible'] = L.tileLayer(oholMapConfig.crucibleTiles, {
@@ -770,7 +751,26 @@
     },
   })
 
-  arcs.forEach(function(arc) {
+  var updateArcs = function(arcData) {
+    arcs = arcData.map(function(arc, i) {
+      return {
+        msStart: arc.start * 1000,
+        msEnd: arc.end * 1000,
+        seed: arc.seed,
+        name: 'Arc '+(i+1),
+      }
+    })
+    arcs.forEach(addArcLayer)
+    /*
+    arcs.forEach(function(arc, i) {
+      console.log(arc.name)
+      console.log('Fr:', new Date(arc.msStart).toString())
+      console.log('To:', new Date(arc.msEnd).toString())
+    })
+    */
+  }
+
+  var addArcLayer = function(arc) {
     if (arc.msStart > msStartOfSpecialAge) {
       base[arc.name] = new L.GridLayer.BiomeLayer({
         computeMapBiomeIndex: topographicMapBiomeIndex,
@@ -809,7 +809,8 @@
         attribution: attribution,
       })
     }
-  })
+    layersControl.addBaseLayer(base[arc.name], arc.name)
+  }
 
   base['Desert Age'] = new L.GridLayer.BiomeLayer({
     biomeMap: desertBiomeMap,
@@ -1673,6 +1674,10 @@
               base['Badlands Age'].removeLayer(server3)
             }
           }
+          break;
+        case 'arcList':
+          updateArcs(message.arcs.data)
+          baseLayerByTime(map, Date.now())
           break;
         case 'monumentList':
           updateMonumentLayer(monumentOverlay, message.monuments.data)

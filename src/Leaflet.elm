@@ -5,6 +5,7 @@ port module Leaflet exposing
   , Event(..)
   , setView
   , currentServer
+  , arcList
   , monumentList
   , dataLayer
   , beginPlayback
@@ -57,6 +58,14 @@ currentServer server =
   Encode.object
     [ ("kind", Encode.string "currentServer")
     , ("server", Encode.server server)
+    ]
+    |> leafletCommand
+
+arcList : List Data.Arc -> Cmd msg
+arcList arcs =
+  Encode.object
+    [ ("kind", Encode.string "arcList")
+    , ("arcs", Encode.arcs arcs)
     ]
     |> leafletCommand
 

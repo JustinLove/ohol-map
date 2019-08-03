@@ -1,7 +1,7 @@
 module MapUI exposing (..)
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
-import OHOLData as Data exposing (Server)
+import OHOLData as Data exposing (Server, Arc)
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
 import View exposing (RemoteData(..), Life, EndTimeMode(..), centerUrl)
@@ -25,6 +25,7 @@ type Msg
   | Event (Result Json.Decode.Error Leaflet.Event)
   | MatchingLives (Result Http.Error (List Data.Life))
   | ServerList (Result Http.Error (List Data.Server))
+  | ArcList (Result Http.Error (List Data.Arc))
   | MonumentList Int (Result Http.Error Json.Decode.Value)
   | DataLayer (Result Http.Error Json.Decode.Value)
   | FetchUpTo Posix
@@ -113,6 +114,7 @@ init config location key =
       [ cmd
       , Time.here |> Task.perform CurrentZone
       , fetchServers model.cachedApiUrl
+      , fetchArcs model.cachedApiUrl
       ]
     )
 
@@ -284,6 +286,13 @@ update msg model =
     ServerList (Err error) ->
       let _ = Debug.log "fetch servers failed" error in
       ({model | servers = Failed error}, Cmd.none)
+    ArcList (Ok arcs) ->
+      ( model
+      , Leaflet.arcList arcs
+      )
+    ArcList (Err error) ->
+      let _ = Debug.log "fetch arcs failed" error in
+      (model, Cmd.none)
     MonumentList serverId (Ok monuments) ->
       ( {model | monuments = Dict.insert serverId monuments model.monuments}
       , Leaflet.monumentList serverId monuments
@@ -437,6 +446,13 @@ fetchServers baseUrl =
   Http.get
     { url = Url.crossOrigin baseUrl ["servers"] []
     , expect = Http.expectJson ServerList Decode.servers
+    }
+
+fetchArcs : String -> Cmd Msg
+fetchArcs baseUrl =
+  Http.get
+    { url = Url.crossOrigin baseUrl ["arcs"] []
+    , expect = Http.expectJson ArcList Decode.arcs
     }
 
 myLife : Data.Life -> Life

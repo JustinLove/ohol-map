@@ -3,9 +3,11 @@ module OHOLData.Encode exposing
   , life
   , servers
   , server
+  , arcs
+  , arc
   )
 
-import OHOLData exposing (Life, Server)
+import OHOLData exposing (Life, Server, Arc)
 
 import Json.Encode exposing (..)
 import Time exposing (Posix)
@@ -44,6 +46,22 @@ server s =
     , ("server_name", string s.serverName)
     , ("min_time", timeStamp s.minTime)
     , ("max_time", timeStamp s.maxTime)
+    ]
+
+arcs : List Arc -> Value
+arcs data =
+  object
+    [ ("data", list arc data)
+    ]
+
+arc : Arc -> Value
+arc s =
+  object
+    [ ("id", int s.id)
+    , ("server_id", int s.serverId)
+    , ("start", timeStamp s.start)
+    , ("end", timeStamp s.end)
+    , ("seed", int s.seed)
     ]
 
 timeStamp : Posix -> Value

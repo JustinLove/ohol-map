@@ -1,9 +1,10 @@
 module OHOLData.Decode exposing
   ( lives
   , servers
+  , arcs
   )
 
-import OHOLData exposing (Life, Server)
+import OHOLData exposing (Life, Server, Arc)
 
 import Json.Decode exposing (..)
 import Time exposing (Posix)
@@ -37,6 +38,19 @@ server =
     |> map2 (|>) (field "server_name" string)
     |> map2 (|>) (field "min_time" timeStamp)
     |> map2 (|>) (field "max_time" timeStamp)
+
+arcs : Decoder (List Arc)
+arcs =
+  field "data" (list arc)
+
+arc : Decoder Arc
+arc =
+  succeed Arc
+    |> map2 (|>) (field "id" int)
+    |> map2 (|>) (field "server_id" int)
+    |> map2 (|>) (field "start" timeStamp)
+    |> map2 (|>) (field "end" timeStamp)
+    |> map2 (|>) (field "seed" int)
 
 timeStamp : Decoder Posix
 timeStamp =

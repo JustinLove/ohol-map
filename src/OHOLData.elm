@@ -1,4 +1,4 @@
-module OHOLData exposing (Life, Server)
+module OHOLData exposing (Life, Server, Arc)
 
 import Time exposing (Posix)
 
@@ -20,4 +20,12 @@ type alias Server =
   , serverName : String
   , minTime: Posix
   , maxTime: Posix
+  }
+
+type alias Arc =
+  { id : Int
+  , serverId : Int
+  , start: Posix
+  , end: Posix
+  , seed: Int
   }
