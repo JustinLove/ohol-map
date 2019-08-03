@@ -427,7 +427,7 @@ dateRangeSelect model =
     [ Input.radioRow [ spacing 10 ]
         { onChange = SelectEndTimeMode
         , selected = Just model.endTimeMode
-        , label = Input.labelAbove [ paddingXY 10 0 ] (text "End Time")
+        , label = Input.labelAbove [ paddingXY 10 0 ] (text "Time Range")
         , options = 
           [ Input.option ServerRange (text "Server")
           , Input.option FromNow (text "Now")
@@ -439,8 +439,8 @@ dateRangeSelect model =
         timeBeforeSelect model
       ServerRange ->
         column [ width fill, spacing 2 ]
-          [ endTimeSelect model
-          , timeBeforeSelect model
+          [ timeBeforeSelect model
+          , endTimeSelect model
           ]
       ArcRange ->
         arcSelect model
@@ -502,11 +502,15 @@ arcSelect model =
       Input.slider
         [ Background.color control ]
         { onChange = round >> SelectArc
-        , label = Input.labelAbove [] <|
-          text (model.currentArc
-            |> Maybe.map (.end >> (date model.zone))
-            |> Maybe.withDefault "Arc"
-          )
+        , label = Input.labelBelow [] <|
+          case model.currentArc of
+            Just arc ->
+              column []
+                [ text <| date model.zone arc.start
+                , text <| date model.zone arc.end
+                ]
+            Nothing ->
+              text "Arc"
         , min = 1
         , max = ((List.length list) - 1) |> toFloat
         , value = list
