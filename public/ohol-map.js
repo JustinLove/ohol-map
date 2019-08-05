@@ -759,7 +759,8 @@
         msEnd: arc.end * 1000,
         seed: arc.seed,
         name: 'Arc '+(i+1),
-        layer: createArcLayer(arc.start * 1000, arc.seed),
+        biomeLayer: createArcBiomeLayer(arc.start * 1000, arc.seed),
+        keyPlacementLayer: createArcKeyPlacementLayer(arc.start),
       }
     })
     /*
@@ -771,7 +772,7 @@
     */
   }
 
-  var createArcLayer = function(msStart, seed) {
+  var createArcBiomeLayer = function(msStart, seed) {
     if (msStart > msStartOfSpecialAge) {
       return new L.GridLayer.BiomeLayer({
         computeMapBiomeIndex: topographicMapBiomeIndex,
@@ -958,6 +959,110 @@
     opacity: 0.5,
   })
   //overlays['Object'] = objectLayer
+
+  L.GridLayer.KeyPlacements = L.GridLayer.extend({
+    options: {
+      subdomains: ['a', 'b', 'c'],
+    },
+    getTileUrl: L.TileLayer.prototype.getTileUrl,
+    _getSubdomain: L.TileLayer.prototype._getSubdomain,
+    _getZoomForUrl: L.TileLayer.prototype._getZoomForUrl,
+    initialize: function(url, options) {
+      this._url = url;
+      options = L.Util.setOptions(this, options);
+    },
+    createTile: function (coords, done) {
+      var tile = document.createElement('canvas');
+      var tileSize = this.getTileSize();
+      //console.log(tileSize)
+      tile.setAttribute('width', tileSize.x);
+      tile.setAttribute('height', tileSize.y);
+
+      var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
+      //console.log('pnw', coords, pnw)
+      var llnw = crs.pointToLatLng(pnw, coords.z)
+      //console.log('llnw', coords, llnw)
+
+      var w = tile.width
+      var h = tile.height
+      var startX = llnw.lng + 0.5
+      var startY = llnw.lat - 0.5
+      //console.log('start', startX, startY)
+
+      var layer = this
+      fetch(this.getTileUrl(coords)).then(function(response) {
+        response.text().then(function(text) {
+          tile._keyplace = text.split("\n").map(function(line) {
+            var parts = line.split(" ")
+            var out = {
+              x: parseInt(parts[0],10) - startX,
+              y: -(parseInt(parts[1],10) - startY),
+              id: parseInt(parts[2],10),
+            }
+            return out
+          })
+          layer.drawTile(tile, coords, done)
+        })
+      })
+
+      return tile
+    },
+    drawTile(tile, coords, done) {
+      var tileSize = this.getTileSize();
+
+      var ctx = tile.getContext('2d', {alpha: true});
+      ctx.clearRect(0, 0, tile.width, tile.height)
+
+      var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
+      //console.log(coords, pnw)
+      var llnw = crs.pointToLatLng(pnw, coords.z)
+      //console.log(coords, llnw)
+
+      var w = tile.width
+      var h = tile.height
+      var startX = llnw.lng + 0.5
+      var startY = llnw.lat - 0.5
+
+      //console.log(coords, startX, startY)
+
+      var imageData = ctx.createImageData(tile.width, tile.height)
+      var d = imageData.data
+
+      tile._keyplace.forEach(function(placement) {
+        var i = (placement.y * w + placement.x) * 4
+        //console.log(i, placement.id)
+        var color = hsvToRgb(placement.id * 3769 % 359 / 360, 1, 1)
+        //var color = [255, 0, 0]
+        d[i+0] = color[0]
+        d[i+1] = color[1]
+        d[i+2] = color[2]
+        d[i+3] = (placement.id == 0 ? 0 : 255)
+      })
+
+      ctx.putImageData(imageData, 0, 0)
+      done(null, tile)
+    },
+  })
+
+  var createArcKeyPlacementLayer = function(start) {
+    if (start*1000 > msStartOfRandomAge) {
+      return new L.GridLayer.KeyPlacements(oholMapConfig.keyPlacements, {
+        //time: start.toString(),
+        //time: '1564439085',
+        //time: '1564457929',
+        //time: '1564571257',
+        //time: '1564625380',
+        time: '1564632744',
+        minZoom: 24,
+        maxZoom: 31,
+        minNativeZoom: 24,
+        maxNativeZoom: 24,
+        attribution: attribution,
+      })
+    } else {
+      return L.layerGroup([])
+    }
+  }
 
   var colormap = function(id) {
     return '#' + (((id * 49157) % 12582917).toString(16))
@@ -1256,9 +1361,9 @@
     arcs.forEach(function(arc) {
       if (ms >= arc.msStart && ms <= arc.msEnd) {
         targetLayer = 'Arc Age'
-        base['Arc Age'].addLayer(arc.layer)
+        base['Arc Age'].addLayer(arc.keyPlacementLayer)
       } else {
-        base['Arc Age'].removeLayer(arc.layer)
+        base['Arc Age'].removeLayer(arc.keyPlacementLayer)
       }
     })
     if (targetLayer) {

@@ -7,5 +7,6 @@ public/map-ui.js
 public/leaflet-src.js*
 public/config.js
 public/static
+public/keyplace
 .~lock*
 elm-stuff

@@ -1,3 +1,16 @@
+- account for duplicate seeds
+- key to look up proper arc for tile files
+- how to process/store map changes
+  - whole log?
+  - keyframes?
+  - diffed keyframes?
+  - tiled logs?
+- rendering map data
+  - onetech?
+  - custom client?
+  - tiled or no?
+- object generation
+
 - legend for lineage color
 - time url parameter?
 - more accurate biome age times
