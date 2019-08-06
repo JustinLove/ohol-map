@@ -760,7 +760,7 @@
         seed: arc.seed,
         name: 'Arc '+(i+1),
         biomeLayer: createArcBiomeLayer(arc.start * 1000, arc.seed),
-        keyPlacementLayer: createArcKeyPlacementLayer(arc.start),
+        keyPlacementLayer: createArcKeyPlacementLayer(arc.end),
       }
     })
     /*
@@ -1044,18 +1044,18 @@
     },
   })
 
-  var createArcKeyPlacementLayer = function(start) {
-    if (start*1000 > msStartOfRandomAge) {
+  var createArcKeyPlacementLayer = function(end) {
+    if (end*1000 > msStartOfRandomAge) {
       return new L.GridLayer.KeyPlacements(oholMapConfig.keyPlacements, {
-        //time: start.toString(),
+        time: end.toString(),
         //time: '1564439085',
         //time: '1564457929',
         //time: '1564571257',
         //time: '1564625380',
-        time: '1564632744',
+        //time: '1564632744',
         minZoom: 24,
         maxZoom: 31,
-        minNativeZoom: 24,
+        //minNativeZoom: 24,
         maxNativeZoom: 24,
         attribution: attribution,
       })
