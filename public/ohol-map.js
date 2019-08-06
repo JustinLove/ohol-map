@@ -754,11 +754,14 @@
 
   var updateArcs = function(arcData) {
     arcs = arcData.map(function(arc, i) {
+      var biomeLayer = createArcBiomeLayer(arc.start * 1000, arc.seed)
+      var keyPlacementLayer = createArcKeyPlacementLayer(arc.end)
       return {
         msStart: arc.start * 1000,
         msEnd: arc.end * 1000,
         seed: arc.seed,
         name: 'Arc '+(i+1),
+        layer: L.layerGroup([biomeLayer, keyPlacementLayer]),
         biomeLayer: createArcBiomeLayer(arc.start * 1000, arc.seed),
         keyPlacementLayer: createArcKeyPlacementLayer(arc.end),
       }
@@ -1361,9 +1364,9 @@
     arcs.forEach(function(arc) {
       if (ms >= arc.msStart && ms <= arc.msEnd) {
         targetLayer = 'Arc Age'
-        base['Arc Age'].addLayer(arc.keyPlacementLayer)
+        base['Arc Age'].addLayer(arc.layer)
       } else {
-        base['Arc Age'].removeLayer(arc.keyPlacementLayer)
+        base['Arc Age'].removeLayer(arc.layer)
       }
     })
     if (targetLayer) {
