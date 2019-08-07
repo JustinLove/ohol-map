@@ -1109,7 +1109,7 @@
                         //placement.x < cellWidth,
                         //0 <= placement.y,
                         //placement.y < cellWidth)
-            return !isNaN(placement.id) &&
+            return !isNaN(placement.id) && placement.id < 5000 &&
               (0 <= placement.x && placement.x < cellWidth) &&
               (0 <= placement.y && placement.y < cellWidth)
           })
@@ -1183,19 +1183,36 @@
 
   var createArcKeyPlacementLayer = function(end) {
     if (end*1000 > msStartOfRandomAge) {
-      return new L.GridLayer.KeyPlacementSprite(oholMapConfig.keyPlacements, {
-        time: end.toString(),
-        //time: '1564439085',
-        //time: '1564457929',
-        //time: '1564571257',
-        //time: '1564625380',
-        //time: '1564632744',
-        minZoom: 25,
-        maxZoom: 31,
-        //minNativeZoom: 24,
-        maxNativeZoom: 31,
-        attribution: attribution,
-      })
+      return new L.layerGroup([
+        /*
+        new L.GridLayer.KeyPlacementPixel(oholMapConfig.keyPlacements, {
+          time: end.toString(),
+          //time: '1564439085',
+          //time: '1564457929',
+          //time: '1564571257',
+          //time: '1564625380',
+          //time: '1564632744',
+          minZoom: 24,
+          maxZoom: 25,
+          //minNativeZoom: 24,
+          maxNativeZoom: 24,
+          attribution: attribution,
+        }),
+        */
+        new L.GridLayer.KeyPlacementSprite(oholMapConfig.keyPlacements, {
+          time: end.toString(),
+          //time: '1564439085',
+          //time: '1564457929',
+          //time: '1564571257',
+          //time: '1564625380',
+          //time: '1564632744',
+          minZoom: 26,
+          maxZoom: 31,
+          //minNativeZoom: 24,
+          maxNativeZoom: 31,
+          attribution: attribution,
+        })
+      ])
     } else {
       return L.layerGroup([])
     }

@@ -1,14 +1,14 @@
-- account for duplicate seeds
-- key to look up proper arc for tile files
 - how to process/store map changes
   - whole log?
   - keyframes?
   - diffed keyframes?
   - tiled logs?
 - rendering map data
-  - onetech?
-  - custom client?
-  - tiled or no?
+  - sprite offsets?
+  - lods?
+  - sprite sheets?
+  - image rendering css
+  - glitch with maxzoom on object pixel layer
 - object generation
 
 - legend for lineage color
