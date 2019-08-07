@@ -963,7 +963,7 @@
   })
   //overlays['Object'] = objectLayer
 
-  L.GridLayer.KeyPlacements = L.GridLayer.extend({
+  L.GridLayer.KeyPlacementPixel = L.GridLayer.extend({
     options: {
       subdomains: ['a', 'b', 'c'],
     },
@@ -1047,9 +1047,113 @@
     },
   })
 
+  L.GridLayer.KeyPlacementSprite = L.GridLayer.extend({
+    options: {
+      subdomains: ['a', 'b', 'c'],
+    },
+    getTileUrl: L.TileLayer.prototype.getTileUrl,
+    _getSubdomain: L.TileLayer.prototype._getSubdomain,
+    _getZoomForUrl: L.TileLayer.prototype._getZoomForUrl,
+    initialize: function(url, options) {
+      this._url = url;
+      options = L.Util.setOptions(this, options);
+    },
+    createTile: function (coords, done) {
+      var tile = document.createElement('canvas');
+      var tileSize = this.getTileSize();
+      tile.setAttribute('width', tileSize.x);
+      tile.setAttribute('height', tileSize.y);
+
+      var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
+      var pse = L.point(pnw.x + tileSize.x, pnw.y + tileSize.y)
+      //console.log('pnw', coords, pnw)
+      var llnw = crs.pointToLatLng(pnw, coords.z)
+      var llse = crs.pointToLatLng(pse, coords.z)
+      //console.log('llnw', coords, llnw)
+
+      var w = tile.width
+      var h = tile.height
+      var startX = llnw.lng + 0.5
+      var startY = llnw.lat - 0.5
+      var endX = llse.lng + 0.5
+      var endY = llse.lat - 0.5
+      //console.log('start', startX, startY)
+      //console.log('end', endX, endY)
+
+      //console.log(coords)
+      var cellSize = Math.pow(2, coords.z - 24)
+      var datacoords = {
+        x: Math.floor(coords.x/cellSize),
+        y: Math.floor(coords.y/cellSize),
+        z: 24,
+      }
+      var cellWidth = tileSize.x/cellSize
+      //console.log('cellsize', cellSize, 'cellWidth', cellWidth)
+      var layer = this
+      //console.log(datacoords)
+      fetch(this.getTileUrl(datacoords)).then(function(response) {
+        response.text().then(function(text) {
+          tile._keyplace = text.split("\n").map(function(line) {
+            var parts = line.split(" ")
+            var out = {
+              x: parseInt(parts[0],10) - startX,
+              y: -(parseInt(parts[1],10) - startY),
+              id: parseInt(parts[2],10),
+            }
+            return out
+          }).filter(function(placement) {
+            //console.log(placement.x, placement.y)
+            //console.log(0 <= placement.x,
+                        //placement.x < cellWidth,
+                        //0 <= placement.y,
+                        //placement.y < cellWidth)
+            return (0 <= placement.x && placement.x < cellWidth) &&
+              (0 <= placement.y && placement.y < cellWidth)
+          })
+
+          layer.drawTile(tile, coords, done)
+        })
+      })
+
+      return tile
+    },
+    drawTile(tile, coords, done) {
+      var tileSize = this.getTileSize();
+      var cellSize = Math.pow(2, coords.z - 24)
+      //console.log(cellSize, tile._keyplace)
+
+      var ctx = tile.getContext('2d', {alpha: true});
+      ctx.clearRect(0, 0, tile.width, tile.height)
+
+      var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
+      //console.log(coords, pnw)
+      var llnw = crs.pointToLatLng(pnw, coords.z)
+      //console.log(coords, llnw)
+
+      var w = tile.width
+      var h = tile.height
+      var startX = llnw.lng + 0.5
+      var startY = llnw.lat - 0.5
+
+      //console.log(coords, startX, startY)
+
+      tile._keyplace.forEach(function(placement) {
+        if (placement.id == 0) {
+          return
+        }
+        var color = hsvToRgb(placement.id * 3769 % 359 / 360, 1, 1)
+        ctx.fillStyle = 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')'
+
+        ctx.fillRect(placement.x*cellSize, placement.y*cellSize, cellSize, cellSize)
+      })
+
+      done(null, tile)
+    },
+  })
+
   var createArcKeyPlacementLayer = function(end) {
     if (end*1000 > msStartOfRandomAge) {
-      return new L.GridLayer.KeyPlacements(oholMapConfig.keyPlacements, {
+      return new L.GridLayer.KeyPlacementSprite(oholMapConfig.keyPlacements, {
         time: end.toString(),
         //time: '1564439085',
         //time: '1564457929',
@@ -1059,7 +1163,7 @@
         minZoom: 24,
         maxZoom: 31,
         //minNativeZoom: 24,
-        maxNativeZoom: 24,
+        maxNativeZoom: 29,
         attribution: attribution,
       })
     } else {
@@ -1792,7 +1896,8 @@
           break;
         case 'arcList':
           updateArcs(message.arcs.data)
-          baseLayerByTime(map, Date.now())
+          //baseLayerByTime(map, Date.now())
+          baseLayerByTime(map, arcs[arcs.length-1].msEnd)
           break;
         case 'monumentList':
           updateMonumentLayer(monumentOverlay, message.monuments.data)
