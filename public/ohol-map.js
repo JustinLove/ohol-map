@@ -1117,10 +1117,10 @@
               (-paddingX <= placement.x && placement.x < cellWidth) &&
               (-paddingDown <= placement.y && placement.y < cellHeight)
           }).sort(function(a, b) {
-              if (b.y - a.y == 0) {
-                return b.x - a.x
+              if (a.y - b.y == 0) {
+                return a.x - b.x
               } else {
-                return b.y - a.y
+                return a.y - b.y
               }
           })
 
@@ -1171,7 +1171,9 @@
         //ctx.fillRect(placement.x*cellSize, placement.y*cellSize, cellSize, cellSize)
         try {
         var img = objectImages[placement.id]
-        ctx.drawImage(img, placement.x, placement.y, img.naturalWidth/128, img.naturalHeight/128)
+        var iw = img.naturalWidth/128
+        var ih = img.naturalHeight/128
+        ctx.drawImage(img, placement.x - iw/2 + 0.5, placement.y - ih + 1, iw, ih)
         } catch (e) {
           console.log(placement)
         }
