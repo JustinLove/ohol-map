@@ -1047,6 +1047,8 @@
     },
   })
 
+  var objectImages = []
+
   L.GridLayer.KeyPlacementSprite = L.GridLayer.extend({
     options: {
       subdomains: ['a', 'b', 'c'],
@@ -1107,11 +1109,30 @@
                         //placement.x < cellWidth,
                         //0 <= placement.y,
                         //placement.y < cellWidth)
-            return (0 <= placement.x && placement.x < cellWidth) &&
+            return !isNaN(placement.id) &&
+              (0 <= placement.x && placement.x < cellWidth) &&
               (0 <= placement.y && placement.y < cellWidth)
           })
 
-          layer.drawTile(tile, coords, done)
+          tile._keyplace.forEach(function(placement) {
+            if (!objectImages[placement.id]) {
+              var img = new Image()
+              objectImages[placement.id] = img
+              //img.onload = function() { console.log(img) }
+              img.src = 'static/sprites/obj_'+placement.id+'.png'
+            }
+          })
+
+          var checkLoaded = function() {
+            for (var i = 0;i < tile._keyplace.length;i++) {
+              var placement = tile._keyplace[i]
+              if (!objectImages[placement.id].complete) {
+                return setTimeout(checkLoaded,100)
+              }
+            }
+            layer.drawTile(tile, coords, done)
+          }
+          setTimeout(checkLoaded,100)
         })
       })
 
@@ -1137,15 +1158,24 @@
 
       //console.log(coords, startX, startY)
 
+      ctx.save()
+      ctx.scale(cellSize, cellSize)
       tile._keyplace.forEach(function(placement) {
         if (placement.id == 0) {
           return
         }
-        var color = hsvToRgb(placement.id * 3769 % 359 / 360, 1, 1)
-        ctx.fillStyle = 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')'
+        //var color = hsvToRgb(placement.id * 3769 % 359 / 360, 1, 1)
+        //ctx.fillStyle = 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')'
 
-        ctx.fillRect(placement.x*cellSize, placement.y*cellSize, cellSize, cellSize)
+        //ctx.fillRect(placement.x*cellSize, placement.y*cellSize, cellSize, cellSize)
+        try {
+        var img = objectImages[placement.id]
+        ctx.drawImage(img, placement.x, placement.y, img.naturalWidth/128, img.naturalHeight/128)
+        } catch (e) {
+          console.log(placement)
+        }
       })
+      ctx.restore()
 
       done(null, tile)
     },
@@ -1160,10 +1190,10 @@
         //time: '1564571257',
         //time: '1564625380',
         //time: '1564632744',
-        minZoom: 24,
+        minZoom: 25,
         maxZoom: 31,
         //minNativeZoom: 24,
-        maxNativeZoom: 29,
+        maxNativeZoom: 31,
         attribution: attribution,
       })
     } else {
