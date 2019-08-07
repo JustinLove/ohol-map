@@ -5,7 +5,6 @@
   - tiled logs?
 - rendering map data
   - sprite offsets?
-  - sprites over tile data edges
   - data lods?
   - sprite lods?
   - sprite sheets?

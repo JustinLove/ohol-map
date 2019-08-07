@@ -966,6 +966,7 @@
   L.GridLayer.KeyPlacementPixel = L.GridLayer.extend({
     options: {
       subdomains: ['a', 'b', 'c'],
+      zoomOffset: 0,
     },
     getTileUrl: L.TileLayer.prototype.getTileUrl,
     _getSubdomain: L.TileLayer.prototype._getSubdomain,
@@ -1003,6 +1004,10 @@
               id: parseInt(parts[2],10),
             }
             return out
+          }).filter(function(placement) {
+            return !isNaN(placement.id) && placement.id < 5000 &&
+              (0 <= placement.x && placement.x < w) &&
+              (0 <= placement.y && placement.y < h)
           })
           layer.drawTile(tile, coords, done)
         })
@@ -1052,10 +1057,14 @@
   L.GridLayer.KeyPlacementSprite = L.GridLayer.extend({
     options: {
       subdomains: ['a', 'b', 'c'],
+      zoomOffset: 0,
     },
-    getTileUrl: L.TileLayer.prototype.getTileUrl,
-    _getSubdomain: L.TileLayer.prototype._getSubdomain,
-    _getZoomForUrl: L.TileLayer.prototype._getZoomForUrl,
+    getDataTileUrl: function(coords) {
+      var data = {
+        time: this.options.time,
+      }
+      return L.Util.template(this._url, L.Util.extend(data, coords))
+    },
     initialize: function(url, options) {
       this._url = url;
       options = L.Util.setOptions(this, options);
@@ -1093,11 +1102,11 @@
         z: 24,
       }
       var cellWidth = tileSize.x/cellSize + paddingX
-      var cellHeight = tileSize.y/cellSize + paddingUp
+      var cellHeight = tileSize.y/cellSize + paddingDown
       //console.log('cellsize', cellSize, 'cellWidth', cellWidth)
       var layer = this
       //console.log(datacoords)
-      fetch(this.getTileUrl(datacoords)).then(function(response) {
+      fetch(this.getDataTileUrl(datacoords)).then(function(response) {
         response.text().then(function(text) {
           tile._keyplace = text.split("\n").map(function(line) {
             var parts = line.split(" ")
@@ -1108,14 +1117,9 @@
             }
             return out
           }).filter(function(placement) {
-            //console.log(placement.x, placement.y)
-            //console.log(0 <= placement.x,
-                        //placement.x < cellWidth,
-                        //0 <= placement.y,
-                        //placement.y < cellWidth)
             return !isNaN(placement.id) && placement.id < 5000 &&
               (-paddingX <= placement.x && placement.x < cellWidth) &&
-              (-paddingDown <= placement.y && placement.y < cellHeight)
+              (-paddingUp <= placement.y && placement.y < cellHeight)
           }).sort(function(a, b) {
               if (a.y - b.y == 0) {
                 return a.x - b.x
@@ -1187,6 +1191,7 @@
   var createArcKeyPlacementLayer = function(end) {
     if (end*1000 > msStartOfRandomAge) {
       return new L.layerGroup([
+        /*
         new L.GridLayer.KeyPlacementPixel(oholMapConfig.keyPlacements, {
           time: end.toString(),
           //time: '1564439085',
@@ -1200,6 +1205,7 @@
           maxNativeZoom: 24,
           attribution: attribution,
         }),
+        */
         new L.GridLayer.KeyPlacementSprite(oholMapConfig.keyPlacements, {
           time: end.toString(),
           //time: '1564439085',
