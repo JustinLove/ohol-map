@@ -5,9 +5,10 @@
   - tiled logs?
 - rendering map data
   - sprite offsets?
-  - lods?
+  - sprites over tile data edges
+  - data lods?
+  - sprite lods?
   - sprite sheets?
-  - image rendering css
   - glitch with maxzoom on object pixel layer
 - object generation
 

@@ -1065,6 +1065,9 @@
       var tileSize = this.getTileSize();
       tile.setAttribute('width', tileSize.x);
       tile.setAttribute('height', tileSize.y);
+      var paddingX = 2;
+      var paddingUp = 2;
+      var paddingDown = 4;
 
       var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
       var pse = L.point(pnw.x + tileSize.x, pnw.y + tileSize.y)
@@ -1089,7 +1092,8 @@
         y: Math.floor(coords.y/cellSize),
         z: 24,
       }
-      var cellWidth = tileSize.x/cellSize
+      var cellWidth = tileSize.x/cellSize + paddingX
+      var cellHeight = tileSize.y/cellSize + paddingUp
       //console.log('cellsize', cellSize, 'cellWidth', cellWidth)
       var layer = this
       //console.log(datacoords)
@@ -1110,8 +1114,14 @@
                         //0 <= placement.y,
                         //placement.y < cellWidth)
             return !isNaN(placement.id) && placement.id < 5000 &&
-              (0 <= placement.x && placement.x < cellWidth) &&
-              (0 <= placement.y && placement.y < cellWidth)
+              (-paddingX <= placement.x && placement.x < cellWidth) &&
+              (-paddingDown <= placement.y && placement.y < cellHeight)
+          }).sort(function(a, b) {
+              if (b.y - a.y == 0) {
+                return b.x - a.x
+              } else {
+                return b.y - a.y
+              }
           })
 
           tile._keyplace.forEach(function(placement) {
@@ -1146,17 +1156,8 @@
       var ctx = tile.getContext('2d', {alpha: true});
       ctx.clearRect(0, 0, tile.width, tile.height)
 
-      var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
-      //console.log(coords, pnw)
-      var llnw = crs.pointToLatLng(pnw, coords.z)
-      //console.log(coords, llnw)
-
       var w = tile.width
       var h = tile.height
-      var startX = llnw.lng + 0.5
-      var startY = llnw.lat - 0.5
-
-      //console.log(coords, startX, startY)
 
       ctx.save()
       ctx.scale(cellSize, cellSize)
@@ -1184,7 +1185,6 @@
   var createArcKeyPlacementLayer = function(end) {
     if (end*1000 > msStartOfRandomAge) {
       return new L.layerGroup([
-        /*
         new L.GridLayer.KeyPlacementPixel(oholMapConfig.keyPlacements, {
           time: end.toString(),
           //time: '1564439085',
@@ -1193,12 +1193,11 @@
           //time: '1564625380',
           //time: '1564632744',
           minZoom: 24,
-          maxZoom: 25,
+          maxZoom: 31,
           //minNativeZoom: 24,
           maxNativeZoom: 24,
           attribution: attribution,
         }),
-        */
         new L.GridLayer.KeyPlacementSprite(oholMapConfig.keyPlacements, {
           time: end.toString(),
           //time: '1564439085',
