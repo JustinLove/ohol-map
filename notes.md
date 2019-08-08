@@ -10,6 +10,7 @@
   - sprite lods?
   - sprite sheets?
   - glitch with maxzoom on object pixel layer
+  - floor removals not f tagged
 - object generation
 
 - legend for lineage color

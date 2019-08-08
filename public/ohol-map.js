@@ -1110,12 +1110,15 @@
       //console.log(datacoords)
       fetch(this.getDataTileUrl(datacoords)).then(function(response) {
         response.text().then(function(text) {
-          tile._keyplace = text.split("\n").map(function(line) {
+          tile._keyplace = text.split("\n").filter(function(line) {
+            return line != "";
+          }).map(function(line) {
             var parts = line.split(" ")
             var out = {
               x: parseInt(parts[0],10) - startX,
               y: -(parseInt(parts[1],10) - startY),
-              id: parseInt(parts[2],10),
+              id: parseInt(parts[2].replace('f', ''),10),
+              floor: parts[2][0] == 'f',
             }
             return out
           }).filter(function(placement) {
@@ -1123,7 +1126,9 @@
               (-paddingX <= placement.x && placement.x < cellWidth) &&
               (-paddingUp <= placement.y && placement.y < cellHeight)
           }).sort(function(a, b) {
-              if (a.y - b.y == 0) {
+              if (a.floor != b.floor) {
+                return (b.floor - a.floor)
+              } else if (a.y - b.y == 0) {
                 return a.x - b.x
               } else {
                 return a.y - b.y
@@ -1193,7 +1198,6 @@
   var createArcKeyPlacementLayer = function(end) {
     if (end*1000 > msStartOfRandomAge) {
       return new L.layerGroup([
-        /*
         new L.GridLayer.KeyPlacementPixel(oholMapConfig.keyPlacements, {
           time: end.toString(),
           //time: '1564439085',
@@ -1202,12 +1206,11 @@
           //time: '1564625380',
           //time: '1564632744',
           minZoom: 24,
-          maxZoom: 31,
+          maxZoom: 25,
           //minNativeZoom: 24,
           maxNativeZoom: 24,
           attribution: attribution,
         }),
-        */
         new L.GridLayer.KeyPlacementSprite(oholMapConfig.keyPlacements, {
           time: end.toString(),
           //time: '1564439085',
