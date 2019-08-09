@@ -8,7 +8,8 @@
   - data lods?
   - sprite lods?
   - sprite sheets?
-  - do we need all sprite bounds?
+  - do we need all four sprite bounds?
+  - scaled down graphics don't look good
   - glitch with maxzoom on object pixel layer
   - floor removals not f tagged
 - object generation
@@ -16,7 +17,6 @@
 - legend for lineage color
 - time url parameter?
 - more accurate biome age times
-- # links override url
 - search/lineage reslts in data layer for coloring etc.
 - bookmarking layers
 - in-app help

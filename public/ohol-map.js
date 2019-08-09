@@ -138,6 +138,51 @@
     })
   }
 
+  L.GridLayer.CheckerLayer = L.GridLayer.extend({
+    options: {
+      pane: 'overlayPane',
+    },
+    createTile: function (coords, done) {
+      var tile = document.createElement('canvas');
+      var tileSize = this.getTileSize();
+      //console.log(tileSize)
+      tile.setAttribute('width', tileSize.x);
+      tile.setAttribute('height', tileSize.y);
+
+      setTimeout(this.drawTile.bind(this), 0, tile, coords, done)
+
+      return tile;
+    },
+    drawTile(tile, coords, done) {
+      var tileSize = this.getTileSize();
+
+      var ctx = tile.getContext('2d');
+      ctx.globalAlpha = 0.3
+      if ((coords.x + coords.y) % 2) {
+        ctx.fillStyle = 'white'
+      } else {
+        ctx.fillStyle = 'black'
+      }
+      ctx.fillRect(0, 0, tile.width, tile.height)
+
+      if ((coords.x + coords.y) % 2) {
+        ctx.fillStyle = 'black'
+      } else {
+        ctx.fillStyle = 'white'
+      }
+      var height = tile.width/5
+      ctx.font = height + 'px sans-serif'
+      var text = coords.x + ',' + coords.y
+      var metrics = ctx.measureText(text)
+
+      ctx.fillText(text, (tile.width - metrics.width)/2, (tile.height + height)/2)
+      done(null, tile)
+    },
+  })
+
+  overlays['Checker'] = new L.GridLayer.CheckerLayer()
+
+
   // fractal generation copying https://github.com/jasonrohrer/OneLife/blob/master/commonSource/fractalNoise.cpp
   // which cites https://bitbucket.org/runevision/random-numbers-testing/
 
@@ -979,9 +1024,10 @@
     createTile: function (coords, done) {
       var tile = document.createElement('canvas');
       var tileSize = this.getTileSize();
+      var tileWidth = Math.pow(2, (32 - coords.z))
       //console.log(tileSize)
-      tile.setAttribute('width', tileSize.x);
-      tile.setAttribute('height', tileSize.y);
+      tile.setAttribute('width', tileWidth);
+      tile.setAttribute('height', tileWidth);
 
       var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
       //console.log('pnw', coords, pnw)
@@ -1098,11 +1144,12 @@
       //console.log('end', endX, endY)
 
       //console.log(coords)
-      var cellSize = Math.pow(2, coords.z - 24)
+      var dataZoom = Math.max(24, Math.min(28, coords.z))
+      var cellSize = Math.pow(2, coords.z - dataZoom)
       var datacoords = {
         x: Math.floor(coords.x/cellSize),
         y: Math.floor(coords.y/cellSize),
-        z: 24,
+        z: dataZoom,
       }
       var cellWidth = tileSize.x/cellSize + paddingX
       var cellHeight = tileSize.y/cellSize + paddingDown
@@ -1110,16 +1157,23 @@
       var layer = this
       //console.log(datacoords)
       fetch(this.getDataTileUrl(datacoords)).then(function(response) {
+        if (response.status % 100 == 4) {
+          return
+        }
         response.text().then(function(text) {
           tile._keyplace = text.split("\n").filter(function(line) {
             return line != "";
           }).map(function(line) {
             var parts = line.split(" ")
+            try {
             var out = {
               x: parseInt(parts[0],10) - startX,
               y: -(parseInt(parts[1],10) - startY),
               id: parseInt(parts[2].replace('f', ''),10),
               floor: parts[2][0] == 'f',
+            }
+            } catch (e) {
+              console.log(e, parts, line)
             }
             return out
           }).filter(function(placement) {
@@ -1209,7 +1263,7 @@
           minZoom: 24,
           maxZoom: 31,
           //minNativeZoom: 24,
-          maxNativeZoom: 24,
+          maxNativeZoom: 30,
           attribution: attribution,
         }),
         */
@@ -1220,7 +1274,7 @@
           //time: '1564571257',
           //time: '1564625380',
           //time: '1564632744',
-          minZoom: 26,
+          minZoom: 24,
           maxZoom: 31,
           //minNativeZoom: 24,
           maxNativeZoom: 31,
@@ -1904,6 +1958,7 @@
     //base['Topographic Test'].addTo(map)
     riftLayerByTime(Date.now())
     overlays['Rift'].addTo(map)
+    //overlays['Checker'].addTo(map)
     //base['Fractal'].addTo(map)
     //base['Biome'].addTo(map)
 
