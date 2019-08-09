@@ -5,10 +5,10 @@
   - diffed keyframes?
   - tiled logs?
 - rendering map data
-  - sprite offsets?
   - data lods?
   - sprite lods?
   - sprite sheets?
+  - do we need all sprite bounds?
   - glitch with maxzoom on object pixel layer
   - floor removals not f tagged
 - object generation

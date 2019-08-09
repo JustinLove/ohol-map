@@ -227,6 +227,7 @@
 
   var biomes = []
   var objects = []
+  var objectBounds = []
   var gridPlacements = []
 
   var competeMapBiomeIndex = function(inX, inY, options, secondPlace) {
@@ -1172,6 +1173,7 @@
 
       ctx.save()
       ctx.scale(cellSize, cellSize)
+      ctx.translate(0.5, 0.5)
       tile._keyplace.forEach(function(placement) {
         if (placement.id == 0) {
           return
@@ -1180,14 +1182,12 @@
         //ctx.fillStyle = 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')'
 
         //ctx.fillRect(placement.x*cellSize, placement.y*cellSize, cellSize, cellSize)
-        try {
         var img = objectImages[placement.id]
         var iw = img.naturalWidth/128
         var ih = img.naturalHeight/128
-        ctx.drawImage(img, placement.x - iw/2 + 0.5, placement.y - ih + 1, iw, ih)
-        } catch (e) {
-          console.log(placement)
-        }
+        var ox = objectBounds[placement.id][0]/128
+        var oy = -objectBounds[placement.id][3]/128
+        ctx.drawImage(img, placement.x + ox, placement.y + oy, iw, ih)
       })
       ctx.restore()
 
@@ -1198,6 +1198,7 @@
   var createArcKeyPlacementLayer = function(end) {
     if (end*1000 > msStartOfRandomAge) {
       return new L.layerGroup([
+        /*
         new L.GridLayer.KeyPlacementPixel(oholMapConfig.keyPlacements, {
           time: end.toString(),
           //time: '1564439085',
@@ -1206,11 +1207,12 @@
           //time: '1564625380',
           //time: '1564632744',
           minZoom: 24,
-          maxZoom: 25,
+          maxZoom: 31,
           //minNativeZoom: 24,
           maxNativeZoom: 24,
           attribution: attribution,
         }),
+        */
         new L.GridLayer.KeyPlacementSprite(oholMapConfig.keyPlacements, {
           time: end.toString(),
           //time: '1564439085',
@@ -1782,9 +1784,21 @@
   var colorScaleControl = L.control.colorScale({ position: 'topleft' })
 
   var objectLoad = function(map) {
-    fetch('static/objects.json').then(function(response) {
+    var objectMaster = fetch('static/objects.json').then(function(response) {
       return response.json()
-    }).then(function(wrapper) {
+    })
+
+    objectMaster.then(function(wrapper) {
+      objectBounds = new Array(wrapper.ids.length)
+      for (var i = 0;i < wrapper.ids.length;i++) {
+        objectBounds[parseInt(wrapper.ids[i])] = wrapper.bounds[i]
+      }
+    }).catch(function(err) {
+      console.log(err)
+    })
+
+    /*
+    objectMaster.then(function(wrapper) {
       objects = new Array(wrapper.ids.length)
       for (var i = 0;i < wrapper.ids.length;i++) {
         if (wrapper.names[i].match('gridPlacement')) {
@@ -1846,6 +1860,7 @@
     }).catch(function(err) {
       console.log(err)
     })
+    */
   }
 
   var inhabit = function inhabit(id) {
@@ -1899,7 +1914,7 @@
     sidebarToggle.addTo(map)
     map.setView([0,0], 24)
 
-    //objectLoad(map)
+    objectLoad(map)
 
     if (app.ports.leafletEvent) {
       map.on('moveend', function(ev) {
