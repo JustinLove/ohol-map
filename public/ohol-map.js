@@ -29,6 +29,7 @@
     '<a href="https://github.com/JustinLove/OneLife/tree/mapping" title="Tile generation: OneLife/mapping"><svg class="icon icon-github"><use xlink:href="symbol-defs.svg#icon-github"></use></svg></a>'
 
   var biomeImageLayer = L.tileLayer(oholMapConfig.mainTiles, {
+    className: 'crisp',
     errorTileUrl: 'ground_U.png',
     minZoom: 2,
     maxZoom: 31,
@@ -56,6 +57,7 @@
   base['Uncertainty'] = L.layerGroup([])
 
   base['Crucible'] = L.tileLayer(oholMapConfig.crucibleTiles, {
+    className: 'crisp',
     errorTileUrl: 'ground_U.png',
     minZoom: 2,
     maxZoom: 31,
@@ -717,6 +719,7 @@
 
   L.GridLayer.BiomeLayer = L.GridLayer.extend({
     options: {
+      className: 'crisp',
       computeMapBiomeIndex: competeMapBiomeIndex,
       biomeOffset: 0.83332,
       biomeScale: 0.08333,
@@ -1022,6 +1025,7 @@
 
   L.GridLayer.KeyPlacementPixel = L.GridLayer.extend({
     options: {
+      className: 'crisp',
       subdomains: ['a', 'b', 'c'],
       zoomOffset: 0,
     },
@@ -1114,6 +1118,7 @@
 
   L.GridLayer.KeyPlacementSprite = L.GridLayer.extend({
     options: {
+      supersample: 1,
       datamaxzoom: 24,
       dataminzoom: 24,
       subdomains: ['a', 'b', 'c'],
@@ -1134,8 +1139,9 @@
     createTile: function (coords, done) {
       var tile = document.createElement('canvas');
       var tileSize = this.getTileSize();
-      tile.setAttribute('width', tileSize.x);
-      tile.setAttribute('height', tileSize.y);
+      var superscale = Math.pow(2, this.options.supersample)
+      tile.setAttribute('width', tileSize.x*superscale);
+      tile.setAttribute('height', tileSize.y*superscale);
       var paddingX = 2;
       var paddingUp = 2;
       var paddingDown = 4;
@@ -1166,7 +1172,7 @@
       }
       var cellWidth = tileSize.x/cellSize + paddingX
       var cellHeight = tileSize.y/cellSize + paddingDown
-      var minSize = 2 * (128/cellSize)
+      var minSize = 1.5 * (128/cellSize)
       //console.log('cellsize', cellSize, 'cellWidth', cellWidth)
       var layer = this
       //console.log(datacoords)
@@ -1237,15 +1243,11 @@
       return tile
     },
     drawTile(tile, coords, done) {
-      var tileSize = this.getTileSize();
-      var cellSize = Math.pow(2, coords.z - 24)
+      var cellSize = Math.pow(2, coords.z - (24 - this.options.supersample))
       //console.log(cellSize, tile._keyplace)
 
       var ctx = tile.getContext('2d', {alpha: true});
       ctx.clearRect(0, 0, tile.width, tile.height)
-
-      var w = tile.width
-      var h = tile.height
 
       ctx.save()
       ctx.scale(cellSize, cellSize)

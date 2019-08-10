@@ -18,7 +18,7 @@ body {
   pointer-events: auto;
 }
 
-img, canvas {
+.crisp img, .crisp canvas {
   image-rendering: optimizeSpeed;             /*                     */
   image-rendering: -moz-crisp-edges;          /* Firefox             */
   image-rendering: -o-crisp-edges;            /* Opera               */

@@ -1,7 +1,6 @@
 - onetech credit
 - animated
   - data lods?
-  - whole log?
   - keyframes?
   - diffed keyframes?
   - only oversample large objects?
@@ -10,7 +9,6 @@
   - objects to show in pixel layer, color table
   - sprite lods?
   - sprite sheets?
-  - scaled down graphics don't look good
   - glitch with maxzoom on object pixel layer
   - hidden objects (shrink big)
   - floor fade effect
