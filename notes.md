@@ -1,12 +1,11 @@
 - onetech credit
-- how to process/store map changes
-  - floor removals not f tagged
 - animated
   - data lods?
   - whole log?
   - keyframes?
   - diffed keyframes?
   - only oversample large objects?
+  - floor removals not f tagged
 - rendering map data
   - objects to show in pixel layer, color table
   - sprite lods?
@@ -15,7 +14,7 @@
   - glitch with maxzoom on object pixel layer
   - hidden objects (shrink big)
   - floor fade effect
-  - yes: do we need all four sprite bounds?
+  - do we need all four sprite bounds?
 - object generation
 - biome graphics
 
