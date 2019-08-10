@@ -7,6 +7,7 @@
   - floor removals not f tagged
 - rendering map data
   - objects to show in pixel layer, color table
+  - rift
   - sprite lods?
   - sprite sheets?
   - glitch with maxzoom on object pixel layer
@@ -16,6 +17,10 @@
 - object generation
 - biome graphics
 
+
+- default map?
+  - old map with notice?
+  - notice to change to old map?
 - legend for lineage color
 - time url parameter?
 - more accurate biome age times

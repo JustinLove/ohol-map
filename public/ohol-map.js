@@ -2054,8 +2054,8 @@
           break;
         case 'arcList':
           updateArcs(message.arcs.data)
-          //baseLayerByTime(map, Date.now())
-          baseLayerByTime(map, arcs[arcs.length-1].msEnd)
+          baseLayerByTime(map, Date.now())
+          //baseLayerByTime(map, arcs[arcs.length-1].msEnd)
           break;
         case 'monumentList':
           updateMonumentLayer(monumentOverlay, message.monuments.data)

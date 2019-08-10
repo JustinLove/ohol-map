@@ -1,6 +1,7 @@
 var oholMapConfig = {
   mainTiles: 'tiles/{z}/{x}/{y}.png',
   crucibleTiles: 'crucible/{z}/{x}/{y}.png',
+  keyPlacements: 'keyplace/{time}/{z}/{x}/{y}.txt',
   lineageUrl: 'https://wondible.com/ohol-family-trees/',
   cachedApiUrl: 'http://localhost:5000/',
   apiUrl: 'http://localhost:5000/',
