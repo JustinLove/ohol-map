@@ -115,3 +115,4 @@ Tile paths and data server are configured in `public/config.js`
 ## Credits
 
 Icons: [IcoMoon - Free](https://icomoon.io/#icons-icomoon) ([CC BY 4.0](http://creativecommons.org/licenses/by/4.0/))
+Object Images based on [based on](https://github.com/JustinLove/onetech/tree/mapping) [Onetech](https://github.com/Kazetsukai/onetech)

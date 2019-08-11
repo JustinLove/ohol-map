@@ -1,4 +1,5 @@
 - onetech credit
+  - dummy layers for mergable attributions
 - animated
   - data lods?
   - keyframes?
@@ -14,6 +15,7 @@
   - hidden objects (shrink big)
   - floor fade effect
   - do we need all four sprite bounds?
+- automate file generation
 - object generation
 - biome graphics
 
