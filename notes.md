@@ -11,7 +11,7 @@
   - rift
   - sprite lods?
   - sprite sheets?
-  - glitch with maxzoom on object pixel layer
+  - glitch with maxzoom on object pixel layer https://github.com/Leaflet/Leaflet/pull/6310
   - hidden objects (shrink big)
   - floor fade effect
   - do we need all four sprite bounds?
