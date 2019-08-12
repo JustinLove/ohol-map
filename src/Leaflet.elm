@@ -70,11 +70,12 @@ currentServer server =
     ]
     |> leafletCommand
 
-arcList : List Data.Arc -> Cmd msg
-arcList arcs =
+arcList : List Data.Arc -> Posix -> Cmd msg
+arcList arcs time =
   Encode.object
     [ ("kind", Encode.string "arcList")
     , ("arcs", Encode.arcs arcs)
+    , ("time", Encode.timeStamp time)
     ]
     |> leafletCommand
 

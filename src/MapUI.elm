@@ -30,6 +30,7 @@ type Msg
   | DataLayer (Result Http.Error Json.Decode.Value)
   | FetchUpTo Posix
   | PlayRelativeTo Posix
+  | CurrentTime Posix
   | CurrentZone Time.Zone
   | CurrentUrl Url
   | Navigate Browser.UrlRequest
@@ -48,6 +49,7 @@ type alias Model =
   , endTimeMode : EndTimeMode
   , coarseEndTime : Posix
   , endTime : Posix
+  , currentTime : Posix
   , hoursBefore : Int
   , currentArc : Maybe Arc
   , dataAnimated : Bool
@@ -96,6 +98,7 @@ init config location key =
       , endTimeMode = ServerRange
       , coarseEndTime = Time.millisToPosix 0
       , endTime = Time.millisToPosix 0
+      , currentTime = Time.millisToPosix 0
       , hoursBefore = 48
       , currentArc = Nothing
       , dataAnimated = False
@@ -117,6 +120,10 @@ init config location key =
     , Cmd.batch
       [ cmd
       , Time.here |> Task.perform CurrentZone
+      , if model.currentTime == Time.millisToPosix 0 then
+          Time.now |> Task.perform CurrentTime
+        else
+          Cmd.none
       , fetchServers model.cachedApiUrl
       , fetchArcs model.cachedApiUrl
       ]
@@ -144,18 +151,18 @@ update msg model =
       , Cmd.none
       )
     UI (View.CoarseEndTime time) ->
-      ( { model
-        | coarseEndTime = time
-        , endTime = time
-        }
-      , Leaflet.currentTime time
-      )
+      { model
+      | coarseEndTime = time
+      , endTime = time
+      , currentTime = time
+      }
+        |> setTime time
     UI (View.EndTime time) ->
-      ( { model
-        | endTime = time
-        }
-      , Leaflet.currentTime time
-      )
+      { model
+      | endTime = time
+      , currentTime = time
+      }
+        |> setTime time
     UI (View.HoursBefore hours) ->
       ( { model
         | hoursBefore = hours
@@ -206,6 +213,7 @@ update msg model =
           | selectedServer = Just server
           , coarseEndTime = inRange server.minTime model.coarseEndTime server.maxTime
           , endTime = inRange server.minTime model.endTime server.maxTime
+          , currentTime = inRange server.minTime model.currentTime server.maxTime
           , dataLayer = Loading
           }
       in
@@ -226,13 +234,12 @@ update msg model =
       in
       case marc of
         Just arc ->
-          ( { model
-            | currentArc = marc
-            , coarseEndTime = arc.end
-            , endTime = arc.end
-            }
-          , Leaflet.currentTime arc.end
-          )
+          { model
+          | currentArc = marc
+          , coarseEndTime = arc.end
+          , endTime = arc.end
+          }
+            |> setTime arc.end
         Nothing ->
           ( { model
             | currentArc = marc
@@ -246,7 +253,7 @@ update msg model =
     Event (Ok (Leaflet.MoveEnd point)) ->
       ( {model|center = point} 
       , Navigation.replaceUrl model.navigationKey <|
-        centerUrl model.location (isYesterday model) point
+        centerUrl model.location model.currentTime (isYesterday model) point
       )
     Event (Ok (Leaflet.OverlayAdd "Life Data" _)) ->
       requireRecentLives model
@@ -316,7 +323,7 @@ update msg model =
       ({model | servers = Failed error}, Cmd.none)
     ArcList (Ok arcs) ->
       ( {model | arcs = Data arcs, currentArc = List.head arcs}
-      , Leaflet.arcList arcs
+      , Leaflet.arcList arcs model.currentTime
       )
     ArcList (Err error) ->
       let _ = Debug.log "fetch arcs failed" error in
@@ -356,6 +363,8 @@ update msg model =
       , Leaflet.beginPlayback model.gameSecondsPerFrame model.frameRate
         (relativeStartTime time model.hoursBefore)
       )
+    CurrentTime time ->
+      ({model | currentTime = time}, Cmd.none)
     CurrentZone zone ->
       ({model | zone = zone}, Cmd.none)
     CurrentUrl location ->
@@ -398,6 +407,19 @@ yesterday model =
     ]
   )
 
+setTime : Posix -> Model -> (Model, Cmd Msg)
+setTime time model =
+  if model.currentTime /= time then
+    ( {model|currentTime = time}
+    , Cmd.batch
+        [ Leaflet.currentTime time
+        , Navigation.replaceUrl model.navigationKey <|
+          centerUrl model.location time (isYesterday model) model.center
+        ]
+    )
+  else
+    (model, Cmd.none)
+
 setYesterday : Model -> (Model, Cmd Msg)
 setYesterday model =
   if isYesterday model then
@@ -414,19 +436,44 @@ isYesterday model =
     && model.frameRate == 1
     && model.dataAnimated
 
+combineRoute : (Model -> (Model, Cmd Msg)) -> (Model, Cmd Msg) -> (Model, Cmd Msg)
+combineRoute route (model, cmd) =
+  let
+    (m2, c2) = route model
+  in
+    (m2, Cmd.batch [ cmd, c2 ])
+
 changeRouteTo : Url -> Model -> (Model, Cmd Msg)
 changeRouteTo location model =
+  ({model | location = location}, Cmd.none)
+    |> combineRoute (yesterdayRoute location)
+    |> combineRoute (timeRoute location)
+    |> combineRoute (coordinateRoute location)
+
+yesterdayRoute : Url -> Model -> (Model, Cmd Msg)
+yesterdayRoute location model =
   let
     mpreset = extractHashString "preset" location
   in
     if mpreset == Just "yesterday" then
-      let
-        (m2, c2) = setYesterday model
-        (m3, c3) = coordinateRoute location m2
-      in
-        (m3, Cmd.batch [ c2, c3 ])
+      setYesterday model
     else
-      coordinateRoute location model
+      (model, Cmd.none)
+
+timeRoute : Url -> Model -> (Model, Cmd Msg)
+timeRoute location model =
+  let
+    mt = extractHashInt "t" location
+      |> Maybe.map (\t -> t * 1000 |> Time.millisToPosix)
+  in
+    case mt of
+      Just t ->
+        if model.currentTime /= t then
+          ({model|currentTime = t}, Leaflet.currentTime t)
+        else
+          (model, Cmd.none)
+      Nothing ->
+        ( model, Cmd.none)
 
 coordinateRoute : Url -> Model -> (Model, Cmd Msg)
 coordinateRoute location model =
@@ -434,18 +481,17 @@ coordinateRoute location model =
     mx = extractHashInt "x" location
     my = extractHashInt "y" location
     mz = extractHashInt "z" location
-    m2 = {model | location = location}
   in
     case (mx, my, mz) of
       (Just x, Just y, Just z) ->
-        setView (Point x y z) m2
+        setViewFromRoute (Point x y z) model
       (Just x, Just y, Nothing) ->
-        setView (Point x y 24) m2
+        setViewFromRoute (Point x y 24) model
       _ ->
-        ( m2, Cmd.none)
+        ( model, Cmd.none)
 
-setView : Point -> Model -> (Model, Cmd Msg)
-setView point model =
+setViewFromRoute : Point -> Model -> (Model, Cmd Msg)
+setViewFromRoute point model =
   if model.center /= point then
     ({model|center = point}, Leaflet.setView point)
   else

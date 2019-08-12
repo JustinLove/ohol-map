@@ -1773,10 +1773,11 @@
 
         return container;
       },
-      toggle: function() {
+      toggle: function(e) {
         app.ports.leafletEvent.send({
           kind: this.options.message,
         })
+        L.DomEvent.preventDefault(e)
       },
   });
 
@@ -1986,8 +1987,8 @@
     L.DomEvent.on(map, 'mousemove', setActive, map);
 
     baseLayerByTime(map, Date.now())
-    //base['Topographic Test'].addTo(map)
     riftLayerByTime(Date.now())
+    //base['Topographic Test'].addTo(map)
     overlays['Rift'].addTo(map)
     //overlays['Checker'].addTo(map)
     //base['Fractal'].addTo(map)
@@ -2055,7 +2056,9 @@
           break;
         case 'arcList':
           updateArcs(message.arcs.data)
-          baseLayerByTime(map, Date.now())
+          baseLayerByTime(map, message.time * 1000)
+          riftLayerByTime(message.time * 1000)
+          //baseLayerByTime(map, Date.now())
           //baseLayerByTime(map, arcs[arcs.length-1].msEnd)
           break;
         case 'monumentList':

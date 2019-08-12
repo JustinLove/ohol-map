@@ -24,7 +24,6 @@
   - old map with notice?
   - notice to change to old map?
 - legend for lineage color
-- time url parameter?
 - more accurate biome age times
 - search/lineage reslts in data layer for coloring etc.
 - bookmarking layers
