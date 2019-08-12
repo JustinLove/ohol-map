@@ -1536,6 +1536,13 @@
     timeDimension: timeDimension,
   })
   timeDimension.on("timeload", animOverlay.updateTiles, animOverlay)
+  timeDimension.on("timeload", function(ev) {
+    var time = ev.time/1000
+    app.ports.leafletEvent.send({
+      kind: 'timeload',
+      time: time,
+    })
+  })
 
   var resultPoints = new L.GridLayer.PointOverlay().addTo(searchOverlay)
 

@@ -2,6 +2,7 @@ module OHOLData.Decode exposing
   ( lives
   , servers
   , arcs
+  , timeStamp
   )
 
 import OHOLData exposing (Life, Server, Arc)

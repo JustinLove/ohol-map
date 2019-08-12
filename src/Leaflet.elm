@@ -182,6 +182,7 @@ pointLocation location =
 
 type Event
   = MoveEnd Point
+  | TimeLoad Posix
   | OverlayAdd String (Maybe Int)
   | OverlayRemove String
   | SelectPoints (List Data.Life)
@@ -204,6 +205,9 @@ eventDecoder =
       case kind of
         "moveend" ->
           Decode.map MoveEnd pointDecoder
+        "timeload" ->
+          Decode.map TimeLoad
+            (Decode.field "time" Decode.timeStamp)
         "overlayadd" ->
           Decode.map2 OverlayAdd
             (Decode.field "name" Decode.string)

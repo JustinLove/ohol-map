@@ -255,6 +255,11 @@ update msg model =
       , Navigation.replaceUrl model.navigationKey <|
         centerUrl model.location model.currentTime (isYesterday model) point
       )
+    Event (Ok (Leaflet.TimeLoad time)) ->
+      ( {model|currentTime = time} 
+      , Navigation.replaceUrl model.navigationKey <|
+        centerUrl model.location time (isYesterday model) model.center
+      )
     Event (Ok (Leaflet.OverlayAdd "Life Data" _)) ->
       requireRecentLives model
     Event (Ok (Leaflet.OverlayAdd name (Just serverId))) ->
