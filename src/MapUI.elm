@@ -256,12 +256,12 @@ update msg model =
         centerUrl model.location model.currentTime (isYesterday model) point
       )
     Event (Ok (Leaflet.TimeLoad time)) ->
-      ( {model|currentTime = time} 
+      ( {model|currentTime = time}
       , Navigation.replaceUrl model.navigationKey <|
         centerUrl model.location time (isYesterday model) model.center
       )
     Event (Ok (Leaflet.OverlayAdd "Life Data" _)) ->
-      requireRecentLives model
+      requireLives model
     Event (Ok (Leaflet.OverlayAdd name (Just serverId))) ->
       if Dict.member serverId model.monuments then
         (model, Cmd.none)
@@ -318,6 +318,7 @@ update msg model =
         , coarseEndTime = endTime
         , endTime = endTime
         }
+          |> timeSelectionForTime
       , Cmd.batch
         [ fetchMonuments model.cachedApiUrl id
         --, Leaflet.serverList servers
@@ -381,6 +382,13 @@ update msg model =
     Navigate (Browser.External url) ->
       (model, Navigation.load url)
 
+requireLives : Model -> (Model, Cmd Msg)
+requireLives model =
+  if model.currentTime == (Time.millisToPosix 0) then
+    requireRecentLives model
+  else
+    requireSelectedLives model
+
 requireRecentLives : Model -> (Model, Cmd Msg)
 requireRecentLives model =
   case model.dataLayer of
@@ -391,6 +399,20 @@ requireRecentLives model =
     Failed _ ->
       ( {model | dataLayer = Loading}
       , fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
+      )
+    _ ->
+      (model, Cmd.none)
+
+requireSelectedLives : Model -> (Model, Cmd Msg)
+requireSelectedLives model =
+  case model.dataLayer of
+    NotRequested ->
+      ( {model | dataLayer = Loading}
+      , fetchDataForTime model
+      )
+    Failed _ ->
+      ( {model | dataLayer = Loading}
+      , fetchDataForTime model
       )
     _ ->
       (model, Cmd.none)
@@ -474,7 +496,7 @@ timeRoute location model =
     case mt of
       Just t ->
         if model.currentTime /= t then
-          ({model|currentTime = t}, Leaflet.currentTime t)
+          ({model|currentTime = t} |> timeSelectionForTime, Leaflet.currentTime t)
         else
           (model, Cmd.none)
       Nothing ->
@@ -501,6 +523,40 @@ setViewFromRoute point model =
     ({model|center = point}, Leaflet.setView point)
   else
     (model, Cmd.none)
+
+timeSelectionForTime : Model -> Model
+timeSelectionForTime model =
+  if model.currentTime == (Time.millisToPosix 0) then
+    model
+  else
+    case model.arcs of
+      Data arcs ->
+        let
+          newArc = arcs
+            |> List.filter (\arc -> isInRange arc.start model.currentTime arc.end)
+            |> List.head
+        in
+          case newArc of
+            Just arc ->
+              { model
+              | endTimeMode = ArcRange
+              , currentArc = newArc
+              }
+            Nothing ->
+              timeSelectionAround model
+      _ ->
+        timeSelectionAround model
+
+timeSelectionAround : Model -> Model
+timeSelectionAround model =
+  let
+    time = relativeEndTime model.currentTime (model.hoursBefore//2)
+  in
+    { model
+    | endTimeMode = ArcRange
+    , coarseEndTime = time
+    , endTime = time
+    }
 
 fetchDataForTime : Model -> Cmd Msg
 fetchDataForTime model =
@@ -615,6 +671,13 @@ relativeStartTime endTime hoursBefore =
     |> (\x -> x - hoursBefore * 60 * 60 * 1000)
     |> Time.millisToPosix
 
+relativeEndTime : Posix -> Int -> Posix
+relativeEndTime endTime hoursBefore =
+  endTime
+    |> Time.posixToMillis
+    |> (\x -> x + hoursBefore * 60 * 60 * 1000)
+    |> Time.millisToPosix
+
 fetchDataLayer : String -> Int -> Posix -> Posix -> Cmd Msg
 fetchDataLayer baseUrl serverId startTime endTime =
   Http.get
@@ -647,3 +710,12 @@ inRange mint t maxt =
     maxi = Time.posixToMillis maxt
   in
     Time.millisToPosix (min maxi (max mini i))
+
+isInRange : Posix -> Posix -> Posix -> Bool
+isInRange mint t maxt =
+  let
+    mini = Time.posixToMillis mint
+    i = Time.posixToMillis t
+    maxi = Time.posixToMillis maxt
+  in
+    mini <= i && i <= maxi
