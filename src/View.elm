@@ -71,14 +71,19 @@ type alias Life =
   , birthY : Int
   }
 
-centerUrl : Url -> Posix -> Bool -> Point -> String
-centerUrl location t yd {x, y, z} =
+centerUrl : Url -> Maybe Posix -> Bool -> Point -> String
+centerUrl location mt yd {x, y, z} =
   { location
   | fragment =
     [ Just <| Url.int "x" x
     , Just <| Url.int "y" y
     , Just <| Url.int "z" z
-    , Just <| Url.int "t" ((Time.posixToMillis t) // 1000)
+    , mt
+      |> Maybe.map
+      (  Time.posixToMillis
+      >> (\t -> t // 1000)
+      >> Url.int "t"
+      )
     , if yd then
         Just <| Url.string "preset" "yesterday"
       else
@@ -629,7 +634,7 @@ presets model =
     [ text "Presets"
     , wrappedRow [ padding 10 ]
       [ link [ Font.color selected ]
-          { url = centerUrl model.location model.currentTime True model.center
+          { url = centerUrl model.location model.mapTime True model.center
           , label = text "Ambient Yesterday"
           }
       ]

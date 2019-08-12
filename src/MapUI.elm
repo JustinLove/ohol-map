@@ -39,6 +39,7 @@ type alias Model =
   { location : Url
   , navigationKey : Navigation.Key
   , zone : Time.Zone
+  , time : Posix
   , center : Point
   , cachedApiUrl : String
   , apiUrl : String
@@ -49,7 +50,7 @@ type alias Model =
   , endTimeMode : EndTimeMode
   , coarseEndTime : Posix
   , endTime : Posix
-  , currentTime : Posix
+  , mapTime : Maybe Posix
   , hoursBefore : Int
   , currentArc : Maybe Arc
   , dataAnimated : Bool
@@ -88,6 +89,7 @@ init config location key =
       { location = location
       , navigationKey = key
       , zone = Time.utc
+      , time = Time.millisToPosix 0
       , center = Point 0 0 17
       , cachedApiUrl = config.cachedApiUrl
       , apiUrl = config.apiUrl
@@ -98,7 +100,7 @@ init config location key =
       , endTimeMode = ServerRange
       , coarseEndTime = Time.millisToPosix 0
       , endTime = Time.millisToPosix 0
-      , currentTime = Time.millisToPosix 0
+      , mapTime = Nothing
       , hoursBefore = 48
       , currentArc = Nothing
       , dataAnimated = False
@@ -120,10 +122,7 @@ init config location key =
     , Cmd.batch
       [ cmd
       , Time.here |> Task.perform CurrentZone
-      , if model.currentTime == Time.millisToPosix 0 then
-          Time.now |> Task.perform CurrentTime
-        else
-          Cmd.none
+      , Time.now |> Task.perform CurrentTime
       , fetchServers model.cachedApiUrl
       , fetchArcs model.cachedApiUrl
       ]
@@ -154,13 +153,13 @@ update msg model =
       { model
       | coarseEndTime = time
       , endTime = time
-      , currentTime = time
+      , mapTime = Just time
       }
         |> setTime time
     UI (View.EndTime time) ->
       { model
       | endTime = time
-      , currentTime = time
+      , mapTime = Just time
       }
         |> setTime time
     UI (View.HoursBefore hours) ->
@@ -213,7 +212,8 @@ update msg model =
           | selectedServer = Just server
           , coarseEndTime = inRange server.minTime model.coarseEndTime server.maxTime
           , endTime = inRange server.minTime model.endTime server.maxTime
-          , currentTime = inRange server.minTime model.currentTime server.maxTime
+          , mapTime = model.mapTime
+            |> Maybe.map (\time -> inRange server.minTime time server.maxTime)
           , dataLayer = Loading
           }
       in
@@ -253,12 +253,12 @@ update msg model =
     Event (Ok (Leaflet.MoveEnd point)) ->
       ( {model|center = point} 
       , Navigation.replaceUrl model.navigationKey <|
-        centerUrl model.location model.currentTime (isYesterday model) point
+        centerUrl model.location model.mapTime (isYesterday model) point
       )
     Event (Ok (Leaflet.TimeLoad time)) ->
-      ( {model|currentTime = time}
+      ( {model|mapTime = Just time}
       , Navigation.replaceUrl model.navigationKey <|
-        centerUrl model.location time (isYesterday model) model.center
+        centerUrl model.location (Just time) (isYesterday model) model.center
       )
     Event (Ok (Leaflet.OverlayAdd "Life Data" _)) ->
       requireLives model
@@ -329,7 +329,7 @@ update msg model =
       ({model | servers = Failed error}, Cmd.none)
     ArcList (Ok arcs) ->
       ( {model | arcs = Data arcs, currentArc = List.head arcs}
-      , Leaflet.arcList arcs model.currentTime
+      , Leaflet.arcList arcs (model.mapTime |> Maybe.withDefault model.time)
       )
     ArcList (Err error) ->
       let _ = Debug.log "fetch arcs failed" error in
@@ -370,7 +370,7 @@ update msg model =
         (relativeStartTime time model.hoursBefore)
       )
     CurrentTime time ->
-      ({model | currentTime = time}, Cmd.none)
+      ({model | time = time}, Cmd.none)
     CurrentZone zone ->
       ({model | zone = zone}, Cmd.none)
     CurrentUrl location ->
@@ -384,7 +384,7 @@ update msg model =
 
 requireLives : Model -> (Model, Cmd Msg)
 requireLives model =
-  if model.currentTime == (Time.millisToPosix 0) then
+  if model.mapTime == Nothing then
     requireRecentLives model
   else
     requireSelectedLives model
@@ -436,12 +436,12 @@ yesterday model =
 
 setTime : Posix -> Model -> (Model, Cmd Msg)
 setTime time model =
-  if model.currentTime /= time then
-    ( {model|currentTime = time}
+  if model.mapTime /= Just time then
+    ( {model|mapTime = Just time}
     , Cmd.batch
         [ Leaflet.currentTime time
         , Navigation.replaceUrl model.navigationKey <|
-          centerUrl model.location time (isYesterday model) model.center
+          centerUrl model.location (Just time) (isYesterday model) model.center
         ]
     )
   else
@@ -495,8 +495,8 @@ timeRoute location model =
   in
     case mt of
       Just t ->
-        if model.currentTime /= t then
-          ({model|currentTime = t} |> timeSelectionForTime, Leaflet.currentTime t)
+        if model.mapTime /= Just t then
+          ({model|mapTime = Just t} |> timeSelectionForTime, Leaflet.currentTime t)
         else
           (model, Cmd.none)
       Nothing ->
@@ -526,34 +526,36 @@ setViewFromRoute point model =
 
 timeSelectionForTime : Model -> Model
 timeSelectionForTime model =
-  if model.currentTime == (Time.millisToPosix 0) then
-    model
-  else
-    case model.arcs of
-      Data arcs ->
-        let
-          newArc = arcs
-            |> List.filter (\arc -> isInRange arc.start model.currentTime arc.end)
-            |> List.head
-        in
-          case newArc of
-            Just arc ->
-              { model
-              | endTimeMode = ArcRange
-              , currentArc = newArc
-              }
-            Nothing ->
-              timeSelectionAround model
-      _ ->
-        timeSelectionAround model
+  case model.mapTime of
+    Nothing ->
+      model
+    Just time ->
+      case model.arcs of
+        Data arcs ->
+          let
+            newArc = arcs
+              |> List.filter (\arc -> isInRange arc.start time arc.end)
+              |> Debug.log "filtered"
+              |> List.head
+          in
+            case newArc of
+              Just arc ->
+                { model
+                | endTimeMode = ArcRange
+                , currentArc = newArc
+                }
+              Nothing ->
+                timeSelectionAround model
+        _ ->
+          timeSelectionAround model
 
 timeSelectionAround : Model -> Model
 timeSelectionAround model =
   let
-    time = relativeEndTime model.currentTime (model.hoursBefore//2)
+    time = relativeEndTime (model.mapTime |> Maybe.withDefault model.time) (model.hoursBefore//2)
   in
     { model
-    | endTimeMode = ArcRange
+    | endTimeMode = ServerRange
     , coarseEndTime = time
     , endTime = time
     }
