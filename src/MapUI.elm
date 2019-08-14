@@ -4,7 +4,7 @@ import Leaflet exposing (Point, PointColor(..), PointLocation(..))
 import OHOLData as Data exposing (Server, Arc)
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
-import View exposing (RemoteData(..), Life, EndTimeMode(..), centerUrl)
+import View exposing (RemoteData(..), Life, EndTimeMode(..), Notice(..), timeNoticeDuration, centerUrl)
 
 import Browser
 --import Browser.Dom
@@ -30,6 +30,7 @@ type Msg
   | DataLayer (Result Http.Error Json.Decode.Value)
   | FetchUpTo Posix
   | PlayRelativeTo Posix
+  | ShowTimeNotice Posix Posix
   | CurrentTime Posix
   | CurrentZone Time.Zone
   | CurrentUrl Url
@@ -40,6 +41,7 @@ type alias Model =
   , navigationKey : Navigation.Key
   , zone : Time.Zone
   , time : Posix
+  , notice : Notice
   , center : Point
   , cachedApiUrl : String
   , apiUrl : String
@@ -90,6 +92,7 @@ init config location key =
       , navigationKey = key
       , zone = Time.utc
       , time = Time.millisToPosix 0
+      , notice = NoNotice
       , center = Point 0 0 17
       , cachedApiUrl = config.cachedApiUrl
       , apiUrl = config.apiUrl
@@ -367,8 +370,28 @@ update msg model =
       , Leaflet.beginPlayback model.gameSecondsPerFrame model.frameRate
         (relativeStartTime time model.hoursBefore)
       )
+    ShowTimeNotice show time ->
+      let
+        until = time
+          |> Time.posixToMillis
+          |> (\t -> t + timeNoticeDuration)
+          |> Time.millisToPosix
+      in
+      ({model | time = time, notice = TimeNotice show until}, Cmd.none)
     CurrentTime time ->
-      ({model | time = time}, Cmd.none)
+      ( { model
+        | time = time
+        , notice = case model.notice of
+          TimeNotice _ until ->
+            if ((until |> Time.posixToMillis) - (model.time |>  Time.posixToMillis)) > 0 then
+              model.notice
+            else
+              NoNotice
+          NoNotice ->
+            NoNotice
+        }
+      , Cmd.none
+      )
     CurrentZone zone ->
       ({model | zone = zone}, Cmd.none)
     CurrentUrl location ->
@@ -440,6 +463,7 @@ setTime time model =
         [ Leaflet.currentTime time
         , Navigation.replaceUrl model.navigationKey <|
           centerUrl model.location (Just time) (isYesterday model) model.center
+        , Time.now |> Task.perform (ShowTimeNotice time)
         ]
     )
   else
@@ -533,7 +557,6 @@ timeSelectionForTime model =
           let
             newArc = arcs
               |> List.filter (\arc -> isInRange arc.start time arc.end)
-              |> Debug.log "filtered"
               |> List.head
           in
             case newArc of
@@ -580,7 +603,14 @@ fetchDataForTime model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  Leaflet.event Event
+  Sub.batch
+    [ Leaflet.event Event
+    , case model.notice of
+        TimeNotice _ _ ->
+          Time.every 33 CurrentTime
+        NoNotice ->
+          Sub.none
+    ]
 
 fetchServers : String -> Cmd Msg
 fetchServers baseUrl =

@@ -1,4 +1,4 @@
-module View exposing (Msg(..), Mode(..), EndTimeMode(..), RemoteData(..), Life, centerUrl, view, document)
+module View exposing (Msg(..), Mode(..), EndTimeMode(..), Notice(..), timeNoticeDuration, RemoteData(..), Life, centerUrl, view, document)
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
 import OHOLData as Data exposing (Server)
@@ -51,6 +51,12 @@ type EndTimeMode
   = ServerRange
   | FromNow
   | ArcRange
+
+type Notice
+  = TimeNotice Posix Posix
+  | NoNotice
+
+timeNoticeDuration = 4000
 
 type RemoteData a
   = NotRequested
@@ -110,7 +116,12 @@ view model =
     ] <|
     Keyed.row [ width fill, height fill ]
       [ ( "map"
-        , el [ width fill, height fill, Font.size 12 ]
+        , el
+          [ width fill
+          , height fill
+          , Font.size 12
+          , inFront (timeOverlay model)
+          ]
           (html <| Html.div [ Html.Attributes.id "map" ] [])
         )
       , ( "sidebar"
@@ -120,6 +131,25 @@ view model =
             none
         )
       ]
+
+-- timeOverlay : Model -> Element Msg
+timeOverlay model =
+  case model.notice of
+    TimeNotice time until ->
+      time
+        |> date model.zone
+        |> text
+        |> el [ centerX, centerY ]
+        |> el
+          [ width fill
+          , height fill
+          , Font.size 48
+          , alpha (((until |> Time.posixToMillis |> toFloat) - (model.time |>  Time.posixToMillis |> toFloat)) / (timeNoticeDuration |> toFloat))
+          , htmlAttribute (Html.Attributes.id "time-overlay")
+          , htmlAttribute (Html.Attributes.style "z-index" "1000")
+          ]
+    NoNotice ->
+      none
 
 -- sidebar : Model -> Element Msg
 sidebar model =
