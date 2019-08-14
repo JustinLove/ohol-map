@@ -515,6 +515,23 @@ logSlider attributes slider =
     , step = Nothing
     }
 
+reverseLogSlider attributes slider =
+  let
+    logMax = slider.max |> logBase e
+  in
+  Input.slider
+    attributes
+    { slider
+    | onChange = (\x -> e^(logMax - x)) >> slider.onChange
+    , min = slider.min |> logBase e
+    , max = slider.max |> logBase e
+    , value = slider.value
+      |> logBase e
+      |> (\x -> logMax - x)
+    , step = Nothing
+    }
+
+
 --timeAfterSelect : Model -> Element Msg
 timeAfterSelect model =
   logSlider
@@ -531,7 +548,7 @@ timeAfterSelect model =
 
 --timeBeforeSelect : Model -> Element Msg
 timeBeforeSelect model =
-  logSlider
+  reverseLogSlider
     [ Background.color control ]
     { onChange = round >> HoursBefore
     , label = Input.labelAbove [] <|
