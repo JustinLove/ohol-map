@@ -147,6 +147,7 @@ timeOverlay model =
           , alpha (((until |> Time.posixToMillis |> toFloat) - (model.time |>  Time.posixToMillis |> toFloat)) / (timeNoticeDuration |> toFloat))
           , htmlAttribute (Html.Attributes.id "time-overlay")
           , htmlAttribute (Html.Attributes.style "z-index" "1000")
+          , htmlAttribute (Html.Attributes.style "pointer-events" "none")
           ]
     NoNotice ->
       none
