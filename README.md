@@ -62,13 +62,13 @@ Filter and select life data for display on the map.
 
 Show: runs the currently selected search. This may be slow, please be patient.
 
-The time in history to show is primarily set by the end of the period. This can operate in three modes. Updating the should also set the corresponding map.
+The time in history to show is primarily set by the start or end of the period. This can operate in three modes. Updating the should also set the corresponding map.
 
-- Server: The time selection depends on the currently selected server and when it has been operating. Since these time periods can be very large, it is selected in two stages: "coarse" selects the time over all possible values with very low precision, "fine" can then select a more precise end point within a week to either side.
-- Now: Select the most recent data. Due to lifelog delays, there may be no data recent enough, but it is useful for selecting that starts "24 hours ago" etc.
+- Server: The time selection depends on the currently selected server and when it has been operating. Since these time periods can be very large, it is selected in two stages: "coarse" selects the time over all possible values with very low precision, "fine" can then select a more precise start point within a week to either side.
+- Now: Select the most recent data. Due to lifelog delays, there may be no data recent enough, but it is useful for selecting data that starts "24 hours ago" etc.
 - Arc: Select the time range of one of the game arcs.
 
-Range control: e.g. "2d Before": Picks the amount of history to be shown. The end time selected, backed up by this amount, will the selection start time.
+Range control: e.g. "2d Before": Picks the amount of history to be shown.
 
 Server: Picks the game server to retrieve data for. Servers are iconified; smaller 1-15 are server1-server15, larger 1-2 are bigserver1 and bigserver2. As of this writing, most people play on bigserver2, which is the default.
 
@@ -89,6 +89,8 @@ Color: several coloring methods
 Location: display points at the birth or death location
 
 Animated: Control to toggle whole or animated view. This can also be done from clock button in lower left when data is shown. When enabled, also provides a control for the animation playback scale = history time per animation frame.
+
+Fade Tall Objects: For arc maps with object placement data, slightly fades large objects to reveal things hidden behind them.
 
 #### Time Controls
 
