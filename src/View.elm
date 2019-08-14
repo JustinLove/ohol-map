@@ -34,6 +34,7 @@ type Msg
   | HoursAfter Int
   | ToggleAnimated Bool
   | GameSecondsPerFrame Int
+  | ToggleFadeTallObjects Bool
   | SelectPointColor PointColor
   | SelectPointLocation PointLocation
   | SelectMatchingLife Life
@@ -750,7 +751,13 @@ cosmetics model =
             }
         else
           none
-        ]
+      , Input.checkbox [ padding 10, spacing 2 ]
+        { onChange = ToggleFadeTallObjects
+        , checked = model.fadeTallObjects
+        , label = Input.labelRight [ padding 6 ] (text "Fade Tall Objects")
+        , icon = Input.defaultCheckbox
+        }
+      ]
 
 gameTimeText : Int -> String
 gameTimeText totalSeconds =

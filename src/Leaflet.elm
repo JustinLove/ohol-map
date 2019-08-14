@@ -18,6 +18,7 @@ port module Leaflet exposing
   , baseLayer
   , pointColor
   , pointLocation
+  , fadeTallObjects
   , event)
 
 import OHOLData as Data
@@ -179,6 +180,15 @@ pointLocation location =
       )
     ]
     |> leafletCommand
+
+fadeTallObjects : Bool -> Cmd msg
+fadeTallObjects status =
+  Encode.object
+    [ ("kind", Encode.string "fadeTallObjects")
+    , ("status", Encode.bool status)
+    ]
+    |> leafletCommand
+
 
 type Event
   = MoveEnd Point

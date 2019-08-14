@@ -1,4 +1,3 @@
-- first load experience
 - onetech credit
   - dummy layers for mergable attributions
 - animated
@@ -13,9 +12,9 @@
   - sprite lods?
   - sprite sheets?
   - glitch with maxzoom on object pixel layer https://github.com/Leaflet/Leaflet/pull/6310
-  - hidden objects (shrink big)
   - floor fade effect
   - do we need all four sprite bounds?
+- rift data file?
 - automate file generation
 - object generation
 - biome graphics

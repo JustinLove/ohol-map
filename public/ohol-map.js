@@ -1122,6 +1122,7 @@
   L.GridLayer.KeyPlacementSprite = L.GridLayer.extend({
     options: {
       supersample: 1,
+      fadeTallobjects: false,
       datamaxzoom: 24,
       dataminzoom: 24,
       subdomains: ['a', 'b', 'c'],
@@ -1247,6 +1248,7 @@
     },
     drawTile(tile, coords, done) {
       var cellSize = Math.pow(2, coords.z - (24 - this.options.supersample))
+      var fadeTallObjects = this.options.fadeTallObjects
       //console.log(cellSize, tile._keyplace)
 
       var ctx = tile.getContext('2d', {alpha: true});
@@ -1268,6 +1270,13 @@
         var ih = img.naturalHeight/128
         var ox = objectBounds[placement.id][0]/128
         var oy = -objectBounds[placement.id][3]/128
+        if (fadeTallObjects) {
+          if (!placement.floor && oy < -0.7) {
+            ctx.globalAlpha = 0.4
+          } else {
+            ctx.globalAlpha = 1
+          }
+        }
         ctx.drawImage(img, placement.x + ox, placement.y + oy, iw, ih)
       })
       ctx.restore()
@@ -1310,6 +1319,15 @@
     } else {
       return L.layerGroup([])
     }
+  }
+
+  var setFadeTallObjects = function(status) {
+    arcs.forEach(function(arc) {
+      arc.keyPlacementLayer.eachLayer(function(layer) {
+        L.Util.setOptions(layer, {fadeTallObjects: status})
+        layer.redraw()
+      })
+    })
   }
 
   var colormap = function(id) {
@@ -2141,6 +2159,9 @@
         case 'pointLocation':
           setPointLocation(message.location)
           break;
+        case 'fadeTallObjects':
+          setFadeTallObjects(message.status)
+          break
         default:
           console.log('unknown message', message)
           break;

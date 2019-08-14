@@ -58,6 +58,7 @@ type alias Model =
   , currentArc : Maybe Arc
   , dataAnimated : Bool
   , gameSecondsPerFrame : Int
+  , fadeTallObjects : Bool
   , frameRate : Int
   , pointColor : PointColor
   , pointLocation : PointLocation
@@ -109,6 +110,7 @@ init config location key =
       , currentArc = Nothing
       , dataAnimated = False
       , gameSecondsPerFrame = 60
+      , fadeTallObjects = False
       , frameRate = 10
       , pointColor = LineageColor
       , pointLocation = BirthLocation
@@ -186,6 +188,12 @@ update msg model =
         | gameSecondsPerFrame = seconds
         }
       , Leaflet.playbackScale seconds
+      )
+    UI (View.ToggleFadeTallObjects fade) ->
+      ( { model
+        | fadeTallObjects = fade
+        }
+      , Leaflet.fadeTallObjects fade
       )
     UI (View.SelectPointColor color) ->
       ( { model
