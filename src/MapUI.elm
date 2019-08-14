@@ -31,6 +31,7 @@ type Msg
   | FetchUpTo Posix
   | PlayRelativeTo Posix
   | ShowTimeNotice Posix Posix
+  | CurrentTimeNotice Posix
   | CurrentTime Posix
   | CurrentZone Time.Zone
   | CurrentUrl Url
@@ -125,7 +126,7 @@ init config location key =
     , Cmd.batch
       [ cmd
       , Time.here |> Task.perform CurrentZone
-      , Time.now |> Task.perform CurrentTime
+      , Time.now |> Task.perform CurrentTimeNotice
       , fetchServers model.cachedApiUrl
       , fetchArcs model.cachedApiUrl
       ]
@@ -329,9 +330,33 @@ update msg model =
       let _ = Debug.log "fetch servers failed" error in
       ({model | servers = Failed error}, Cmd.none)
     ArcList (Ok arcs) ->
-      ( {model | arcs = Data arcs, currentArc = List.head arcs}
-      , Leaflet.arcList arcs (model.mapTime |> Maybe.withDefault model.time)
-      )
+      case model.mapTime of
+        Just _ ->
+          let
+            lastArc = arcs |> List.reverse |> List.head
+          in
+          ( { model
+            | arcs = Data arcs
+            , currentArc = lastArc
+            }
+          , Leaflet.arcList arcs (model.mapTime |> Maybe.withDefault model.time)
+          )
+        Nothing ->
+          let
+            lastArc = arcs |> List.reverse |> List.head
+            mlastTime = lastArc |> Maybe.map .end
+            lastTime = mlastTime |> Maybe.withDefault model.time
+          in
+          ( { model
+            | arcs = Data arcs
+            , currentArc = lastArc
+            , mapTime = mlastTime
+            }
+          , Cmd.batch
+            [ Leaflet.arcList arcs lastTime
+            , Time.now |> Task.perform (ShowTimeNotice lastTime)
+            ]
+          )
     ArcList (Err error) ->
       let _ = Debug.log "fetch arcs failed" error in
       ({model | arcs = Failed error, currentArc = Nothing}, Cmd.none)
@@ -378,6 +403,8 @@ update msg model =
           |> Time.millisToPosix
       in
       ({model | time = time, notice = TimeNotice show until}, Cmd.none)
+    CurrentTimeNotice time ->
+      update (ShowTimeNotice time time) model
     CurrentTime time ->
       ( { model
         | time = time
@@ -518,7 +545,12 @@ timeRoute location model =
     case mt of
       Just t ->
         if model.mapTime /= Just t then
-          ({model|mapTime = Just t} |> timeSelectionForTime, Leaflet.currentTime t)
+          ( { model|mapTime = Just t} |> timeSelectionForTime
+          , Cmd.batch
+            [ Leaflet.currentTime t
+            , Time.now |> Task.perform (ShowTimeNotice t)
+            ]
+          )
         else
           (model, Cmd.none)
       Nothing ->
