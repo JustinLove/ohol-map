@@ -153,13 +153,11 @@ update msg model =
       { model
       | coarseEndTime = time
       , endTime = time
-      , mapTime = Just time
       }
         |> setTime time
     UI (View.EndTime time) ->
       { model
       | endTime = time
-      , mapTime = Just time
       }
         |> setTime time
     UI (View.HoursBefore hours) ->
