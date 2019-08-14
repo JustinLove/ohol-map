@@ -104,14 +104,16 @@
   var rift354 = L.rectangle([[-354,-354], [354,354]], {fill: false, color: 'black'})
   var rift500 = L.rectangle([[-500,-500], [500,500]], {fill: false, color: 'black'})
   var rift1000 = L.rectangle([[-1000,-1000], [1000,1000]], {fill: false, color: 'black'})
+  var riftGone = L.layerGroup([])
   var riftOverlay = L.layerGroup([
-    rift354,
+    riftGone,
   ])
   var riftHistory = [
     { ms: Date.parse("2019-07-25 20:00:00-05:00"), layer: rift250 },
     { ms: Date.parse("2019-07-25 23:06:38-05:00"), layer: rift1000 },
     { ms: Date.parse("2019-07-26 02:00:00-05:00"), layer: rift500 },
     { ms: Date.parse("2019-07-26 17:30:00-05:00"), layer: rift354 },
+    { ms: Date.parse("2019-08-13 11:00:00-05:00"), layer: riftGone },
   ]
 
   var overlays = {
