@@ -30,7 +30,8 @@ type Msg
   | SelectTimeMode TimeMode
   | CoarseStartTime Posix
   | StartTime Posix
-  | HoursPeriod Int
+  | HoursBefore Int
+  | HoursAfter Int
   | ToggleAnimated Bool
   | GameSecondsPerFrame Int
   | SelectPointColor PointColor
@@ -518,7 +519,7 @@ logSlider attributes slider =
 timeAfterSelect model =
   logSlider
     [ Background.color control ]
-    { onChange = round >> HoursPeriod
+    { onChange = round >> HoursAfter
     , label = Input.labelAbove [] <|
       text (hoursText "After" model.hoursPeriod)
     , min = 1
@@ -532,7 +533,7 @@ timeAfterSelect model =
 timeBeforeSelect model =
   logSlider
     [ Background.color control ]
-    { onChange = round >> HoursPeriod
+    { onChange = round >> HoursBefore
     , label = Input.labelAbove [] <|
       text (hoursText "Before" model.hoursPeriod)
     , min = 1

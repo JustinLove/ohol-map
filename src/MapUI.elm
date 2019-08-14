@@ -164,7 +164,12 @@ update msg model =
       | startTime = time
       }
         |> setTime time
-    UI (View.HoursPeriod hours) ->
+    UI (View.HoursBefore hours) ->
+      { model
+      | hoursPeriod = hours
+      }
+        |> setTime (relativeStartTime hours model.time)
+    UI (View.HoursAfter hours) ->
       ( { model
         | hoursPeriod = hours
         }
@@ -558,7 +563,7 @@ timeRoute location model =
     case mt of
       Just t ->
         if model.mapTime /= Just t then
-          ( { model|mapTime = Just t} |> timeSelectionForTime
+          ( { model|mapTime = Just t}
           , Cmd.batch
             [ Leaflet.currentTime t
             , Time.now |> Task.perform (ShowTimeNotice t)
