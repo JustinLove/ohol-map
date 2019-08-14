@@ -4,7 +4,7 @@ import Leaflet exposing (Point, PointColor(..), PointLocation(..))
 import OHOLData as Data exposing (Server, Arc)
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
-import View exposing (RemoteData(..), Life, EndTimeMode(..), Notice(..), timeNoticeDuration, centerUrl)
+import View exposing (RemoteData(..), Life, TimeMode(..), Notice(..), timeNoticeDuration, centerUrl)
 
 import Browser
 --import Browser.Dom
@@ -50,11 +50,11 @@ type alias Model =
   , sidebarOpen : Bool
   , sidebarMode : View.Mode
   , searchTerm : String
-  , endTimeMode : EndTimeMode
-  , coarseEndTime : Posix
-  , endTime : Posix
+  , timeMode : TimeMode
+  , coarseStartTime : Posix
+  , startTime : Posix
   , mapTime : Maybe Posix
-  , hoursBefore : Int
+  , hoursPeriod : Int
   , currentArc : Maybe Arc
   , dataAnimated : Bool
   , gameSecondsPerFrame : Int
@@ -101,11 +101,11 @@ init config location key =
       , sidebarOpen = False
       , sidebarMode = View.LifeSearch
       , searchTerm = ""
-      , endTimeMode = ServerRange
-      , coarseEndTime = Time.millisToPosix 0
-      , endTime = Time.millisToPosix 0
+      , timeMode = ServerRange
+      , coarseStartTime = Time.millisToPosix 0
+      , startTime = Time.millisToPosix 0
       , mapTime = Nothing
-      , hoursBefore = 48
+      , hoursPeriod = 48
       , currentArc = Nothing
       , dataAnimated = False
       , gameSecondsPerFrame = 60
@@ -149,24 +149,24 @@ update msg model =
         }
       , Cmd.none
       )
-    UI (View.SelectEndTimeMode mode) ->
-      ( { model | endTimeMode = mode }
+    UI (View.SelectTimeMode mode) ->
+      ( { model | timeMode = mode }
       , Cmd.none
       )
-    UI (View.CoarseEndTime time) ->
+    UI (View.CoarseStartTime time) ->
       { model
-      | coarseEndTime = time
-      , endTime = time
+      | coarseStartTime = time
+      , startTime = time
       }
         |> setTime time
-    UI (View.EndTime time) ->
+    UI (View.StartTime time) ->
       { model
-      | endTime = time
+      | startTime = time
       }
         |> setTime time
-    UI (View.HoursBefore hours) ->
+    UI (View.HoursPeriod hours) ->
       ( { model
-        | hoursBefore = hours
+        | hoursPeriod = hours
         }
       , Cmd.none
       )
@@ -212,8 +212,8 @@ update msg model =
       let
         m2 = { model
           | selectedServer = Just server
-          , coarseEndTime = inRange server.minTime model.coarseEndTime server.maxTime
-          , endTime = inRange server.minTime model.endTime server.maxTime
+          , coarseStartTime = inRange server.minTime model.coarseStartTime server.maxTime
+          , startTime = inRange server.minTime model.startTime server.maxTime
           , mapTime = model.mapTime
             |> Maybe.map (\time -> inRange server.minTime time server.maxTime)
           , dataLayer = Loading
@@ -238,10 +238,10 @@ update msg model =
         Just arc ->
           { model
           | currentArc = marc
-          , coarseEndTime = arc.end
-          , endTime = arc.end
+          , coarseStartTime = arc.start
+          , startTime = arc.start
           }
-            |> setTime arc.end
+            |> setTime arc.start
         Nothing ->
           ( { model
             | currentArc = marc
@@ -311,14 +311,17 @@ update msg model =
     ServerList (Ok servers) ->
       let
         bs2 = servers |> List.reverse |> List.head
-        endTime = bs2 |> Maybe.map .maxTime |> Maybe.withDefault (Time.millisToPosix 0)
+        startTime = bs2
+          |> Maybe.map .maxTime
+          |> Maybe.map (relativeEndTime model.hoursPeriod)
+          |> Maybe.withDefault (Time.millisToPosix 0)
         id = bs2 |> Maybe.map .id |> Maybe.withDefault 17
       in
       ( { model
         | servers = servers |> Data
         , selectedServer = bs2
-        , coarseEndTime = endTime
-        , endTime = endTime
+        , coarseStartTime = startTime
+        , startTime = startTime
         }
           |> timeSelectionForTime
       , Cmd.batch
@@ -372,10 +375,20 @@ update msg model =
       , Cmd.batch
         [ Leaflet.dataLayer lives
         , if model.dataAnimated then
-            case model.endTimeMode of
-              ServerRange -> update (PlayRelativeTo model.endTime) model |> Tuple.second
-              FromNow -> Task.perform PlayRelativeTo Time.now
-              ArcRange -> Task.perform PlayRelativeTo Time.now
+            case model.timeMode of
+              ServerRange ->
+                Leaflet.beginPlayback
+                  model.gameSecondsPerFrame
+                  model.frameRate
+                  model.startTime
+              -- TODO
+              FromNow ->
+                Task.perform PlayRelativeTo Time.now
+              ArcRange ->
+                Leaflet.beginPlayback
+                  model.gameSecondsPerFrame
+                  model.frameRate
+                  (model.currentArc |> Maybe.map .start |> Maybe.withDefault model.time)
           else
             Cmd.none
         ]
@@ -387,13 +400,13 @@ update msg model =
       ( model
       , fetchDataLayer model.apiUrl
           (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
-          (relativeStartTime time model.hoursBefore)
+          (relativeStartTime model.hoursPeriod time)
           time
       )
     PlayRelativeTo time ->
       ( model
       , Leaflet.beginPlayback model.gameSecondsPerFrame model.frameRate
-        (relativeStartTime time model.hoursBefore)
+        (relativeStartTime model.hoursPeriod time)
       )
     ShowTimeNotice show time ->
       let
@@ -470,9 +483,9 @@ yesterday : Model -> (Model, Cmd Msg)
 yesterday model =
   ( { model
     | dataLayer = Loading
-    , endTimeMode = FromNow
+    , timeMode = FromNow
     , dataAnimated = True
-    , hoursBefore = 24
+    , hoursPeriod = 24
     , gameSecondsPerFrame = 1
     , frameRate = 1
     }
@@ -506,8 +519,8 @@ setYesterday model =
 isYesterday : Model -> Bool
 isYesterday model =
   model.dataLayer /= NotRequested
-    && model.endTimeMode == FromNow
-    && model.hoursBefore == 24
+    && model.timeMode == FromNow
+    && model.hoursPeriod == 24
     && model.gameSecondsPerFrame == 1
     && model.frameRate == 1
     && model.dataAnimated
@@ -594,7 +607,7 @@ timeSelectionForTime model =
             case newArc of
               Just arc ->
                 { model
-                | endTimeMode = ArcRange
+                | timeMode = ArcRange
                 , currentArc = newArc
                 }
               Nothing ->
@@ -605,22 +618,24 @@ timeSelectionForTime model =
 timeSelectionAround : Model -> Model
 timeSelectionAround model =
   let
-    time = relativeEndTime (model.mapTime |> Maybe.withDefault model.time) (model.hoursBefore//2)
+    time = relativeStartTime
+      (model.hoursPeriod//2)
+      (model.mapTime |> Maybe.withDefault model.time)
   in
     { model
-    | endTimeMode = ServerRange
-    , coarseEndTime = time
-    , endTime = time
+    | timeMode = ServerRange
+    , coarseStartTime = time
+    , startTime = time
     }
 
 fetchDataForTime : Model -> Cmd Msg
 fetchDataForTime model =
-  case model.endTimeMode of
+  case model.timeMode of
     ServerRange ->
       fetchDataLayer model.apiUrl
         (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
-        (relativeStartTime model.endTime model.hoursBefore)
-        model.endTime
+        model.startTime
+        (relativeEndTime model.hoursPeriod model.startTime)
     FromNow ->
       Task.perform FetchUpTo Time.now
     ArcRange ->
@@ -726,18 +741,18 @@ fetchRecentLives baseUrl serverId =
     , expect = Http.expectJson DataLayer Json.Decode.value
     }
 
-relativeStartTime : Posix -> Int -> Posix
-relativeStartTime endTime hoursBefore =
-  endTime
+relativeStartTime : Int -> Posix -> Posix
+relativeStartTime hoursPeriod time =
+  time
     |> Time.posixToMillis
-    |> (\x -> x - hoursBefore * 60 * 60 * 1000)
+    |> (\x -> x - hoursPeriod * 60 * 60 * 1000)
     |> Time.millisToPosix
 
-relativeEndTime : Posix -> Int -> Posix
-relativeEndTime endTime hoursBefore =
-  endTime
+relativeEndTime : Int -> Posix -> Posix
+relativeEndTime hoursPeriod time =
+  time
     |> Time.posixToMillis
-    |> (\x -> x + hoursBefore * 60 * 60 * 1000)
+    |> (\x -> x + hoursPeriod * 60 * 60 * 1000)
     |> Time.millisToPosix
 
 fetchDataLayer : String -> Int -> Posix -> Posix -> Cmd Msg

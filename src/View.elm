@@ -1,4 +1,4 @@
-module View exposing (Msg(..), Mode(..), EndTimeMode(..), Notice(..), timeNoticeDuration, RemoteData(..), Life, centerUrl, view, document)
+module View exposing (Msg(..), Mode(..), TimeMode(..), Notice(..), timeNoticeDuration, RemoteData(..), Life, centerUrl, view, document)
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
 import OHOLData as Data exposing (Server)
@@ -27,10 +27,10 @@ type Msg
   = None
   | Search String
   | Typing String
-  | SelectEndTimeMode EndTimeMode
-  | CoarseEndTime Posix
-  | EndTime Posix
-  | HoursBefore Int
+  | SelectTimeMode TimeMode
+  | CoarseStartTime Posix
+  | StartTime Posix
+  | HoursPeriod Int
   | ToggleAnimated Bool
   | GameSecondsPerFrame Int
   | SelectPointColor PointColor
@@ -47,7 +47,7 @@ type Mode
   | DataFilter
   | Cosmetics
 
-type EndTimeMode
+type TimeMode
   = ServerRange
   | FromNow
   | ArcRange
@@ -406,26 +406,26 @@ dataButtonDisabled =
       , label = el [ centerX ] <| text "Show"
       }
 
---endTimeSelect : Model -> Element Msg
-endTimeSelect model =
+--startTimeSelect : Model -> Element Msg
+startTimeSelect model =
   column [ width fill, spacing 2 ]
     [ Input.slider
       [ Background.color control ]
       { onChange = round
         >> ((*) 1000)
         >> Time.millisToPosix
-        >> CoarseEndTime
+        >> CoarseStartTime
       , label = Input.labelAbove [] <|
         row []
-          [ text "Coarse End "
-          , ( model.coarseEndTime
+          [ text "Coarse Start "
+          , ( model.coarseStartTime
               |> date model.zone
               |> text
             )
           ]
       , min = serverMinTime model.servers model.selectedServer
       , max = serverMaxTime model.servers model.selectedServer
-      , value = model.coarseEndTime |> posixToFloat 0
+      , value = model.coarseStartTime |> posixToFloat 0
       , thumb = Input.defaultThumb
       , step = Just 1
       }
@@ -434,18 +434,18 @@ endTimeSelect model =
       { onChange = round
         >> ((*) 1000)
         >> Time.millisToPosix
-        >> EndTime
+        >> StartTime
       , label = Input.labelAbove [] <|
         row []
-          [ text "Fine End "
-          , ( model.endTime
+          [ text "Fine Start "
+          , ( model.startTime
               |> date model.zone
               |> text
             )
           ]
-      , min = model.coarseEndTime |> posixToFloat -7
-      , max = model.coarseEndTime |> posixToFloat 7
-      , value = model.endTime |> posixToFloat 0
+      , min = model.coarseStartTime |> posixToFloat -7
+      , max = model.coarseStartTime |> posixToFloat 7
+      , value = model.startTime |> posixToFloat 0
       , thumb = Input.defaultThumb
       , step = Just 1
       }
@@ -461,8 +461,8 @@ dateRangeSelect model =
     , Border.color divider
     ]
     [ Input.radioRow [ spacing 10 ]
-        { onChange = SelectEndTimeMode
-        , selected = Just model.endTimeMode
+        { onChange = SelectTimeMode
+        , selected = Just model.timeMode
         , label = Input.labelAbove [ paddingXY 10 0 ] (text "Time Range")
         , options = 
           [ Input.option ServerRange (text "Server")
@@ -470,20 +470,20 @@ dateRangeSelect model =
           , Input.option ArcRange (text "Arc")
           ]
         }
-    , case model.endTimeMode of
+    , case model.timeMode of
       FromNow ->
         timeBeforeSelect model
       ServerRange ->
         column [ width fill, spacing 2 ]
-          [ timeBeforeSelect model
-          , endTimeSelect model
+          [ timeAfterSelect model
+          , startTimeSelect model
           ]
       ArcRange ->
         arcSelect model
     ]
 
-hoursText : Int -> String
-hoursText totalHours =
+hoursText : String -> Int -> String
+hoursText label totalHours =
   let
     days = totalHours // 24
     hours = totalHours |> modBy 24
@@ -497,7 +497,7 @@ hoursText totalHours =
         Just ((hours |> String.fromInt) ++ "h")
       else
         Nothing
-    , Just "Before"
+    , Just label
   ]
     |> List.filterMap identity
     |> String.join " "
@@ -513,17 +513,30 @@ logSlider attributes slider =
     , step = Nothing
     }
 
+--timeAfterSelect : Model -> Element Msg
+timeAfterSelect model =
+  logSlider
+    [ Background.color control ]
+    { onChange = round >> HoursPeriod
+    , label = Input.labelAbove [] <|
+      text (hoursText "After" model.hoursPeriod)
+    , min = 1
+    , max = 7*24
+    , value = model.hoursPeriod |> toFloat
+    , thumb = Input.defaultThumb
+    , step = Nothing
+    }
 
 --timeBeforeSelect : Model -> Element Msg
 timeBeforeSelect model =
   logSlider
     [ Background.color control ]
-    { onChange = round >> HoursBefore
+    { onChange = round >> HoursPeriod
     , label = Input.labelAbove [] <|
-      text (hoursText model.hoursBefore)
+      text (hoursText "Before" model.hoursPeriod)
     , min = 1
     , max = 7*24
-    , value = model.hoursBefore |> toFloat
+    , value = model.hoursPeriod |> toFloat
     , thumb = Input.defaultThumb
     , step = Nothing
     }
