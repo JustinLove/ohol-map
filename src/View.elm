@@ -580,7 +580,7 @@ arcSelect model =
                 ]
             Nothing ->
               text "Arc"
-        , min = 1
+        , min = 0
         , max = ((List.length list) - 1) |> toFloat
         , value = list
           |> List.indexedMap (\i a -> (i, a))
