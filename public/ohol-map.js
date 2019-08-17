@@ -1374,10 +1374,10 @@
             if (!inFrame) return false
             return true
           }).sort(function(a, b) {
-            return b.t - a.t
+            return a.t - b.t
           })
 
-          tile._keyplace = layer.tileAt(tile._maplog, 9000000)
+          tile._keyplace = layer.tileAt(tile._maplog, 999999999999)
           layer.loadImages(tile._maplog, function() {
             layer.drawTile(tile, coords, done)
           })
@@ -1388,13 +1388,18 @@
     },
     tileAt: function(maplog, time) {
       var objects = {}
+      var floors = {}
       var minSize = this.options.minSize;
       maplog.forEach(function(placement) {
         if (placement.t < time) {
-          objects[placement.key] = placement
+          if (placement.floor) {
+            floors[placement.key] = placement
+          } else {
+            objects[placement.key] = placement
+          }
         }
       })
-      return Object.values(objects)
+      return Object.values(floors).concat(Object.values(objects))
         .filter(function(placement) {
           var size = objectSize[placement.id]
           var tooSmall = !size || size <= minSize
@@ -2220,10 +2225,10 @@
           break;
         case 'arcList':
           updateArcs(message.arcs.data)
-          //baseLayerByTime(map, message.time * 1000)
-          //riftLayerByTime(message.time * 1000)
+          baseLayerByTime(map, message.time * 1000)
+          riftLayerByTime(message.time * 1000)
           //baseLayerByTime(map, Date.now())
-          baseLayerByTime(map, arcs[arcs.length-3].msEnd)
+          //baseLayerByTime(map, arcs[arcs.length-3].msEnd)
           break;
         case 'monumentList':
           updateMonumentLayer(monumentOverlay, message.monuments.data)
