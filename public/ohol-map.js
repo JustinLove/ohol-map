@@ -185,7 +185,7 @@
     },
   })
 
-  //overlays['Checker'] = new L.GridLayer.CheckerLayer()
+  overlays['Checker'] = new L.GridLayer.CheckerLayer()
 
 
   // fractal generation copying https://github.com/jasonrohrer/OneLife/blob/master/commonSource/fractalNoise.cpp
@@ -1201,10 +1201,10 @@
             }
             return out
           }).filter(function(placement) {
-            
+
             var isValid = !isNaN(placement.id) && placement.id < 5000
             if (!isValid) return false
-            var inFrame = 
+            var inFrame =
               (-paddingX <= placement.x && placement.x < cellWidth) &&
               (-paddingUp <= placement.y && placement.y < cellHeight)
             if (!inFrame) return false
@@ -1222,29 +1222,35 @@
               }
           })
 
-          tile._keyplace.forEach(function(placement) {
-            if (!objectImages[placement.id]) {
-              var img = new Image()
-              objectImages[placement.id] = img
-              //img.onload = function() { console.log(img) }
-              img.src = 'static/sprites/obj_'+placement.id+'.png'
-            }
-          })
-
-          var checkLoaded = function() {
-            for (var i = 0;i < tile._keyplace.length;i++) {
-              var placement = tile._keyplace[i]
-              if (!objectImages[placement.id].complete) {
-                return setTimeout(checkLoaded,100)
-              }
-            }
+          layer.loadImages(tile._keyplace, function() {
             layer.drawTile(tile, coords, done)
-          }
-          setTimeout(checkLoaded,100)
+          })
         })
       })
 
       return tile
+    },
+    loadImages(placements, done) {
+      var layer = this
+      placements.forEach(function(placement) {
+        if (!objectImages[placement.id]) {
+          var img = new Image()
+          objectImages[placement.id] = img
+          //img.onload = function() { console.log(img) }
+          img.src = 'static/sprites/obj_'+placement.id+'.png'
+        }
+      })
+
+      var checkLoaded = function() {
+        for (var i = 0;i < placements.length;i++) {
+          var placement = placements[i]
+          if (!objectImages[placement.id].complete) {
+            return setTimeout(checkLoaded,100)
+          }
+        }
+        done()
+      }
+      setTimeout(checkLoaded,100)
     },
     drawTile(tile, coords, done) {
       var cellSize = Math.pow(2, coords.z - (24 - this.options.supersample))
@@ -1285,10 +1291,141 @@
     },
   })
 
+  L.GridLayer.MaplogSprite = L.GridLayer.KeyPlacementSprite.extend({
+    options: {
+      datamaxzoom: 24,
+      dataminzoom: 27,
+    },
+    createTile: function (coords, done) {
+      var tile = document.createElement('canvas');
+      var tileSize = this.getTileSize();
+      var superscale = Math.pow(2, this.options.supersample)
+      tile.setAttribute('width', tileSize.x*superscale);
+      tile.setAttribute('height', tileSize.y*superscale);
+      var paddingX = 2;
+      var paddingUp = 2;
+      var paddingDown = 4;
+
+      var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
+      var pse = L.point(pnw.x + tileSize.x, pnw.y + tileSize.y)
+      //console.log('pnw', coords, pnw)
+      var llnw = crs.pointToLatLng(pnw, coords.z)
+      var llse = crs.pointToLatLng(pse, coords.z)
+      //console.log('llnw', coords, llnw)
+
+      var w = tile.width
+      var h = tile.height
+      var startX = llnw.lng + 0.5
+      var startY = llnw.lat - 0.5
+      var endX = llse.lng + 0.5
+      var endY = llse.lat - 0.5
+      //console.log('start', startX, startY)
+      //console.log('end', endX, endY)
+
+      //console.log(coords)
+      var dataZoom = Math.max(this.options.dataminzoom, Math.min(this.options.datamaxzoom, coords.z))
+      var cellSize = Math.pow(2, coords.z - dataZoom)
+      var datacoords = {
+        x: Math.floor(coords.x/cellSize),
+        y: Math.floor(coords.y/cellSize),
+        z: dataZoom,
+      }
+      var cellWidth = tileSize.x/cellSize + paddingX
+      var cellHeight = tileSize.y/cellSize + paddingDown
+      var minSize = 1.5 * (128/cellSize)
+      //console.log('cellsize', cellSize, 'cellWidth', cellWidth)
+      var layer = this
+      //console.log(datacoords)
+      fetch(this.getDataTileUrl(datacoords)).then(function(response) {
+        if (response.status % 100 == 4) {
+          return
+        }
+        var t = 0
+        var x = 0
+        var y = 0
+        response.text().then(function(text) {
+          tile._maplog = text.split("\n").filter(function(line) {
+            return line != "";
+          }).map(function(line) {
+            var parts = line.split(" ")
+            try {
+            t = t + (parseInt(parts[0],10)*10)
+            x = x + parseInt(parts[1],10)
+            y = y + parseInt(parts[2],10)
+            var out = {
+              t: t,
+              x: x - startX,
+              y: -(y - startY),
+              id: parseInt(parts[3].replace('f', ''),10),
+              floor: parts[3][0] == 'f',
+            }
+            out.key = [out.x, out.y].join(' ')
+            } catch (e) {
+              console.log(e, parts, line)
+            }
+            return out
+          }).filter(function(placement) {
+
+            var isValid = !isNaN(placement.id) && placement.id < 5000
+            if (!isValid) return false
+            var inFrame =
+              (-paddingX <= placement.x && placement.x < cellWidth) &&
+              (-paddingUp <= placement.y && placement.y < cellHeight)
+            if (!inFrame) return false
+            return true
+          }).sort(function(a, b) {
+            return b.t - a.t
+          })
+
+          tile._keyplace = layer.tileAt(tile._maplog, 9000000)
+          layer.loadImages(tile._maplog, function() {
+            layer.drawTile(tile, coords, done)
+          })
+        })
+      })
+
+      return tile
+    },
+    tileAt: function(maplog, time) {
+      var objects = {}
+      var minSize = this.options.minSize;
+      maplog.forEach(function(placement) {
+        if (placement.t < time) {
+          objects[placement.key] = placement
+        }
+      })
+      return Object.values(objects)
+        .filter(function(placement) {
+          var size = objectSize[placement.id]
+          var tooSmall = !size || size <= minSize
+          if (tooSmall) return false
+          return true
+        }).sort(function(a, b) {
+          if (a.floor != b.floor) {
+            return (b.floor - a.floor)
+          } else if (a.y - b.y == 0) {
+            return a.x - b.x
+          } else {
+            return a.y - b.y
+          }
+        })
+    },
+    updateTiles: function(ev) {
+      var time = ev.time/1000
+      for (var key in this._tiles) {
+        var tile = this._tiles[key]
+        this.drawTile(tile.el, tile.coords, time)
+      }
+      if (this._map) {
+        baseLayerByTime(this._map, ev.time)
+      }
+      riftLayerByTime(ev.time)
+    },
+  })
+
   var createArcKeyPlacementLayer = function(end) {
     if (end*1000 > msStartOfRandomAge) {
       return new L.layerGroup([
-        /*
         new L.GridLayer.KeyPlacementPixel(oholMapConfig.keyPlacements, {
           time: end.toString(),
           //time: '1564439085',
@@ -1302,8 +1439,8 @@
           maxNativeZoom: 24,
           attribution: attribution,
         }),
-        */
-        new L.GridLayer.KeyPlacementSprite(oholMapConfig.keyPlacements, {
+        //new L.GridLayer.KeyPlacementSprite(oholMapConfig.keyPlacements, {
+        new L.GridLayer.MaplogSprite(oholMapConfig.maplog, {
           time: end.toString(),
           //time: '1564439085',
           //time: '1564457929',
@@ -2083,10 +2220,10 @@
           break;
         case 'arcList':
           updateArcs(message.arcs.data)
-          baseLayerByTime(map, message.time * 1000)
-          riftLayerByTime(message.time * 1000)
+          //baseLayerByTime(map, message.time * 1000)
+          //riftLayerByTime(message.time * 1000)
           //baseLayerByTime(map, Date.now())
-          //baseLayerByTime(map, arcs[arcs.length-1].msEnd)
+          baseLayerByTime(map, arcs[arcs.length-3].msEnd)
           break;
         case 'monumentList':
           updateMonumentLayer(monumentOverlay, message.monuments.data)

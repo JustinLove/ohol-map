@@ -8,5 +8,6 @@ public/leaflet-src.js*
 public/config.js
 public/static
 public/keyplace
+public/maplog
 .~lock*
 elm-stuff
