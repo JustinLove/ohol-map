@@ -1,3 +1,4 @@
+- becomes unusable if base layer updated in maplog updateTime
 - server url link
 - onetech credit
   - dummy layers for mergable attributions

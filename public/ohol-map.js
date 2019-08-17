@@ -816,6 +816,7 @@
         layer: L.layerGroup([biomeLayer]),
         biomeLayer: biomeLayer,
         keyPlacementLayer: null,
+        maplogLayer: null,
       }
     })
     if (objectSize.length > 0) {
@@ -833,8 +834,11 @@
   var addArcPlacements = function() {
     arcs.forEach(function(arc) {
       var keyPlacementLayer = createArcKeyPlacementLayer(arc.msEnd/1000)
-      arc.layer.addLayer(keyPlacementLayer)
+      //arc.layer.addLayer(keyPlacementLayer)
       arc.keyPlacementLayer = keyPlacementLayer
+      var maplogLayer = createArcMaplogLayer(arc.msStart, arc.msEnd/1000)
+      arc.layer.addLayer(maplogLayer)
+      arc.maplogLayer = maplogLayer
     })
   }
 
@@ -1287,12 +1291,13 @@
       })
       ctx.restore()
 
-      done(null, tile)
+      if (done) done(null, tile)
     },
   })
 
   L.GridLayer.MaplogSprite = L.GridLayer.KeyPlacementSprite.extend({
     options: {
+      baseTime: 0,
       datamaxzoom: 24,
       dataminzoom: 27,
     },
@@ -1334,13 +1339,14 @@
       var cellHeight = tileSize.y/cellSize + paddingDown
       var minSize = 1.5 * (128/cellSize)
       //console.log('cellsize', cellSize, 'cellWidth', cellWidth)
+      var baseTime = this.options.baseTime
       var layer = this
       //console.log(datacoords)
       fetch(this.getDataTileUrl(datacoords)).then(function(response) {
         if (response.status % 100 == 4) {
           return
         }
-        var t = 0
+        var t = baseTime
         var x = 0
         var y = 0
         response.text().then(function(text) {
@@ -1377,7 +1383,7 @@
             return a.t - b.t
           })
 
-          tile._keyplace = layer.tileAt(tile._maplog, 999999999999)
+          tile._keyplace = layer.tileAt(tile._maplog, baseTime)
           layer.loadImages(tile._maplog, function() {
             layer.drawTile(tile, coords, done)
           })
@@ -1387,6 +1393,7 @@
       return tile
     },
     tileAt: function(maplog, time) {
+      if (!maplog) return;
       var objects = {}
       var floors = {}
       var minSize = this.options.minSize;
@@ -1419,18 +1426,24 @@
       var time = ev.time/1000
       for (var key in this._tiles) {
         var tile = this._tiles[key]
-        this.drawTile(tile.el, tile.coords, time)
+        if (tile.el._maplog) {
+          tile.el._keyplace = this.tileAt(tile.el._maplog, ev.time)
+          this.drawTile(tile.el, tile.coords)
+        }
       }
+      /*
       if (this._map) {
         baseLayerByTime(this._map, ev.time)
       }
       riftLayerByTime(ev.time)
+      */
     },
   })
 
   var createArcKeyPlacementLayer = function(end) {
     if (end*1000 > msStartOfRandomAge) {
       return new L.layerGroup([
+        /*
         new L.GridLayer.KeyPlacementPixel(oholMapConfig.keyPlacements, {
           time: end.toString(),
           //time: '1564439085',
@@ -1444,8 +1457,8 @@
           maxNativeZoom: 24,
           attribution: attribution,
         }),
-        //new L.GridLayer.KeyPlacementSprite(oholMapConfig.keyPlacements, {
-        new L.GridLayer.MaplogSprite(oholMapConfig.maplog, {
+        */
+        new L.GridLayer.KeyPlacementSprite(oholMapConfig.keyPlacements, {
           time: end.toString(),
           //time: '1564439085',
           //time: '1564457929',
@@ -1463,9 +1476,40 @@
     }
   }
 
+  var createArcMaplogLayer = function(msStart, sEnd) {
+    if (sEnd*1000 > msStartOfRandomAge) {
+      return new L.layerGroup([
+        /*
+        new L.GridLayer.KeyPlacementPixel(oholMapConfig.keyPlacements, {
+          time: sEnd.toString(),
+          minZoom: 24,
+          maxZoom: 31,
+          //minNativeZoom: 24,
+          maxNativeZoom: 24,
+          attribution: attribution,
+        }),
+        */
+        new L.GridLayer.MaplogSprite(oholMapConfig.maplog, {
+          baseTime: msStart,
+          time: sEnd.toString(),
+          minZoom: 24,
+          maxZoom: 31,
+          //minNativeZoom: 24,
+          maxNativeZoom: 31,
+        })
+      ])
+    } else {
+      return L.layerGroup([])
+    }
+  }
+
   var setFadeTallObjects = function(status) {
     arcs.forEach(function(arc) {
       arc.keyPlacementLayer.eachLayer(function(layer) {
+        L.Util.setOptions(layer, {fadeTallObjects: status})
+        layer.redraw()
+      })
+      arc.maplogLayer.eachLayer(function(layer) {
         L.Util.setOptions(layer, {fadeTallObjects: status})
         layer.redraw()
       })
@@ -1699,6 +1743,19 @@
   })
   timeDimension.on("timeload", animOverlay.updateTiles, animOverlay)
   timeDimension.on("timeload", function(ev) {
+    base['Arc Age'].eachLayer(function(group) {
+      group.eachLayer(function(sub) {
+        if (sub.eachLayer) {
+          sub.eachLayer(function(layer) {
+            if (layer.updateTiles) {
+              layer.updateTiles(ev)
+            }
+          })
+        }
+      })
+    })
+  })
+  timeDimension.on("timeload", function(ev) {
     var time = ev.time/1000
     app.ports.leafletEvent.send({
       kind: 'timeload',
@@ -1777,6 +1834,11 @@
       if (ms >= arc.msStart && ms <= arc.msEnd) {
         targetLayer = 'Arc Age'
         base['Arc Age'].addLayer(arc.layer)
+        var times = []
+        for (var t = arc.msStart;t < arc.msEnd;t += 1000) {
+          times.push(t)
+        }
+        timeDimension.setAvailableTimes(times, 'replace')
       } else {
         base['Arc Age'].removeLayer(arc.layer)
       }
@@ -2162,6 +2224,8 @@
     //overlays['Checker'].addTo(map)
     //base['Fractal'].addTo(map)
     //base['Biome'].addTo(map)
+    //map.addControl(animToggle)
+    map.addControl(timeDimensionControl)
 
     // helper to share the timeDimension object between all layers
     map.timeDimension = timeDimension; 
