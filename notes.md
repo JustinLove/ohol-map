@@ -1,3 +1,5 @@
+- large scales missing most tiles
+- find bottleneck - network or render?
 - becomes unusable if base layer updated in maplog updateTime
 - server url link
 - onetech credit
