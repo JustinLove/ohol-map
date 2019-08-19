@@ -1383,7 +1383,11 @@
             return a.t - b.t
           })
 
-          tile._keyplace = layer.tileAt(tile._maplog, baseTime)
+          var time = baseTime
+          if (layer.options.timeDimension) {
+            time = layer.options.timeDimension.getCurrentTime()
+          }
+          tile._keyplace = layer.tileAt(tile._maplog, time)
           layer.loadImages(tile._maplog, function() {
             layer.drawTile(tile, coords, done)
           })
@@ -1490,6 +1494,7 @@
         }),
         */
         new L.GridLayer.MaplogSprite(oholMapConfig.maplog, {
+          timeDimension: timeDimension,
           baseTime: msStart,
           time: sEnd.toString(),
           minZoom: 24,
@@ -1834,11 +1839,13 @@
       if (ms >= arc.msStart && ms <= arc.msEnd) {
         targetLayer = 'Arc Age'
         base['Arc Age'].addLayer(arc.layer)
-        var times = []
-        for (var t = arc.msStart;t < arc.msEnd;t += 1000) {
-          times.push(t)
+        if (timeDimension.getAvailableTimes()[0] != arc.msStart) {
+          var times = []
+          for (var t = arc.msStart;t < arc.msEnd;t += 1000) {
+            times.push(t)
+          }
+          timeDimension.setAvailableTimes(times, 'replace')
         }
-        timeDimension.setAvailableTimes(times, 'replace')
       } else {
         base['Arc Age'].removeLayer(arc.layer)
       }
@@ -2272,6 +2279,7 @@
         case 'currentTime':
           baseLayerByTime(map, message.time * 1000)
           riftLayerByTime(message.time * 1000)
+          timeDimension.setCurrentTime(message.time * 1000)
           break;
         case 'currentServer':
           var targetLayer
@@ -2331,8 +2339,11 @@
             .bindPopup(life.name)
             .addTo(searchOverlay)
             .openPopup()
-          map.setView([life.birth_y, life.birth_x], 24)
+          map.setView([life.birth_y, life.birth_x])
           baseLayerByTime(map, life.birth_time*1000)
+          setTimeout(function() {
+            timeDimension.setCurrentTime(life.birth_time*1000)
+          }, 1000)
           break
         case 'searchOverlay':
           if (message.status) {
