@@ -1339,14 +1339,13 @@
       var cellHeight = tileSize.y/cellSize + paddingDown
       var minSize = 1.5 * (128/cellSize)
       //console.log('cellsize', cellSize, 'cellWidth', cellWidth)
-      var baseTime = this.options.baseTime
       var layer = this
       //console.log(datacoords)
       fetch(this.getDataTileUrl(datacoords)).then(function(response) {
         if (response.status % 100 == 4) {
           return
         }
-        var t = baseTime
+        var t = 0
         var x = 0
         var y = 0
         response.text().then(function(text) {
@@ -1383,7 +1382,7 @@
             return a.t - b.t
           })
 
-          var time = baseTime
+          var time = layer.options.baseTime
           if (layer.options.timeDimension) {
             time = layer.options.timeDimension.getCurrentTime()
           }

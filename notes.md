@@ -1,4 +1,3 @@
-- seems like end of arc cut off
 - find bottleneck - network or render?
 - becomes unusable if base layer updated in maplog updateTime
 - server url link
@@ -66,3 +65,8 @@
   - webworker?
 
 ## release
+
+- key placement changes
+  - end time change; deploy separate directory
+  - reset db arcs
+  - position difference encoding
