@@ -1232,7 +1232,10 @@
         if (!objectImages[placement.id]) {
           var img = new Image()
           objectImages[placement.id] = img
-          //img.onload = function() { console.log(img) }
+          img.onload = function() {
+            img._iw = img.naturalWidth/128
+            img._ih = img.naturalHeight/128
+          }
           img.src = 'static/sprites/obj_'+placement.id+'.png'
         }
       })
@@ -1244,6 +1247,7 @@
             return setTimeout(checkLoaded,100)
           }
         }
+        console.log('images done')
         done()
       }
       setTimeout(checkLoaded,100)
@@ -1268,8 +1272,8 @@
 
         //ctx.fillRect(placement.x*cellSize, placement.y*cellSize, cellSize, cellSize)
         var img = objectImages[placement.id]
-        var iw = img.naturalWidth/128
-        var ih = img.naturalHeight/128
+        var iw = img._iw
+        var ih = img._ih
         var ox = objectBounds[placement.id][0]/128
         var oy = -objectBounds[placement.id][3]/128
         if (fadeTallObjects) {
