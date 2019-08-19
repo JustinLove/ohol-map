@@ -1326,6 +1326,7 @@
       datamaxzoom: 27,
     },
     createTile: function (coords, done) {
+      console.log(coords, this.options.baseTime)
       var tile = document.createElement('canvas');
       var tileSize = this.getTileSize();
       var superscale = Math.pow(2, this.options.supersample)
@@ -1459,7 +1460,7 @@
       }
       /*
       if (this._map) {
-        baseLayerByTime(this._map, ev.time)
+        baseLayerByTime(this._map, ev.time, 'maplog updateTiles')
       }
       riftLayerByTime(ev.time)
       */
@@ -1679,7 +1680,7 @@
         this.drawTile(tile.el, tile.coords, time)
       }
       if (this._map) {
-        baseLayerByTime(this._map, ev.time)
+        baseLayerByTime(this._map, ev.time, 'animOverlay updatTiles')
       }
       riftLayerByTime(ev.time)
     },
@@ -1784,10 +1785,12 @@
   })
   timeDimension.on("timeload", function(ev) {
     var time = ev.time/1000
+    setTimeout(function() {
     app.ports.leafletEvent.send({
       kind: 'timeload',
       time: time,
     })
+    }, 1000)
   })
 
   var resultPoints = new L.GridLayer.PointOverlay().addTo(searchOverlay)
@@ -1850,20 +1853,22 @@
     })
     pointOverlay.redraw()
     if (pointOverlay._map) {
-      baseLayerByTime(pointOverlay._map, min*1000)
+      baseLayerByTime(pointOverlay._map, min*1000, 'setDataLayers')
     }
     riftLayerByTime(min*1000)
   }
 
-  var baseLayerByTime = function(map, ms) {
+  var baseLayerByTime = function(map, ms, reason) {
+    console.log(ms, reason)
     var targetLayer
     arcs.forEach(function(arc) {
-      if (ms >= arc.msStart && ms <= arc.msEnd) {
+      if (ms > arc.msStart && ms <= arc.msEnd) {
         targetLayer = 'Arc Age'
+        console.log(arc.msStart, ms, arc.msEnd)
         base['Arc Age'].addLayer(arc.layer)
         if (timeDimension.getAvailableTimes()[0] != arc.msStart) {
           var times = []
-          for (var t = arc.msStart;t < arc.msEnd;t += 1000) {
+          for (var t = arc.msStart+1000;t < arc.msEnd;t += 1000) {
             times.push(t)
           }
           timeDimension.setAvailableTimes(times, 'replace')
@@ -2246,7 +2251,7 @@
     var idleTimer = setTimeout(setIdle, 1*60*1000)
     L.DomEvent.on(map, 'mousemove', setActive, map);
 
-    baseLayerByTime(map, Date.now())
+    baseLayerByTime(map, Date.now(), 'inhabit')
     riftLayerByTime(Date.now())
     //base['Topographic Test'].addTo(map)
     overlays['Rift'].addTo(map)
@@ -2299,7 +2304,7 @@
           }
           break
         case 'currentTime':
-          baseLayerByTime(map, message.time * 1000)
+          baseLayerByTime(map, message.time * 1000, 'currentTime')
           riftLayerByTime(message.time * 1000)
           timeDimension.setCurrentTime(message.time * 1000)
           break;
@@ -2319,9 +2324,9 @@
           break;
         case 'arcList':
           updateArcs(message.arcs.data)
-          baseLayerByTime(map, message.time * 1000)
+          baseLayerByTime(map, message.time * 1000, 'arcList')
           riftLayerByTime(message.time * 1000)
-          //baseLayerByTime(map, Date.now())
+          //baseLayerByTime(map, Date.now(), 'debug arcList')
           //baseLayerByTime(map, arcs[arcs.length-3].msEnd)
           break;
         case 'monumentList':
@@ -2332,7 +2337,7 @@
           setDataLayers(message.lives.data)
           if(!map.hasLayer(dataOverlay)) {
             map.addLayer(dataOverlay)
-            baseLayerByTime(map, pointOverlay.options.min*1000)
+            baseLayerByTime(map, pointOverlay.options.min*1000, 'dataLayer')
           }
           break;
         case 'beginPlayback':
@@ -2362,7 +2367,7 @@
             .addTo(searchOverlay)
             .openPopup()
           map.setView([life.birth_y, life.birth_x])
-          baseLayerByTime(map, life.birth_time*1000)
+          baseLayerByTime(map, life.birth_time*1000, 'focus')
           setTimeout(function() {
             timeDimension.setCurrentTime(life.birth_time*1000)
           }, 1000)

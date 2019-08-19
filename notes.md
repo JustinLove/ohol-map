@@ -1,5 +1,7 @@
+- look for for more time thrashing loops
+  - lots of times on startup - was selecting two layers at once
+  - becomes unusable if base layer updated in maplog updateTime
 - find bottleneck - network or render?
-- becomes unusable if base layer updated in maplog updateTime
 - server url link
 - onetech credit
   - dummy layers for mergable attributions

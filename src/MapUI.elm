@@ -249,12 +249,13 @@ update msg model =
       in
       case marc of
         Just arc ->
+          let time = increment arc.start in
           { model
           | currentArc = marc
-          , coarseStartTime = arc.start
-          , startTime = arc.start
+          , coarseStartTime = time
+          , startTime = time
           }
-            |> setTime arc.start
+            |> setTime time
         Nothing ->
           ( { model
             | currentArc = marc
@@ -401,7 +402,7 @@ update msg model =
                 Leaflet.beginPlayback
                   model.gameSecondsPerFrame
                   model.frameRate
-                  (model.currentArc |> Maybe.map .start |> Maybe.withDefault model.time)
+                  (model.currentArc |> Maybe.map (.start >> increment) |> Maybe.withDefault model.time)
           else
             Cmd.none
         ]
@@ -808,4 +809,10 @@ isInRange mint t maxt =
     i = Time.posixToMillis t
     maxi = Time.posixToMillis maxt
   in
-    mini <= i && i <= maxi
+    mini < i && i <= maxi
+
+increment : Posix -> Posix
+increment =
+  Time.posixToMillis
+  >> (\x -> x + 1000)
+  >> Time.millisToPosix
