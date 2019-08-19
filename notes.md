@@ -10,6 +10,7 @@
   - only oversample large objects?
   - floor removals not f tagged
 - rendering map data
+  - only load needed sprites, need drawing ready management
   - objects to show in pixel layer, color table
   - rift
   - sprite lods?

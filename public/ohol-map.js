@@ -1216,15 +1216,7 @@
             var tooSmall = !size || size <= minSize
             if (tooSmall) return false
             return true
-          }).sort(function(a, b) {
-              if (a.floor != b.floor) {
-                return (b.floor - a.floor)
-              } else if (a.y - b.y == 0) {
-                return a.x - b.x
-              } else {
-                return a.y - b.y
-              }
-          })
+          }).sort(sortTypeAndDrawOrder)
 
           layer.loadImages(tile._keyplace, function() {
             layer.drawTile(tile, coords, done)
@@ -1294,6 +1286,34 @@
       if (done) done(null, tile)
     },
   })
+
+
+  var placementsLargerThan = function(minSize) {
+    return function(placement) {
+      var size = objectSize[placement.id]
+      var tooSmall = !size || size <= minSize
+      if (tooSmall) return false
+      return true
+    }
+  }
+
+  var sortTypeAndDrawOrder = function(a, b) {
+    if (a.floor != b.floor) {
+      return (b.floor - a.floor)
+    } else if (a.y - b.y == 0) {
+      return a.x - b.x
+    } else {
+      return a.y - b.y
+    }
+  }
+
+  var sortDrawOrder = function(a, b) {
+    if (a.y - b.y == 0) {
+      return a.x - b.x
+    } else {
+      return a.y - b.y
+    }
+  }
 
   L.GridLayer.MaplogSprite = L.GridLayer.KeyPlacementSprite.extend({
     options: {
@@ -1386,7 +1406,7 @@
           if (layer.options.timeDimension) {
             time = layer.options.timeDimension.getCurrentTime()
           }
-          tile._keyplace = layer.tileAt(tile._maplog, time)
+          layer.tileAt(tile, time)
           layer.loadImages(tile._maplog, function() {
             layer.drawTile(tile, coords, done)
           })
@@ -1395,13 +1415,21 @@
 
       return tile
     },
-    tileAt: function(maplog, time) {
+    tileAt: function(tile, time) {
+      var maplog = tile._maplog
       if (!maplog) return;
-      var objects = {}
-      var floors = {}
+      var lastTime = tile._time || 0
+      tile._time = time
+      var objects = tile._objects = tile._objects || {}
+      var floors = tile._floors = tile._floors || {}
       var minSize = this.options.minSize;
+      if (time < lastTime) {
+        lastTime = 0
+        objects = tile._objects = {}
+        floors = tile._floors = {}
+      }
       maplog.forEach(function(placement) {
-        if (placement.t < time) {
+        if (lastTime < placement.t && placement.t < time) {
           if (placement.floor) {
             floors[placement.key] = placement
           } else {
@@ -1409,28 +1437,19 @@
           }
         }
       })
-      return Object.values(floors).concat(Object.values(objects))
-        .filter(function(placement) {
-          var size = objectSize[placement.id]
-          var tooSmall = !size || size <= minSize
-          if (tooSmall) return false
-          return true
-        }).sort(function(a, b) {
-          if (a.floor != b.floor) {
-            return (b.floor - a.floor)
-          } else if (a.y - b.y == 0) {
-            return a.x - b.x
-          } else {
-            return a.y - b.y
-          }
-        })
+      var floorPlacements = Object.values(floors)
+        .sort(sortDrawOrder)
+      var objectPlacements = Object.values(objects)
+        .filter(placementsLargerThan(minSize))
+        .sort(sortDrawOrder)
+      tile._keyplace = floorPlacements.concat(objectPlacements)
     },
     updateTiles: function(ev) {
       var time = ev.time/1000
       for (var key in this._tiles) {
         var tile = this._tiles[key]
         if (tile.el._maplog) {
-          tile.el._keyplace = this.tileAt(tile.el._maplog, ev.time)
+          this.tileAt(tile.el, ev.time)
           this.drawTile(tile.el, tile.coords)
         }
       }
