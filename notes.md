@@ -20,6 +20,11 @@
   - glitch with maxzoom on object pixel layer https://github.com/Leaflet/Leaflet/pull/6310
   - floor fade effect
   - do we need all four sprite bounds?
+- canvas perf
+  - render all points of color at once
+  - pre-downscale sprites
+  - use whole numbers for positions
+  - composting mode tricks
 - rift data file?
 - automate file generation
 - object generation
