@@ -72,6 +72,7 @@
     var map = ev.target._map
     map.addControl(colorScaleControl)
     setTimeout(function() {
+      toggleAnimationControls(map)
       map.addLayer(baseFade)
     }, 0)
   })
@@ -79,6 +80,7 @@
     var map = ev.target._map
     map.removeControl(colorScaleControl)
     setTimeout(function() {
+      toggleAnimationControls(map)
       map.removeLayer(baseFade)
     })
   })
@@ -1916,6 +1918,9 @@
         }
       }
     })
+    setTimeout(function() {
+      toggleAnimationControls(map)
+    },0)
   }
 
   var riftLayerByTime = function(ms) {
@@ -1966,20 +1971,12 @@
   }
 
   animOverlay.on('add', function(ev) {
-    ev.target._map.addControl(timeDimensionControl)
     ev.target.addInteractiveTarget(ev.target._container)
-  })
-  animOverlay.on('remove', function(ev) {
-    ev.target._map.removeControl(timeDimensionControl)
   })
   animOverlay.on('click', animOverlay.selectPoints)
 
   pointOverlay.on('add', function(ev) {
     ev.target.addInteractiveTarget(ev.target._container)
-    ev.target._map.addControl(animToggle)
-  })
-  pointOverlay.on('remove', function(ev) {
-    ev.target._map.removeControl(animToggle)
   })
   pointOverlay.on('click', pointOverlay.selectPoints)
 
@@ -2245,6 +2242,32 @@
     })
   }
 
+  var toggleAnimationControls = function(map) {
+    var animated = 0
+    var stat = 0
+    map.eachLayer(function(layer) {
+      if (layer.options.alternateAnim) {
+        stat++
+        map.addControl(animToggle)
+      }
+      if (layer.options.alternateStatic) {
+        animated++
+        map.addControl(timeDimensionControl)
+      }
+    })
+    console.log(animated, stat)
+    if (animated > 0) {
+      map.addControl(timeDimensionControl)
+      map.removeControl(animToggle)
+    } else if (stat > 0) {
+      map.addControl(animToggle)
+      map.removeControl(timeDimensionControl)
+    } else {
+      map.removeControl(animToggle)
+      map.removeControl(timeDimensionControl)
+    }
+  }
+
   var inhabit = function inhabit(id) {
     var map = L.map(id, {
       crs: crs,
@@ -2260,6 +2283,15 @@
       } else if (map.hasLayer(baseFade)) {
         L.DomUtil.addClass(map.getPane('tilePane'), 'blur')
       }
+    })
+    map.on('baselayerchange', function(ev) {
+      toggleAnimationControls(map)
+    })
+    map.on('overlayadd', function(ev) {
+      toggleAnimationControls(map)
+    })
+    map.on('overlayremove', function(ev) {
+      toggleAnimationControls(map)
     })
 
     var idle = false
@@ -2426,6 +2458,7 @@
           if (message.status == false) {
             player.stop()
           }
+          toggleAnimationControls(map)
           break
         case 'baseLayer':
           for (var name in base) {
