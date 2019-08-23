@@ -1464,12 +1464,10 @@
           this.drawTile(tile.el, tile.coords)
         }
       }
-      /*
       if (this._map) {
         baseLayerByTime(this._map, ev.time, 'maplog updateTiles')
       }
       riftLayerByTime(ev.time)
-      */
     },
   })
 
@@ -1687,12 +1685,10 @@
         var tile = this._tiles[key]
         this.drawTile(tile.el, tile.coords, time)
       }
-      /*
       if (this._map) {
         baseLayerByTime(this._map, ev.time, 'animOverlay updatTiles')
       }
       riftLayerByTime(ev.time)
-      */
     },
     selectPoints: function(ev) {
       var center = ev.layerPoint
@@ -1882,7 +1878,8 @@
         targetLayer = 'Arc Age'
         console.log(arc.msStart, ms, arc.msEnd)
         base['Arc Age'].addLayer(arc.layer)
-        if (timeDimension.getAvailableTimes()[0] != arc.msStart) {
+        if (timeDimension.getAvailableTimes()[0] != arc.msStart+1000) {
+          console.log("reset times", timeDimension.getAvailableTimes()[0], arc.msStart)
           var times = []
           for (var t = arc.msStart+1000;t < arc.msEnd;t += 1000) {
             times.push(t)
@@ -1907,20 +1904,25 @@
     } else {
       targetLayer = 'Badlands Age'
     }
+    var changes = 0
     Object.keys(base).forEach(function(key) {
       if (map.hasLayer(base[key])) {
         if (key != targetLayer) {
           map.removeLayer(base[key])
+          changes++
         }
       } else {
         if (key == targetLayer) {
           map.addLayer(base[key])
+          changes++
         }
       }
     })
-    setTimeout(function() {
-      toggleAnimationControls(map)
-    },0)
+    if (changes > 0) {
+      setTimeout(function() {
+        toggleAnimationControls(map)
+      },0)
+    }
   }
 
   var riftLayerByTime = function(ms) {
@@ -2255,7 +2257,6 @@
         map.addControl(timeDimensionControl)
       }
     })
-    console.log(animated, stat)
     if (animated > 0) {
       map.addControl(timeDimensionControl)
       map.removeControl(animToggle)
