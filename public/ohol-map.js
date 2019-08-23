@@ -2333,6 +2333,7 @@
           updateArcs(message.arcs.data)
           baseLayerByTime(map, message.time * 1000, 'arcList')
           riftLayerByTime(message.time * 1000)
+          timeDimension.setCurrentTime(message.time * 1000)
           //baseLayerByTime(map, Date.now(), 'debug arcList')
           //baseLayerByTime(map, arcs[arcs.length-3].msEnd)
           break;
