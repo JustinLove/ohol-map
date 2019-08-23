@@ -1464,10 +1464,7 @@
           this.drawTile(tile.el, tile.coords)
         }
       }
-      if (this._map) {
-        baseLayerByTime(this._map, ev.time, 'maplog updateTiles')
-      }
-      riftLayerByTime(ev.time)
+      setMapTime(this._map, ev.time, 'maplog updateTiles')
     },
   })
 
@@ -1685,10 +1682,7 @@
         var tile = this._tiles[key]
         this.drawTile(tile.el, tile.coords, time)
       }
-      if (this._map) {
-        baseLayerByTime(this._map, ev.time, 'animOverlay updatTiles')
-      }
-      riftLayerByTime(ev.time)
+      setMapTime(this._map, ev.time, 'animOverlay updatTiles')
     },
     selectPoints: function(ev) {
       var center = ev.layerPoint
@@ -1864,10 +1858,7 @@
       maxChain: maxChain,
     })
     pointOverlay.redraw()
-    if (pointOverlay._map) {
-      baseLayerByTime(pointOverlay._map, min*1000, 'setDataLayers')
-    }
-    riftLayerByTime(min*1000)
+    setMapTime(pointOverlay._map, min*1000, 'setDataLayers')
   }
 
   var baseLayerByTime = function(map, ms, reason) {
@@ -1944,6 +1935,11 @@
         }
       }
     })
+  }
+
+  var setMapTime = function(map, ms, reason) {
+    if (map) baseLayerByTime(map, ms, reason)
+    riftLayerByTime(ms)
   }
 
   var setPointColor = function(color) {
@@ -2315,8 +2311,7 @@
     var idleTimer = setTimeout(setIdle, 1*60*1000)
     L.DomEvent.on(map, 'mousemove', setActive, map);
 
-    baseLayerByTime(map, Date.now(), 'inhabit')
-    riftLayerByTime(Date.now())
+    setMapTime(map, Date.now(), 'inhabit')
     //base['Topographic Test'].addTo(map)
     overlays['Rift'].addTo(map)
     //overlays['Checker'].addTo(map)
@@ -2375,8 +2370,7 @@
           }
           break
         case 'currentTime':
-          baseLayerByTime(map, message.time * 1000, 'currentTime')
-          riftLayerByTime(message.time * 1000)
+          setMapTime(map, message.time * 1000, 'currentTime')
           timeDimension.setCurrentTime(message.time * 1000)
           break;
         case 'currentServer':
@@ -2395,11 +2389,8 @@
           break;
         case 'arcList':
           updateArcs(message.arcs.data)
-          baseLayerByTime(map, message.time * 1000, 'arcList')
-          riftLayerByTime(message.time * 1000)
+          setMapTime(map, message.time * 1000, 'arcList')
           timeDimension.setCurrentTime(message.time * 1000)
-          //baseLayerByTime(map, Date.now(), 'debug arcList')
-          //baseLayerByTime(map, arcs[arcs.length-3].msEnd)
           break;
         case 'monumentList':
           updateMonumentLayer(monumentOverlay, message.monuments.data)
@@ -2409,7 +2400,7 @@
           setDataLayers(message.lives.data)
           if(!map.hasLayer(dataOverlay)) {
             map.addLayer(dataOverlay)
-            baseLayerByTime(map, pointOverlay.options.min*1000, 'dataLayer')
+            setMapTime(map, pointOverlay.options.min*1000, 'dataLayer')
           }
           break;
         case 'beginPlayback':
@@ -2439,7 +2430,7 @@
             .addTo(searchOverlay)
             .openPopup()
           map.setView([life.birth_y, life.birth_x])
-          baseLayerByTime(map, life.birth_time*1000, 'focus')
+          setMapTime(map, life.birth_time*1000, 'focus')
           setTimeout(function() {
             timeDimension.setCurrentTime(life.birth_time*1000)
           }, 1000)
