@@ -834,11 +834,15 @@
   var addArcPlacements = function() {
     arcs.forEach(function(arc) {
       var keyPlacementLayer = createArcKeyPlacementLayer(arc.msEnd/1000)
-      //arc.layer.addLayer(keyPlacementLayer)
+      keyPlacementLayer.name = "key placement"
+      arc.layer.addLayer(keyPlacementLayer)
       arc.keyPlacementLayer = keyPlacementLayer
       var maplogLayer = createArcMaplogLayer(arc.msStart, arc.msEnd/1000)
-      arc.layer.addLayer(maplogLayer)
+      maplogLayer.name = "maplog"
+      //arc.layer.addLayer(maplogLayer)
       arc.maplogLayer = maplogLayer
+      L.Util.setOptions(keyPlacementLayer, {alternateAnim: maplogLayer})
+      L.Util.setOptions(maplogLayer, {alternateStatic: keyPlacementLayer})
     })
   }
 
@@ -1326,7 +1330,6 @@
       datamaxzoom: 27,
     },
     createTile: function (coords, done) {
-      console.log(coords, this.options.baseTime)
       var tile = document.createElement('canvas');
       var tileSize = this.getTileSize();
       var superscale = Math.pow(2, this.options.supersample)
@@ -1411,6 +1414,7 @@
           if (layer.options.timeDimension) {
             time = layer.options.timeDimension.getCurrentTime()
           }
+          console.log(coords, time)
           layer.tileAt(tile, time)
           layer.loadImages(tile._maplog, function() {
             layer.drawTile(tile, coords, done)
@@ -1585,6 +1589,8 @@
   L.GridLayer.PointOverlay = L.GridLayer.extend({
     options: {
       pane: 'overlayPane',
+      alternateAnim: null,
+      alternateStatic: null,
     },
     createTile: function (coords) {
       var tile = document.createElement('canvas');
@@ -1679,10 +1685,12 @@
         var tile = this._tiles[key]
         this.drawTile(tile.el, tile.coords, time)
       }
+      /*
       if (this._map) {
         baseLayerByTime(this._map, ev.time, 'animOverlay updatTiles')
       }
       riftLayerByTime(ev.time)
+      */
     },
     selectPoints: function(ev) {
       var center = ev.layerPoint
@@ -1762,13 +1770,19 @@
 
   var timeDimensionControl = new L.Control.ClosableTimeDimension(timeDimensionControlOptions);
 
-  var pointOverlay = new L.GridLayer.PointOverlay({className: 'interactive'}).addTo(dataOverlay)
+  var pointOverlay = new L.GridLayer.PointOverlay({
+    className: 'interactive',
+  }).addTo(dataOverlay)
+  pointOverlay.name = 'point overlay'
 
   var animOverlay = new L.GridLayer.PointOverlay({
     attribution: '<a href="https://github.com/socib/Leaflet.TimeDimension">socib/Leaflet.TimeDimension</a>',
     className: 'interactive',
     timeDimension: timeDimension,
+    alternateStatic: pointOverlay,
   })
+  animOverlay.name = 'anim overlay'
+  L.Util.setOptions(pointOverlay, {alternateAnim: animOverlay})
   timeDimension.on("timeload", animOverlay.updateTiles, animOverlay)
   timeDimension.on("timeload", function(ev) {
     base['Arc Age'].eachLayer(function(group) {
@@ -1872,6 +1886,7 @@
             times.push(t)
           }
           timeDimension.setAvailableTimes(times, 'replace')
+          timeDimension.setCurrentTime(ms)
         }
       } else {
         base['Arc Age'].removeLayer(arc.layer)
@@ -2214,6 +2229,22 @@
     return Promise.all([size])
   }
 
+  var toggleAnimated = function(parent, status) {
+    parent.eachLayer(function(layer) {
+      if (status) {
+        if (layer.options.alternateAnim) {
+          parent.addLayer(layer.options.alternateAnim)
+          parent.removeLayer(layer)
+        }
+      } else {
+        if (layer.options.alternateStatic) {
+          parent.addLayer(layer.options.alternateStatic)
+          parent.removeLayer(layer)
+        }
+      }
+    })
+  }
+
   var inhabit = function inhabit(id) {
     var map = L.map(id, {
       crs: crs,
@@ -2259,7 +2290,7 @@
     //base['Fractal'].addTo(map)
     //base['Biome'].addTo(map)
     //map.addControl(animToggle)
-    map.addControl(timeDimensionControl)
+    //map.addControl(timeDimensionControl)
 
     // helper to share the timeDimension object between all layers
     map.timeDimension = timeDimension; 
@@ -2388,12 +2419,12 @@
           }
           break
         case 'animOverlay':
-          if (message.status) {
-            dataOverlay.addLayer(animOverlay)
-            dataOverlay.removeLayer(pointOverlay)
-          } else {
-            dataOverlay.removeLayer(animOverlay)
-            dataOverlay.addLayer(pointOverlay)
+          toggleAnimated(dataOverlay, message.status)
+          arcs.forEach(function(arc) {
+            toggleAnimated(arc.layer, message.status)
+          })
+          if (message.status == false) {
+            player.stop()
           }
           break
         case 'baseLayer':
