@@ -596,7 +596,7 @@ coordinateRoute location model =
       (Just x, Just y, Nothing) ->
         setViewFromRoute (Point x y 24) model
       _ ->
-        ( model, Cmd.none)
+        setViewFromRoute (Point 0 0 24) model
 
 setViewFromRoute : Point -> Model -> (Model, Cmd Msg)
 setViewFromRoute point model =

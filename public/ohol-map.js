@@ -2266,7 +2266,7 @@
     layersControl.addTo(map)
     L.control.scale({imperial: false}).addTo(map)
     sidebarToggle.addTo(map)
-    map.setView([0,0], 24)
+    //map.setView([0,0], 24)
 
     objectLoad(map)
 
@@ -2295,12 +2295,19 @@
       })
     }
 
+    var positionSet = false
+
     var command = function(message) {
       switch (message.kind) {
         case 'setView':
-          var center = map.getCenter()
-          if (center.lng != message.x || center.lat != message.y || map.getZoom() != message.z) {
+          if (positionSet) {
+            var center = map.getCenter()
+            if (center.lng != message.x || center.lat != message.y || map.getZoom() != message.z) {
+              map.setView([message.y, message.x], message.z)
+            }
+          } else {
             map.setView([message.y, message.x], message.z)
+            positionSet = true
           }
           break
         case 'currentTime':
