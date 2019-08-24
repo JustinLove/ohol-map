@@ -1233,11 +1233,11 @@
           //console.time('load images call' + JSON.stringify(coords))
           if (layer.loadImages(tile._keyplace, function() {
             //console.timeEnd('load images' + JSON.stringify(coords))
-            layer.drawTile(tile, coords)
-          })) {
-            done()
-          } else {
             layer.drawTile(tile, coords, done)
+          })) {
+            //done()
+          } else {
+            //layer.drawTile(tile, coords, done)
           }
           //console.timeEnd('load images call' + JSON.stringify(coords))
         })
@@ -1297,6 +1297,8 @@
           } else {
             ctx.globalAlpha = 1
           }
+        } else {
+          ctx.globalAlpha = 1
         }
         if (img && img.complete) {
           var iw = img._iw
@@ -1308,6 +1310,7 @@
 
           var iw = objectBounds[placement.id][2]/128 - ox
           var ih = objectBounds[placement.id][1]/128 + oy
+          ctx.globalAlpha = 0.5
           ctx.fillRect(placement.x + ox, placement.y + oy, iw, ih)
           //ctx.fillRect(placement.x*cellSize, placement.y*cellSize, cellSize, cellSize)
         }
@@ -1438,10 +1441,9 @@
             time = layer.options.timeDimension.getCurrentTime()
           }
           console.log(coords, time)
+          tile.coords = coords
           layer.tileAt(tile, time)
-          layer.loadImages(tile._maplog, function() {
-            layer.drawTile(tile, coords, done)
-          })
+          done()
         })
       })
 
@@ -1475,6 +1477,13 @@
         .filter(placementsLargerThan(minSize))
         .sort(sortDrawOrder)
       tile._keyplace = floorPlacements.concat(objectPlacements)
+      var layer = this
+      if (layer.loadImages(tile._keyplace, function() {
+        layer.drawTile(tile, tile.coords)
+      })) {
+      } else {
+        layer.drawTile(tile, tile.coords)
+      }
     },
     updateTiles: function(ev) {
       var time = ev.time/1000
