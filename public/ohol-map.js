@@ -1046,11 +1046,18 @@
     },
     initialize: function(url, options) {
       this._url = url;
-      this._cache = {}
+      this._list = []
+      this._index = {}
       options = L.Util.setOptions(this, options);
     },
     dataZoom: function(coords) {
       return Math.max(this.options.dataminzoom, Math.min(this.options.datamaxzoom, coords.z))
+    },
+    expire: function() {
+      while (this._list.length > 100) {
+        var record = this._list.shift()
+        delete this._index[record.url]
+      }
     },
     loadTile: function(coords, data) {
       var dataZoom = this.dataZoom(coords)
@@ -1063,17 +1070,26 @@
       var layer = this
       //console.log(datacoords)
       var url = this.getDataTileUrl(datacoords, data)
-      if (this._cache[url]) {
-        return this._cache[url]
+      if (this._index[url]) {
+        var record = this._index[url]
+        this._list.splice(this._list.indexOf(record),1)
+        this._list.push(record)
+        return record.promise
       } else {
-        var promise = fetch(url).then(function(response) {
-          if (response.status % 100 == 4) {
-            return Promise.resolve('')
-          }
-          return response.text()
-        })
-        this._cache[url] = promise
-        return promise
+        var record = {
+          url: url,
+          promise: fetch(url).then(function(response) {
+            if (response.status % 100 == 4) {
+              return Promise.resolve('')
+            }
+            return response.text()
+          }),
+        }
+        this._list.push(record)
+        this._index[url] = record
+        this.expire()
+        //console.log(this._list.length)
+        return record.promise
       }
     }
   })
@@ -1206,11 +1222,12 @@
       var cellSize = Math.pow(2, coords.z - dataZoom)
       var cellWidth = tileSize.x/cellSize + paddingX
       var cellHeight = tileSize.y/cellSize + paddingDown
-      var minSize = 1.5 * (128/cellSize)
+      var minSize = 1.5 * Math.pow(2, 31 - coords.z)
+
       //console.log('cellsize', cellSize, 'cellWidth', cellWidth)
       var layer = this
       //console.log(datacoords)
-      console.log('data tile ' + JSON.stringify(coords))
+      //console.log('data tile ' + JSON.stringify(coords))
       //console.time('data tile ' + JSON.stringify(coords))
       layer._cache.loadTile(coords, {time: layer.options.time}).then(function(text) {
         //console.timeEnd('data tile ' + JSON.stringify(coords))
@@ -1282,7 +1299,7 @@
             return false
           }
         }
-        console.log('images done')
+        //console.log('images done')
         done()
         return true
       }
@@ -1399,7 +1416,6 @@
       var cellSize = Math.pow(2, coords.z - dataZoom)
       var cellWidth = tileSize.x/cellSize + paddingX
       var cellHeight = tileSize.y/cellSize + paddingDown
-      var minSize = 1.5 * (128/cellSize)
       //console.log('cellsize', cellSize, 'cellWidth', cellWidth)
       var layer = this
       //console.log(datacoords)
@@ -1444,7 +1460,7 @@
         if (layer.options.timeDimension) {
           time = layer.options.timeDimension.getCurrentTime()
         }
-        console.log(coords, time)
+        //console.log(coords, time)
         tile.coords = coords
         layer.tileAt(tile, time)
         done()
@@ -1459,7 +1475,7 @@
       tile._time = time
       var objects = tile._objects = tile._objects || {}
       var floors = tile._floors = tile._floors || {}
-      var minSize = this.options.minSize;
+      var minSize = 1.5 * Math.pow(2, 31 - tile.coords.z)
       if (time < lastTime) {
         lastTime = 0
         objects = tile._objects = {}

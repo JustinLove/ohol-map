@@ -1,4 +1,5 @@
 - find bottleneck - network or render?
+  - load time garbage collection
 - server url link
 - onetech credit
   - dummy layers for mergable attributions
