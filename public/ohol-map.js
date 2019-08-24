@@ -1190,11 +1190,15 @@
       //console.log('cellsize', cellSize, 'cellWidth', cellWidth)
       var layer = this
       //console.log(datacoords)
+      console.log('data tile ' + JSON.stringify(coords))
+      //console.time('data tile ' + JSON.stringify(coords))
       fetch(this.getDataTileUrl(datacoords)).then(function(response) {
         if (response.status % 100 == 4) {
           return
         }
         response.text().then(function(text) {
+          //console.timeEnd('data tile ' + JSON.stringify(coords))
+          //console.time('data processing ' + JSON.stringify(coords))
           tile._keyplace = text.split("\n").filter(function(line) {
             return line != "";
           }).map(function(line) {
@@ -1224,9 +1228,18 @@
             return true
           }).sort(sortTypeAndDrawOrder)
 
-          layer.loadImages(tile._keyplace, function() {
+          //console.timeEnd('data processing ' + JSON.stringify(coords))
+          //console.time('load images' + JSON.stringify(coords))
+          //console.time('load images call' + JSON.stringify(coords))
+          if (layer.loadImages(tile._keyplace, function() {
+            //console.timeEnd('load images' + JSON.stringify(coords))
+            layer.drawTile(tile, coords)
+          })) {
+            done()
+          } else {
             layer.drawTile(tile, coords, done)
-          })
+          }
+          //console.timeEnd('load images call' + JSON.stringify(coords))
         })
       })
 
@@ -1250,13 +1263,15 @@
         for (var i = 0;i < placements.length;i++) {
           var placement = placements[i]
           if (!objectImages[placement.id].complete) {
-            return setTimeout(checkLoaded,100)
+            setTimeout(checkLoaded,100)
+            return false
           }
         }
         console.log('images done')
         done()
+        return true
       }
-      setTimeout(checkLoaded,100)
+      return checkLoaded()
     },
     drawTile(tile, coords, done) {
       var cellSize = Math.pow(2, coords.z - (24 - this.options.supersample))
@@ -1273,13 +1288,7 @@
         if (placement.id == 0) {
           return
         }
-        //var color = hsvToRgb(placement.id * 3769 % 359 / 360, 1, 1)
-        //ctx.fillStyle = 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')'
-
-        //ctx.fillRect(placement.x*cellSize, placement.y*cellSize, cellSize, cellSize)
         var img = objectImages[placement.id]
-        var iw = img._iw
-        var ih = img._ih
         var ox = objectBounds[placement.id][0]/128
         var oy = -objectBounds[placement.id][3]/128
         if (fadeTallObjects) {
@@ -1289,7 +1298,19 @@
             ctx.globalAlpha = 1
           }
         }
-        ctx.drawImage(img, placement.x + ox, placement.y + oy, iw, ih)
+        if (img && img.complete) {
+          var iw = img._iw
+          var ih = img._ih
+          ctx.drawImage(img, placement.x + ox, placement.y + oy, iw, ih)
+        } else {
+          var color = hsvToRgb(placement.id * 3769 % 359 / 360, 1, 1)
+          ctx.fillStyle = 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')'
+
+          var iw = objectBounds[placement.id][2]/128 - ox
+          var ih = objectBounds[placement.id][1]/128 + oy
+          ctx.fillRect(placement.x + ox, placement.y + oy, iw, ih)
+          //ctx.fillRect(placement.x*cellSize, placement.y*cellSize, cellSize, cellSize)
+        }
       })
       ctx.restore()
 

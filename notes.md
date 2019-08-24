@@ -1,6 +1,3 @@
-- look for for more time thrashing loops
-  - lots of times on startup - was selecting two layers at once
-  - becomes unusable if base layer updated in maplog updateTime
 - find bottleneck - network or render?
 - server url link
 - onetech credit
@@ -9,8 +6,6 @@
   - data lods?
   - keyframes?
   - diffed keyframes?
-  - only oversample large objects?
-  - floor removals not f tagged
 - rendering map data
   - only load needed sprites, need drawing ready management
   - objects to show in pixel layer, color table
@@ -20,6 +15,8 @@
   - glitch with maxzoom on object pixel layer https://github.com/Leaflet/Leaflet/pull/6310
   - floor fade effect
   - do we need all four sprite bounds?
+- always load certain objects (walls/floors)
+- expired objects
 - canvas perf
   - render all points of color at once
   - pre-downscale sprites
@@ -31,12 +28,9 @@
 - biome graphics
 
 
-- default map?
-  - old map with notice?
-  - notice to change to old map?
 - legend for lineage color
-- more accurate biome age times
 - search/lineage reslts in data layer for coloring etc.
+- more accurate biome age times
 - bookmarking layers
 - in-app help
 - show data for other servers
