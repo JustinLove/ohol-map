@@ -116,6 +116,7 @@
     { ms: Date.parse("2019-07-26 02:00:00-05:00"), layer: rift500 },
     { ms: Date.parse("2019-07-26 17:30:00-05:00"), layer: rift354 },
     { ms: Date.parse("2019-08-13 10:57:00-05:00"), layer: riftGone },
+    { ms: Date.parse("2019-08-24 16:57:00-05:00"), layer: rift354 },
   ]
 
   var overlays = {
