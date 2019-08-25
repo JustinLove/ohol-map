@@ -1922,15 +1922,15 @@
   }
 
   var baseLayerByTime = function(map, ms, reason) {
-    console.log(ms, reason)
+    //console.log(ms, reason)
     var targetLayer
     arcs.forEach(function(arc) {
       if (ms > arc.msStart && ms <= arc.msEnd) {
         targetLayer = 'Arc Age'
-        console.log(arc.msStart, ms, arc.msEnd)
+        //console.log(arc.msStart, ms, arc.msEnd)
         base['Arc Age'].addLayer(arc.layer)
         if (timeDimension.getAvailableTimes()[0] != arc.msStart+1000) {
-          console.log("reset times", timeDimension.getAvailableTimes()[0], arc.msStart)
+          //console.log("reset times", timeDimension.getAvailableTimes()[0], arc.msStart)
           var times = []
           for (var t = arc.msStart+1000;t < arc.msEnd;t += 1000) {
             times.push(t)

@@ -9,5 +9,7 @@ public/config.js
 public/static
 public/keyplace
 public/maplog
+public/kp
+public/ml
 .~lock*
 elm-stuff

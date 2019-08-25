@@ -201,7 +201,7 @@ type Event
 
 event : (Result Decode.Error Event -> msg) -> Sub msg
 event tagger =
-  leafletEvent (decodeEvent >> (Debug.log "event") >> tagger)
+  leafletEvent (decodeEvent >> tagger)
 
 decodeEvent : Decode.Value -> Result Decode.Error Event
 decodeEvent thing =
