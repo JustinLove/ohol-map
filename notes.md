@@ -1,3 +1,9 @@
+- arc time range is blocking life data range
+- incremental data builds
+- rift data file?
+- automate file generation
+- leave current time up longer
+- data update - dug barrel cactus - mabye after worldgen
 - find bottleneck - network or render?
   - load time garbage collection
 - server url link
@@ -23,8 +29,6 @@
   - pre-downscale sprites
   - use whole numbers for positions
   - composting mode tricks
-- rift data file?
-- automate file generation
 - object generation
 - biome graphics
 
