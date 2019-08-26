@@ -1,4 +1,3 @@
-- arc time range is blocking life data range
 - incremental data builds
 - rift data file?
 - automate file generation

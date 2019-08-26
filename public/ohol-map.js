@@ -1921,14 +1921,10 @@
     setMapTime(pointOverlay._map, min*1000, 'setDataLayers')
   }
 
-  var baseLayerByTime = function(map, ms, reason) {
-    //console.log(ms, reason)
-    var targetLayer
+  var arcRangeByTime = function(ms, reason) {
     arcs.forEach(function(arc) {
       if (ms > arc.msStart && ms <= arc.msEnd) {
-        targetLayer = 'Arc Age'
         //console.log(arc.msStart, ms, arc.msEnd)
-        base['Arc Age'].addLayer(arc.layer)
         if (timeDimension.getAvailableTimes()[0] != arc.msStart+1000) {
           //console.log("reset times", timeDimension.getAvailableTimes()[0], arc.msStart)
           var times = []
@@ -1938,6 +1934,18 @@
           timeDimension.setAvailableTimes(times, 'replace')
           timeDimension.setCurrentTime(ms)
         }
+      }
+    })
+  }
+
+  var baseLayerByTime = function(map, ms, reason) {
+    //console.log(ms, reason)
+    var targetLayer
+    arcs.forEach(function(arc) {
+      if (ms > arc.msStart && ms <= arc.msEnd) {
+        targetLayer = 'Arc Age'
+        //console.log(arc.msStart, ms, arc.msEnd)
+        base['Arc Age'].addLayer(arc.layer)
       } else {
         base['Arc Age'].removeLayer(arc.layer)
       }
@@ -2381,7 +2389,9 @@
     var idleTimer = setTimeout(setIdle, 1*60*1000)
     L.DomEvent.on(map, 'mousemove', setActive, map);
 
-    setMapTime(map, Date.now(), 'inhabit')
+    var t = Date.now()
+    setMapTime(map, t, 'inhabit')
+    arcRangeByTime(t, 'inhabit')
     //base['Topographic Test'].addTo(map)
     overlays['Rift'].addTo(map)
     //overlays['Checker'].addTo(map)
@@ -2441,6 +2451,9 @@
           break
         case 'currentTime':
           setMapTime(map, message.time * 1000, 'currentTime')
+          if (!map.hasLayer(dataOverlay)) {
+            arcRangeByTime(message.time * 1000, 'currentTime')
+          }
           timeDimension.setCurrentTime(message.time * 1000)
           break;
         case 'currentServer':
@@ -2460,6 +2473,7 @@
         case 'arcList':
           updateArcs(message.arcs.data)
           setMapTime(map, message.time * 1000, 'arcList')
+          arcRangeByTime(message.time * 1000, 'arcList')
           timeDimension.setCurrentTime(message.time * 1000)
           break;
         case 'monumentList':
@@ -2470,7 +2484,6 @@
           setDataLayers(message.lives.data)
           if(!map.hasLayer(dataOverlay)) {
             map.addLayer(dataOverlay)
-            setMapTime(map, pointOverlay.options.min*1000, 'dataLayer')
           }
           break;
         case 'beginPlayback':
@@ -2501,6 +2514,7 @@
             .openPopup()
           map.setView([life.birth_y, life.birth_x])
           setMapTime(map, life.birth_time*1000, 'focus')
+          arcRangeByTime(life.birth_time*1000, 'focus')
           setTimeout(function() {
             timeDimension.setCurrentTime(life.birth_time*1000)
           }, 1000)
