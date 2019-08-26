@@ -2300,28 +2300,38 @@
     })
   }
 
+  var addControl = function(map, control) {
+    if (control._map != map) {
+      map.addControl(control)
+    }
+  }
+
+  var removeControl = function(map, control) {
+    if (control._map == map) {
+      map.removeControl(control)
+    }
+  }
+
   var toggleAnimationControls = function(map) {
     var animated = 0
     var stat = 0
     map.eachLayer(function(layer) {
       if (layer.options.alternateAnim) {
         stat++
-        map.addControl(animToggle)
       }
       if (layer.options.alternateStatic) {
         animated++
-        map.addControl(timeDimensionControl)
       }
     })
     if (animated > 0) {
-      map.addControl(timeDimensionControl)
-      map.removeControl(animToggle)
+      addControl(map, timeDimensionControl)
+      removeControl(map, animToggle)
     } else if (stat > 0) {
-      map.addControl(animToggle)
-      map.removeControl(timeDimensionControl)
+      addControl(map, animToggle)
+      removeControl(map, timeDimensionControl)
     } else {
-      map.removeControl(animToggle)
-      map.removeControl(timeDimensionControl)
+      removeControl(map, animToggle)
+      removeControl(map, timeDimensionControl)
     }
   }
 
