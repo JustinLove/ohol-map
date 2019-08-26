@@ -58,7 +58,7 @@ type Notice
   = TimeNotice Posix Posix
   | NoNotice
 
-timeNoticeDuration = 4000
+timeNoticeDuration = 6000
 
 type RemoteData a
   = NotRequested
@@ -146,7 +146,14 @@ timeOverlay model =
           [ width fill
           , height fill
           , Font.size 48
-          , alpha (((until |> Time.posixToMillis |> toFloat) - (model.time |>  Time.posixToMillis |> toFloat)) / (timeNoticeDuration |> toFloat))
+          , alpha <|
+            max 0
+              (
+                ( (until |> Time.posixToMillis |> toFloat)
+                - (model.time |>  Time.posixToMillis |> toFloat)
+                )
+              / (timeNoticeDuration/2)
+              )
           , htmlAttribute (Html.Attributes.id "time-overlay")
           , htmlAttribute (Html.Attributes.style "z-index" "1000")
           , htmlAttribute (Html.Attributes.style "pointer-events" "none")

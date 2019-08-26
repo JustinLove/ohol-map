@@ -1,7 +1,7 @@
 - incremental data builds
 - rift data file?
 - automate file generation
-- leave current time up longer
+- improve time model
 - data update - dug barrel cactus - mabye after worldgen
 - find bottleneck - network or render?
   - load time garbage collection
