@@ -683,7 +683,7 @@ fetchServers baseUrl =
 fetchArcs : String -> Cmd Msg
 fetchArcs baseUrl =
   Http.get
-    { url = Url.crossOrigin baseUrl ["arcs"] []
+    { url = Url.relative ["kp/arcs.json"] []
     , expect = Http.expectJson ArcList Decode.arcs
     }
 

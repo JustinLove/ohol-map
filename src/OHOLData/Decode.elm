@@ -42,13 +42,12 @@ server =
 
 arcs : Decoder (List Arc)
 arcs =
-  field "data" (list arc)
+  list arc
 
 arc : Decoder Arc
 arc =
   succeed Arc
-    |> map2 (|>) (field "id" int)
-    |> map2 (|>) (field "server_id" int)
+    |> map2 (|>) (succeed 17)
     |> map2 (|>) (field "start" timeStamp)
     |> map2 (|>) (field "end" timeStamp)
     |> map2 (|>) (field "seed" int)

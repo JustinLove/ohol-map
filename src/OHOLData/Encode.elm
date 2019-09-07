@@ -58,8 +58,7 @@ arcs data =
 arc : Arc -> Value
 arc s =
   object
-    [ ("id", int s.id)
-    , ("server_id", int s.serverId)
+    [ ("server_id", int s.serverId)
     , ("start", timeStamp s.start)
     , ("end", timeStamp s.end)
     , ("seed", int s.seed)

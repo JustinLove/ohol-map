@@ -23,8 +23,7 @@ type alias Server =
   }
 
 type alias Arc =
-  { id : Int
-  , serverId : Int
+  { serverId : Int
   , start: Posix
   , end: Posix
   , seed: Int
