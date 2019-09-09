@@ -128,7 +128,9 @@ init config location key =
     , Cmd.batch
       [ cmd
       , Time.here |> Task.perform CurrentZone
-      , Time.now |> Task.perform CurrentTimeNotice
+      , case model.mapTime of
+        Just _ -> Cmd.none
+        Nothing -> Time.now |> Task.perform CurrentTimeNotice
       , fetchServers model.cachedApiUrl
       , fetchArcs model.cachedApiUrl
       ]

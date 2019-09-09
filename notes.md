@@ -1,8 +1,12 @@
-- incremental data builds
-- rift data file?
-- automate file generation
 - improve time model
-- data update - dug barrel cactus - mabye after worldgen
+
+- elm generates time events
+  - current time events to JS are arbitrarily delayed
+  - time dimension will send timeload for only current times that fell in a time range
+  - timeload events are arbitrarily delayed
+
+
+
 - find bottleneck - network or render?
   - load time garbage collection
 - server url link
@@ -32,6 +36,7 @@
 - biome graphics
 
 
+- data update - dug barrel cactus - mabye after worldgen
 - legend for lineage color
 - search/lineage reslts in data layer for coloring etc.
 - more accurate biome age times

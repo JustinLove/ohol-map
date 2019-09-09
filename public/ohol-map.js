@@ -1035,7 +1035,7 @@
     attribution: attribution,
     opacity: 0.5,
   })
-  //overlays['Object'] = objectLayer
+  //overlays['Object'] = objectOverlay
 
   var TileDataCache = L.Class.extend({
     options: {
@@ -2450,11 +2450,15 @@
           }
           break
         case 'currentTime':
-          setMapTime(map, message.time * 1000, 'currentTime')
+          var time = message.time * 1000
+          setMapTime(map, time, 'currentTime')
           if (!map.hasLayer(dataOverlay)) {
-            arcRangeByTime(message.time * 1000, 'currentTime')
+            arcRangeByTime(time, 'currentTime')
           }
-          timeDimension.setCurrentTime(message.time * 1000)
+          var range = timeDimension.getAvailableTimes(time)
+          if (range[0] <= time && time <= range[range.length-1]) {
+            timeDimension.setCurrentTime(time)
+          }
           break;
         case 'currentServer':
           var targetLayer
