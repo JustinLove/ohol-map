@@ -58,8 +58,9 @@ type alias Model =
   , currentArc : Maybe Arc
   , dataAnimated : Bool
   , gameSecondsPerFrame : Int
-  , fadeTallObjects : Bool
   , frameRate : Int
+  , timeRange : Maybe (Posix, Posix)
+  , fadeTallObjects : Bool
   , pointColor : PointColor
   , pointLocation : PointLocation
   , selectedServer : Maybe Server
@@ -110,8 +111,9 @@ init config location key =
       , currentArc = Nothing
       , dataAnimated = False
       , gameSecondsPerFrame = 60
-      , fadeTallObjects = False
       , frameRate = 10
+      , timeRange = Nothing
+      , fadeTallObjects = False
       , pointColor = LineageColor
       , pointLocation = BirthLocation
       , selectedServer = Nothing
@@ -191,6 +193,14 @@ update msg model =
         }
       , Leaflet.playbackScale seconds
       )
+    UI (View.MapTime time) ->
+      ( {model|mapTime = Just time}
+      , Cmd.batch
+        [ Leaflet.currentTime time
+        , Navigation.replaceUrl model.navigationKey <|
+          centerUrl model.location (Just time) (isYesterday model) model.center
+        ]
+      )
     UI (View.ToggleFadeTallObjects fade) ->
       ( { model
         | fadeTallObjects = fade
@@ -256,11 +266,13 @@ update msg model =
           | currentArc = marc
           , coarseStartTime = time
           , startTime = time
+          , timeRange = Just (arc.start, arc.end)
           }
             |> setTime time
         Nothing ->
           ( { model
             | currentArc = marc
+            , timeRange = Nothing
             }
           , Cmd.none
           )
@@ -274,10 +286,13 @@ update msg model =
         centerUrl model.location model.mapTime (isYesterday model) point
       )
     Event (Ok (Leaflet.TimeLoad time)) ->
+      (model, Cmd.none)
+      {-
       ( {model|mapTime = Just time}
       , Navigation.replaceUrl model.navigationKey <|
         centerUrl model.location (Just time) (isYesterday model) model.center
       )
+      -}
     Event (Ok (Leaflet.OverlayAdd "Life Data" _)) ->
       requireLives model
     Event (Ok (Leaflet.OverlayAdd name (Just serverId))) ->
@@ -357,6 +372,7 @@ update msg model =
           ( { model
             | arcs = Data arcs
             , currentArc = lastArc
+            , timeRange = lastArc |> Maybe.map (\{start, end} -> (start, end))
             }
           , Leaflet.arcList arcs (model.mapTime |> Maybe.withDefault model.time)
           )
@@ -369,6 +385,7 @@ update msg model =
           ( { model
             | arcs = Data arcs
             , currentArc = lastArc
+            , timeRange = lastArc |> Maybe.map (\{start, end} -> (start, end))
             , mapTime = mlastTime
             }
           , Cmd.batch
@@ -378,7 +395,7 @@ update msg model =
           )
     ArcList (Err error) ->
       let _ = Debug.log "fetch arcs failed" error in
-      ({model | arcs = Failed error, currentArc = Nothing}, Cmd.none)
+      ({model | arcs = Failed error, currentArc = Nothing, timeRange = Nothing}, Cmd.none)
     MonumentList serverId (Ok monuments) ->
       ( {model | monuments = Dict.insert serverId monuments model.monuments}
       , Leaflet.monumentList serverId monuments
@@ -625,6 +642,7 @@ timeSelectionForTime model =
                 { model
                 | timeMode = ArcRange
                 , currentArc = newArc
+                , timeRange = Just (arc.start, arc.end)
                 }
               Nothing ->
                 timeSelectionAround model

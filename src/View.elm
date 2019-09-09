@@ -34,6 +34,7 @@ type Msg
   | HoursAfter Int
   | ToggleAnimated Bool
   | GameSecondsPerFrame Int
+  | MapTime Posix
   | ToggleFadeTallObjects Bool
   | SelectPointColor PointColor
   | SelectPointLocation PointLocation
@@ -117,14 +118,24 @@ view model =
     , Background.color background
     ] <|
     Keyed.row [ width fill, height fill ]
-      [ ( "map"
-        , el
-          [ width fill
-          , height fill
-          , Font.size 12
-          , inFront (timeOverlay model)
+      [ ( "main"
+        , Keyed.column []
+          [ ( "map"
+            , el
+              [ width fill
+              , height fill
+              , Font.size 12
+              , inFront (timeOverlay model)
+              ]
+              (html <| Html.div [ Html.Attributes.id "map" ] [])
+            )
+          , ( "timeline"
+            , if model.timeRange /= Nothing then --model.dataAnimated then
+                timeline model
+              else
+                none
+            )
           ]
-          (html <| Html.div [ Html.Attributes.id "map" ] [])
         )
       , ( "sidebar"
         , if model.sidebarOpen then
@@ -159,6 +170,35 @@ timeOverlay model =
           , htmlAttribute (Html.Attributes.style "pointer-events" "none")
           ]
     NoNotice ->
+      none
+
+
+-- timeline : Model -> Element Msg
+timeline model =
+  case (model.mapTime, model.timeRange) of
+    (Just time, Just (start, end)) ->
+      column [ width fill ]
+        [ row []
+          [ ( time
+              |> date model.zone
+              |> text
+            )
+          ]
+        , Input.slider
+          [ Background.color control ]
+          { onChange = round
+            >> ((*) 1000)
+            >> Time.millisToPosix
+            >> MapTime
+          , label = Input.labelHidden "timeline"
+          , min = (start |> posixToFloat 0) + 1
+          , max = end |> posixToFloat 0
+          , value = time |> posixToFloat 0
+          , thumb = Input.defaultThumb
+          , step = Just 1
+          }
+        ]
+    _ ->
       none
 
 -- sidebar : Model -> Element Msg
