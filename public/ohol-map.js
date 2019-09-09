@@ -20,6 +20,8 @@
     transformation: new L.transformation(1/scale, 0.5/scale, -1/scale, -0.5/scale)
   })
 
+  var mapTime = Date.now()
+
   var base = {};
 
   var attribution = '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible ' +
@@ -153,7 +155,6 @@
     createTile: function (coords, done) {
       var tile = document.createElement('canvas');
       var tileSize = this.getTileSize();
-      //console.log(tileSize)
       tile.setAttribute('width', tileSize.x);
       tile.setAttribute('height', tileSize.y);
 
@@ -520,7 +521,6 @@
     createTile: function (coords) {
       var tile = document.createElement('canvas');
       var tileSize = this.getTileSize();
-      //console.log(tileSize)
       tile.setAttribute('width', tileSize.x);
       tile.setAttribute('height', tileSize.y);
 
@@ -535,17 +535,13 @@
       ctx.clearRect(0, 0, tile.width, tile.height)
 
       var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
-      //console.log(coords, pnw)
       var llnw = crs.pointToLatLng(pnw, coords.z)
-      //console.log(coords, llnw)
 
       var stride = Math.pow(2, 24 - coords.z)
       var w = tile.width
       var h = tile.height
       var startX = llnw.lng + 0.5
       var startY = llnw.lat - 0.5
-
-      //console.log(coords, startX, startY)
 
       var scale = this.options.biomeOffset + this.options.biomeScale * 7
       var roughness = this.options.biomeFractalRoughness
@@ -1123,7 +1119,7 @@
       //console.log('start', startX, startY)
 
       var layer = this
-      layer._cache.loadTile(coords, {time: layer.options.time}).then(function(text) {
+      layer._cache.loadTile(coords, {time: layer.options.dataTime}).then(function(text) {
         tile._keyplace = text.split("\n").map(function(line) {
           var parts = line.split(" ")
           var out = {
@@ -1230,7 +1226,7 @@
       //console.log(datacoords)
       //console.log('data tile ' + JSON.stringify(coords))
       //console.time('data tile ' + JSON.stringify(coords))
-      layer._cache.loadTile(coords, {time: layer.options.time}).then(function(text) {
+      layer._cache.loadTile(coords, {time: layer.options.dataTime}).then(function(text) {
         //console.timeEnd('data tile ' + JSON.stringify(coords))
         //console.time('data processing ' + JSON.stringify(coords))
         tile._keyplace = text.split("\n").filter(function(line) {
@@ -1384,7 +1380,7 @@
 
   L.GridLayer.MaplogSprite = L.GridLayer.KeyPlacementSprite.extend({
     options: {
-      baseTime: 0,
+      time: 0,
     },
     createTile: function (coords, done) {
       var tile = document.createElement('canvas');
@@ -1420,7 +1416,7 @@
       //console.log('cellsize', cellSize, 'cellWidth', cellWidth)
       var layer = this
       //console.log(datacoords)
-      layer._cache.loadTile(coords, {time: layer.options.time}).then(function(text) {
+      layer._cache.loadTile(coords, {time: layer.options.dataTime}).then(function(text) {
         var t = 0
         var x = 0
         var y = 0
@@ -1457,11 +1453,7 @@
           return a.t - b.t
         })
 
-        var time = layer.options.baseTime
-        if (layer.options.timeDimension) {
-          time = layer.options.timeDimension.getCurrentTime()
-        }
-        //console.log(coords, time)
+        var time = layer.options.time
         tile.coords = coords
         layer.tileAt(tile, time)
         done()
@@ -1505,18 +1497,32 @@
         layer.drawTile(tile, tile.coords)
       }
     },
-    updateTiles: function(ev) {
-      var time = ev.time/1000
+    updateTiles: function(ms) {
+      L.Util.setOptions(this, {time: ms})
       for (var key in this._tiles) {
         var tile = this._tiles[key]
         if (tile.el._maplog) {
-          this.tileAt(tile.el, ev.time)
+          this.tileAt(tile.el, ms)
           this.drawTile(tile.el, tile.coords)
         }
       }
-      setMapTime(this._map, ev.time, 'maplog updateTiles')
+      setMapTime(this._map, ms, 'maplog updateTiles')
     },
   })
+
+  var arcUpdateTiles = function(ms) {
+    base['Arc Age'].eachLayer(function(group) {
+      group.eachLayer(function(sub) {
+        if (sub.eachLayer) {
+          sub.eachLayer(function(layer) {
+            if (layer.updateTiles) {
+              layer.updateTiles(ms)
+            }
+          })
+        }
+      })
+    })
+  }
 
   var keyPlacementCache = new TileDataCache(oholMapConfig.keyPlacements, {
     dataminzoom: 24,
@@ -1528,12 +1534,12 @@
       return new L.layerGroup([
         /*
         new L.GridLayer.KeyPlacementPixel(keyPlacementCache, {
-          time: end.toString(),
-          //time: '1564439085',
-          //time: '1564457929',
-          //time: '1564571257',
-          //time: '1564625380',
-          //time: '1564632744',
+          dataTime: end.toString(),
+          //dataTime: '1564439085',
+          //dataTime: '1564457929',
+          //dataTime: '1564571257',
+          //dataTime: '1564625380',
+          //dataTime: '1564632744',
           minZoom: 24,
           maxZoom: 31,
           //minNativeZoom: 24,
@@ -1542,12 +1548,12 @@
         }),
         */
         new L.GridLayer.KeyPlacementSprite(keyPlacementCache, {
-          time: end.toString(),
-          //time: '1564439085',
-          //time: '1564457929',
-          //time: '1564571257',
-          //time: '1564625380',
-          //time: '1564632744',
+          dataTime: end.toString(),
+          //dataTime: '1564439085',
+          //dataTime: '1564457929',
+          //dataTime: '1564571257',
+          //dataTime: '1564625380',
+          //dataTime: '1564632744',
           minZoom: 24,
           maxZoom: 31,
           //minNativeZoom: 24,
@@ -1566,10 +1572,14 @@
 
   var createArcMaplogLayer = function(msStart, sEnd) {
     if (sEnd*1000 > msStartOfRandomAge) {
+      var ms = sEnd*1000
+      if (msStart < mapTime && mapTime < sEnd*1000) {
+        ms = mapTime
+      }
       return new L.layerGroup([
         /*
         new L.GridLayer.KeyPlacementPixel(keyPlacementCache, {
-          time: sEnd.toString(),
+          dataTime: sEnd.toString(),
           minZoom: 24,
           maxZoom: 31,
           //minNativeZoom: 24,
@@ -1578,9 +1588,8 @@
         }),
         */
         new L.GridLayer.MaplogSprite(maplogCache, {
-          timeDimension: timeDimension,
-          baseTime: msStart,
-          time: sEnd.toString(),
+          dataTime: sEnd.toString(),
+          time: ms,
           minZoom: 24,
           maxZoom: 31,
           //minNativeZoom: 24,
@@ -1664,8 +1673,8 @@
       if (!this.options.data) {
         return
       }
-      if (this.options.timeDimension) {
-        time = time || this.options.timeDimension.getCurrentTime()/1000
+      if ('time' in this.options) {
+        time = time || this.options.time/1000
       }
       var tileSize = this.getTileSize();
 
@@ -1736,13 +1745,14 @@
         }
       })
     },
-    updateTiles: function(ev) {
-      var time = ev.time/1000
+    updateTiles: function(ms) {
+      L.Util.setOptions(this, {time: ms})
+      var time = ms/1000
       for (var key in this._tiles) {
         var tile = this._tiles[key]
         this.drawTile(tile.el, tile.coords, time)
       }
-      setMapTime(this._map, ev.time, 'animOverlay updatTiles')
+      setMapTime(this._map, ms, 'animOverlay updatTiles')
     },
     selectPoints: function(ev) {
       var center = ev.layerPoint
@@ -1768,8 +1778,8 @@
         return llnw.lng < x && x < llse.lng
             && llse.lat < y && y < llnw.lat
       })
-      if (this.options.timeDimension) {
-        var time = this.options.timeDimension.getCurrentTime()/1000
+      if ('time' in this.options) {
+        var time = this.options.time/1000
         hit = hit.filter(function(point) {
           return point.birth_time < time && time < point.death_time
         })
@@ -1783,81 +1793,18 @@
     },
   })
 
-
-  var timeDimension = new L.TimeDimension({
-    //timeInterval: start + "/" + end,
-    //period: "PT1M",
-  });
-
-  var player = new L.TimeDimension.Player({
-    transitionTime: 100, 
-    loop: false,
-    startOver:true
-  }, timeDimension);
-
-  var timeDimensionControlOptions = {
-    player: player,
-    timeDimension: timeDimension,
-    position: 'bottomleft',
-    autoPlay: false,
-    minSpeed: 1,
-    speedStep: 1,
-    maxSpeed: 30,
-    timeSteps: 60,
-    timeSliderDragUpdate: true
-  };
-
-  L.Control.ClosableTimeDimension = L.Control.TimeDimension.extend({
-    onAdd: function(map) {
-      var container = L.Control.TimeDimension.prototype.onAdd.call(this, map)
-      this._buttonClose = this._createButton('Close', container);
-      return container
-    },
-    _buttonCloseClicked: function() {
-      app.ports.leafletEvent.send({
-        kind: 'animToggle',
-      })
-    },
-  });
-
-  var timeDimensionControl = new L.Control.ClosableTimeDimension(timeDimensionControlOptions);
-
   var pointOverlay = new L.GridLayer.PointOverlay({
     className: 'interactive',
   }).addTo(dataOverlay)
   pointOverlay.name = 'point overlay'
 
   var animOverlay = new L.GridLayer.PointOverlay({
-    attribution: '<a href="https://github.com/socib/Leaflet.TimeDimension">socib/Leaflet.TimeDimension</a>',
     className: 'interactive',
-    timeDimension: timeDimension,
+    time: 0,
     alternateStatic: pointOverlay,
   })
   animOverlay.name = 'anim overlay'
   L.Util.setOptions(pointOverlay, {alternateAnim: animOverlay})
-  timeDimension.on("timeload", animOverlay.updateTiles, animOverlay)
-  timeDimension.on("timeload", function(ev) {
-    base['Arc Age'].eachLayer(function(group) {
-      group.eachLayer(function(sub) {
-        if (sub.eachLayer) {
-          sub.eachLayer(function(layer) {
-            if (layer.updateTiles) {
-              layer.updateTiles(ev)
-            }
-          })
-        }
-      })
-    })
-  })
-  timeDimension.on("timeload", function(ev) {
-    var time = ev.time/1000
-    setTimeout(function() {
-    app.ports.leafletEvent.send({
-      kind: 'timeload',
-      time: time,
-    })
-    }, 1000)
-  })
 
   var resultPoints = new L.GridLayer.PointOverlay().addTo(searchOverlay)
 
@@ -1890,11 +1837,6 @@
       point.chainColor = colorlinear(point.chain, minChain, maxChain)
       point.causeOfDeathColor = colorcause(point.cause)
     })
-    var times = []
-    for (var t = min;t < max;t += 1) {
-      times.push(t * 1000)
-    }
-    timeDimension.setAvailableTimes(times, 'replace')
     L.Util.setOptions(animOverlay, {
       data: data,
       min: min,
@@ -1919,23 +1861,6 @@
     })
     pointOverlay.redraw()
     setMapTime(pointOverlay._map, min*1000, 'setDataLayers')
-  }
-
-  var arcRangeByTime = function(ms, reason) {
-    arcs.forEach(function(arc) {
-      if (ms > arc.msStart && ms <= arc.msEnd) {
-        //console.log(arc.msStart, ms, arc.msEnd)
-        if (timeDimension.getAvailableTimes()[0] != arc.msStart+1000) {
-          //console.log("reset times", timeDimension.getAvailableTimes()[0], arc.msStart)
-          var times = []
-          for (var t = arc.msStart+1000;t < arc.msEnd;t += 1000) {
-            times.push(t)
-          }
-          timeDimension.setAvailableTimes(times, 'replace')
-          timeDimension.setCurrentTime(ms)
-        }
-      }
-    })
   }
 
   var baseLayerByTime = function(map, ms, reason) {
@@ -2006,8 +1931,14 @@
   }
 
   var setMapTime = function(map, ms, reason) {
+    mapTime = ms
     if (map) baseLayerByTime(map, ms, reason)
     riftLayerByTime(ms)
+  }
+
+  var updateTiles = function(ms) {
+    animOverlay.updateTiles(ms)
+    arcUpdateTiles(ms)
   }
 
   var setPointColor = function(color) {
@@ -2331,16 +2262,12 @@
         animated++
       }
     })
-    console.log('toggle animation controls', animated, stat)
     if (animated > 0) {
-      addControl(map, timeDimensionControl)
-      removeControl(map, animToggle)
+      addControl(map, animToggle)
     } else if (stat > 0) {
       addControl(map, animToggle)
-      removeControl(map, timeDimensionControl)
     } else {
       removeControl(map, animToggle)
-      removeControl(map, timeDimensionControl)
     }
   }
 
@@ -2392,17 +2319,13 @@
 
     var t = Date.now()
     setMapTime(map, t, 'inhabit')
-    arcRangeByTime(t, 'inhabit')
     //base['Topographic Test'].addTo(map)
     overlays['Rift'].addTo(map)
     //overlays['Checker'].addTo(map)
     //base['Fractal'].addTo(map)
     //base['Biome'].addTo(map)
     //map.addControl(animToggle)
-    //map.addControl(timeDimensionControl)
 
-    // helper to share the timeDimension object between all layers
-    map.timeDimension = timeDimension; 
     layersControl.addTo(map)
     L.control.scale({imperial: false}).addTo(map)
     sidebarToggle.addTo(map)
@@ -2453,13 +2376,7 @@
         case 'currentTime':
           var time = message.time * 1000
           setMapTime(map, time, 'currentTime')
-          if (!map.hasLayer(dataOverlay)) {
-            arcRangeByTime(time, 'currentTime')
-          }
-          var range = timeDimension.getAvailableTimes(time)
-          if (range[0] <= time && time <= range[range.length-1]) {
-            timeDimension.setCurrentTime(time)
-          }
+          updateTiles(time)
           break;
         case 'currentServer':
           var targetLayer
@@ -2477,9 +2394,9 @@
           break;
         case 'arcList':
           updateArcs(message.arcs.data)
-          setMapTime(map, message.time * 1000, 'arcList')
-          arcRangeByTime(message.time * 1000, 'arcList')
-          timeDimension.setCurrentTime(message.time * 1000)
+          var ms = message.time * 1000
+          setMapTime(map, ms, 'arcList')
+          updateTiles(ms)
           break;
         case 'monumentList':
           updateMonumentLayer(monumentOverlay, message.monuments.data)
@@ -2492,14 +2409,9 @@
           }
           break;
         case 'beginPlayback':
-          timeDimension.setCurrentTime(message.start_time)
-          player.setTransitionTime(1000 / (message.frame_rate || 1))
-          player.stop()
-          player.start(message.game_seconds_per_frame)
+          updateTiles(message.start_time)
           break;
         case 'playbackScale':
-          player.stop()
-          player.start(message.game_seconds_per_frame)
           break;
         case 'displayResults':
           var data = message.lives.data
@@ -2518,11 +2430,9 @@
             .addTo(searchOverlay)
             .openPopup()
           map.setView([life.birth_y, life.birth_x])
-          setMapTime(map, life.birth_time*1000, 'focus')
-          arcRangeByTime(life.birth_time*1000, 'focus')
-          setTimeout(function() {
-            timeDimension.setCurrentTime(life.birth_time*1000)
-          }, 1000)
+          var ms = life.birth_time*1000
+          setMapTime(map, ms, 'focus')
+          updateTiles(ms)
           break
         case 'searchOverlay':
           if (message.status) {
@@ -2536,9 +2446,6 @@
           arcs.forEach(function(arc) {
             toggleAnimated(arc.layer, message.status)
           })
-          if (message.status == false) {
-            player.stop()
-          }
           toggleAnimationControls(map)
           break
         case 'baseLayer':
