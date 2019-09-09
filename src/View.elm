@@ -130,7 +130,7 @@ view model =
               (html <| Html.div [ Html.Attributes.id "map" ] [])
             )
           , ( "timeline"
-            , if model.timeRange /= Nothing then --model.dataAnimated then
+            , if model.dataAnimated then
                 timeline model
               else
                 none

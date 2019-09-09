@@ -838,11 +838,11 @@
     arcs.forEach(function(arc) {
       var keyPlacementLayer = createArcKeyPlacementLayer(arc.msEnd/1000)
       keyPlacementLayer.name = "key placement"
-      arc.layer.addLayer(keyPlacementLayer)
+      //arc.layer.addLayer(keyPlacementLayer)
       arc.keyPlacementLayer = keyPlacementLayer
       var maplogLayer = createArcMaplogLayer(arc.msStart, arc.msEnd/1000)
       maplogLayer.name = "maplog"
-      //arc.layer.addLayer(maplogLayer)
+      arc.layer.addLayer(maplogLayer)
       arc.maplogLayer = maplogLayer
       L.Util.setOptions(keyPlacementLayer, {alternateAnim: maplogLayer})
       L.Util.setOptions(maplogLayer, {alternateStatic: keyPlacementLayer})
@@ -2331,6 +2331,7 @@
         animated++
       }
     })
+    console.log('toggle animation controls', animated, stat)
     if (animated > 0) {
       addControl(map, timeDimensionControl)
       removeControl(map, animToggle)
