@@ -213,6 +213,11 @@ update msg model =
     UI (View.Play) ->
       ( { model
         | player = Playing
+        , mapTime =
+          if model.mapTime == (model.timeRange |> Maybe.map Tuple.second) then
+            model.timeRange |> Maybe.map Tuple.first
+          else
+            model.mapTime
         }
       , Cmd.none
       )
