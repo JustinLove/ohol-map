@@ -285,14 +285,6 @@ update msg model =
       , Navigation.replaceUrl model.navigationKey <|
         centerUrl model.location model.mapTime (isYesterday model) point
       )
-    Event (Ok (Leaflet.TimeLoad time)) ->
-      (model, Cmd.none)
-      {-
-      ( {model|mapTime = Just time}
-      , Navigation.replaceUrl model.navigationKey <|
-        centerUrl model.location (Just time) (isYesterday model) model.center
-      )
-      -}
     Event (Ok (Leaflet.OverlayAdd "Life Data" _)) ->
       requireLives model
     Event (Ok (Leaflet.OverlayAdd name (Just serverId))) ->
@@ -315,6 +307,14 @@ update msg model =
         [ Leaflet.displayResults lives
         , Leaflet.searchOverlay True
         ]
+      )
+    Event (Ok (Leaflet.DataRange min max)) ->
+      ( { model
+        | timeRange = Just (min, max)
+        , mapTime = model.mapTime
+            |> Maybe.map (inRange min max)
+        }
+      , Cmd.none
       )
     Event (Ok (Leaflet.SidebarToggle)) ->
       ( { model | sidebarOpen = not model.sidebarOpen }

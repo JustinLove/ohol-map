@@ -1,11 +1,7 @@
 - improve time model
-
-- elm generates time events
-  - current time events to JS are arbitrarily delayed
-  - time dimension will send timeload for only current times that fell in a time range
-  - timeload events are arbitrarily delayed
-
-
+  - play etc buttons
+  - default/no appropriate range
+  - initial anim/static state of layers
 
 - find bottleneck - network or render?
   - load time garbage collection

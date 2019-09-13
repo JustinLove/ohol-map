@@ -192,10 +192,10 @@ fadeTallObjects status =
 
 type Event
   = MoveEnd Point
-  | TimeLoad Posix
   | OverlayAdd String (Maybe Int)
   | OverlayRemove String
   | SelectPoints (List Data.Life)
+  | DataRange Posix Posix
   | SidebarToggle
   | AnimToggle
 
@@ -215,9 +215,6 @@ eventDecoder =
       case kind of
         "moveend" ->
           Decode.map MoveEnd pointDecoder
-        "timeload" ->
-          Decode.map TimeLoad
-            (Decode.field "time" Decode.timeStamp)
         "overlayadd" ->
           Decode.map2 OverlayAdd
             (Decode.field "name" Decode.string)
@@ -225,7 +222,11 @@ eventDecoder =
         "overlayremove" ->
           Decode.map OverlayRemove (Decode.field "name" Decode.string)
         "selectPoints" ->
-           Decode.map SelectPoints (Decode.field "lives" Decode.lives)
+          Decode.map SelectPoints (Decode.field "lives" Decode.lives)
+        "dataRange" ->
+          Decode.map2 DataRange
+            (Decode.field "min" Decode.timeStamp)
+            (Decode.field "max" Decode.timeStamp)
         "sidebarToggle" ->
           Decode.succeed SidebarToggle
         "animToggle" ->

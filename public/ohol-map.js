@@ -1752,7 +1752,7 @@
         var tile = this._tiles[key]
         this.drawTile(tile.el, tile.coords, time)
       }
-      setMapTime(this._map, ms, 'animOverlay updatTiles')
+      setMapTime(this._map, ms, 'animOverlay updateTiles')
     },
     selectPoints: function(ev) {
       var center = ev.layerPoint
@@ -1795,14 +1795,14 @@
 
   var pointOverlay = new L.GridLayer.PointOverlay({
     className: 'interactive',
-  }).addTo(dataOverlay)
+  })//.addTo(dataOverlay)
   pointOverlay.name = 'point overlay'
 
   var animOverlay = new L.GridLayer.PointOverlay({
     className: 'interactive',
     time: 0,
     alternateStatic: pointOverlay,
-  })
+  }).addTo(dataOverlay)
   animOverlay.name = 'anim overlay'
   L.Util.setOptions(pointOverlay, {alternateAnim: animOverlay})
 
@@ -1861,6 +1861,11 @@
     })
     pointOverlay.redraw()
     setMapTime(pointOverlay._map, min*1000, 'setDataLayers')
+    app.ports.leafletEvent.send({
+      kind: 'dataRange',
+      min: min,
+      max: max,
+    })
   }
 
   var baseLayerByTime = function(map, ms, reason) {
