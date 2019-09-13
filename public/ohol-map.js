@@ -2413,11 +2413,6 @@
             map.addLayer(dataOverlay)
           }
           break;
-        case 'beginPlayback':
-          updateTiles(message.start_time)
-          break;
-        case 'playbackScale':
-          break;
         case 'displayResults':
           var data = message.lives.data
           L.Util.setOptions(resultPoints, {

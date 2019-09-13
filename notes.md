@@ -1,6 +1,7 @@
 - improve time model
   - default/no appropriate range
   - initial anim/static state of layers
+  - yesterday mode
 
 - find bottleneck - network or render?
   - load time garbage collection

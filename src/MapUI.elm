@@ -38,7 +38,6 @@ type Msg
   | MonumentList Int (Result Http.Error Json.Decode.Value)
   | DataLayer (Result Http.Error Json.Decode.Value)
   | FetchUpTo Posix
-  | PlayRelativeTo Posix
   | ShowTimeNotice Posix Posix
   | CurrentTimeNotice Posix
   | CurrentTime Posix
@@ -203,7 +202,7 @@ update msg model =
       ( { model
         | gameSecondsPerFrame = seconds
         }
-      , Leaflet.playbackScale seconds
+      , Cmd.none
       )
     UI (View.MapTime time) ->
       ( {model|mapTime = Just time}
@@ -431,23 +430,6 @@ update msg model =
       ( {model | dataLayer = Data True}
       , Cmd.batch
         [ Leaflet.dataLayer lives
-        , if model.dataAnimated then
-            case model.timeMode of
-              ServerRange ->
-                Leaflet.beginPlayback
-                  model.gameSecondsPerFrame
-                  model.frameRate
-                  model.startTime
-              -- TODO
-              FromNow ->
-                Task.perform PlayRelativeTo Time.now
-              ArcRange ->
-                Leaflet.beginPlayback
-                  model.gameSecondsPerFrame
-                  model.frameRate
-                  (model.currentArc |> Maybe.map (.start >> increment) |> Maybe.withDefault model.time)
-          else
-            Cmd.none
         ]
       )
     DataLayer (Err error) ->
@@ -459,11 +441,6 @@ update msg model =
           (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
           (relativeStartTime model.hoursPeriod time)
           time
-      )
-    PlayRelativeTo time ->
-      ( model
-      , Leaflet.beginPlayback model.gameSecondsPerFrame model.frameRate
-        (relativeStartTime model.hoursPeriod time)
       )
     ShowTimeNotice show time ->
       let
