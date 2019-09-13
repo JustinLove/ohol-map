@@ -1,5 +1,4 @@
 - improve time model
-  - play etc buttons
   - default/no appropriate range
   - initial anim/static state of layers
 

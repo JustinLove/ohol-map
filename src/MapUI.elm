@@ -4,9 +4,18 @@ import Leaflet exposing (Point, PointColor(..), PointLocation(..))
 import OHOLData as Data exposing (Server, Arc)
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
-import View exposing (RemoteData(..), Life, TimeMode(..), Notice(..), timeNoticeDuration, centerUrl)
+import View exposing
+  ( RemoteData(..)
+  , Life
+  , TimeMode(..)
+  , Notice(..)
+  , Player(..)
+  , timeNoticeDuration
+  , centerUrl
+  )
 
 import Browser
+import Browser.Events
 --import Browser.Dom
 import Browser.Navigation as Navigation
 import Http
@@ -33,6 +42,7 @@ type Msg
   | ShowTimeNotice Posix Posix
   | CurrentTimeNotice Posix
   | CurrentTime Posix
+  | Playback Float
   | CurrentZone Time.Zone
   | CurrentUrl Url
   | Navigate Browser.UrlRequest
@@ -60,6 +70,7 @@ type alias Model =
   , gameSecondsPerFrame : Int
   , frameRate : Int
   , timeRange : Maybe (Posix, Posix)
+  , player : Player
   , fadeTallObjects : Bool
   , pointColor : PointColor
   , pointLocation : PointLocation
@@ -113,6 +124,7 @@ init config location key =
       , gameSecondsPerFrame = 60
       , frameRate = 10
       , timeRange = Nothing
+      , player = Stopped
       , fadeTallObjects = False
       , pointColor = LineageColor
       , pointLocation = BirthLocation
@@ -200,6 +212,18 @@ update msg model =
         , Navigation.replaceUrl model.navigationKey <|
           centerUrl model.location (Just time) (isYesterday model) model.center
         ]
+      )
+    UI (View.Play) ->
+      ( { model
+        | player = Playing
+        }
+      , Cmd.none
+      )
+    UI (View.Pause) ->
+      ( { model
+        | player = Stopped
+        }
+      , Cmd.none
       )
     UI (View.ToggleFadeTallObjects fade) ->
       ( { model
@@ -465,6 +489,30 @@ update msg model =
         }
       , Cmd.none
       )
+    Playback dt ->
+      case model.mapTime of
+        Nothing -> (model, Cmd.none)
+        Just time ->
+          let
+            msNewTime = time
+              |> Time.posixToMillis
+              |> (\t -> t + round dt)
+            msMaxTime = model.timeRange
+              |> Maybe.map (Tuple.second >> Time.posixToMillis)
+            msCappedTime = msMaxTime
+              |> Maybe.map (min msNewTime)
+              |> Maybe.withDefault msNewTime
+              |> Time.millisToPosix
+            over = msMaxTime
+              |> Maybe.map (\max -> msNewTime >= max)
+              |> Maybe.withDefault False
+          in
+            ( { model
+              | mapTime = Just msCappedTime
+              , player = if over then Stopped else Playing
+              }
+            , Leaflet.currentTime msCappedTime
+            )
     CurrentZone zone ->
       ({model | zone = zone}, Cmd.none)
     CurrentUrl location ->
@@ -688,9 +736,14 @@ subscriptions model =
     [ Leaflet.event Event
     , case model.notice of
         TimeNotice _ _ ->
-          Time.every 33 CurrentTime
+          Browser.Events.onAnimationFrame CurrentTime
         NoNotice ->
           Sub.none
+    , case model.player of
+        Stopped ->
+          Sub.none
+        Playing ->
+          Browser.Events.onAnimationFrameDelta Playback
     ]
 
 fetchServers : String -> Cmd Msg

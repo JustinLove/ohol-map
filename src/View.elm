@@ -1,4 +1,16 @@
-module View exposing (Msg(..), Mode(..), TimeMode(..), Notice(..), timeNoticeDuration, RemoteData(..), Life, centerUrl, view, document)
+module View exposing
+  ( Msg(..)
+  , Mode(..)
+  , TimeMode(..)
+  , Notice(..)
+  , Player(..)
+  , timeNoticeDuration
+  , RemoteData(..)
+  , Life
+  , centerUrl
+  , view
+  , document
+  )
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
 import OHOLData as Data exposing (Server)
@@ -35,6 +47,8 @@ type Msg
   | ToggleAnimated Bool
   | GameSecondsPerFrame Int
   | MapTime Posix
+  | Play
+  | Pause
   | ToggleFadeTallObjects Bool
   | SelectPointColor PointColor
   | SelectPointLocation PointLocation
@@ -58,6 +72,10 @@ type TimeMode
 type Notice
   = TimeNotice Posix Posix
   | NoNotice
+
+type Player
+  = Stopped
+  | Playing
 
 timeNoticeDuration = 6000
 
@@ -179,8 +197,19 @@ timeline model =
     (Just time, Just (start, end)) ->
       column [ width fill ]
         [ row []
-          [ ( time
-              |> date model.zone
+          [ case model.player of
+            Stopped ->
+              Input.button [ width (px 40), padding 4 ]
+                { onPress = Just Play
+                , label = el [ centerX ] <| icon "play3"
+                }
+            Playing ->
+              Input.button [ width (px 40), padding 4 ]
+                { onPress = Just Pause
+                , label = el [ centerX ] <| icon "pause2"
+                }
+          , ( time
+              |> dateWithSeconds model.zone
               |> text
             )
           ]
@@ -376,6 +405,13 @@ date zone time =
     minute = Time.toMinute zone time |> String.fromInt |> String.padLeft 2 '0'
   in
     year ++ "-" ++ month ++ "-" ++ day ++ " " ++ hour ++ ":" ++ minute
+
+dateWithSeconds : Time.Zone -> Posix -> String
+dateWithSeconds zone time =
+  let
+    second = Time.toSecond zone time |> String.fromInt |> String.padLeft 2 '0'
+  in
+    (date zone time) ++ ":" ++ second
 
 formatMonth : Time.Month -> String
 formatMonth month =
