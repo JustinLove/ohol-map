@@ -45,7 +45,7 @@ type Msg
   | HoursBefore Int
   | HoursAfter Int
   | ToggleAnimated Bool
-  | GameSecondsPerFrame Int
+  | GameSecondsPerSecond Int
   | MapTime Posix
   | Play
   | Pause
@@ -823,12 +823,12 @@ cosmetics model =
       , if model.dataAnimated then
           logSlider
             [ Background.color control ]
-            { onChange = round >> GameSecondsPerFrame
+            { onChange = round >> GameSecondsPerSecond
             , label = Input.labelAbove [] <|
-              text (gameTimeText model.gameSecondsPerFrame)
+              text (gameTimeText model.gameSecondsPerSecond)
             , min = 1
-            , max = 60*60
-            , value = model.gameSecondsPerFrame |> toFloat
+            , max = 60*60*10
+            , value = model.gameSecondsPerSecond |> toFloat
             , thumb = Input.defaultThumb
             , step = Nothing
             }
@@ -845,11 +845,15 @@ cosmetics model =
 gameTimeText : Int -> String
 gameTimeText totalSeconds =
   let
-    minutes = totalSeconds // 60
+    hours = totalSeconds // 3600
+    minutes = totalSeconds // 60 |> modBy 60
     seconds = totalSeconds |> modBy 60
   in
-    [
-      if minutes > 0 then
+    [ if hours > 0 then
+        Just ((hours |> String.fromInt) ++ "h")
+      else
+        Nothing
+    , if minutes > 0 then
         Just ((minutes |> String.fromInt) ++ "m")
       else
         Nothing
@@ -857,7 +861,7 @@ gameTimeText totalSeconds =
         Just ((seconds |> String.fromInt) ++ "s")
       else
         Nothing
-    , Just "Game Time/Frame"
+    , Just "Game Time/Second"
   ]
     |> List.filterMap identity
     |> String.join " "

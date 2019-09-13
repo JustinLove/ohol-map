@@ -66,8 +66,7 @@ type alias Model =
   , hoursPeriod : Int
   , currentArc : Maybe Arc
   , dataAnimated : Bool
-  , gameSecondsPerFrame : Int
-  , frameRate : Int
+  , gameSecondsPerSecond : Int
   , timeRange : Maybe (Posix, Posix)
   , player : Player
   , fadeTallObjects : Bool
@@ -120,8 +119,7 @@ init config location key =
       , hoursPeriod = 48
       , currentArc = Nothing
       , dataAnimated = True
-      , gameSecondsPerFrame = 60
-      , frameRate = 10
+      , gameSecondsPerSecond = 600
       , timeRange = Nothing
       , player = Stopped
       , fadeTallObjects = False
@@ -198,9 +196,9 @@ update msg model =
         }
       , Leaflet.animOverlay animated
       )
-    UI (View.GameSecondsPerFrame seconds) ->
+    UI (View.GameSecondsPerSecond seconds) ->
       ( { model
-        | gameSecondsPerFrame = seconds
+        | gameSecondsPerSecond = seconds
         }
       , Cmd.none
       )
@@ -473,7 +471,7 @@ update msg model =
           let
             msNewTime = time
               |> Time.posixToMillis
-              |> (\t -> t + round dt)
+              |> (\t -> t + (round dt) * model.gameSecondsPerSecond)
             msMaxTime = model.timeRange
               |> Maybe.map (Tuple.second >> Time.posixToMillis)
             msCappedTime = msMaxTime
@@ -544,8 +542,7 @@ yesterday model =
     , timeMode = FromNow
     , dataAnimated = True
     , hoursPeriod = 24
-    , gameSecondsPerFrame = 1
-    , frameRate = 1
+    , gameSecondsPerSecond = 1
     }
   , Cmd.batch
     [ fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
@@ -579,8 +576,7 @@ isYesterday model =
   model.dataLayer /= NotRequested
     && model.timeMode == FromNow
     && model.hoursPeriod == 24
-    && model.gameSecondsPerFrame == 1
-    && model.frameRate == 1
+    && model.gameSecondsPerSecond == 1
     && model.dataAnimated
 
 combineRoute : (Model -> (Model, Cmd Msg)) -> (Model, Cmd Msg) -> (Model, Cmd Msg)
