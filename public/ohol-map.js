@@ -21,6 +21,7 @@
   })
 
   var mapTime = Date.now()
+  var dataAnimated = false
 
   var base = {};
 
@@ -834,14 +835,17 @@
     arcs.forEach(function(arc) {
       var keyPlacementLayer = createArcKeyPlacementLayer(arc.msEnd/1000)
       keyPlacementLayer.name = "key placement"
-      //arc.layer.addLayer(keyPlacementLayer)
       arc.keyPlacementLayer = keyPlacementLayer
       var maplogLayer = createArcMaplogLayer(arc.msStart, arc.msEnd/1000)
       maplogLayer.name = "maplog"
-      arc.layer.addLayer(maplogLayer)
       arc.maplogLayer = maplogLayer
       L.Util.setOptions(keyPlacementLayer, {alternateAnim: maplogLayer})
       L.Util.setOptions(maplogLayer, {alternateStatic: keyPlacementLayer})
+      if (dataAnimated) {
+        arc.layer.addLayer(maplogLayer)
+      } else {
+        arc.layer.addLayer(keyPlacementLayer)
+      }
     })
   }
 
@@ -1795,16 +1799,22 @@
 
   var pointOverlay = new L.GridLayer.PointOverlay({
     className: 'interactive',
-  })//.addTo(dataOverlay)
+  })
   pointOverlay.name = 'point overlay'
 
   var animOverlay = new L.GridLayer.PointOverlay({
     className: 'interactive',
     time: 0,
     alternateStatic: pointOverlay,
-  }).addTo(dataOverlay)
+  })
   animOverlay.name = 'anim overlay'
   L.Util.setOptions(pointOverlay, {alternateAnim: animOverlay})
+
+  if (dataAnimated) {
+    animOverlay.addTo(dataOverlay)
+  } else {
+    pointOverlay.addTo(dataOverlay)
+  }
 
   var resultPoints = new L.GridLayer.PointOverlay().addTo(searchOverlay)
 
@@ -2442,6 +2452,7 @@
           }
           break
         case 'animOverlay':
+          dataAnimated = message.status
           toggleAnimated(dataOverlay, message.status)
           arcs.forEach(function(arc) {
             toggleAnimated(arc.layer, message.status)

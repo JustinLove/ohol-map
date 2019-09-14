@@ -118,7 +118,7 @@ init config location key =
       , mapTime = Nothing
       , hoursPeriod = 48
       , currentArc = Nothing
-      , dataAnimated = True
+      , dataAnimated = False
       , gameSecondsPerSecond = 600
       , timeRange = Nothing
       , player = Stopped
@@ -144,6 +144,7 @@ init config location key =
         Nothing -> Time.now |> Task.perform CurrentTimeNotice
       , fetchServers model.cachedApiUrl
       , fetchArcs model.cachedApiUrl
+      , Leaflet.animOverlay model.dataAnimated
       ]
     )
 
