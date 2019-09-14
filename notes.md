@@ -1,5 +1,5 @@
-- improve time model
-  - mode icons
+- legend for lineage color
+- search/lineage reslts in data layer for coloring etc.
 
 - find bottleneck - network or render?
   - load time garbage collection
@@ -31,11 +31,10 @@
 
 
 - data update - dug barrel cactus - mabye after worldgen
-- legend for lineage color
-- search/lineage reslts in data layer for coloring etc.
 - more accurate biome age times
 - bookmarking layers
 - in-app help
+- sidebar icon toggle
 - show data for other servers
   - deselect server
   - collapse server
@@ -70,8 +69,3 @@
   - webworker?
 
 ## release
-
-- key placement changes
-  - end time change; deploy separate directory
-  - reset db arcs
-  - position difference encoding

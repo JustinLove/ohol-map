@@ -1674,13 +1674,15 @@
       return tile;
     },
     drawTile(tile, coords, time) {
-      if (!this.options.data) {
+      var layer = this
+      var options = layer.options
+      if (!options.data) {
         return
       }
-      if ('time' in this.options) {
-        time = time || this.options.time/1000
+      if ('time' in options) {
+        time = time || options.time/1000
       }
-      var tileSize = this.getTileSize();
+      var tileSize = layer.getTileSize();
 
       var ctx = tile.getContext('2d');
       ctx.clearRect(0, 0, tile.width, tile.height)
@@ -1694,10 +1696,10 @@
       var llse = crs.pointToLatLng(pse, coords.z)
       //console.log(coords, llnw, llse)
 
-      var color = this.options.color || 'lineageColor'
-      var location = this.options.location || 'birth'
+      var color = options.color || 'lineageColor'
+      var location = options.location || 'birth'
       var fadeTime = 60*60
-      this.options.data.forEach(function(point) {
+      options.data.forEach(function(point) {
         //console.log(point)
 
         var t = 1
@@ -1757,6 +1759,16 @@
         this.drawTile(tile.el, tile.coords, time)
       }
       setMapTime(this._map, ms, 'animOverlay updateTiles')
+      var lineages = {}
+      for (var i in this.options.data) {
+        var point = this.options.data[i]
+        var death_time = (point.death_time || (point.birth_time + 3600))
+        if (point.birth_time < time && time < death_time) {
+          lineages[point.lineage.toString()] = point
+        }
+      }
+      L.Util.setOptions(colorScaleControl, {lineages: lineages})
+      colorScaleControl.redraw()
     },
     selectPoints: function(ev) {
       var center = ev.layerPoint
@@ -1823,6 +1835,7 @@
     var max = null;
     var minChain = null;
     var maxChain = null;
+    var lineages = {}
     data.forEach(function(point) {
       if (min == null || point.birth_time < min) {
         min = point.birth_time
@@ -1837,6 +1850,7 @@
       if (maxChain == null || point.chain > maxChain) {
         maxChain = point.chain
       }
+      lineages[point.lineage.toString()] = point
     })
     data.forEach(function(point) {
       point.lineageColor = colorlineage(point.lineage)
@@ -1868,8 +1882,9 @@
       max: max,
       minChain: minChain,
       maxChain: maxChain,
+      lineages: lineages,
     })
-    pointOverlay.redraw()
+    colorScaleControl.redraw()
     setMapTime(pointOverlay._map, min*1000, 'setDataLayers')
     app.ports.leafletEvent.send({
       kind: 'dataRange',
@@ -2117,6 +2132,13 @@
           container.removeChild(container.firstChild);
         }
         switch (this.options.color) {
+          case 'lineageColor':
+            Object.values(this.options.lineages || {}).forEach(function(life) {
+              var swatch = L.DomUtil.create('div', 'swatch', container)
+              swatch.style = 'background-color: ' + colorlineage(life.lineage)
+              swatch.innerHTML = life.name;
+            })
+            break;
           case 'birthTimeColor':
             var swatch = L.DomUtil.create('div', 'swatch', container)
             swatch.style = 'background-color: ' + colorlinear(this.options.min, this.options.min, this.options.max)
