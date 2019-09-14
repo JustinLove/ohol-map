@@ -560,11 +560,8 @@ setTime : Posix -> Model -> (Model, Cmd Msg)
 setTime time model =
   if model.mapTime /= Just time then
     let
-      _ = Debug.log "time" time
       animatable = model.timeRange
-        |> Debug.log "range"
         |> Maybe.map (\(min, max) -> isInRange min time max)
-        |> Debug.log "animatedable"
         |> Maybe.withDefault False
     in
     ( { model
