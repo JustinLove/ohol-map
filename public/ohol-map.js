@@ -2080,7 +2080,13 @@
     message: 'sidebarToggle',
     position: 'bottomright'
   })
-  var animToggle = L.control.mapButton({
+  var animToggleAnimated = L.control.mapButton({
+    title: 'Time',
+    icon: 'cancel-circle',
+    message: 'animToggle',
+    position: 'bottomleft'
+  })
+  var animToggleStatic = L.control.mapButton({
     title: 'Time',
     icon: 'time',
     message: 'animToggle',
@@ -2278,11 +2284,14 @@
       }
     })
     if (animated > 0) {
-      addControl(map, animToggle)
+      addControl(map, animToggleAnimated)
+      removeControl(map, animToggleStatic)
     } else if (stat > 0) {
-      addControl(map, animToggle)
+      addControl(map, animToggleStatic)
+      removeControl(map, animToggleAnimated)
     } else {
-      removeControl(map, animToggle)
+      removeControl(map, animToggleStatic)
+      removeControl(map, animToggleAnimated)
     }
   }
 
