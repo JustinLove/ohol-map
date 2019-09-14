@@ -1759,7 +1759,7 @@
         this.drawTile(tile.el, tile.coords, time)
       }
       setMapTime(this._map, ms, 'animOverlay updateTiles')
-      colorScaleControl.updateLineages(this.options.data, time)
+      colorScaleControl.updateLineages(time)
     },
     selectPoints: function(ev) {
       var center = ev.layerPoint
@@ -1871,8 +1871,9 @@
       max: max,
       minChain: minChain,
       maxChain: maxChain,
+      data: data,
     })
-    colorScaleControl.updateLineages(data)
+    colorScaleControl.updateLineages()
     setMapTime(pointOverlay._map, min*1000, 'setDataLayers')
     app.ports.leafletEvent.send({
       kind: 'dataRange',
@@ -2129,8 +2130,9 @@
             swatch.style = 'background-color: ' + colorlineage(life.lineage)
             if (life.name) {
               var words = life.name.split(' ')
-              swatch.innerHTML = words[1] || words[0]
-              swatch.innerHTML = life.chain.toString()
+              swatch.innerHTML = (words[1] || words[0])
+            } else {
+              //swatch.innerHTML = life.chain.toString()
             }
           })
           break;
@@ -2167,8 +2169,9 @@
           break;
       }
     },
-    updateLineages: function(data, time) {
+    updateLineages: function(time) {
       var lineages = {}
+      var data = this.options.data
       for (var i in data) {
         var point = data[i]
         if (time) {
@@ -2178,7 +2181,11 @@
           }
         }
 
-        lineages[point.lineage.toString()] = point
+        var key = point.lineage.toString()
+        var prior = lineages[key]
+        if (!prior || !prior.name || point.chain > prior.chain) {
+          lineages[key] = point
+        }
       }
       L.Util.setOptions(this, {lineages: lineages})
       this.redraw()
@@ -2499,6 +2506,7 @@
           arcs.forEach(function(arc) {
             toggleAnimated(arc.layer, message.status)
           })
+          colorScaleControl.updateLineages(message.status ? mapTime : undefined)
           toggleAnimationControls(map)
           break
         case 'baseLayer':
