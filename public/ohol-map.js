@@ -2136,7 +2136,10 @@
             Object.values(this.options.lineages || {}).forEach(function(life) {
               var swatch = L.DomUtil.create('div', 'swatch', container)
               swatch.style = 'background-color: ' + colorlineage(life.lineage)
-              swatch.innerHTML = life.name;
+              if (life.name) {
+                var words = life.name.split(' ')
+                swatch.innerHTML = words[1] || words[0]
+              }
             })
             break;
           case 'birthTimeColor':
