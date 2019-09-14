@@ -1759,16 +1759,7 @@
         this.drawTile(tile.el, tile.coords, time)
       }
       setMapTime(this._map, ms, 'animOverlay updateTiles')
-      var lineages = {}
-      for (var i in this.options.data) {
-        var point = this.options.data[i]
-        var death_time = (point.death_time || (point.birth_time + 3600))
-        if (point.birth_time < time && time < death_time) {
-          lineages[point.lineage.toString()] = point
-        }
-      }
-      L.Util.setOptions(colorScaleControl, {lineages: lineages})
-      colorScaleControl.redraw()
+      colorScaleControl.updateLineages(this.options.data, time)
     },
     selectPoints: function(ev) {
       var center = ev.layerPoint
@@ -1835,7 +1826,6 @@
     var max = null;
     var minChain = null;
     var maxChain = null;
-    var lineages = {}
     data.forEach(function(point) {
       if (min == null || point.birth_time < min) {
         min = point.birth_time
@@ -1850,7 +1840,6 @@
       if (maxChain == null || point.chain > maxChain) {
         maxChain = point.chain
       }
-      lineages[point.lineage.toString()] = point
     })
     data.forEach(function(point) {
       point.lineageColor = colorlineage(point.lineage)
@@ -1882,9 +1871,8 @@
       max: max,
       minChain: minChain,
       maxChain: maxChain,
-      lineages: lineages,
     })
-    colorScaleControl.redraw()
+    colorScaleControl.updateLineages(data)
     setMapTime(pointOverlay._map, min*1000, 'setDataLayers')
     app.ports.leafletEvent.send({
       kind: 'dataRange',
@@ -2109,72 +2097,92 @@
   })
 
   L.Control.ColorScale = L.Control.extend({
-      options: {
-        color: 'lineageColor'
-      },
-      onAdd: function(map) {
-        return this._initLayout()
-      },
-      onRemove: function(map) {
-        // Nothing to do here
-      },
-      _initLayout: function () {
-        var className = 'leaflet-control-color-scale'
-        var container = this._container = L.DomUtil.create('div', className)
-        this.redraw()
+    options: {
+      color: 'lineageColor'
+    },
+    onAdd: function(map) {
+      return this._initLayout()
+    },
+    onRemove: function(map) {
+      // Nothing to do here
+    },
+    _initLayout: function () {
+      var className = 'leaflet-control-color-scale'
+      var container = this._container = L.DomUtil.create('div', className)
+      this.redraw()
 
-        return container;
-      },
-      redraw: function() {
-        var container = this._container
-        if (!container) return
-        while (container.firstChild) {
-          container.removeChild(container.firstChild);
-        }
-        switch (this.options.color) {
-          case 'lineageColor':
-            Object.values(this.options.lineages || {}).forEach(function(life) {
-              var swatch = L.DomUtil.create('div', 'swatch', container)
-              swatch.style = 'background-color: ' + colorlineage(life.lineage)
-              if (life.name) {
-                var words = life.name.split(' ')
-                swatch.innerHTML = words[1] || words[0]
-              }
-            })
-            break;
-          case 'birthTimeColor':
-            var swatch = L.DomUtil.create('div', 'swatch', container)
-            swatch.style = 'background-color: ' + colorlinear(this.options.min, this.options.min, this.options.max)
-            swatch.innerHTML = 'older';
-
-            swatch = L.DomUtil.create('div', 'swatch', container)
-            swatch.style = 'background-color: ' + colorlinear(this.options.max, this.options.min, this.options.max) + '; color: black;'
-            swatch.innerHTML = 'newer';
-            break;
-          case 'chainColor':
-            var swatch = L.DomUtil.create('div', 'swatch', container)
-            swatch.style = 'background-color: ' + colorlinear(this.options.minChain, this.options.minChain, this.options.maxChain)
-            swatch.innerHTML = this.options.minChain;
-
-            swatch = L.DomUtil.create('div', 'swatch', container)
-            swatch.style = 'background-color: ' + colorlinear(this.options.maxChain, this.options.minChain, this.options.maxChain) + '; color: black;'
-            swatch.innerHTML = this.options.maxChain;
-            break;
-          case 'causeOfDeathColor':
-            [
-              'killer',
-              'hunger',
-              'oldAge',
-              'disconnect',
-              'unknown',
-            ].forEach(function(cause) {
-              var swatch = L.DomUtil.create('div', 'swatch', container)
-              swatch.style = 'background-color: ' + colorcause(cause)
-              swatch.innerHTML = cause;
-            })
-            break;
-        }
+      return container;
+    },
+    redraw: function() {
+      var container = this._container
+      if (!container) return
+      while (container.firstChild) {
+        container.removeChild(container.firstChild);
       }
+      switch (this.options.color) {
+        case 'lineageColor':
+          Object.values(this.options.lineages || {})
+          .sort(function(a, b) {
+            return b.chain - a.chain
+          }).forEach(function(life) {
+            var swatch = L.DomUtil.create('div', 'swatch', container)
+            swatch.style = 'background-color: ' + colorlineage(life.lineage)
+            if (life.name) {
+              var words = life.name.split(' ')
+              swatch.innerHTML = words[1] || words[0]
+              swatch.innerHTML = life.chain.toString()
+            }
+          })
+          break;
+        case 'birthTimeColor':
+          var swatch = L.DomUtil.create('div', 'swatch', container)
+          swatch.style = 'background-color: ' + colorlinear(this.options.min, this.options.min, this.options.max)
+          swatch.innerHTML = 'older';
+
+          swatch = L.DomUtil.create('div', 'swatch', container)
+          swatch.style = 'background-color: ' + colorlinear(this.options.max, this.options.min, this.options.max) + '; color: black;'
+          swatch.innerHTML = 'newer';
+          break;
+        case 'chainColor':
+          var swatch = L.DomUtil.create('div', 'swatch', container)
+          swatch.style = 'background-color: ' + colorlinear(this.options.minChain, this.options.minChain, this.options.maxChain)
+          swatch.innerHTML = this.options.minChain;
+
+          swatch = L.DomUtil.create('div', 'swatch', container)
+          swatch.style = 'background-color: ' + colorlinear(this.options.maxChain, this.options.minChain, this.options.maxChain) + '; color: black;'
+          swatch.innerHTML = this.options.maxChain;
+          break;
+        case 'causeOfDeathColor':
+          [
+            'killer',
+            'hunger',
+            'oldAge',
+            'disconnect',
+            'unknown',
+          ].forEach(function(cause) {
+            var swatch = L.DomUtil.create('div', 'swatch', container)
+            swatch.style = 'background-color: ' + colorcause(cause)
+            swatch.innerHTML = cause;
+          })
+          break;
+      }
+    },
+    updateLineages: function(data, time) {
+      var lineages = {}
+      for (var i in data) {
+        var point = data[i]
+        if (time) {
+          var death_time = (point.death_time || (point.birth_time + 3600))
+          if (time < point.birth_time || death_time < time) {
+            continue;
+          }
+        }
+
+        lineages[point.lineage.toString()] = point
+      }
+      L.Util.setOptions(this, {lineages: lineages})
+      this.redraw()
+    },
   });
 
   L.control.colorScale = function(opts) {
