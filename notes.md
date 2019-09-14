@@ -1,5 +1,4 @@
 - improve time model
-  - yesterday mode
   - mode icons
 
 - find bottleneck - network or render?

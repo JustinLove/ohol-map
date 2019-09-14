@@ -435,7 +435,10 @@ update msg model =
       let _ = Debug.log "fetch monuments failed" error in
       (model, Cmd.none)
     DataLayer (Ok lives) ->
-      ( {model | dataLayer = Data True}
+      ( { model
+        | dataLayer = Data True
+        , player = if model.dataAnimated then Playing else Stopped
+        }
       , Cmd.batch
         [ Leaflet.dataLayer lives
         ]
@@ -496,7 +499,11 @@ update msg model =
               | mapTime = Just msCappedTime
               , player = if over then Stopped else Playing
               }
-            , Leaflet.currentTime msCappedTime
+            , Cmd.batch
+              [ Navigation.replaceUrl model.navigationKey <|
+                  centerUrl model.location (Just msCappedTime) (isYesterday model) model.center
+              , Leaflet.currentTime msCappedTime
+              ]
             )
     CurrentZone zone ->
       ({model | zone = zone}, Cmd.none)
@@ -643,12 +650,15 @@ yesterdayRoute location model =
 timeRoute : Url -> Model -> (Model, Cmd Msg)
 timeRoute location model =
   let
+    msmapTime = model.mapTime
+      |> Maybe.map (\t -> (t |> Time.posixToMillis) // 1000)
+    mst = extractHashInt "t" location
     mt = extractHashInt "t" location
       |> Maybe.map (\t -> t * 1000 |> Time.millisToPosix)
   in
     case mt of
       Just t ->
-        if model.mapTime /= Just t then
+        if msmapTime /= mst then
           ( { model|mapTime = Just t}
           , Cmd.batch
             [ Leaflet.currentTime t
