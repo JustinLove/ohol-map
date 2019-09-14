@@ -196,6 +196,7 @@ update msg model =
     UI (View.ToggleAnimated animated) ->
       ( { model
         | dataAnimated = animated
+        , player = if animated == False then Stopped else model.player
         }
       , Leaflet.animOverlay animated
       )
@@ -353,7 +354,10 @@ update msg model =
         (model.sidebarOpen == False && model.sidebarMode == View.LifeSearch)
       )
     Event (Ok (Leaflet.AnimToggle)) ->
-      ( { model | dataAnimated = not model.dataAnimated }
+      ( { model
+        | dataAnimated = not model.dataAnimated
+        , player = if (not model.dataAnimated) == False then Stopped else model.player
+        }
       , Leaflet.animOverlay
         (model.dataAnimated == False)
       )
