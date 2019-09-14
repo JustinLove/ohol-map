@@ -559,7 +559,19 @@ yesterday model =
 setTime : Posix -> Model -> (Model, Cmd Msg)
 setTime time model =
   if model.mapTime /= Just time then
-    ( {model|mapTime = Just time}
+    let
+      _ = Debug.log "time" time
+      animatable = model.timeRange
+        |> Debug.log "range"
+        |> Maybe.map (\(min, max) -> isInRange min time max)
+        |> Debug.log "animatedable"
+        |> Maybe.withDefault False
+    in
+    ( { model
+      | mapTime = Just time
+      , currentArc = arcForTime time model.arcs
+      , dataAnimated = model.dataAnimated && animatable
+      }
     , Cmd.batch
         [ Leaflet.currentTime time
         , Navigation.replaceUrl model.navigationKey <|
@@ -569,6 +581,15 @@ setTime time model =
     )
   else
     (model, Cmd.none)
+
+arcForTime : Posix -> RemoteData (List Arc) -> Maybe Arc
+arcForTime time marcs =
+  case marcs of
+    Data arcs ->
+      arcs
+        |> List.filter (\arc -> isInRange arc.start time arc.end)
+        |> List.head
+    _ -> Nothing
 
 setYesterday : Model -> (Model, Cmd Msg)
 setYesterday model =
@@ -660,9 +681,7 @@ timeSelectionForTime model =
       case model.arcs of
         Data arcs ->
           let
-            newArc = arcs
-              |> List.filter (\arc -> isInRange arc.start time arc.end)
-              |> List.head
+            newArc = arcForTime time (Data arcs)
           in
             case newArc of
               Just arc ->
