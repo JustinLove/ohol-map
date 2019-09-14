@@ -66,6 +66,7 @@ type alias Model =
   , hoursPeriod : Int
   , currentArc : Maybe Arc
   , dataAnimated : Bool
+  , lifeDataVisible : Bool
   , gameSecondsPerSecond : Int
   , timeRange : Maybe (Posix, Posix)
   , player : Player
@@ -119,6 +120,7 @@ init config location key =
       , hoursPeriod = 48
       , currentArc = Nothing
       , dataAnimated = False
+      , lifeDataVisible = False
       , gameSecondsPerSecond = 600
       , timeRange = Nothing
       , player = Stopped
@@ -314,6 +316,8 @@ update msg model =
       )
     Event (Ok (Leaflet.OverlayAdd "Life Data" _)) ->
       requireLives model
+    Event (Ok (Leaflet.OverlayRemove "Life Data")) ->
+      ({model | lifeDataVisible = False}, Cmd.none)
     Event (Ok (Leaflet.OverlayAdd name (Just serverId))) ->
       if Dict.member serverId model.monuments then
         (model, Cmd.none)
@@ -507,10 +511,11 @@ update msg model =
 
 requireLives : Model -> (Model, Cmd Msg)
 requireLives model =
+  let m2 = {model | lifeDataVisible = True} in
   if model.mapTime == Nothing then
-    requireRecentLives model
+    requireRecentLives m2
   else
-    requireSelectedLives model
+    requireSelectedLives m2
 
 requireRecentLives : Model -> (Model, Cmd Msg)
 requireRecentLives model =
@@ -560,13 +565,21 @@ setTime : Posix -> Model -> (Model, Cmd Msg)
 setTime time model =
   if model.mapTime /= Just time then
     let
-      animatable = model.timeRange
+      marc = arcForTime time model.arcs
+      timeRange =
+        if model.lifeDataVisible then
+          model.timeRange
+        else
+          marc
+            |> Maybe.map (\arc -> (arc.start, arc.end))
+      animatable = timeRange
         |> Maybe.map (\(min, max) -> isInRange min time max)
         |> Maybe.withDefault False
     in
     ( { model
       | mapTime = Just time
-      , currentArc = arcForTime time model.arcs
+      , currentArc = marc
+      , timeRange = timeRange
       , dataAnimated = model.dataAnimated && animatable
       }
     , Cmd.batch

@@ -1,5 +1,4 @@
 - improve time model
-  - default/no appropriate range
   - yesterday mode
   - mode icons
 
