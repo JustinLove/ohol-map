@@ -1,4 +1,7 @@
 - legend for lineage color
+  - time desyc when first toggling animated mode
+  - don't process lineages when not relevant
+  - time updates that don't change anything
 - search/lineage reslts in data layer for coloring etc.
 
 - find bottleneck - network or render?

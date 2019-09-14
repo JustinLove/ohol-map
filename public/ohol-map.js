@@ -1759,7 +1759,6 @@
         this.drawTile(tile.el, tile.coords, time)
       }
       setMapTime(this._map, ms, 'animOverlay updateTiles')
-      colorScaleControl.updateLineages(time)
     },
     selectPoints: function(ev) {
       var center = ev.layerPoint
@@ -1958,6 +1957,7 @@
   var updateTiles = function(ms) {
     animOverlay.updateTiles(ms)
     arcUpdateTiles(ms)
+    colorScaleControl.updateLineages(ms)
   }
 
   var setPointColor = function(color) {
@@ -2169,7 +2169,11 @@
           break;
       }
     },
-    updateLineages: function(time) {
+    updateLineages: function(ms) {
+      var time
+      if (ms) {
+        time = ms/1000
+      }
       var lineages = {}
       var data = this.options.data
       for (var i in data) {
