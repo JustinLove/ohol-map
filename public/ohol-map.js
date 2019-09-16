@@ -1879,6 +1879,21 @@
     })
   }
 
+  var moveIfOutOfView = function(data, map) {
+    var bounds = map.getBounds()
+    for (var i in data) {
+      var point = data[i]
+      if (bounds.contains([point.birth_y, point.birth_x])) {
+        console.log('found')
+        return
+      }
+    }
+    var bounds = L.latLngBounds(data.map(function(point) {
+      return [point.birth_y, point.birth_x]
+    }))
+    map.fitBounds(bounds)
+  }
+
   var baseLayerByTime = function(map, ms, reason) {
     //console.log(ms, reason)
     var targetLayer
@@ -2481,6 +2496,7 @@
           break;
         case 'dataLayer':
           setDataLayers(message.lives.data)
+          moveIfOutOfView(message.lives.data, map)
           if(!map.hasLayer(dataOverlay)) {
             map.addLayer(dataOverlay)
           }
