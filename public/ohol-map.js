@@ -31,6 +31,7 @@
     '<a href="https://github.com/JustinLove/ohol-data-server" title="Backend: ohol-data-server"><svg class="icon icon-github"><use xlink:href="symbol-defs.svg#icon-github"></use></svg></a>' +
     '<a href="https://github.com/JustinLove/OneLife/tree/mapping" title="Tile generation: OneLife/mapping"><svg class="icon icon-github"><use xlink:href="symbol-defs.svg#icon-github"></use></svg></a>' +
     '<a href="https://github.com/JustinLove/onetech/tree/mapping" title="Object images based on Onetech"><svg class="icon icon-github"><use xlink:href="symbol-defs.svg#icon-github"></use></svg></a>'
+  var baseAttributionLayer = L.layerGroup([], {attribution: attribution})
 
   var biomeImageLayer = L.tileLayer(oholMapConfig.mainTiles, {
     className: 'crisp',
@@ -1536,6 +1537,7 @@
   var createArcKeyPlacementLayer = function(end) {
     if (end*1000 > msStartOfRandomAge) {
       return new L.layerGroup([
+        baseAttributionLayer,
         /*
         new L.GridLayer.KeyPlacementPixel(keyPlacementCache, {
           dataTime: end.toString(),
@@ -1581,6 +1583,7 @@
         ms = mapTime
       }
       return new L.layerGroup([
+        baseAttributionLayer,
         /*
         new L.GridLayer.KeyPlacementPixel(keyPlacementCache, {
           dataTime: sEnd.toString(),

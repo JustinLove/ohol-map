@@ -1,10 +1,6 @@
-- load timing
-
 - find bottleneck - network or render?
   - load time garbage collection
 - server url link
-- onetech credit
-  - dummy layers for mergable attributions
 - animated
   - data lods?
   - keyframes?
@@ -42,7 +38,6 @@
 - historical replay
   - Only fetch reasonable amount of data for historical
   - center view on main area?
-  - include death info
   - interpolate to death time and location
   - interpolate to child birth locations
 - more logatrimthim slider scale?
