@@ -1870,7 +1870,7 @@
       maxChain: maxChain,
       data: data,
     })
-    legendControl.updateLineages()
+    legendControl.redraw()
     app.ports.leafletEvent.send({
       kind: 'dataRange',
       min: min,
@@ -1951,7 +1951,8 @@
     riftLayerByTime(ms)
     animOverlay.updateTiles(ms)
     arcUpdateTiles(ms)
-    legendControl.updateLineages(ms)
+    L.Util.setOptions(legendControl, {time: ms})
+    legendControl.redraw()
   }
 
   var setPointColor = function(color) {
@@ -2093,7 +2094,9 @@
 
   L.Control.Legend = L.Control.extend({
     options: {
-      color: 'lineageColor'
+      color: 'lineageColor',
+      dataAnimated: false,
+      time: mapTime,
     },
     onAdd: function(map) {
       return this._initLayout()
@@ -2117,6 +2120,7 @@
       }
       switch (this.options.color) {
         case 'lineageColor':
+          this.updateLineages()
           Object.values(this.options.lineages || {})
           .sort(function(a, b) {
             return b.chain - a.chain
@@ -2164,17 +2168,16 @@
           break;
       }
     },
-    updateLineages: function(ms) {
-      var time
-      if (ms) {
-        time = ms/1000
-      }
+    updateLineages: function() {
+      if (this._time == this.options.time && this._dataAnimated == this.options.dataAnimated) return
+      var time = this.options.time/1000
       console.log('update lineages', time)
       var lineages = {}
       var data = this.options.data
+      var dataAnimated = this.options.dataAnimated
       for (var i in data) {
         var point = data[i]
-        if (time) {
+        if (dataAnimated) {
           var death_time = (point.death_time || (point.birth_time + 3600))
           if (time < point.birth_time || death_time < time) {
             continue;
@@ -2188,7 +2191,6 @@
         }
       }
       L.Util.setOptions(this, {lineages: lineages})
-      this.redraw()
     },
   });
 
@@ -2504,7 +2506,8 @@
           arcs.forEach(function(arc) {
             toggleAnimated(arc.layer, message.status)
           })
-          legendControl.updateLineages(message.status ? mapTime : undefined)
+          L.Util.setOptions(legendControl, {dataAnimated: message.status})
+          legendControl.redraw()
           toggleAnimationControls(map)
           break
         case 'baseLayer':
