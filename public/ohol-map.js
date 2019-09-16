@@ -2202,7 +2202,7 @@
 
   var colorScaleControl = L.control.colorScale({ position: 'topleft' })
 
-  var objectLoad = function() {
+  var objectLoad = function(map) {
     var objectMaster = fetch('static/objects.json').then(function(response) {
       return response.json()
     })
@@ -2218,6 +2218,7 @@
           bounds[3] - bounds[1] - 30)
       }
       addArcPlacements()
+      toggleAnimationControls(map)
     }).catch(function(err) {
       console.log(err)
     })
