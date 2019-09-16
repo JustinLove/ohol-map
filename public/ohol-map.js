@@ -1510,7 +1510,6 @@
           this.drawTile(tile.el, tile.coords)
         }
       }
-      setMapTime(this._map, ms, 'maplog updateTiles')
     },
   })
 
@@ -1758,7 +1757,6 @@
         var tile = this._tiles[key]
         this.drawTile(tile.el, tile.coords, time)
       }
-      setMapTime(this._map, ms, 'animOverlay updateTiles')
     },
     selectPoints: function(ev) {
       var center = ev.layerPoint
@@ -1873,7 +1871,6 @@
       data: data,
     })
     legendControl.updateLineages()
-    setMapTime(pointOverlay._map, min*1000, 'setDataLayers')
     app.ports.leafletEvent.send({
       kind: 'dataRange',
       min: min,
@@ -1952,9 +1949,6 @@
     mapTime = ms
     if (map) baseLayerByTime(map, ms, reason)
     riftLayerByTime(ms)
-  }
-
-  var updateTiles = function(ms) {
     animOverlay.updateTiles(ms)
     arcUpdateTiles(ms)
     legendControl.updateLineages(ms)
@@ -2115,6 +2109,7 @@
       return container;
     },
     redraw: function() {
+      console.log('redraw')
       var container = this._container
       if (!container) return
       while (container.firstChild) {
@@ -2174,6 +2169,7 @@
       if (ms) {
         time = ms/1000
       }
+      console.log('update lineages', time)
       var lineages = {}
       var data = this.options.data
       for (var i in data) {
@@ -2445,7 +2441,6 @@
         case 'currentTime':
           var time = message.time * 1000
           setMapTime(map, time, 'currentTime')
-          updateTiles(time)
           break;
         case 'currentServer':
           var targetLayer
@@ -2465,7 +2460,6 @@
           updateArcs(message.arcs.data)
           var ms = message.time * 1000
           setMapTime(map, ms, 'arcList')
-          updateTiles(ms)
           break;
         case 'monumentList':
           updateMonumentLayer(monumentOverlay, message.monuments.data)
@@ -2496,7 +2490,6 @@
           map.setView([life.birth_y, life.birth_x])
           var ms = life.birth_time*1000
           setMapTime(map, ms, 'focus')
-          updateTiles(ms)
           break
         case 'searchOverlay':
           if (message.status) {

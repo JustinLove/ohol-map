@@ -1,5 +1,4 @@
 - legend for lineage color
-  - time desyc when first toggling animated mode
   - don't process lineages when not relevant
   - time updates that don't change anything
   - too big
