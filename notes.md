@@ -1,6 +1,5 @@
 - search/lineage
   - jump to location
-  - jump to time
 - load timing
 
 - find bottleneck - network or render?

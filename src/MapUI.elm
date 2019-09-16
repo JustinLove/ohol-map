@@ -342,12 +342,17 @@ update msg model =
         ]
       )
     Event (Ok (Leaflet.DataRange min max)) ->
+      let
+        mapTime = model.mapTime
+            |> Maybe.map (inRange min max)
+      in
       ( { model
         | timeRange = Just (min, max)
-        , mapTime = model.mapTime
-            |> Maybe.map (inRange min max)
+        , mapTime = mapTime
         }
-      , Cmd.none
+      , mapTime
+        |> Maybe.map Leaflet.currentTime
+        |> Maybe.withDefault Cmd.none
       )
     Event (Ok (Leaflet.SidebarToggle)) ->
       ( { model | sidebarOpen = not model.sidebarOpen }
