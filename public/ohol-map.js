@@ -73,6 +73,7 @@
   var dataOverlay = L.layerGroup([])
   dataOverlay.on('add', function(ev) {
     var map = ev.target._map
+    legendControl.redraw()
     map.addControl(legendControl)
     setTimeout(function() {
       toggleAnimationControls(map)
@@ -2112,9 +2113,11 @@
       return container;
     },
     redraw: function() {
-      console.log('redraw')
       var container = this._container
       if (!container) return
+      if (!this._map || !this._map.hasLayer(dataOverlay)) return
+      if (this.options.color != 'lineageColor' && this._color == this.options.color) return
+      this._color = this.options.color
       while (container.firstChild) {
         container.removeChild(container.firstChild);
       }
@@ -2171,7 +2174,6 @@
     updateLineages: function() {
       if (this._time == this.options.time && this._dataAnimated == this.options.dataAnimated) return
       var time = this.options.time/1000
-      console.log('update lineages', time)
       var lineages = {}
       var data = this.options.data
       var dataAnimated = this.options.dataAnimated
