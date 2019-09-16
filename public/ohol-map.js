@@ -73,7 +73,7 @@
   var dataOverlay = L.layerGroup([])
   dataOverlay.on('add', function(ev) {
     var map = ev.target._map
-    map.addControl(colorScaleControl)
+    map.addControl(legendControl)
     setTimeout(function() {
       toggleAnimationControls(map)
       map.addLayer(baseFade)
@@ -81,7 +81,7 @@
   })
   dataOverlay.on('remove', function(ev) {
     var map = ev.target._map
-    map.removeControl(colorScaleControl)
+    map.removeControl(legendControl)
     setTimeout(function() {
       toggleAnimationControls(map)
       map.removeLayer(baseFade)
@@ -1865,14 +1865,14 @@
       min: min,
       max: max,
     })
-    L.Util.setOptions(colorScaleControl, {
+    L.Util.setOptions(legendControl, {
       min: min,
       max: max,
       minChain: minChain,
       maxChain: maxChain,
       data: data,
     })
-    colorScaleControl.updateLineages()
+    legendControl.updateLineages()
     setMapTime(pointOverlay._map, min*1000, 'setDataLayers')
     app.ports.leafletEvent.send({
       kind: 'dataRange',
@@ -1957,7 +1957,7 @@
   var updateTiles = function(ms) {
     animOverlay.updateTiles(ms)
     arcUpdateTiles(ms)
-    colorScaleControl.updateLineages(ms)
+    legendControl.updateLineages(ms)
   }
 
   var setPointColor = function(color) {
@@ -1969,10 +1969,10 @@
       color: color,
     })
     pointOverlay.redraw()
-    L.Util.setOptions(colorScaleControl, {
+    L.Util.setOptions(legendControl, {
       color: color,
     })
-    colorScaleControl.redraw()
+    legendControl.redraw()
   }
 
   var setPointLocation = function(location) {
@@ -2097,7 +2097,7 @@
     position: 'bottomleft'
   })
 
-  L.Control.ColorScale = L.Control.extend({
+  L.Control.Legend = L.Control.extend({
     options: {
       color: 'lineageColor'
     },
@@ -2196,11 +2196,11 @@
     },
   });
 
-  L.control.colorScale = function(opts) {
-    return new L.Control.ColorScale(opts);
+  L.control.legend = function(opts) {
+    return new L.Control.Legend(opts);
   }
 
-  var colorScaleControl = L.control.colorScale({ position: 'topleft' })
+  var legendControl = L.control.legend({ position: 'topleft' })
 
   var objectLoad = function(map) {
     var objectMaster = fetch('static/objects.json').then(function(response) {
@@ -2511,7 +2511,7 @@
           arcs.forEach(function(arc) {
             toggleAnimated(arc.layer, message.status)
           })
-          colorScaleControl.updateLineages(message.status ? mapTime : undefined)
+          legendControl.updateLineages(message.status ? mapTime : undefined)
           toggleAnimationControls(map)
           break
         case 'baseLayer':

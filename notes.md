@@ -2,6 +2,8 @@
   - time desyc when first toggling animated mode
   - don't process lineages when not relevant
   - time updates that don't change anything
+  - too big
+- load timing
 - search/lineage reslts in data layer for coloring etc.
 
 - find bottleneck - network or render?
