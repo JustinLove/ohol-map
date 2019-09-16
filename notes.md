@@ -34,6 +34,7 @@
 - bookmarking layers
 - in-app help
 - sidebar icon toggle
+- map resize handling and sidebar
 - show data for other servers
   - deselect server
   - collapse server
