@@ -33,6 +33,7 @@ type Msg
   = UI View.Msg
   | Event (Result Json.Decode.Error Leaflet.Event)
   | MatchingLives (Result Http.Error (List Data.Life))
+  | LineageLives (Result Http.Error Json.Decode.Value)
   | ServerList (Result Http.Error (List Data.Server))
   | ArcList (Result Http.Error (List Data.Arc))
   | MonumentList Int (Result Http.Error Json.Decode.Value)
@@ -372,6 +373,25 @@ update msg model =
         ]
       )
     MatchingLives (Err error) ->
+      let _ = Debug.log "fetch lives failed" error in
+      ({model | lives = Failed error}, Cmd.none)
+    LineageLives (Ok value) ->
+      ( { model
+        | lives = case value |> Json.Decode.decodeValue Decode.lives of
+          Ok lives ->
+            lives |> List.map myLife |> Data
+          Err error ->
+            error
+              |> Json.Decode.errorToString
+              |> Http.BadBody
+              |> Failed
+        , dataLayer = Data True
+        }
+      , Cmd.batch
+        [ Leaflet.dataLayer value
+        ]
+      )
+    LineageLives (Err error) ->
       let _ = Debug.log "fetch lives failed" error in
       ({model | lives = Failed error}, Cmd.none)
     ServerList (Ok servers) ->
@@ -828,7 +848,7 @@ fetchLineage baseUrl life =
       , Url.int "epoch" life.epoch
       , Url.int "lineage" life.lineage
       ]
-    , expect = Http.expectJson MatchingLives Decode.lives
+    , expect = Http.expectJson LineageLives Json.Decode.value
     }
 
 fetchMonuments : String -> Int -> Cmd Msg
