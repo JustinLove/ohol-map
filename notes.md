@@ -1,3 +1,11 @@
+- object generation
+  - single map chance file
+  - factor out object drawing from keyplace parsing
+  - object gen sprite layer
+  - small object blocking
+  - tarr monument
+  - rift
+
 - find bottleneck - network or render?
   - load time garbage collection
 - server url link
@@ -21,7 +29,6 @@
   - pre-downscale sprites
   - use whole numbers for positions
   - composting mode tricks
-- object generation
 - biome graphics
 
 

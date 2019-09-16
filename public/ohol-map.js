@@ -973,6 +973,7 @@
       jackpotRoughness: 0.3,
       jackpotOffset: 0.15,
       jackpotScale: 0.016666,
+      className: 'crisp',
     },
     createTile: function (coords, done) {
       var tile = document.createElement('canvas');
@@ -1029,6 +1030,7 @@
     },
   })
 
+  /*
   var objectOverlay = new L.GridLayer.ObjectLayer({
     minZoom: 2,
     maxZoom: 31,
@@ -1037,7 +1039,8 @@
     attribution: attribution,
     opacity: 0.5,
   })
-  //overlays['Object'] = objectOverlay
+  overlays['Object'] = objectOverlay
+  */
 
   var TileDataCache = L.Class.extend({
     options: {
@@ -2248,8 +2251,9 @@
       console.log(err)
     })
 
+    var mapGen = Promise.resolve()
     /*
-    objectMaster.then(function(wrapper) {
+    var mapGen = objectMaster.then(function(wrapper) {
       objects = new Array(wrapper.ids.length)
       for (var i = 0;i < wrapper.ids.length;i++) {
         if (wrapper.names[i].match('gridPlacement')) {
@@ -2311,7 +2315,7 @@
       console.log(err)
     })
     */
-    return Promise.all([size])
+    return Promise.all([size, mapGen])
   }
 
   var toggleAnimated = function(parent, status) {
@@ -2428,7 +2432,9 @@
     sidebarToggle.addTo(map)
     //map.setView([0,0], 24)
 
-    objectLoad(map)
+    objectLoad(map).then(function() {
+      //objectOverlay.addTo(map)
+    })
 
     if (app.ports.leafletEvent) {
       map.on('moveend', function(ev) {
