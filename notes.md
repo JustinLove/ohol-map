@@ -1,7 +1,5 @@
-- legend for lineage color
-  - too big
-- load timing
 - search/lineage reslts in data layer for coloring etc.
+- load timing
 
 - find bottleneck - network or render?
   - load time garbage collection

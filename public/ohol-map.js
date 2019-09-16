@@ -2124,19 +2124,26 @@
       switch (this.options.color) {
         case 'lineageColor':
           this.updateLineages()
-          Object.values(this.options.lineages || {})
-          .sort(function(a, b) {
+          var maxHeight = this._map.getSize().y - 256
+          var height = 0
+          var lineages = Object.values(this.options.lineages || {})
+            .sort(function(a, b) {
             return b.chain - a.chain
-          }).forEach(function(life) {
+            })
+          for (var i in lineages) {
+            var life = lineages[i]
             var swatch = L.DomUtil.create('div', 'swatch', container)
-            swatch.style = 'background-color: ' + colorlineage(life.lineage)
-            if (life.name) {
+            if (height > maxHeight) {
+              swatch.style = 'color: black'
+              swatch.innerHTML = "...."
+              break
+            } else if (life.name) {
+              swatch.style = 'background-color: ' + colorlineage(life.lineage)
               var words = life.name.split(' ')
               swatch.innerHTML = (words[1] || words[0])
-            } else {
-              //swatch.innerHTML = life.chain.toString()
             }
-          })
+            height += 22
+          }
           break;
         case 'birthTimeColor':
           var swatch = L.DomUtil.create('div', 'swatch', container)
@@ -2364,6 +2371,9 @@
     })
     map.on('overlayremove', function(ev) {
       toggleAnimationControls(map)
+    })
+    map.on('resize', function(ev) {
+      legendControl.redraw()
     })
 
     var idle = false
