@@ -2158,8 +2158,10 @@
               swatch.style = 'color: black'
               swatch.innerHTML = "...."
               break
-            } else if (life.name) {
-              swatch.style = 'background-color: ' + colorlineage(life.lineage)
+            }
+
+            swatch.style = 'background-color: ' + colorlineage(life.lineage)
+            if (life.name) {
               var words = life.name.split(' ')
               swatch.innerHTML = (words[1] || words[0])
             }
@@ -2216,6 +2218,7 @@
 
         var key = point.lineage.toString()
         var prior = lineages[key]
+        if (prior && prior.name && !point.name) break;
         if (!prior || !prior.name || point.chain > prior.chain) {
           lineages[key] = point
         }
