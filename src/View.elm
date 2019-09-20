@@ -75,7 +75,8 @@ type Notice
 
 type Player
   = Stopped
-  | Playing
+  | Starting
+  | Playing Posix
 
 timeNoticeDuration = 6000
 
@@ -203,7 +204,7 @@ timeline model =
                 { onPress = Just Play
                 , label = el [ centerX ] <| icon "play3"
                 }
-            Playing ->
+            _ ->
               Input.button [ width (px 40), padding 4 ]
                 { onPress = Just Pause
                 , label = el [ centerX ] <| icon "pause2"

@@ -42,7 +42,7 @@ type Msg
   | ShowTimeNotice Posix Posix
   | CurrentTimeNotice Posix
   | CurrentTime Posix
-  | Playback Float
+  | Playback Posix
   | CurrentZone Time.Zone
   | CurrentUrl Url
   | Navigate Browser.UrlRequest
@@ -217,7 +217,7 @@ update msg model =
       )
     UI (View.Play) ->
       ( { model
-        | player = Playing
+        | player = Starting
         , mapTime =
           if model.mapTime == (model.timeRange |> Maybe.map Tuple.second) then
             model.timeRange |> Maybe.map Tuple.first
@@ -466,7 +466,7 @@ update msg model =
     DataLayer (Ok lives) ->
       ( { model
         | dataLayer = Data True
-        , player = if model.dataAnimated then Playing else Stopped
+        , player = if model.dataAnimated then Starting else Stopped
         }
       , Cmd.batch
         [ Leaflet.dataLayer lives
@@ -506,34 +506,40 @@ update msg model =
         }
       , Cmd.none
       )
-    Playback dt ->
-      case model.mapTime of
-        Nothing -> (model, Cmd.none)
-        Just time ->
-          let
-            msNewTime = time
-              |> Time.posixToMillis
-              |> (\t -> t + (round dt) * model.gameSecondsPerSecond)
-            msMaxTime = model.timeRange
-              |> Maybe.map (Tuple.second >> Time.posixToMillis)
-            msCappedTime = msMaxTime
-              |> Maybe.map (min msNewTime)
-              |> Maybe.withDefault msNewTime
-              |> Time.millisToPosix
-            over = msMaxTime
-              |> Maybe.map (\max -> msNewTime >= max)
-              |> Maybe.withDefault False
-          in
-            ( { model
-              | mapTime = Just msCappedTime
-              , player = if over then Stopped else Playing
-              }
-            , Cmd.batch
-              [ Navigation.replaceUrl model.navigationKey <|
-                  centerUrl model.location (Just msCappedTime) (isYesterday model) model.center
-              , Leaflet.currentTime msCappedTime
-              ]
-            )
+    Playback next ->
+      case model.player of
+        Stopped -> (model, Cmd.none)
+        Starting -> ({model | player = Playing next}, Cmd.none)
+        Playing last ->
+          case model.mapTime of
+            Nothing -> ({model | player = Playing next}, Cmd.none)
+            Just time ->
+              let
+                dt = ((next |> Time.posixToMillis) - (last |> Time.posixToMillis))
+
+                msNewTime = time
+                  |> Time.posixToMillis
+                  |> (\t -> t + dt * model.gameSecondsPerSecond)
+                msMaxTime = model.timeRange
+                  |> Maybe.map (Tuple.second >> Time.posixToMillis)
+                msCappedTime = msMaxTime
+                  |> Maybe.map (min msNewTime)
+                  |> Maybe.withDefault msNewTime
+                  |> Time.millisToPosix
+                over = msMaxTime
+                  |> Maybe.map (\max -> msNewTime >= max)
+                  |> Maybe.withDefault False
+              in
+                ( { model
+                  | mapTime = Just msCappedTime
+                  , player = if over then Stopped else Playing next
+                  }
+                , Cmd.batch
+                  [ Navigation.replaceUrl model.navigationKey <|
+                      centerUrl model.location (Just msCappedTime) (isYesterday model) model.center
+                  , Leaflet.currentTime msCappedTime
+                  ]
+                )
     CurrentZone zone ->
       ({model | zone = zone}, Cmd.none)
     CurrentUrl location ->
@@ -789,8 +795,10 @@ subscriptions model =
     , case model.player of
         Stopped ->
           Sub.none
-        Playing ->
-          Browser.Events.onAnimationFrameDelta Playback
+        Starting ->
+          Time.every 100 Playback
+        Playing _ ->
+          Time.every 100 Playback
     ]
 
 fetchServers : String -> Cmd Msg

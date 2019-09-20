@@ -1,4 +1,3 @@
-- frame rate/browser load
 - object generation
   - single map chance file
   - factor out object drawing from keyplace parsing
