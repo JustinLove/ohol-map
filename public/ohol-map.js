@@ -1649,6 +1649,11 @@
     return "hsl(" + hue + ", 100%, " + light + "%)"
   }
 
+  var colorage = function(age) {
+    var hue = (age) * 300 / (60) - 60
+    return "hsl(" + hue + ", 100%, 50%)"
+  }
+
   var colorcause = function(cause) {
     if (cause && cause.match('killer')) {
       return "#ff0000";
@@ -1726,7 +1731,7 @@
             }
 
             t = (time - point.birth_time) / (death_time - point.birth_time)
-            var a = 1 - t
+            var a = Math.pow(1 - t, 0.4)
             ctx.globalAlpha = a
             r = Math.pow(10 * t, -6 * t)
           } else {
@@ -1739,11 +1744,20 @@
           p.x = p.x - origin.x
           p.y = p.y - origin.y
           //console.log(p)
-          ctx.fillStyle = ctx.strokeStyle = point[color]
 
           var age = point.age
           if (time) {
-            age = age * t
+            if (point.chain == 1) {
+              age = 14 + (age - 14) * t
+            } else {
+              age = age * t
+            }
+          }
+
+          if (time && color == 'ageColor') {
+            ctx.fillStyle = ctx.strokeStyle = colorage(age)
+          } else {
+            ctx.fillStyle = ctx.strokeStyle = point[color]
           }
 
           if (point.gerder == 'M') {
@@ -1870,6 +1884,7 @@
       point.birthTimeColor = colorlinear(point.birth_time, min, max)
       point.chainColor = colorlinear(point.chain, minChain, maxChain)
       point.causeOfDeathColor = colorcause(point.cause)
+      point.ageColor = colorage(point.age)
     })
     L.Util.setOptions(animOverlay, {
       data: data,
@@ -2214,6 +2229,21 @@
             var swatch = L.DomUtil.create('div', 'swatch', container)
             swatch.style = 'background-color: ' + colorcause(cause)
             swatch.innerHTML = cause;
+          })
+          break;
+        case 'ageColor':
+          [
+            0,
+            14,
+            20,
+            30,
+            40,
+            50,
+            60,
+          ].forEach(function(age) {
+            var swatch = L.DomUtil.create('div', 'swatch', container)
+            swatch.style = 'background-color: ' + colorage(age)
+            swatch.innerHTML = age.toString();
           })
           break;
       }

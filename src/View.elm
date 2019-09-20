@@ -803,6 +803,7 @@ cosmetics model =
           , Input.option BirthTimeColor (text "Birth Time")
           , Input.option ChainColor (text "Generation")
           , Input.option CauseOfDeathColor (text "Cause of Death")
+          , Input.option AgeColor (text "Age")
           ]
         }
       , Input.radio [ padding 10, spacing 2 ]

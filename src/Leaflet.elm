@@ -38,6 +38,7 @@ type PointColor
   | BirthTimeColor
   | ChainColor
   | CauseOfDeathColor
+  | AgeColor
 
 type PointLocation
   = BirthLocation
@@ -145,6 +146,7 @@ pointColor color =
         BirthTimeColor -> "birthTimeColor"
         ChainColor -> "chainColor"
         CauseOfDeathColor -> "causeOfDeathColor"
+        AgeColor -> "ageColor"
       )
     ]
     |> leafletCommand

@@ -1,5 +1,4 @@
 - examining arc end
-  - age
   - gender legend
 - frame rate/browser load
 - object generation
