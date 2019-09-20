@@ -1741,13 +1741,23 @@
           //console.log(p)
           ctx.fillStyle = ctx.strokeStyle = point[color]
 
-          if (point.gender == 'F') {
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, 3, 0, 2*Math.PI, false);
-            ctx.fill();
-          } else {
+          var age = point.age
+          if (time) {
+            age = age * t
+          }
+
+          if (point.gerder == 'M') {
             ctx.beginPath();
             ctx.fillRect(p.x - 3, p.y - 3, 6, 6)
+            ctx.fill();
+          } else if (14 <= age && age <= 40) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 3, 0, 2*Math.PI, false);
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          } else {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 3, 0, 2*Math.PI, false);
             ctx.fill();
           }
 
