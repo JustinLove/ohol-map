@@ -508,7 +508,7 @@
 
     // eliminate off-biome moving objects
     if (pickedBiome == secondPlace.biome) {
-      if (objects[returnId].moving) {
+      if (biomeObject.moving) {
         return 0
       }
     }
@@ -1032,7 +1032,6 @@
     },
   })
 
-  /*
   var objectOverlay = new L.GridLayer.ObjectLayer({
     minZoom: 2,
     maxZoom: 31,
@@ -1042,7 +1041,6 @@
     opacity: 0.5,
   })
   overlays['Object'] = objectOverlay
-  */
 
   var TileDataCache = L.Class.extend({
     options: {
@@ -2343,8 +2341,7 @@
       console.log(err)
     })
 
-    var mapGen = Promise.resolve()
-    /*
+    //var mapGen = Promise.resolve()
     var mapGen = objectMaster.then(function(wrapper) {
       objects = new Array(wrapper.ids.length)
       for (var i = 0;i < wrapper.ids.length;i++) {
@@ -2357,38 +2354,12 @@
           })
         }
       }
-      return Promise.all(wrapper.biomeIds.map(function(id) {
-        return fetch('static/biomes/' + id + '.json').then(function(response) {
-          return response.json()
-        })
-      })
-      )
-    }).then(function(biomeList) {
-      var toLoad = {}
-      biomeList.forEach(function(biome) {
+      wrapper.biomes.forEach(function(biome) {
         biome.id = parseInt(biome.id, 10)
         biomes[biome.id] = biome
         biome.objects.forEach(function(object) {
-          toLoad[object.id] = true
           object.id = parseInt(object.id, 10)
         })
-      })
-      return Promise.all(Object.keys(toLoad).map(function(id) {
-        return fetch('static/objects/' + id + '.json').then(function(response) {
-          return response.json()
-        })
-      }))
-    }).then(function(objectList) {
-      objectList.forEach(function(object) {
-        object.id = parseInt(object.id,10)
-        objects[object.id] = object
-        object.transitionsTimed.forEach(function(trans) {
-          if (trans.move) {
-            object.moving = true
-          }
-        })
-      })
-      biomes.forEach(function(biome) {
         biome.totalChanceWeight = 0
         biome.objects = biome.objects.filter(function(spawnable) {
           for (var i = 0;i < gridPlacements.length;i++) {
@@ -2397,16 +2368,13 @@
               return false
             }
           }
-          var obj = objects[spawnable.id]
-          biome.totalChanceWeight += obj.mapChance
-          spawnable.mapChance = obj.mapChance
+          biome.totalChanceWeight += spawnable.mapChance
           return true
         })
       })
     }).catch(function(err) {
       console.log(err)
     })
-    */
     return Promise.all([size, mapGen])
   }
 
@@ -2525,7 +2493,7 @@
     //map.setView([0,0], 24)
 
     objectLoad(map).then(function() {
-      //objectOverlay.addTo(map)
+      objectOverlay.addTo(map)
     })
 
     if (app.ports.leafletEvent) {

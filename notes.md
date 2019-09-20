@@ -1,5 +1,4 @@
 - object generation
-  - single map chance file
   - factor out object drawing from keyplace parsing
   - object gen sprite layer
   - small object blocking
