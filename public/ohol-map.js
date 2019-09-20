@@ -1834,8 +1834,8 @@
       if (min == null || point.birth_time < min) {
         min = point.birth_time
       }
-      if (max == null || point.birth_time > max) {
-        max = point.birth_time
+      if (max == null || point.death_time > max) {
+        max = point.death_time
       }
 
       if (minChain == null || point.chain < minChain) {
