@@ -1762,7 +1762,7 @@
             ctx.fillStyle = ctx.strokeStyle = point[color]
           }
 
-          if (point.gerder == 'M') {
+          if (point.gender == 'M') {
             ctx.beginPath();
             ctx.fillRect(p.x - 3, p.y - 3, 6, 6)
             ctx.fill();
