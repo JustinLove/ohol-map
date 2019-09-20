@@ -46,6 +46,7 @@ type Msg
   | HoursAfter Int
   | ToggleAnimated Bool
   | GameSecondsPerSecond Int
+  | FramesPerSecond Int
   | MapTime Posix
   | Play
   | Pause
@@ -831,6 +832,20 @@ cosmetics model =
             , min = 1
             , max = 60*60*10
             , value = model.gameSecondsPerSecond |> toFloat
+            , thumb = Input.defaultThumb
+            , step = Nothing
+            }
+        else
+          none
+      , if model.dataAnimated then
+          logSlider
+            [ Background.color control ]
+            { onChange = round >> FramesPerSecond
+            , label = Input.labelAbove [] <|
+              text ((model.framesPerSecond |> String.fromInt) ++ " Frames/Second")
+            , min = 1
+            , max = 60
+            , value = model.framesPerSecond |> toFloat
             , thumb = Input.defaultThumb
             , step = Nothing
             }

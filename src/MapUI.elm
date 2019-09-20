@@ -69,6 +69,7 @@ type alias Model =
   , dataAnimated : Bool
   , lifeDataVisible : Bool
   , gameSecondsPerSecond : Int
+  , framesPerSecond : Int
   , timeRange : Maybe (Posix, Posix)
   , player : Player
   , fadeTallObjects : Bool
@@ -123,6 +124,7 @@ init config location key =
       , dataAnimated = False
       , lifeDataVisible = False
       , gameSecondsPerSecond = 600
+      , framesPerSecond = 10
       , timeRange = Nothing
       , player = Stopped
       , fadeTallObjects = False
@@ -204,6 +206,12 @@ update msg model =
     UI (View.GameSecondsPerSecond seconds) ->
       ( { model
         | gameSecondsPerSecond = seconds
+        }
+      , Cmd.none
+      )
+    UI (View.FramesPerSecond frames) ->
+      ( { model
+        | framesPerSecond = frames
         }
       , Cmd.none
       )
@@ -596,6 +604,7 @@ yesterday model =
     , dataAnimated = True
     , hoursPeriod = 24
     , gameSecondsPerSecond = 1
+    , framesPerSecond = 1
     }
   , Cmd.batch
     [ fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
@@ -656,6 +665,7 @@ isYesterday model =
     && model.timeMode == FromNow
     && model.hoursPeriod == 24
     && model.gameSecondsPerSecond == 1
+    && model.framesPerSecond == 1
     && model.dataAnimated
 
 combineRoute : (Model -> (Model, Cmd Msg)) -> (Model, Cmd Msg) -> (Model, Cmd Msg)
@@ -796,9 +806,9 @@ subscriptions model =
         Stopped ->
           Sub.none
         Starting ->
-          Time.every 100 Playback
+          Time.every (1000 / (toFloat model.framesPerSecond)) Playback
         Playing _ ->
-          Time.every 100 Playback
+          Time.every (1000 / (toFloat model.framesPerSecond)) Playback
     ]
 
 fetchServers : String -> Cmd Msg
