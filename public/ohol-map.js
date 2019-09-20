@@ -1740,9 +1740,16 @@
           p.y = p.y - origin.y
           //console.log(p)
           ctx.fillStyle = ctx.strokeStyle = point[color]
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, 3, 0, 2*Math.PI, false);
-          ctx.fill();
+
+          if (point.gender == 'F') {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 3, 0, 2*Math.PI, false);
+            ctx.fill();
+          } else {
+            ctx.beginPath();
+            ctx.fillRect(p.x - 3, p.y - 3, 6, 6)
+            ctx.fill();
+          }
 
           if (point.chain == 1) {
             ctx.beginPath();

@@ -1,6 +1,6 @@
 - examining arc end
-  - genders
   - age
+  - gender legend
 - frame rate/browser load
 - object generation
   - single map chance file
