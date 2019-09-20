@@ -1,5 +1,9 @@
 <svg aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <defs>
+<symbol id="icon-circle" viewBox="0 0 24 28">
+<title>circle</title>
+<path d="M24 14c0 6.625-5.375 12-12 12s-12-5.375-12-12 5.375-12 12-12 12 5.375 12 12z"></path>
+</symbol>
 <symbol id="icon-paint-format" viewBox="0 0 32 32">
 <title>paint-format</title>
 <path d="M32 18v-12h-6v-2c0-1.1-0.9-2-2-2h-22c-1.1 0-2 0.9-2 2v6c0 1.1 0.9 2 2 2h22c1.1 0 2-0.9 2-2v-2h4v8h-18v4h-1c-0.552 0-1 0.448-1 1v10c0 0.552 0.448 1 1 1h4c0.552 0 1-0.448 1-1v-10c0-0.552-0.448-1-1-1h-1v-2h18zM24 6h-22v-2h22v2z"></path>
@@ -41,6 +45,10 @@
 <symbol id="icon-stop2" viewBox="0 0 32 32">
 <title>stop2</title>
 <path d="M4 4h24v24h-24z"></path>
+</symbol>
+<symbol id="icon-radio-checked2" viewBox="0 0 32 32">
+<title>radio-checked2</title>
+<path d="M16 0c-8.837 0-16 7.163-16 16s7.163 16 16 16 16-7.163 16-16-7.163-16-16-16zM16 20c-2.209 0-4-1.791-4-4s1.791-4 4-4c2.209 0 4 1.791 4 4s-1.791 4-4 4z"></path>
 </symbol>
 <symbol id="icon-filter" viewBox="0 0 32 32">
 <title>filter</title>

@@ -76,6 +76,7 @@
     var map = ev.target._map
     legendControl.redraw()
     map.addControl(legendControl)
+    map.addControl(pointLegendControl)
     setTimeout(function() {
       toggleAnimationControls(map)
       map.addLayer(baseFade)
@@ -84,6 +85,7 @@
   dataOverlay.on('remove', function(ev) {
     var map = ev.target._map
     map.removeControl(legendControl)
+    map.removeControl(pointLegendControl)
     setTimeout(function() {
       toggleAnimationControls(map)
       map.removeLayer(baseFade)
@@ -2279,6 +2281,46 @@
   }
 
   var legendControl = L.control.legend({ position: 'topleft' })
+
+  L.Control.PointLegend = L.Control.extend({
+    options: {
+    },
+    onAdd: function(map) {
+      return this._initLayout()
+    },
+    onRemove: function(map) {
+      // Nothing to do here
+    },
+    _initLayout: function () {
+      var className = 'leaflet-control-point-legend'
+      var container = this._container = L.DomUtil.create('div', className)
+      this.redraw()
+
+      return container;
+    },
+    redraw: function() {
+      var container = this._container
+      if (!container) return
+      if (!this._map || !this._map.hasLayer(dataOverlay)) return
+      while (container.firstChild) {
+        container.removeChild(container.firstChild);
+      }
+      [
+        ['stop2', 'Male'],
+        ['circle', 'Female'],
+        ['radio-checked2', 'Fertile'],
+      ].forEach(function(pair) {
+        var line = L.DomUtil.create('div', null, container)
+        line.innerHTML = '<svg class="icon icon-'+pair[0]+'"><use xlink:href="symbol-defs.svg#icon-'+pair[0]+'"></use></svg> ' + pair[1]
+      })
+    },
+  });
+
+  L.control.pointLegend = function(opts) {
+    return new L.Control.PointLegend(opts);
+  }
+
+  var pointLegendControl = L.control.pointLegend({ position: 'topleft' })
 
   var objectLoad = function(map) {
     var objectMaster = fetch('static/objects.json').then(function(response) {

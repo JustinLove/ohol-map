@@ -15,6 +15,10 @@ Single-colored icons can be modified like so:
 }
 ========================================== */
 
+.icon-circle {
+  width: 0.857421875em;
+}
+
 .icon-users {
   width: 1.125em;
 }

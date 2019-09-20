@@ -67,10 +67,12 @@ body {
   transition: opacity 10s;
 }
 
+.leaflet-control-point-legend,
 .leaflet-control-color-scale {
   padding: 4px;
 }
 
+.leaflet-control-point-legend,
 .leaflet-control-color-scale,
 .leaflet-control-map-button {
   background: #fff;
