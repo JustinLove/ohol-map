@@ -1,6 +1,4 @@
 - object generation
-  - factor out object drawing from keyplace parsing
-  - object gen sprite layer
   - small object blocking
   - tarr monument
   - rift

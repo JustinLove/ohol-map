@@ -470,7 +470,7 @@
 
     for (var i = 0;i < numObjects;i++) {
       xxSeed = options.jackpotSeedOffset + i * options.jackpotSeedScale
-      var randVal = getXYRandom( inX, inY, roughness, scale)
+      var randVal = getXYFractal( inX, inY, roughness, scale)
 
       if (randVal > maxValue) {
         maxValue = randVal
@@ -482,6 +482,14 @@
     var newSpecialChance = oldSpecialChance * 10
     biomeObject[specialObjectIndex].mapChance = newSpecialChance
     var totalChance = biome.totalChanceWeight - oldSpecialChance + newSpecialChance
+
+    /*
+    console.log('special object',
+      specialObjectIndex,
+      numObjects,
+      biome.totalChanceWeight,
+      totalChance)
+      */
 
     // weighted object pick
     xxSeed = options.objectSeed
@@ -505,6 +513,8 @@
     }
 
     var returnId = biomeObject[i].id
+
+    //console.log('rand', randValue, i, returnId)
 
     // eliminate off-biome moving objects
     if (pickedBiome == secondPlace.biome) {
@@ -2338,9 +2348,11 @@
             }
           }
           biome.totalChanceWeight += spawnable.mapChance
+          //console.log('biome', biome.id, spawnable.id, spawnable.mapChance)
           return true
         })
       })
+      //console.log('-2,1', getBaseMap(-2, 1, objectGenerationOptions))
     }).catch(function(err) {
       console.log(err)
     })
