@@ -1100,90 +1100,6 @@
     }
   })
 
-  L.GridLayer.KeyPlacementPixel = L.GridLayer.extend({
-    options: {
-      className: 'crisp',
-    },
-    initialize: function(cache, options) {
-      this._cache = cache;
-      options = L.Util.setOptions(this, options);
-    },
-    createTile: function (coords, done) {
-      var tile = document.createElement('canvas');
-      var tileSize = this.getTileSize();
-      var tileWidth = Math.pow(2, (32 - coords.z))
-      //console.log(tileSize)
-      tile.setAttribute('width', tileWidth);
-      tile.setAttribute('height', tileWidth);
-
-      var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
-      //console.log('pnw', coords, pnw)
-      var llnw = crs.pointToLatLng(pnw, coords.z)
-      //console.log('llnw', coords, llnw)
-
-      var w = tile.width
-      var h = tile.height
-      var startX = llnw.lng + 0.5
-      var startY = llnw.lat - 0.5
-      //console.log('start', startX, startY)
-
-      var layer = this
-      layer._cache.loadTile(coords, {time: layer.options.dataTime}).then(function(text) {
-        tile._keyplace = text.split("\n").map(function(line) {
-          var parts = line.split(" ")
-          var out = {
-            x: parseInt(parts[0],10) - startX,
-            y: -(parseInt(parts[1],10) - startY),
-            id: parseInt(parts[2],10),
-          }
-          return out
-        }).filter(function(placement) {
-          return !isNaN(placement.id) && placement.id < 5000 &&
-            (0 <= placement.x && placement.x < w) &&
-            (0 <= placement.y && placement.y < h)
-        })
-        layer.drawTile(tile, coords, done)
-      })
-
-      return tile
-    },
-    drawTile(tile, coords, done) {
-      var tileSize = this.getTileSize();
-
-      var ctx = tile.getContext('2d', {alpha: true});
-      ctx.clearRect(0, 0, tile.width, tile.height)
-
-      var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
-      //console.log(coords, pnw)
-      var llnw = crs.pointToLatLng(pnw, coords.z)
-      //console.log(coords, llnw)
-
-      var w = tile.width
-      var h = tile.height
-      var startX = llnw.lng + 0.5
-      var startY = llnw.lat - 0.5
-
-      //console.log(coords, startX, startY)
-
-      var imageData = ctx.createImageData(tile.width, tile.height)
-      var d = imageData.data
-
-      tile._keyplace.forEach(function(placement) {
-        var i = (placement.y * w + placement.x) * 4
-        //console.log(i, placement.id)
-        var color = hsvToRgb(placement.id * 3769 % 359 / 360, 1, 1)
-        //var color = [255, 0, 0]
-        d[i+0] = color[0]
-        d[i+1] = color[1]
-        d[i+2] = color[2]
-        d[i+3] = (placement.id == 0 ? 0 : 255)
-      })
-
-      ctx.putImageData(imageData, 0, 0)
-      done(null, tile)
-    },
-  })
-
   var objectImages = []
 
   L.GridLayer.KeyPlacementSprite = L.GridLayer.extend({
@@ -1541,21 +1457,6 @@
     if (end*1000 > msStartOfRandomAge) {
       return new L.layerGroup([
         baseAttributionLayer,
-        /*
-        new L.GridLayer.KeyPlacementPixel(keyPlacementCache, {
-          dataTime: end.toString(),
-          //dataTime: '1564439085',
-          //dataTime: '1564457929',
-          //dataTime: '1564571257',
-          //dataTime: '1564625380',
-          //dataTime: '1564632744',
-          minZoom: 24,
-          maxZoom: 31,
-          //minNativeZoom: 24,
-          maxNativeZoom: 24,
-          attribution: attribution,
-        }),
-        */
         new L.GridLayer.KeyPlacementSprite(keyPlacementCache, {
           dataTime: end.toString(),
           //dataTime: '1564439085',
@@ -1587,16 +1488,6 @@
       }
       return new L.layerGroup([
         baseAttributionLayer,
-        /*
-        new L.GridLayer.KeyPlacementPixel(keyPlacementCache, {
-          dataTime: sEnd.toString(),
-          minZoom: 24,
-          maxZoom: 31,
-          //minNativeZoom: 24,
-          maxNativeZoom: 24,
-          attribution: attribution,
-        }),
-        */
         new L.GridLayer.MaplogSprite(maplogCache, {
           dataTime: sEnd.toString(),
           time: ms,
