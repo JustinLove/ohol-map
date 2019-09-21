@@ -1167,8 +1167,8 @@
       //console.log(cellSize, cellRight, cellBottom)
       var minSize = 1.5 * Math.pow(2, 31 - coords.z)
       var kp = tile._keyplace = []
-      for (var y = -paddingX;y < cellRight;y++) {
-        for (var x = -paddingUp;x < cellBottom;x++) {
+      for (var y = -paddingUp;y < cellBottom;y++) {
+        for (var x = -paddingX;x < cellRight;x++) {
           var wx = startX + x
           var wy = startY - y
           var v = getBaseMap(wx, wy, options)
