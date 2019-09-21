@@ -2324,7 +2324,8 @@
       }
       wrapper.biomes.forEach(function(biome) {
         biome.id = parseInt(biome.id, 10)
-        biomes[biome.id] = biome
+        var bi = jungleBiomeMap.indexOf(biome.id)
+        biomes[bi] = biome
         biome.objects.forEach(function(object) {
           object.id = parseInt(object.id, 10)
         })
