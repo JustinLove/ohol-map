@@ -194,7 +194,7 @@
     },
   })
 
-  //overlays['Checker'] = new L.GridLayer.CheckerLayer()
+  overlays['Checker'] = new L.GridLayer.CheckerLayer()
 
 
   // fractal generation copying https://github.com/jasonrohrer/OneLife/blob/master/commonSource/fractalNoise.cpp
@@ -1007,7 +1007,7 @@
           }
         }
         //console.log('images done')
-        done()
+        setTimeout(done,0)
         return true
       }
       return checkLoaded()
@@ -1062,6 +1062,7 @@
 
   L.GridLayer.ObjectLayerPixel = L.GridLayer.extend({
     options: Object.assign({
+      pane: 'overlayPane',
       className: 'crisp',
     }, objectGenerationOptions),
     createTile: function (coords, done) {
@@ -1120,7 +1121,7 @@
   })
 
   var objectOverlayPixel = new L.GridLayer.ObjectLayerPixel({
-    minZoom: 2,
+    minZoom: 24,
     maxZoom: 31,
     //minNativeZoom: 24,
     maxNativeZoom: 24,
@@ -1128,6 +1129,75 @@
     opacity: 0.5,
   })
   overlays['Object Pixel'] = objectOverlayPixel
+
+  L.GridLayer.ObjectLayerSprite = L.GridLayer.SpriteLayer.extend({
+    options: Object.assign({
+      pane: 'overlayPane',
+    }, objectGenerationOptions),
+    createTile: function (coords, done) {
+      var layer = this
+      var options = layer.options
+      var tile = document.createElement('canvas');
+      var tileSize = layer.getTileSize();
+      var superscale = Math.pow(2, options.supersample)
+      tile.setAttribute('width', tileSize.x*superscale);
+      tile.setAttribute('height', tileSize.y*superscale);
+      var paddingX = 2;
+      var paddingUp = 2;
+      var paddingDown = 4;
+
+      var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
+      var pse = L.point(pnw.x + tileSize.x, pnw.y + tileSize.y)
+      //console.log('pnw', coords, pnw)
+      var llnw = crs.pointToLatLng(pnw, coords.z)
+      var llse = crs.pointToLatLng(pse, coords.z)
+      //console.log('llnw', coords, llnw)
+
+      var startX = llnw.lng + 0.5
+      var startY = llnw.lat - 0.5
+      var endX = llse.lng + 0.5
+      var endY = llse.lat - 0.5
+      //console.log('start', startX, startY)
+      //console.log('end', endX, endY)
+
+      //console.log(coords)
+      var cellSize = Math.pow(2, coords.z - 24)
+      var cellRight = tileSize.x/cellSize + paddingX
+      var cellBottom = tileSize.y/cellSize + paddingDown
+      //console.log(cellSize, cellRight, cellBottom)
+      var minSize = 1.5 * Math.pow(2, 31 - coords.z)
+      var kp = tile._keyplace = []
+      for (var y = -paddingX;y < cellRight;y++) {
+        for (var x = -paddingUp;x < cellBottom;x++) {
+          var wx = startX + x
+          var wy = startY - y
+          var v = getBaseMap(wx, wy, options)
+          var size = objectSize[v]
+          var tooSmall = !size || size <= minSize
+          if (!tooSmall) {
+            kp.push({
+              x: x,
+              y: y,
+              id: v,
+            })
+          }
+        }
+      }
+      layer.loadImages(tile._keyplace, function() {
+        layer.drawTile(tile, coords, done)
+      })
+      return tile
+    },
+  })
+
+  var objectOverlaySprite = new L.GridLayer.ObjectLayerSprite({
+    minZoom: 24,
+    maxZoom: 31,
+    //minNativeZoom: 24,
+    //maxNativeZoom: 24,
+    attribution: attribution,
+  })
+  overlays['Object Sprite'] = objectOverlaySprite
 
   var TileDataCache = L.Class.extend({
     options: {
@@ -1211,8 +1281,6 @@
       var llse = crs.pointToLatLng(pse, coords.z)
       //console.log('llnw', coords, llnw)
 
-      var w = tile.width
-      var h = tile.height
       var startX = llnw.lng + 0.5
       var startY = llnw.lat - 0.5
       var endX = llse.lng + 0.5
@@ -1335,8 +1403,6 @@
       var llse = crs.pointToLatLng(pse, coords.z)
       //console.log('llnw', coords, llnw)
 
-      var w = tile.width
-      var h = tile.height
       var startX = llnw.lng + 0.5
       var startY = llnw.lat - 0.5
       var endX = llse.lng + 0.5
@@ -2396,6 +2462,7 @@
 
     objectLoad(map).then(function() {
       objectOverlayPixel.addTo(map)
+      objectOverlaySprite.addTo(map)
     })
 
     if (app.ports.leafletEvent) {
