@@ -1,7 +1,7 @@
 - object generation
-  - rift
-    - drop out rect
   - work with placement layers
+    - redraw on seed change
+    - redraw on rift change
   - wide object blocking
   - changes over time
 

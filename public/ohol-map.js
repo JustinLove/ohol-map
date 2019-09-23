@@ -2103,12 +2103,14 @@
     }
   }
 
-  var riftLayerByTime = function(ms) {
+  var riftLayerByTime = function(ms, zoom) {
     var targetLayer = null
     barrierRadius = null
     for (var i = riftHistory.length - 1;i >= 0;i--) {
       if (ms > riftHistory[i].ms) {
-        targetLayer = riftHistory[i].layer
+        if (!zoom || zoom < 25) {
+          targetLayer = riftHistory[i].layer
+        }
         barrierRadius = riftHistory[i].radius
         break
       }
@@ -2129,7 +2131,7 @@
   var setMapTime = function(map, ms, reason) {
     mapTime = ms
     if (map) baseLayerByTime(map, ms, reason)
-    riftLayerByTime(ms)
+    riftLayerByTime(ms, map && map.getZoom())
     animOverlay.updateTiles(ms)
     arcUpdateTiles(ms)
     L.Util.setOptions(legendControl, {time: ms})
@@ -2579,6 +2581,8 @@
       } else if (map.hasLayer(baseFade)) {
         L.DomUtil.addClass(map.getPane('tilePane'), 'blur')
       }
+
+      riftLayerByTime(mapTime, map.getZoom())
     })
     map.on('baselayerchange', function(ev) {
       toggleAnimationControls(map)
