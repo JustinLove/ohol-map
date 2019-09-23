@@ -820,22 +820,27 @@
   var desertColor = hsvToRgb(37/360, 0.65, 0.62)
   var jungleColor = hsvToRgb(90/360, 0.87, 0.48)
 
+  var biomeGenerationOptions = {
+    computeMapBiomeIndex: competeMapBiomeIndex,
+    biomeOffset: 0.83332,
+    biomeScale: 0.08333,
+    biomeFractalRoughness: 0.55,
+    biomeSeedOffset: 723,
+    biomeSeedScale: 263,
+    biomeMap: jungleBiomeMap,
+    numSpecialBiomes: 0,
+    biomeSeedSpecialOffset: 38475,
+    biomeSpecialOffset: 2.4999,
+    biomeSpecialScale: 0.2499,
+    biomeSpecialRoughness: 0.55,
+    biomeSpecialBoundary: 0.03,
+    biomeTotalWeight: topographicBiomeTotalWeight,
+    biomeCumuWeights: topographicBiomeCumuWeights,
+  }
+
   L.GridLayer.BiomeLayer = L.GridLayer.extend({
-    options: {
+    options: Object.assign({
       className: 'crisp',
-      computeMapBiomeIndex: competeMapBiomeIndex,
-      biomeOffset: 0.83332,
-      biomeScale: 0.08333,
-      biomeFractalRoughness: 0.55,
-      biomeSeedOffset: 723,
-      biomeSeedScale: 263,
-      biomeMap: jungleBiomeMap,
-      numSpecialBiomes: 0,
-      biomeSeedSpecialOffset: 38475,
-      biomeSpecialOffset: 2.4999,
-      biomeSpecialScale: 0.2499,
-      biomeSpecialRoughness: 0.55,
-      biomeSpecialBoundary: 0.03,
       biomeColors: [
         greenColor,
         swampColor,
@@ -845,9 +850,7 @@
         desertColor,
         jungleColor,
       ],
-      biomeTotalWeight: topographicBiomeTotalWeight,
-      biomeCumuWeights: topographicBiomeCumuWeights,
-    },
+    }, biomeGenerationOptions),
     createTile: function (coords, done) {
       var tile = document.createElement('canvas');
       var tileSize = this.getTileSize();
@@ -1048,14 +1051,7 @@
   base['Badlands Age'] = new L.layerGroup([badlandsAge])
 
 
-  var objectGenerationOptions = {
-    computeMapBiomeIndex: competeMapBiomeIndex,
-    biomeOffset: 0.83332,
-    biomeScale: 0.08333,
-    biomeFractalRoughness: 0.55,
-    biomeMap: jungleBiomeMap,
-    biomeSeedOffset: 723,
-    biomeSeedScale: 263,
+  var objectGenerationOptions = Object.assign({
     gridSeed: 9753,
     densitySeed: 5379,
     densityRoughness: 0.1,
@@ -1076,7 +1072,7 @@
     smallHeight: CELL_D, // height which is blocked
     tallHeight: 2, // heights that block
     veryTallHeight: 3,
-  }
+  }, biomeGenerationOptions)
 
   L.GridLayer.SpriteLayer = L.GridLayer.extend({
     options: {
