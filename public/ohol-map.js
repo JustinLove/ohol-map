@@ -908,149 +908,6 @@
     },
   })
 
-  var updateArcs = function(arcData) {
-    arcs = arcData.map(function(arc, i) {
-      var biomeLayer = createArcBiomeLayer(arc.start * 1000, arc.seed)
-      return {
-        msStart: arc.start * 1000,
-        msEnd: arc.end * 1000,
-        seed: arc.seed,
-        name: 'Arc '+(i+1),
-        layer: L.layerGroup([biomeLayer]),
-        biomeLayer: biomeLayer,
-        keyPlacementLayer: null,
-        maplogLayer: null,
-      }
-    })
-    if (objectSize.length > 0) {
-      addArcPlacements()
-    }
-    /*
-    arcs.forEach(function(arc, i) {
-      console.log(arc.name)
-      console.log('Fr:', new Date(arc.msStart).toString())
-      console.log('To:', new Date(arc.msEnd).toString())
-    })
-    */
-  }
-
-  var addArcPlacements = function() {
-    arcs.forEach(function(arc) {
-      var keyPlacementLayer = createArcKeyPlacementLayer(arc.msEnd/1000)
-      keyPlacementLayer.name = "key placement"
-      arc.keyPlacementLayer = keyPlacementLayer
-      var maplogLayer = createArcMaplogLayer(arc.msStart, arc.msEnd/1000)
-      maplogLayer.name = "maplog"
-      arc.maplogLayer = maplogLayer
-      L.Util.setOptions(keyPlacementLayer, {alternateAnim: maplogLayer})
-      L.Util.setOptions(maplogLayer, {alternateStatic: keyPlacementLayer})
-      if (dataAnimated) {
-        arc.layer.addLayer(maplogLayer)
-      } else {
-        arc.layer.addLayer(keyPlacementLayer)
-      }
-    })
-  }
-
-  var createArcBiomeLayer = function(msStart, seed) {
-    if (msStart > msStartOfSpecialAge) {
-      return new L.GridLayer.BiomeLayer({
-        computeMapBiomeIndex: topographicMapBiomeIndex,
-        biomeTotalWeight: specialBiomeTotalWeight,
-        biomeCumuWeights: specialBiomeCumuWeights,
-        biomeSeedOffset: seed,
-        biomeMap: specialBiomeMap,
-        numSpecialBiomes: 3,
-        minZoom: 2,
-        maxZoom: 31,
-        //minNativeZoom: 24,
-        maxNativeZoom: 24,
-        attribution: attribution,
-      })
-    } else if (msStart > msStartOfTopographicAge) {
-      return new L.GridLayer.BiomeLayer({
-        computeMapBiomeIndex: topographicMapBiomeIndex,
-        biomeTotalWeight: topographicBiomeTotalWeight,
-        biomeCumuWeights: topographicBiomeCumuWeights,
-        biomeSeedOffset: seed,
-        biomeMap: topographicBiomeMap,
-        minZoom: 2,
-        maxZoom: 31,
-        //minNativeZoom: 24,
-        maxNativeZoom: 24,
-        attribution: attribution,
-      })
-    } else {
-      return new L.GridLayer.BiomeLayer({
-        biomeSeedOffset: seed,
-        biomeMap: jungleBiomeMap,
-        minZoom: 2,
-        maxZoom: 31,
-        //minNativeZoom: 24,
-        maxNativeZoom: 24,
-        attribution: attribution,
-      })
-    }
-  }
-
-  base['Desert Age'] = new L.GridLayer.BiomeLayer({
-    biomeMap: desertBiomeMap,
-    minZoom: 2,
-    maxZoom: 31,
-    //minNativeZoom: 24,
-    maxNativeZoom: 24,
-    attribution: attribution,
-  })
-
-  base['Arctic Age'] = new L.GridLayer.BiomeLayer({
-    biomeMap: arcticBiomeMap,
-    minZoom: 2,
-    maxZoom: 31,
-    //minNativeZoom: 24,
-    maxNativeZoom: 24,
-    attribution: attribution,
-  })
-
-  var badlandsAge = new L.GridLayer.BiomeLayer({
-    biomeMap: badlandsBiomeMap,
-    minZoom: 2,
-    maxZoom: 31,
-    //minNativeZoom: 24,
-    maxNativeZoom: 24,
-    attribution: attribution,
-  })
-
-  var greenColor3 = [50, 200, 50]
-  var swampColor3 = [150, 70, 150]
-  var plainsColor3 = [250, 250, 30]
-  var badlandsColor3 = [150, 150, 150]
-
-  var server3Biome = new L.GridLayer.BiomeLayer({
-    biomeMap: badlandsBiomeMap,
-    minZoom: 2,
-    maxZoom: 31,
-    //minNativeZoom: 24,
-    maxNativeZoom: 24,
-    attribution: attribution,
-    biomeColors: [
-      greenColor3,
-      swampColor3,
-      plainsColor3,
-      badlandsColor3,
-    ]
-  })
-
-  var server3Map = L.imageOverlay('overlays/server3.png',
-    [[-1170.5, -695.5], [-401.5, 1252.5 - 695]], {
-      pane: 'tilePane',
-      attribution: '<a href="https://onehouronelife.com/forums/viewtopic.php?id=236">rosden</a>',
-    })
-
-  var server3 = new L.layerGroup([server3Biome, server3Map])
-
-  base['Badlands Age'] = new L.layerGroup([badlandsAge])
-
-
   var objectGenerationOptions = Object.assign({
     gridSeed: 9753,
     densitySeed: 5379,
@@ -1321,6 +1178,148 @@
     attribution: attribution,
   })
   overlays['Object Sprite'] = objectOverlaySprite
+
+  var updateArcs = function(arcData) {
+    arcs = arcData.map(function(arc, i) {
+      var biomeLayer = createArcBiomeLayer(arc.start * 1000, arc.seed)
+      return {
+        msStart: arc.start * 1000,
+        msEnd: arc.end * 1000,
+        seed: arc.seed,
+        name: 'Arc '+(i+1),
+        layer: L.layerGroup([biomeLayer]),
+        biomeLayer: biomeLayer,
+        keyPlacementLayer: null,
+        maplogLayer: null,
+      }
+    })
+    if (objectSize.length > 0) {
+      addArcPlacements()
+    }
+    /*
+    arcs.forEach(function(arc, i) {
+      console.log(arc.name)
+      console.log('Fr:', new Date(arc.msStart).toString())
+      console.log('To:', new Date(arc.msEnd).toString())
+    })
+    */
+  }
+
+  var addArcPlacements = function() {
+    arcs.forEach(function(arc) {
+      var keyPlacementLayer = createArcKeyPlacementLayer(arc.msEnd/1000)
+      keyPlacementLayer.name = "key placement"
+      arc.keyPlacementLayer = keyPlacementLayer
+      var maplogLayer = createArcMaplogLayer(arc.msStart, arc.msEnd/1000)
+      maplogLayer.name = "maplog"
+      arc.maplogLayer = maplogLayer
+      L.Util.setOptions(keyPlacementLayer, {alternateAnim: maplogLayer})
+      L.Util.setOptions(maplogLayer, {alternateStatic: keyPlacementLayer})
+      if (dataAnimated) {
+        arc.layer.addLayer(maplogLayer)
+      } else {
+        arc.layer.addLayer(keyPlacementLayer)
+      }
+    })
+  }
+
+  var createArcBiomeLayer = function(msStart, seed) {
+    if (msStart > msStartOfSpecialAge) {
+      return new L.GridLayer.BiomeLayer({
+        computeMapBiomeIndex: topographicMapBiomeIndex,
+        biomeTotalWeight: specialBiomeTotalWeight,
+        biomeCumuWeights: specialBiomeCumuWeights,
+        biomeSeedOffset: seed,
+        biomeMap: specialBiomeMap,
+        numSpecialBiomes: 3,
+        minZoom: 2,
+        maxZoom: 31,
+        //minNativeZoom: 24,
+        maxNativeZoom: 24,
+        attribution: attribution,
+      })
+    } else if (msStart > msStartOfTopographicAge) {
+      return new L.GridLayer.BiomeLayer({
+        computeMapBiomeIndex: topographicMapBiomeIndex,
+        biomeTotalWeight: topographicBiomeTotalWeight,
+        biomeCumuWeights: topographicBiomeCumuWeights,
+        biomeSeedOffset: seed,
+        biomeMap: topographicBiomeMap,
+        minZoom: 2,
+        maxZoom: 31,
+        //minNativeZoom: 24,
+        maxNativeZoom: 24,
+        attribution: attribution,
+      })
+    } else {
+      return new L.GridLayer.BiomeLayer({
+        biomeSeedOffset: seed,
+        biomeMap: jungleBiomeMap,
+        minZoom: 2,
+        maxZoom: 31,
+        //minNativeZoom: 24,
+        maxNativeZoom: 24,
+        attribution: attribution,
+      })
+    }
+  }
+
+  base['Desert Age'] = new L.GridLayer.BiomeLayer({
+    biomeMap: desertBiomeMap,
+    minZoom: 2,
+    maxZoom: 31,
+    //minNativeZoom: 24,
+    maxNativeZoom: 24,
+    attribution: attribution,
+  })
+
+  base['Arctic Age'] = new L.GridLayer.BiomeLayer({
+    biomeMap: arcticBiomeMap,
+    minZoom: 2,
+    maxZoom: 31,
+    //minNativeZoom: 24,
+    maxNativeZoom: 24,
+    attribution: attribution,
+  })
+
+  var badlandsAge = new L.GridLayer.BiomeLayer({
+    biomeMap: badlandsBiomeMap,
+    minZoom: 2,
+    maxZoom: 31,
+    //minNativeZoom: 24,
+    maxNativeZoom: 24,
+    attribution: attribution,
+  })
+
+  var greenColor3 = [50, 200, 50]
+  var swampColor3 = [150, 70, 150]
+  var plainsColor3 = [250, 250, 30]
+  var badlandsColor3 = [150, 150, 150]
+
+  var server3Biome = new L.GridLayer.BiomeLayer({
+    biomeMap: badlandsBiomeMap,
+    minZoom: 2,
+    maxZoom: 31,
+    //minNativeZoom: 24,
+    maxNativeZoom: 24,
+    attribution: attribution,
+    biomeColors: [
+      greenColor3,
+      swampColor3,
+      plainsColor3,
+      badlandsColor3,
+    ]
+  })
+
+  var server3Map = L.imageOverlay('overlays/server3.png',
+    [[-1170.5, -695.5], [-401.5, 1252.5 - 695]], {
+      pane: 'tilePane',
+      attribution: '<a href="https://onehouronelife.com/forums/viewtopic.php?id=236">rosden</a>',
+    })
+
+  var server3 = new L.layerGroup([server3Biome, server3Map])
+
+  base['Badlands Age'] = new L.layerGroup([badlandsAge])
 
   var TileDataCache = L.Class.extend({
     options: {
