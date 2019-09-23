@@ -454,7 +454,7 @@
     for (var i = 0;i < gridPlacements.length;i++) {
       var gp = gridPlacements[i]
       if (inX % gp.spacing == 0 && inY % gp.spacing == 0) {
-        pickedBiome = competeMapBiomeIndex(inX, inY, options, secondPlace)
+        pickedBiome = options.computeMapBiomeIndex(inX, inY, options, secondPlace)
         if (pickedBiome == -1) {
           return 0;
         }
@@ -477,7 +477,7 @@
     }
 
     if (pickedBiome == -1) {
-      pickedBiome = competeMapBiomeIndex(inX, inY, options, secondPlace)
+      pickedBiome = options.computeMapBiomeIndex(inX, inY, options, secondPlace)
     }
 
     if (pickedBiome == -1) {
@@ -1049,6 +1049,7 @@
 
 
   var objectGenerationOptions = {
+    computeMapBiomeIndex: competeMapBiomeIndex,
     biomeOffset: 0.83332,
     biomeScale: 0.08333,
     biomeFractalRoughness: 0.55,
