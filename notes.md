@@ -1,9 +1,8 @@
 - object generation
   - rift
     - drop out rect
-    - depend on rifthistory
-  - wide object blocking
   - work with placement layers
+  - wide object blocking
   - changes over time
 
 - find bottleneck - network or render?

@@ -112,6 +112,7 @@
 
   var monumentOverlay = L.layerGroup([])
 
+  var barrierRadius = null
   var riftOptions = {
     fill: false,
     color: 'black',
@@ -125,12 +126,12 @@
     riftGone,
   ])
   var riftHistory = [
-    { ms: Date.parse("2019-07-25 20:00:00-05:00"), layer: rift250 },
-    { ms: Date.parse("2019-07-25 23:06:38-05:00"), layer: rift1000 },
-    { ms: Date.parse("2019-07-26 02:00:00-05:00"), layer: rift500 },
-    { ms: Date.parse("2019-07-26 17:30:00-05:00"), layer: rift354 },
-    { ms: Date.parse("2019-08-13 10:57:00-05:00"), layer: riftGone },
-    { ms: Date.parse("2019-08-24 16:57:00-05:00"), layer: rift354 },
+    { ms: Date.parse("2019-07-25 20:00:00-05:00"), layer: rift250 , radius: 250 },
+    { ms: Date.parse("2019-07-25 23:06:38-05:00"), layer: rift1000, radius: 1000 },
+    { ms: Date.parse("2019-07-26 02:00:00-05:00"), layer: rift500, radius: 500 },
+    { ms: Date.parse("2019-07-26 17:30:00-05:00"), layer: rift354, radius: 354 },
+    { ms: Date.parse("2019-08-13 10:57:00-05:00"), layer: riftGone, radius: null },
+    { ms: Date.parse("2019-08-24 16:57:00-05:00"), layer: rift354, radius: 354 },
   ]
 
   var barrierObjects = [
@@ -565,8 +566,7 @@
   }
 
   var getPossibleBarrier = function(inX, inY, options) {
-    var barrierRadius = 354
-    if (false) return 0
+    if (barrierRadius == null) return 0
 
     if (inX == barrierRadius ||
       inX == -barrierRadius ||
@@ -2105,9 +2105,11 @@
 
   var riftLayerByTime = function(ms) {
     var targetLayer = null
+    barrierRadius = null
     for (var i = riftHistory.length - 1;i >= 0;i--) {
       if (ms > riftHistory[i].ms) {
         targetLayer = riftHistory[i].layer
+        barrierRadius = riftHistory[i].radius
         break
       }
     }
