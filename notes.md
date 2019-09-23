@@ -1,6 +1,10 @@
 - object generation
   - rift
+    - black
+    - depend on rifthistory
   - wide object blocking
+  - work with placement layers
+  - changes over time
 
 - find bottleneck - network or render?
   - load time garbage collection
