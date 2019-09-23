@@ -1,5 +1,4 @@
 - object generation
-  - moving off biome objects - turkey in swamp
   - wide object blocking
   - tarr monument
   - rift

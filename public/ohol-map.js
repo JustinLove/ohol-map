@@ -16,6 +16,7 @@
   var arcs = []
 
   var CELL_D = 128
+  var objectBoundsPadding = 15
 
   var scale = Math.pow(2, 24)
   var crs = L.extend({}, L.CRS.Simple, {
@@ -462,8 +463,8 @@
     }
 
     var biome = biomes[pickedBiome]
-    var biomeObject = biome.objects
-    var numObjects = biomeObject.length
+    var biomeObjects = biome.objects
+    var numObjects = biomeObjects.length
 
     // jackpot chance
     var specialObjectIndex = -1
@@ -482,9 +483,9 @@
       }
     }
 
-    var oldSpecialChance = biomeObject[specialObjectIndex].mapChance
+    var oldSpecialChance = biomeObjects[specialObjectIndex].mapChance
     var newSpecialChance = oldSpecialChance * 10
-    biomeObject[specialObjectIndex].mapChance = newSpecialChance
+    biomeObjects[specialObjectIndex].mapChance = newSpecialChance
     var totalChance = biome.totalChanceWeight - oldSpecialChance + newSpecialChance
 
     /*
@@ -503,26 +504,26 @@
     var weightSum = 0
 
     while (weightSum < randValue && i < numObjects) {
-      weightSum += biomeObject[i].mapChance
+      weightSum += biomeObjects[i].mapChance
       i++
     }
 
     i--
 
     // fix jackpot chance
-    biomeObject[specialObjectIndex].mapChance = oldSpecialChance
+    biomeObjects[specialObjectIndex].mapChance = oldSpecialChance
 
     if (i < 0) {
       return 0
     }
 
-    var returnId = biomeObject[i].id
+    var returnId = biomeObjects[i].id
 
     //console.log('rand', randValue, i, returnId)
 
     // eliminate off-biome moving objects
     if (pickedBiome == secondPlace.biome) {
-      if (biomeObject.moving) {
+      if (biomeObjects[i].moving) {
         return 0
       }
     }
@@ -536,13 +537,15 @@
     if (result <= 0) {
       return 0
     } else if (false /* wide */) {
-    } else if (!grid.grid && objectBounds[result][3] < options.smallHeight) {
+    } else if (!grid.grid && objectBounds[result][3]-objectBoundsPadding < options.smallHeight) {
       var sid = getBaseMap(inX, inY - 1, options)
-      if (sid > 0 && objectBounds[sid][3] >= options.tallHeight) {
+      if (sid > 0 && objectBounds[sid][3]-objectBoundsPadding >= options.tallHeight) {
+        //console.log('tall blocked')
         return 0
       }
       var s2id = getBaseMap(inX, inY - 2, options)
-      if (s2id > 0 && objectBounds[s2id][3] >= options.veryTallHeight) {
+      if (s2id > 0 && objectBounds[s2id][3]-objectBoundsPadding >= options.veryTallHeight) {
+        //console.log('very tall blocked')
         return 0
       }
     }
@@ -2382,7 +2385,12 @@
           return true
         })
       })
+      // object blocking
       //console.log('-2,1', getMapObjectRaw(-2, 1, objectGenerationOptions))
+      // off biome moving object
+      //console.log('19,15', getBaseMap(19, 15, objectGenerationOptions))
+      // object bounds height transparent padding
+      //console.log('80,8', getMapObjectRaw(80, 8, objectGenerationOptions))
     }).catch(function(err) {
       console.log(err)
     })
