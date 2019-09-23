@@ -1,7 +1,6 @@
 - object generation
-  - wide object blocking
-  - tarr monument
   - rift
+  - wide object blocking
 
 - find bottleneck - network or render?
   - load time garbage collection

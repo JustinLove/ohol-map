@@ -129,6 +129,15 @@
     { ms: Date.parse("2019-08-24 16:57:00-05:00"), layer: rift354 },
   ]
 
+  var specialMapPlacements = [
+    {
+      msStart: Date.parse("2019-08-02 20:11:00-05:00"),
+      x: 0,
+      y: 0,
+      id: 3112,
+    },
+  ]
+
   var overlays = {
     graticule: null,
     "Rift": riftOverlay,
@@ -1019,7 +1028,6 @@
 
   L.GridLayer.SpriteLayer = L.GridLayer.extend({
     options: {
-      opacity: 0.2,
       offset: 0.2,
       supersample: 1,
       fadeTallobjects: false,
@@ -1234,6 +1242,7 @@
   })
 
   var objectOverlaySprite = new L.GridLayer.ObjectLayerSprite({
+    opacity: 0.2,
     minZoom: 24,
     maxZoom: 31,
     //minNativeZoom: 24,
@@ -1375,6 +1384,21 @@
           return true
         }).sort(sortTypeAndDrawOrder)
 
+        var special = specialMapPlacements.filter(function(place) {
+          return (place.msStart/1000 < layer.options.dataTime
+                  && startX <= place.x && place.x <= endX
+                  && endY <= place.y && place.y <= startY)
+        }).map(function(place) {
+          return {
+            x: place.x - startX,
+            y: -(place.y - startY),
+            id: place.id
+          }
+        })
+        if (special.length > 0) {
+          tile._keyplace = special.concat(tile._keyplace)
+        }
+
         //console.timeEnd('data processing ' + JSON.stringify(coords))
         //console.time('load images' + JSON.stringify(coords))
         //console.time('load images call' + JSON.stringify(coords))
@@ -1497,6 +1521,22 @@
         }).sort(function(a, b) {
           return a.t - b.t
         })
+
+        var special = specialMapPlacements.filter(function(place) {
+          return (place.msStart/1000 < layer.options.dataTime
+                  && startX <= place.x && place.x <= endX
+                  && endY <= place.y && place.y <= startY)
+        }).map(function(place) {
+          return {
+            t: 1,
+            x: place.x - startX,
+            y: -(place.y - startY),
+            id: place.id
+          }
+        })
+        if (special.length > 0) {
+          tile._maplog = special.concat(tile._maplog)
+        }
 
         var time = layer.options.time
         tile.coords = coords
@@ -2512,8 +2552,8 @@
     //map.setView([0,0], 24)
 
     objectLoad(map).then(function() {
-      objectOverlayPixel.addTo(map)
-      objectOverlaySprite.addTo(map)
+      //objectOverlayPixel.addTo(map)
+      //objectOverlaySprite.addTo(map)
     })
 
     if (app.ports.leafletEvent) {
