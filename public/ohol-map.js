@@ -115,7 +115,6 @@
   var riftOptions = {
     fill: false,
     color: 'black',
-    maxZoom: 24,
   }
   var rift250 = L.rectangle([[-250,-250], [250,250]], riftOptions)
   var rift354 = L.rectangle([[-354,-354], [354,354]], riftOptions)
@@ -1090,13 +1089,35 @@
       var layer = this
       placements.forEach(function(placement) {
         if (!objectImages[placement.id]) {
-          var img = new Image()
-          objectImages[placement.id] = img
-          img.onload = function() {
-            img._iw = img.naturalWidth/CELL_D
-            img._ih = img.naturalHeight/CELL_D
+          if (barrierObjects.indexOf(placement.id) != -1) {
+            var canvas = document.createElement('canvas')
+            objectImages[placement.id] = canvas
+            var img = new Image()
+            img.onload = function() {
+              var w = img.naturalWidth
+              var h = img.naturalHeight
+              canvas.width = w
+              canvas.height = h
+              canvas._iw = w/CELL_D
+              canvas._ih = h/CELL_D
+              var ctx = canvas.getContext('2d', {alpha: true});
+              ctx.clearRect(0, 0, w, h)
+              ctx.drawImage(img, 0, 0, w, h)
+              ctx.fillStyle = 'black'
+              ctx.globalCompositeOperation = 'source-atop'
+              ctx.fillRect(0, 0, w, h)
+              canvas.complete = true
+            }
+            img.src = 'static/sprites/obj_'+placement.id+'.png'
+          } else {
+            var img = new Image()
+            objectImages[placement.id] = img
+            img.onload = function() {
+              img._iw = img.naturalWidth/CELL_D
+              img._ih = img.naturalHeight/CELL_D
+            }
+            img.src = 'static/sprites/obj_'+placement.id+'.png'
           }
-          img.src = 'static/sprites/obj_'+placement.id+'.png'
         }
       })
 

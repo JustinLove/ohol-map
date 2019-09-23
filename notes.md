@@ -1,6 +1,6 @@
 - object generation
   - rift
-    - black
+    - drop out rect
     - depend on rifthistory
   - wide object blocking
   - work with placement layers
