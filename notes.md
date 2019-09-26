@@ -1,13 +1,14 @@
 - object generation
   - compound biome object layer
     - object load time issue?
-    - rerender on zoom change
+    - rerender on zoom change - leaflet? see above?
   - work with placement layers
     - redraw on seed change
     - redraw on rift change
   - wide object blocking
   - changes over time
 
+- yesterday not jumping to time
 - find bottleneck - network or render?
   - load time garbage collection
 - server url link
