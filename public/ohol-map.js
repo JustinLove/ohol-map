@@ -1153,6 +1153,7 @@
           var wx = startX + x
           var wy = startY - y
           var v = getMapObjectRaw(wx, wy, options)
+          if (v == 0) continue
           var size = objectSize[v]
           var tooSmall = !size || size <= minSize
           if (!tooSmall) {
@@ -1492,6 +1493,7 @@
             var wx = startX + x
             var wy = startY - y
             var v = getMapObjectRaw(wx, wy, options)
+            if (v == 0) continue
             var size = objectSize[v]
             var tooSmall = !size || size <= minSize
             if (!tooSmall) {
@@ -1578,9 +1580,11 @@
       options = L.Util.setOptions(this, options);
     },
     createTile: function (coords, done) {
+      var layer = this
+      var options = layer.options
       var tile = document.createElement('canvas');
-      var tileSize = this.getTileSize();
-      var superscale = Math.pow(2, this.options.supersample)
+      var tileSize = layer.getTileSize();
+      var superscale = Math.pow(2, options.supersample)
       tile.setAttribute('width', tileSize.x*superscale);
       tile.setAttribute('height', tileSize.y*superscale);
       var paddingX = 2;
@@ -1602,18 +1606,17 @@
       //console.log('end', endX, endY)
 
       //console.log(coords)
-      var dataZoom = this._cache.dataZoom(coords)
+      var dataZoom = layer._cache.dataZoom(coords)
       var cellSize = Math.pow(2, coords.z - dataZoom)
       var cellRight = tileSize.x/cellSize + paddingX
       var cellBottom = tileSize.y/cellSize + paddingDown
       //console.log('cellsize', cellSize, 'cellRight', cellRight)
-      var layer = this
       //console.log(datacoords)
       layer._cache.loadTile(coords, {time: layer.options.dataTime}).then(function(text) {
         var t = 0
         var x = 0
         var y = 0
-        tile._maplog = text.split("\n").filter(function(line) {
+        var placements = text.split("\n").filter(function(line) {
           return line != "";
         }).map(function(line) {
           var parts = line.split(" ")
@@ -1646,21 +1649,39 @@
           return a.t - b.t
         })
 
+        var natural = []
+        for (var y = -paddingUp;y < cellBottom;y++) {
+          for (var x = -paddingX;x < cellRight;x++) {
+            var wx = startX + x
+            var wy = startY - y
+            var v = getMapObjectRaw(wx, wy, options)
+            if (v == 0) continue
+            natural.push({
+              t: 2,
+              x: x,
+              y: y,
+              id: v,
+              key: [x, y].join(' '),
+            })
+          }
+        }
+
         var special = specialMapPlacements.filter(function(place) {
           return (place.msStart/1000 < layer.options.dataTime
                   && startX <= place.x && place.x <= endX
                   && endY <= place.y && place.y <= startY)
         }).map(function(place) {
-          return {
-            t: 1,
+          var out = {
+            t: 2,
             x: place.x - startX,
             y: -(place.y - startY),
-            id: place.id
+            id: place.id,
           }
+          out.key = [out.x, out.y].join(' ')
+          return out
         })
-        if (special.length > 0) {
-          tile._maplog = special.concat(tile._maplog)
-        }
+
+        tile._maplog = natural.concat(special, placements)
 
         var time = layer.options.time
         tile.coords = coords
