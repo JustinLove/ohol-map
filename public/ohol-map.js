@@ -1190,7 +1190,7 @@
         maplogLayer: null,
       }
     })
-    if (objectSize.length > 0) {
+    if (objectSize.length > 0 && biomes.length > 0) {
       addArcPlacements()
     }
     /*
@@ -1203,10 +1203,10 @@
 
   var addArcPlacements = function() {
     arcs.forEach(function(arc) {
-      var keyPlacementLayer = createArcKeyPlacementLayer(arc.msEnd/1000)
+      var keyPlacementLayer = createArcKeyPlacementLayer(arc.msEnd/1000, arc.seed)
       keyPlacementLayer.name = "key placement"
       arc.keyPlacementLayer = keyPlacementLayer
-      var maplogLayer = createArcMaplogLayer(arc.msStart, arc.msEnd/1000)
+      var maplogLayer = createArcMaplogLayer(arc.msStart, arc.msEnd/1000, arc.seed)
       maplogLayer.name = "maplog"
       arc.maplogLayer = maplogLayer
       L.Util.setOptions(keyPlacementLayer, {alternateAnim: maplogLayer})
@@ -1402,14 +1402,17 @@
   var objectImages = []
 
   L.GridLayer.KeyPlacementSprite = L.GridLayer.SpriteLayer.extend({
+    options: Object.assign({}, objectGenerationOptions),
     initialize: function(cache, options) {
       this._cache = cache;
       options = L.Util.setOptions(this, options);
     },
     createTile: function (coords, done) {
+      var layer = this
+      var options = layer.options
       var tile = document.createElement('canvas');
-      var tileSize = this.getTileSize();
-      var superscale = Math.pow(2, this.options.supersample)
+      var tileSize = layer.getTileSize();
+      var superscale = Math.pow(2, options.supersample)
       tile.setAttribute('width', tileSize.x*superscale);
       tile.setAttribute('height', tileSize.y*superscale);
       var paddingX = 2;
@@ -1431,21 +1434,37 @@
       //console.log('end', endX, endY)
 
       //console.log(coords)
-      var dataZoom = this._cache.dataZoom(coords)
+      var dataZoom = layer._cache.dataZoom(coords)
       var cellSize = Math.pow(2, coords.z - dataZoom)
-      var cellWidth = tileSize.x/cellSize + paddingX
-      var cellHeight = tileSize.y/cellSize + paddingDown
+      var cellRight = tileSize.x/cellSize + paddingX
+      var cellBottom = tileSize.y/cellSize + paddingDown
       var minSize = 1.5 * Math.pow(2, 31 - coords.z)
 
-      //console.log('cellsize', cellSize, 'cellWidth', cellWidth)
-      var layer = this
+      //console.log('cellsize', cellSize, 'cellRight', cellRight)
       //console.log(datacoords)
       //console.log('data tile ' + JSON.stringify(coords))
       //console.time('data tile ' + JSON.stringify(coords))
-      layer._cache.loadTile(coords, {time: layer.options.dataTime}).then(function(text) {
+      layer._cache.loadTile(coords, {time: options.dataTime}).then(function(text) {
+        var occupied = {}
+
+        var special = specialMapPlacements.filter(function(place) {
+          return (place.msStart/1000 < options.dataTime
+                  && startX <= place.x && place.x <= endX
+                  && endY <= place.y && place.y <= startY)
+        }).map(function(place) {
+          var out = {
+            x: place.x - startX,
+            y: -(place.y - startY),
+            id: place.id
+          }
+          out.key = [out.x, out.y].join(' ')
+          occupied[out.key] = true
+          return out
+        })
+
         //console.timeEnd('data tile ' + JSON.stringify(coords))
         //console.time('data processing ' + JSON.stringify(coords))
-        tile._keyplace = text.split("\n").filter(function(line) {
+        var placements = text.split("\n").filter(function(line) {
           return line != "";
         }).map(function(line) {
           var parts = line.split(" ")
@@ -1456,38 +1475,53 @@
             id: parseInt(parts[2].replace('f', ''),10),
             floor: parts[2][0] == 'f',
           }
+          out.key = [out.x, out.y].join(' ')
+          occupied[out.key] = true
           } catch (e) {
             console.log(e, parts, line)
           }
           return out
-        }).filter(function(placement) {
-
-          var isValid = !isNaN(placement.id) && placement.id < 5000
-          if (!isValid) return false
-          var inFrame =
-            (-paddingX <= placement.x && placement.x < cellWidth) &&
-            (-paddingUp <= placement.y && placement.y < cellHeight)
-          if (!inFrame) return false
-          var size = objectSize[placement.id]
-          var tooSmall = !size || size <= minSize
-          if (tooSmall) return false
-          return true
-        }).sort(sortTypeAndDrawOrder)
-
-        var special = specialMapPlacements.filter(function(place) {
-          return (place.msStart/1000 < layer.options.dataTime
-                  && startX <= place.x && place.x <= endX
-                  && endY <= place.y && place.y <= startY)
-        }).map(function(place) {
-          return {
-            x: place.x - startX,
-            y: -(place.y - startY),
-            id: place.id
-          }
         })
-        if (special.length > 0) {
-          tile._keyplace = special.concat(tile._keyplace)
+
+        var natural = []
+        for (var y = -paddingUp;y < cellBottom;y++) {
+          for (var x = -paddingX;x < cellRight;x++) {
+            if (occupied[[x, y].join(' ')]) {
+              continue
+            }
+            var wx = startX + x
+            var wy = startY - y
+            var v = getMapObjectRaw(wx, wy, options)
+            var size = objectSize[v]
+            var tooSmall = !size || size <= minSize
+            if (!tooSmall) {
+              natural.push({
+                x: x,
+                y: y,
+                id: v,
+                floor: false,
+              })
+            }
+          }
         }
+
+        tile._keyplace =
+          special.concat(natural, placements)
+
+          .filter(function(placement) {
+
+            var isValid = !isNaN(placement.id) && placement.id < 5000
+            if (!isValid) return false
+            var inFrame =
+              (-paddingX <= placement.x && placement.x < cellRight) &&
+              (-paddingUp <= placement.y && placement.y < cellBottom)
+            if (!inFrame) return false
+            var size = objectSize[placement.id]
+            var tooSmall = !size || size <= minSize
+            if (tooSmall) return false
+            return true
+          })
+          .sort(sortTypeAndDrawOrder)
 
         //console.timeEnd('data processing ' + JSON.stringify(coords))
         //console.time('load images' + JSON.stringify(coords))
@@ -1536,9 +1570,9 @@
   }
 
   L.GridLayer.MaplogSprite = L.GridLayer.SpriteLayer.extend({
-    options: {
+    options: Object.assign({
       time: 0,
-    },
+    }, objectGenerationOptions),
     initialize: function(cache, options) {
       this._cache = cache;
       options = L.Util.setOptions(this, options);
@@ -1570,9 +1604,9 @@
       //console.log(coords)
       var dataZoom = this._cache.dataZoom(coords)
       var cellSize = Math.pow(2, coords.z - dataZoom)
-      var cellWidth = tileSize.x/cellSize + paddingX
-      var cellHeight = tileSize.y/cellSize + paddingDown
-      //console.log('cellsize', cellSize, 'cellWidth', cellWidth)
+      var cellRight = tileSize.x/cellSize + paddingX
+      var cellBottom = tileSize.y/cellSize + paddingDown
+      //console.log('cellsize', cellSize, 'cellRight', cellRight)
       var layer = this
       //console.log(datacoords)
       layer._cache.loadTile(coords, {time: layer.options.dataTime}).then(function(text) {
@@ -1604,8 +1638,8 @@
           var isValid = !isNaN(placement.id) && placement.id < 5000
           if (!isValid) return false
           var inFrame =
-            (-paddingX <= placement.x && placement.x < cellWidth) &&
-            (-paddingUp <= placement.y && placement.y < cellHeight)
+            (-paddingX <= placement.x && placement.x < cellRight) &&
+            (-paddingUp <= placement.y && placement.y < cellBottom)
           if (!inFrame) return false
           return true
         }).sort(function(a, b) {
@@ -1703,18 +1737,14 @@
     datamaxzoom: 24,
   })
 
-  var createArcKeyPlacementLayer = function(end) {
+  var createArcKeyPlacementLayer = function(end, seed) {
     if (end*1000 > msStartOfRandomAge) {
+      var gen = biomeGenerationForTime(end*1000, seed)
       return new L.layerGroup([
         baseAttributionLayer,
-        new L.GridLayer.KeyPlacementSprite(keyPlacementCache, {
+        new L.GridLayer.KeyPlacementSprite(keyPlacementCache, Object.assign({
           dataTime: end.toString(),
-          //dataTime: '1564439085',
-          //dataTime: '1564457929',
-          //dataTime: '1564571257',
-          //dataTime: '1564625380',
-          //dataTime: '1564632744',
-        })
+        }, gen))
       ])
     } else {
       return L.layerGroup([])
@@ -1726,18 +1756,19 @@
     datamaxzoom: 27,
   })
 
-  var createArcMaplogLayer = function(msStart, sEnd) {
+  var createArcMaplogLayer = function(msStart, sEnd, seed) {
     if (sEnd*1000 > msStartOfRandomAge) {
       var ms = sEnd*1000
       if (msStart < mapTime && mapTime < sEnd*1000) {
         ms = mapTime
       }
+      var gen = biomeGenerationForTime(msStart, seed)
       return new L.layerGroup([
         baseAttributionLayer,
-        new L.GridLayer.MaplogSprite(maplogCache, {
+        new L.GridLayer.MaplogSprite(maplogCache, Object.assign({
           dataTime: sEnd.toString(),
           time: ms,
-        })
+        }, gen))
       ])
     } else {
       return L.layerGroup([])
@@ -1748,11 +1779,11 @@
     arcs.forEach(function(arc) {
       arc.keyPlacementLayer.eachLayer(function(layer) {
         L.Util.setOptions(layer, {fadeTallObjects: status})
-        layer.redraw()
+        layer.redraw && layer.redraw()
       })
       arc.maplogLayer.eachLayer(function(layer) {
         L.Util.setOptions(layer, {fadeTallObjects: status})
-        layer.redraw()
+        layer.redraw && layer.redraw()
       })
     })
   }
@@ -2472,8 +2503,6 @@
           bounds[2] - bounds[0] - 30,
           bounds[3] - bounds[1] - 30)
       }
-      addArcPlacements()
-      toggleAnimationControls(map)
     }).catch(function(err) {
       console.log(err)
     })
@@ -2641,6 +2670,8 @@
 
     objectLoad(map).then(function() {
       addWorldObjects()
+      addArcPlacements()
+      toggleAnimationControls(map)
       //objectOverlayPixel.addTo(map)
       //objectOverlaySprite.addTo(map)
     })
