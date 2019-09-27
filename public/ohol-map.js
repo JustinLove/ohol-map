@@ -1142,14 +1142,13 @@
       //console.log('end', endX, endY)
 
       //console.log(coords)
-      var cellSize = Math.pow(2, coords.z - 24)
-      var cellRight = tileSize.x/cellSize + paddingX
-      var cellBottom = tileSize.y/cellSize + paddingDown
-      //console.log(cellSize, cellRight, cellBottom)
+      var right = (endX - startX) + paddingX
+      var bottom = (startY - endY) + paddingDown
       var minSize = 1.5 * Math.pow(2, 31 - coords.z)
       var kp = tile._keyplace = []
-      for (var y = -paddingUp;y < cellBottom;y++) {
-        for (var x = -paddingX;x < cellRight;x++) {
+      //console.log(-paddingUp, bottom, -paddingX, right)
+      for (var y = -paddingUp;y < bottom;y++) {
+        for (var x = -paddingX;x < right;x++) {
           var wx = startX + x
           var wy = startY - y
           var v = getMapObjectRaw(wx, wy, options)
@@ -1435,13 +1434,10 @@
       //console.log('end', endX, endY)
 
       //console.log(coords)
-      var dataZoom = layer._cache.dataZoom(coords)
-      var cellSize = Math.pow(2, coords.z - dataZoom)
-      var cellRight = tileSize.x/cellSize + paddingX
-      var cellBottom = tileSize.y/cellSize + paddingDown
+      var right = (endX - startX) + paddingX
+      var bottom = (startY - endY) + paddingDown
       var minSize = 1.5 * Math.pow(2, 31 - coords.z)
 
-      //console.log('cellsize', cellSize, 'cellRight', cellRight)
       //console.log(datacoords)
       //console.log('data tile ' + JSON.stringify(coords))
       //console.time('data tile ' + JSON.stringify(coords))
@@ -1485,8 +1481,8 @@
         })
 
         var natural = []
-        for (var y = -paddingUp;y < cellBottom;y++) {
-          for (var x = -paddingX;x < cellRight;x++) {
+        for (var y = -paddingUp;y < bottom;y++) {
+          for (var x = -paddingX;x < right;x++) {
             if (occupied[[x, y].join(' ')]) {
               continue
             }
@@ -1515,8 +1511,8 @@
             var isValid = !isNaN(placement.id) && placement.id < 5000
             if (!isValid) return false
             var inFrame =
-              (-paddingX <= placement.x && placement.x < cellRight) &&
-              (-paddingUp <= placement.y && placement.y < cellBottom)
+              (-paddingX <= placement.x && placement.x < right) &&
+              (-paddingUp <= placement.y && placement.y < bottom)
             if (!inFrame) return false
             var size = objectSize[placement.id]
             var tooSmall = !size || size <= minSize
@@ -1606,11 +1602,8 @@
       //console.log('end', endX, endY)
 
       //console.log(coords)
-      var dataZoom = layer._cache.dataZoom(coords)
-      var cellSize = Math.pow(2, coords.z - dataZoom)
-      var cellRight = tileSize.x/cellSize + paddingX
-      var cellBottom = tileSize.y/cellSize + paddingDown
-      //console.log('cellsize', cellSize, 'cellRight', cellRight)
+      var right = (endX - startX) + paddingX
+      var bottom = (startY - endY) + paddingDown
       //console.log(datacoords)
       layer._cache.loadTile(coords, {time: layer.options.dataTime}).then(function(text) {
         var t = 0
@@ -1641,8 +1634,8 @@
           var isValid = !isNaN(placement.id) && placement.id < 5000
           if (!isValid) return false
           var inFrame =
-            (-paddingX <= placement.x && placement.x < cellRight) &&
-            (-paddingUp <= placement.y && placement.y < cellBottom)
+            (-paddingX <= placement.x && placement.x < right) &&
+            (-paddingUp <= placement.y && placement.y < bottom)
           if (!inFrame) return false
           return true
         }).sort(function(a, b) {
@@ -1650,8 +1643,8 @@
         })
 
         var natural = []
-        for (var y = -paddingUp;y < cellBottom;y++) {
-          for (var x = -paddingX;x < cellRight;x++) {
+        for (var y = -paddingUp;y < bottom;y++) {
+          for (var x = -paddingX;x < right;x++) {
             var wx = startX + x
             var wy = startY - y
             var v = getMapObjectRaw(wx, wy, options)

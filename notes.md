@@ -1,7 +1,11 @@
 - object generation
   - work with placement layers
-    - redraw on seed change
     - redraw on rift change
+  - track drawing lag
+  - optional natural objects?
+- tile gen
+  - overdraw missing for large natural objets
+- object data
   - wide object blocking
   - changes over time
 
