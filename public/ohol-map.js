@@ -484,7 +484,7 @@
       pickedBiome = secondPlace.biome
     }
 
-    var biome = biomes[pickedBiome]
+    var biome = biomes[options.biomeMap[pickedBiome]]
     var biomeObjects = biome.objects
     var numObjects = biomeObjects.length
 
@@ -1329,7 +1329,6 @@
   var addWorldObjects = function() {
     worlds.forEach(function(world) {
       var gen = biomeGenerationForTime(world.msStart)
-      console.log(world, gen)
       var objectLayer = new L.GridLayer.ObjectLayerSprite(gen)
       objectLayer.name = world.name + " Objects"
       world.objectLayer = objectLayer
@@ -2494,7 +2493,7 @@
       }
       wrapper.biomes.forEach(function(biome) {
         biome.id = parseInt(biome.id, 10)
-        var bi = jungleBiomeMap.indexOf(biome.id)
+        var bi = biome.id
         biomes[bi] = biome
         biome.objects.forEach(function(object) {
           object.id = parseInt(object.id, 10)

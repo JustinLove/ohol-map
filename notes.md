@@ -1,7 +1,4 @@
 - object generation
-  - compound biome object layer
-    - object load time issue?
-    - rerender on zoom change - leaflet? see above?
   - work with placement layers
     - redraw on seed change
     - redraw on rift change
