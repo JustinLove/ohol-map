@@ -6,14 +6,53 @@
   var cachedApiUrl = oholMapConfig.cachedApiUrl
   var apiUrl = oholMapConfig.apiUrl
 
-  var msStartOfArcticAge = Date.parse("2018-03-08")
-  var msStartOfDesertAge = Date.parse("2018-03-31")
-  var msStartOfJungleAge = Date.parse("2018-11-19")
-  var msStartOfRandomAge = Date.parse("Jul 27 2019 21:00:00 GMT-0000")
-  var msStartOfTopographicAge = Date.parse("Jul 31 2019 01:25:24 GMT-0000")
-  var msStartOfSpecialAge = Date.parse("Aug 1 2019 02:08:47 GMT-0000")
-
   var arcs = []
+
+  var barrierRadius = null
+  var riftOptions = {
+    fill: false,
+    color: 'black',
+  }
+  var rift250 = L.rectangle([[-250,-250], [250,250]], riftOptions)
+  var rift354 = L.rectangle([[-354,-354], [354,354]], riftOptions)
+  var rift500 = L.rectangle([[-500,-500], [500,500]], riftOptions)
+  var rift1000 = L.rectangle([[-1000,-1000], [1000,1000]], riftOptions)
+  var riftGone = L.layerGroup([])
+  var riftOverlay = L.layerGroup([
+    riftGone,
+  ])
+  var riftHistory = [
+    { ms: Date.parse("2019-07-25 20:00:00-05:00"), layer: rift250 , radius: 250 },
+    { ms: Date.parse("2019-07-25 23:06:38-05:00"), layer: rift1000, radius: 1000 },
+    { ms: Date.parse("2019-07-26 02:00:00-05:00"), layer: rift500, radius: 500 },
+    { ms: Date.parse("2019-07-26 17:30:00-05:00"), layer: rift354, radius: 354 },
+    { ms: Date.parse("2019-08-13 10:57:00-05:00"), layer: riftGone, radius: null },
+    { ms: Date.parse("2019-08-24 16:57:00-05:00"), layer: rift354, radius: 354 },
+  ]
+
+  var barrierObjects = [
+    3097,
+    3101,
+    3105,
+    3098,
+    3102,
+    3106,
+    3099,
+    3103,
+    3107,
+    3100,
+    3104,
+    3108,
+  ]
+
+  var specialMapPlacements = [
+    {
+      msStart: Date.parse("2019-08-02 20:11:00-05:00"),
+      x: 0,
+      y: 0,
+      id: 3112,
+    },
+  ]
 
   var CELL_D = 128
   var objectBoundsPadding = 15
@@ -25,8 +64,6 @@
 
   var mapTime = Date.now()
   var dataAnimated = false
-
-  var base = {};
 
   var attribution = '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible ' +
     '<a href="https://twitter.com/wondible" title="@wondible"><svg class="icon icon-twitter"><use xlink:href="symbol-defs.svg#icon-twitter"></use></svg></a>' +
@@ -57,10 +94,12 @@
     bounds: [[-512, -512], [511, 511]],
   })
 
+  var base = {};
+
   base['Badlands Age'] = null
   base['Arctic Age'] = null
   base['Desert Age'] = null
-  base['Jungle Age'] = L.layerGroup([biomeImageLayer, screenshotImageLayer])
+  base['Jungle Age'] = null
   base['Arc Age'] = L.layerGroup([])
   base['Uncertainty'] = L.layerGroup([])
 
@@ -111,52 +150,6 @@
   })
 
   var monumentOverlay = L.layerGroup([])
-
-  var barrierRadius = null
-  var riftOptions = {
-    fill: false,
-    color: 'black',
-  }
-  var rift250 = L.rectangle([[-250,-250], [250,250]], riftOptions)
-  var rift354 = L.rectangle([[-354,-354], [354,354]], riftOptions)
-  var rift500 = L.rectangle([[-500,-500], [500,500]], riftOptions)
-  var rift1000 = L.rectangle([[-1000,-1000], [1000,1000]], riftOptions)
-  var riftGone = L.layerGroup([])
-  var riftOverlay = L.layerGroup([
-    riftGone,
-  ])
-  var riftHistory = [
-    { ms: Date.parse("2019-07-25 20:00:00-05:00"), layer: rift250 , radius: 250 },
-    { ms: Date.parse("2019-07-25 23:06:38-05:00"), layer: rift1000, radius: 1000 },
-    { ms: Date.parse("2019-07-26 02:00:00-05:00"), layer: rift500, radius: 500 },
-    { ms: Date.parse("2019-07-26 17:30:00-05:00"), layer: rift354, radius: 354 },
-    { ms: Date.parse("2019-08-13 10:57:00-05:00"), layer: riftGone, radius: null },
-    { ms: Date.parse("2019-08-24 16:57:00-05:00"), layer: rift354, radius: 354 },
-  ]
-
-  var barrierObjects = [
-    3097,
-    3101,
-    3105,
-    3098,
-    3102,
-    3106,
-    3099,
-    3103,
-    3107,
-    3100,
-    3104,
-    3108,
-  ]
-
-  var specialMapPlacements = [
-    {
-      msStart: Date.parse("2019-08-02 20:11:00-05:00"),
-      x: 0,
-      y: 0,
-      id: 3112,
-    },
-  ]
 
   var overlays = {
     graticule: null,
@@ -814,6 +807,13 @@
   var desertColor = hsvToRgb(37/360, 0.65, 0.62)
   var jungleColor = hsvToRgb(90/360, 0.87, 0.48)
 
+  var msStartOfArcticAge = Date.parse("2018-03-08")
+  var msStartOfDesertAge = Date.parse("2018-03-31")
+  var msStartOfJungleAge = Date.parse("2018-11-19")
+  var msStartOfRandomAge = Date.parse("Jul 27 2019 21:00:00 GMT-0000")
+  var msStartOfTopographicAge = Date.parse("Jul 31 2019 01:25:24 GMT-0000")
+  var msStartOfSpecialAge = Date.parse("Aug 1 2019 02:08:47 GMT-0000")
+
   var biomeGenerationOptions = {
     computeMapBiomeIndex: competeMapBiomeIndex,
     biomeOffset: 0.83332,
@@ -1184,7 +1184,6 @@
         msStart: arc.start * 1000,
         msEnd: arc.end * 1000,
         seed: arc.seed,
-        name: 'Arc '+(i+1),
         layer: L.layerGroup([biomeLayer]),
         biomeLayer: biomeLayer,
         keyPlacementLayer: null,
@@ -1196,7 +1195,6 @@
     }
     /*
     arcs.forEach(function(arc, i) {
-      console.log(arc.name)
       console.log('Fr:', new Date(arc.msStart).toString())
       console.log('To:', new Date(arc.msEnd).toString())
     })
@@ -1222,40 +1220,52 @@
   }
 
   var createArcBiomeLayer = function(msStart, seed) {
-    if (msStart > msStartOfSpecialAge) {
-      return new L.GridLayer.BiomeLayer({
+    return new L.GridLayer.BiomeLayer(biomeGenerationForTime(msStart, seed))
+  }
+
+  var biomeGenerationForTime = function(msStart, seed) {
+    seed = seed || biomeGenerationOptions.biomeSeedOffset
+    if (msStart >= msStartOfSpecialAge) {
+      return {
         computeMapBiomeIndex: topographicMapBiomeIndex,
         biomeTotalWeight: specialBiomeTotalWeight,
         biomeCumuWeights: specialBiomeCumuWeights,
         biomeSeedOffset: seed,
         biomeMap: specialBiomeMap,
         numSpecialBiomes: 3,
-      })
-    } else if (msStart > msStartOfTopographicAge) {
-      return new L.GridLayer.BiomeLayer({
+      }
+    } else if (msStart >= msStartOfTopographicAge) {
+      return {
         computeMapBiomeIndex: topographicMapBiomeIndex,
         biomeTotalWeight: topographicBiomeTotalWeight,
         biomeCumuWeights: topographicBiomeCumuWeights,
         biomeSeedOffset: seed,
         biomeMap: topographicBiomeMap,
-      })
-    } else {
-      return new L.GridLayer.BiomeLayer({
+      }
+    } else if (msStart >= msStartOfJungleAge) {
+      return {
         biomeSeedOffset: seed,
         biomeMap: jungleBiomeMap,
-      })
+      }
+    } else if (msStart >= msStartOfDesertAge) {
+      return {
+        biomeSeedOffset: seed,
+        biomeMap: desertBiomeMap,
+      }
+    } else if (msStart >= msStartOfArcticAge) {
+      return {
+        biomeSeedOffset: seed,
+        biomeMap: arcticBiomeMap,
+      }
+    } else {
+      return {
+        biomeSeedOffset: seed,
+        biomeMap: badlandsBiomeMap,
+      }
     }
   }
 
-  base['Desert Age'] = new L.GridLayer.BiomeLayer({
-    biomeMap: desertBiomeMap,
-  })
-
-  base['Arctic Age'] = new L.GridLayer.BiomeLayer({
-    biomeMap: arcticBiomeMap,
-  })
-
-  var badlandsAge = new L.GridLayer.BiomeLayer({
+  var badlandsBaseBiome = new L.GridLayer.BiomeLayer({
     biomeMap: badlandsBiomeMap,
   })
 
@@ -1282,7 +1292,55 @@
 
   var server3 = new L.layerGroup([server3Biome, server3Map])
 
-  base['Badlands Age'] = new L.layerGroup([badlandsAge])
+  var badlandsAge = new L.layerGroup([badlandsBaseBiome])
+
+  var worlds = [
+    {
+      name: "Badlands Age",
+      msStart: 0,
+      msEnd: msStartOfArcticAge,
+      biomeLayer: badlandsAge,
+    },
+    {
+      name: "Arctic Age",
+      msStart: msStartOfArcticAge+1,
+      msEnd: msStartOfDesertAge,
+    },
+    {
+      name: "Desert Age",
+      msStart: msStartOfDesertAge+1,
+      msEnd: msStartOfJungleAge,
+    },
+    {
+      name: "Jungle Age",
+      msStart: msStartOfJungleAge+1,
+      msEnd: msStartOfRandomAge,
+      biomeLayer: L.layerGroup([biomeImageLayer, screenshotImageLayer]),
+    },
+  ]
+
+  worlds.forEach(function(world) {
+    if (!world.biomeLayer) {
+      world.biomeLayer = new L.GridLayer.BiomeLayer(biomeGenerationForTime(world.msStart))
+    }
+    world.layer = L.layerGroup([world.biomeLayer])
+  })
+
+  var addWorldObjects = function() {
+    worlds.forEach(function(world) {
+      var gen = biomeGenerationForTime(world.msStart)
+      console.log(world, gen)
+      var objectLayer = new L.GridLayer.ObjectLayerSprite(gen)
+      objectLayer.name = world.name + " Objects"
+      world.objectLayer = objectLayer
+      world.layer.addLayer(objectLayer)
+    })
+  }
+
+  base['Badlands Age'] = worlds[0].layer
+  base['Arctic Age'] = worlds[1].layer
+  base['Desert Age'] = worlds[2].layer
+  base['Jungle Age'] = worlds[3].layer
 
   var TileDataCache = L.Class.extend({
     options: {
@@ -2583,8 +2641,9 @@
     //map.setView([0,0], 24)
 
     objectLoad(map).then(function() {
-      objectOverlayPixel.addTo(map)
-      objectOverlaySprite.addTo(map)
+      addWorldObjects()
+      //objectOverlayPixel.addTo(map)
+      //objectOverlaySprite.addTo(map)
     })
 
     if (app.ports.leafletEvent) {
@@ -2634,14 +2693,14 @@
         case 'currentServer':
           var targetLayer
           if (message.server.id == 3) {
-            if (base['Badlands Age'].hasLayer(badlandsAge)) {
-              base['Badlands Age'].addLayer(server3)
-              base['Badlands Age'].removeLayer(badlandsAge)
+            if (badlandsAge.hasLayer(badlandsBaseBiome)) {
+              badlandsAge.addLayer(server3)
+              badlandsAge.removeLayer(badlandsBaseBiome)
             }
           } else {
-            if (base['Badlands Age'].hasLayer(server3)) {
-              base['Badlands Age'].addLayer(badlandsAge)
-              base['Badlands Age'].removeLayer(server3)
+            if (badlandsAge.hasLayer(server3)) {
+              badlandsAge.addLayer(badlandsBaseBiome)
+              badlandsAge.removeLayer(server3)
             }
           }
           break;
