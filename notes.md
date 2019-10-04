@@ -5,11 +5,14 @@
   - optional natural objects?
 - tile gen
   - overdraw missing for large natural objets
-- object data
+- integrate object data
   - wide object blocking
   - changes over time
 
+- time jump for searched lives not setting timeline UI position
+- year on timeline
 - yesterday not jumping to time
+- incremental zooms - silent failures in heroku
 - find bottleneck - network or render?
   - load time garbage collection
 - server url link

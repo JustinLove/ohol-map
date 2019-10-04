@@ -309,6 +309,7 @@
     return sum * oneOverIntMax
   }
 
+  var versions = []
   var biomes = []
   var objects = []
   var objectBounds = []
@@ -2534,26 +2535,57 @@
           })
         }
       }
-      wrapper.biomes.forEach(function(biome) {
-        biome.id = parseInt(biome.id, 10)
-        var bi = biome.id
-        biomes[bi] = biome
-        biome.objects.forEach(function(object) {
-          object.id = parseInt(object.id, 10)
-        })
-        biome.totalChanceWeight = 0
-        biome.objects = biome.objects.filter(function(spawnable) {
-          for (var i = 0;i < gridPlacements.length;i++) {
-            if (gridPlacements[i].id == spawnable.id) {
-              gridPlacements[i].permittedBiomes.push(jungleBiomeMap.indexOf(biome.id))
-              return false
-            }
+      var biomeState = []
+      wrapper.spawnChanges.forEach(function(version) {
+        version.spawnChanges.forEach(function(change) {
+          change.id = parseInt(change.id, 10)
+          if (change.removed) {
+            biomeState.forEach(function(biome) {
+              delete biome.objects[change.id]
+            })
+            return
           }
-          biome.totalChanceWeight += spawnable.mapChance
-          //console.log('biome', biome.id, spawnable.id, spawnable.mapChance)
-          return true
+          change.biomes.forEach(function(bi) {
+            if (!biomeState[bi]) {
+              biomeState[bi] = {id: bi, objects: {}}
+            }
+            for (var i = 0;i < gridPlacements.length;i++) {
+              if (gridPlacements[i].id == change.id) {
+                gridPlacements[i].permittedBiomes.push(jungleBiomeMap.indexOf(bi))
+                return
+              }
+            }
+          })
+
+          biomeState.forEach(function(biome) {
+            if (change.biomes.indexOf(biome.id) == -1 || change.mapChance == 0) {
+              delete biome.objects[change.id]
+            } else {
+              biome.objects[change.id] = change
+            }
+          })
         })
+        var biomesSnapshot = biomeState.map(function(biome) {
+          return {
+            id: biome.id,
+            objects: JSON.parse(JSON.stringify(Object.values(biome.objects))).sort(function(a, b) {return a.id - b.id})
+          }
+        })
+        biomesSnapshot.forEach(function(biome) {
+          biome.totalChanceWeight = biome.objects.reduce(function(total, spawnable) {
+            return total + spawnable.mapChance
+          }, 0)
+        })
+        var ver = {
+          id: version.id,
+          msStart: Date.parse(version.date),
+          biomes: biomesSnapshot,
+        }
+        versions.push(ver)
       })
+      //biomes = versions[versions.length-1].biomes
+      biomes = versions.filter(function(ver) { return ver.id == 232 })[0].biomes
+      console.log(biomes[0])
       // object blocking
       //console.log('-2,1', getMapObjectRaw(-2, 1, objectGenerationOptions))
       // off biome moving object
