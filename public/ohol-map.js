@@ -2545,15 +2545,15 @@
             })
             return
           }
+          for (var i = 0;i < gridPlacements.length;i++) {
+            if (gridPlacements[i].id == change.id) {
+              gridPlacements[i].permittedBiomes = change.biomes.map(function(bi) { return jungleBiomeMap.indexOf(bi)})
+              return
+            }
+          }
           change.biomes.forEach(function(bi) {
             if (!biomeState[bi]) {
               biomeState[bi] = {id: bi, objects: {}}
-            }
-            for (var i = 0;i < gridPlacements.length;i++) {
-              if (gridPlacements[i].id == change.id) {
-                gridPlacements[i].permittedBiomes.push(jungleBiomeMap.indexOf(bi))
-                return
-              }
             }
           })
 
@@ -2585,7 +2585,8 @@
       })
       //biomes = versions[versions.length-1].biomes
       biomes = versions.filter(function(ver) { return ver.id == 232 })[0].biomes
-      console.log(biomes[0])
+
+      //console.log(biomes)
       // object blocking
       //console.log('-2,1', getMapObjectRaw(-2, 1, objectGenerationOptions))
       // off biome moving object
