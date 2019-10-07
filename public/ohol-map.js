@@ -495,6 +495,7 @@
     }
 
     var biome = options.biomes[options.biomeMap[pickedBiome]]
+    if (!biome) return 0
     var biomeObjects = biome.objects
     var numObjects = biomeObjects.length
 
@@ -598,7 +599,26 @@
     var result = getBaseMap(inX, inY, options, grid)
     if (result <= 0) {
       return 0
-    } else if (false /* wide */) {
+    }
+
+    var o = options.objects[result]
+    if (o && o.wide) {
+      for (var dx = -(o.leftBlockingRadius + 1); dx <= (o.rightBlockingRadius + 1); dx++) {
+        if (dx == 0) continue
+        var nid = getBaseMap(inX + dx, inY, options)
+        var no = options.objects[nid]
+        if (!no || !no.wide) continue
+        if (dx < 0) {
+          var minDist = no.rightBlockingRadius + o.leftBlockingRadius
+          var dist = -dx
+        } else {
+          var minDist = no.leftBlockingRadius + o.rightBlockingRadius
+          var dist = dx
+        }
+        if (dist <= minDist) {
+          return 0
+        }
+      }
     } else if (!grid.grid && objectBounds[result][3]-objectBoundsPadding < options.smallHeight) {
       var sid = getBaseMap(inX, inY - 1, options)
       if (sid > 0 && objectBounds[sid][3]-objectBoundsPadding >= options.tallHeight) {
@@ -921,6 +941,7 @@
   var objectGenerationOptions = Object.assign({
     biomes: [],
     gridPlacements: [],
+    objects: [],
     gridSeed: 9753,
     densitySeed: 5379,
     densityRoughness: 0.1,
@@ -1195,6 +1216,7 @@
     ageWorlds.forEach(function(world) {
       //console.log(world.name, 'objects')
       var objectLayer = new L.GridLayer.ObjectLayerSprite(world.generation)
+      //var objectLayer = new L.GridLayer.ObjectLayerPixel(world.generation)
       objectLayer.name = world.name + " Objects"
       world.objectLayer = objectLayer
       world.layer.addLayer(objectLayer)
@@ -1415,6 +1437,7 @@
       world.generation = Object.assign({
         biomes: ver.biomes,
         gridPlacements: ver.gridPlacements,
+        objects: ver.objects,
       }, age.generation)
       world.name = age.name + ' ' + ver.id.toString()
       world.layer = L.layerGroup([age.biomeLayer], {className: world.id.toString()})
@@ -2622,9 +2645,11 @@
         }
       }
       var biomeState = []
+      var objectState = {}
       wrapper.spawnChanges.forEach(function(version) {
         version.spawnChanges.forEach(function(change) {
           change.id = parseInt(change.id, 10)
+          objectState[change.id] = change
           if (change.removed) {
             biomeState.forEach(function(biome) {
               delete biome.objects[change.id]
@@ -2670,11 +2695,21 @@
         }).map(function(placement) {
           return Object.assign({}, placement)
         })
+        var objectSnapshot = {}
+        Object.keys(objectState).forEach(function(id) {
+          var obj = objectState[id]
+          objectSnapshot[id] = {
+            wide: obj.leftBlockingRadius != 0 || obj.rightBlockingRadius != 0,
+            leftBlockingRadius: obj.leftBlockingRadius,
+            rightBlockingRadius: obj.rightBlockingRadius,
+          }
+        })
         var ver = {
           id: version.id,
           msStart: Date.parse(version.date),
           biomes: biomesSnapshot,
           gridPlacements: gridPlacementsSnapShot,
+          objects: objectSnapshot,
         }
         versions.push(ver)
       })

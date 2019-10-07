@@ -7,7 +7,6 @@
 - tile gen
   - overdraw missing for large natural objets
 - integrate object data
-  - wide object blocking
   - changes over time
     - versions can overlap arcs
     - process world sublayers to reuse common layers (biomes)
