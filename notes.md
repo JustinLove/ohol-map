@@ -3,6 +3,7 @@
     - redraw on rift change
   - track drawing lag
   - optional natural objects?
+  - moving biomes off biome was a code change
 - tile gen
   - overdraw missing for large natural objets
 - integrate object data
@@ -11,8 +12,6 @@
     - biome defs in generaton options
   - limits for screenshot layers
     - 213 (tomatos etc) through 232 (259 bear cave)
-  - remove selectable layers
-  - base layer group
 
 - time jump for searched lives not setting timeline UI position
 - year on timeline

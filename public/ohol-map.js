@@ -1308,7 +1308,7 @@
 
   var badlandsAge = new L.layerGroup([badlandsBaseBiome])
 
-  var worlds = [
+  var ages = [
     {
       name: "Badlands Age",
       msStart: 0,
@@ -1333,13 +1333,17 @@
     },
   ]
 
-  worlds.forEach(function(world) {
-    if (!world.biomeLayer) {
-      world.biomeLayer = new L.GridLayer.BiomeLayer(biomeGenerationForTime(world.msStart))
-      world.biomeLayer.name = world.name + ' Biome'
+  var worlds = []
+
+  ages.forEach(function(age) {
+    if (!age.biomeLayer) {
+      age.biomeLayer = new L.GridLayer.BiomeLayer(biomeGenerationForTime(age.msStart))
+      age.biomeLayer.name = age.name + ' Biome'
     }
-    world.layer = L.layerGroup([world.biomeLayer], {className: world.name})
-    world.layer.name = world.name
+    var world = Object.assign({}, age)
+    world.layer = L.layerGroup([age.biomeLayer], {className: age.name})
+    world.layer.name = age.name
+    worlds.push(world)
   })
 
   var addWorldObjects = function() {
