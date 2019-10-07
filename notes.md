@@ -9,7 +9,9 @@
 - integrate object data
   - wide object blocking
   - changes over time
+    - versions can overlap arcs
     - biome defs in generaton options
+    - process world sublayers to reuse common layers (biomes)
   - limits for screenshot layers
     - 213 (tomatos etc) through 232 (259 bear cave)
   - early arcs may overlap jungle age

@@ -7,6 +7,7 @@
   var apiUrl = oholMapConfig.apiUrl
 
   var arcs = []
+  var ageWorlds = []
   var worlds = []
 
   var barrierRadius = null
@@ -1190,6 +1191,7 @@
 
   var addWorldObjects = function() {
     ageWorlds.forEach(function(world) {
+      //console.log(world.name, 'objects')
       var gen = biomeGenerationForTime(world.msStart)
       var objectLayer = new L.GridLayer.ObjectLayerSprite(gen)
       objectLayer.name = world.name + " Objects"
@@ -1345,8 +1347,6 @@
     },
   ]
 
-  var ageWorlds = []
-
   ages.forEach(function(age) {
     if (!age.biomeLayer) {
       age.biomeLayer = new L.GridLayer.BiomeLayer(biomeGenerationForTime(age.msStart))
@@ -1359,6 +1359,28 @@
   })
 
   worlds = ageWorlds.concat(arcs)
+
+  var updateVersions = function(versionData) {
+    //console.log(versionData)
+    var ageIndex = 0
+    var age = ages[ageIndex]
+    ageWorlds = versionData.map(function(ver) {
+      while (ver.msStart > age.msEnd && ageIndex < ages.length-1) {
+        ageIndex += 1
+        age = ages[ageIndex]
+      }
+      var world = Object.assign({}, age, ver)
+      world.name = age.name + ' ' + ver.id.toString()
+      world.layer = L.layerGroup([age.biomeLayer], {className: world.id.toString()})
+      world.layer.name = world.name
+      return world
+    })
+    for (var i = 0;i < ageWorlds.length-1;i++) {
+      ageWorlds[i].msEnd = ageWorlds[i+1].msStart-1
+    }
+    //console.log(ageWorlds)
+    worlds = ageWorlds.concat(arcs)
+  }
 
   var TileDataCache = L.Class.extend({
     options: {
@@ -2147,18 +2169,18 @@
       }
     })
     var changes = 0
-    if (targetLayer && !oholBase.hasLayer(targetLayer)) {
-      //console.log('add', targetLayer.name)
-      oholBase.addLayer(targetLayer)
-      changes++
-    }
     oholBase.eachLayer(function(layer) {
       if (layer != targetLayer) {
-        //console.log('remove', layer && layer.name)
+        console.log('remove', layer && layer.name)
         oholBase.removeLayer(layer)
         changes++
       }
     })
+    if (targetLayer && !oholBase.hasLayer(targetLayer)) {
+      console.log('add', targetLayer.name)
+      oholBase.addLayer(targetLayer)
+      changes++
+    }
     if (changes > 0) {
       setTimeout(function() {
         toggleAnimationControls(map)
@@ -2732,9 +2754,11 @@
     //map.setView([0,0], 24)
 
     objectLoad(map).then(function() {
+      updateVersions(versions)
       addWorldObjects()
       addArcPlacements()
       toggleAnimationControls(map)
+      baseLayerByTime(map, mapTime, 'objectload')
       //objectOverlayPixel.addTo(map)
       //objectOverlaySprite.addTo(map)
     })
