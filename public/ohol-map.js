@@ -454,8 +454,8 @@
     var secondPlace = {}
 
     // grid objects
-    for (var i = 0;i < gridPlacements.length;i++) {
-      var gp = gridPlacements[i]
+    for (var i = 0;i < options.gridPlacements.length;i++) {
+      var gp = options.gridPlacements[i]
       if (inX % gp.spacing == 0 && inY % gp.spacing == 0) {
         pickedBiome = options.computeMapBiomeIndex(inX, inY, options, secondPlace)
         if (pickedBiome == -1) {
@@ -920,6 +920,7 @@
 
   var objectGenerationOptions = Object.assign({
     biomes: [],
+    gridPlacements: [],
     gridSeed: 9753,
     densitySeed: 5379,
     densityRoughness: 0.1,
@@ -1411,7 +1412,10 @@
         age = ages[ageIndex]
       }
       var world = Object.assign({}, age, ver)
-      world.generation = Object.assign({biomes: ver.biomes}, age.generation)
+      world.generation = Object.assign({
+        biomes: ver.biomes,
+        gridPlacements: ver.gridPlacements,
+      }, age.generation)
       world.name = age.name + ' ' + ver.id.toString()
       world.layer = L.layerGroup([age.biomeLayer], {className: world.id.toString()})
       world.layer.name = world.name
@@ -2627,10 +2631,11 @@
             })
             return
           }
+          var grid = false
           for (var i = 0;i < gridPlacements.length;i++) {
             if (gridPlacements[i].id == change.id) {
               gridPlacements[i].permittedBiomes = change.biomes.map(function(bi) { return jungleBiomeMap.indexOf(bi)})
-              return
+              grid = true
             }
           }
           change.biomes.forEach(function(bi) {
@@ -2639,13 +2644,15 @@
             }
           })
 
-          biomeState.forEach(function(biome) {
-            if (change.biomes.indexOf(biome.id) == -1 || change.mapChance == 0) {
-              delete biome.objects[change.id]
-            } else {
-              biome.objects[change.id] = change
-            }
-          })
+          if (!grid) {
+            biomeState.forEach(function(biome) {
+              if (change.biomes.indexOf(biome.id) == -1 || change.mapChance == 0) {
+                delete biome.objects[change.id]
+              } else {
+                biome.objects[change.id] = change
+              }
+            })
+          }
         })
         var biomesSnapshot = biomeState.map(function(biome) {
           return {
@@ -2658,10 +2665,16 @@
             return total + spawnable.mapChance
           }, 0)
         })
+        var gridPlacementsSnapShot = gridPlacements.filter(function(placement) {
+          return placement.permittedBiomes.length > 0
+        }).map(function(placement) {
+          return Object.assign({}, placement)
+        })
         var ver = {
           id: version.id,
           msStart: Date.parse(version.date),
           biomes: biomesSnapshot,
+          gridPlacements: gridPlacementsSnapShot,
         }
         versions.push(ver)
       })
