@@ -2699,7 +2699,7 @@
         Object.keys(objectState).forEach(function(id) {
           var obj = objectState[id]
           objectSnapshot[id] = {
-            wide: obj.leftBlockingRadius != 0 || obj.rightBlockingRadius != 0,
+            wide: (obj.leftBlockingRadius && obj.leftBlockingRadius != 0) || (obj.rightBlockingRadius && obj.rightBlockingRadius != 0),
             leftBlockingRadius: obj.leftBlockingRadius,
             rightBlockingRadius: obj.rightBlockingRadius,
           }

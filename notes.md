@@ -3,7 +3,8 @@
     - redraw on rift change
   - track drawing lag
   - optional natural objects?
-  - moving biomes off biome was a code change
+  - moving objects off biome was a code change
+  - small object blocking broke
 - tile gen
   - overdraw missing for large natural objets
 - integrate object data
