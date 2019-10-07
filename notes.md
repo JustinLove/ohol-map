@@ -12,6 +12,7 @@
     - biome defs in generaton options
   - limits for screenshot layers
     - 213 (tomatos etc) through 232 (259 bear cave)
+  - early arcs may overlap jungle age
 
 - time jump for searched lives not setting timeline UI position
 - year on timeline

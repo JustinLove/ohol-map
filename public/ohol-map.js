@@ -7,6 +7,7 @@
   var apiUrl = oholMapConfig.apiUrl
 
   var arcs = []
+  var worlds = []
 
   var barrierRadius = null
   var riftOptions = {
@@ -1187,6 +1188,16 @@
   })
   overlays['Object Sprite'] = objectOverlaySprite
 
+  var addWorldObjects = function() {
+    ageWorlds.forEach(function(world) {
+      var gen = biomeGenerationForTime(world.msStart)
+      var objectLayer = new L.GridLayer.ObjectLayerSprite(gen)
+      objectLayer.name = world.name + " Objects"
+      world.objectLayer = objectLayer
+      world.layer.addLayer(objectLayer)
+    })
+  }
+
   var updateArcs = function(arcData) {
     arcs = arcData.map(function(arc, i) {
       var biomeLayer = createArcBiomeLayer(arc.start * 1000, arc.seed)
@@ -1212,6 +1223,7 @@
       console.log('To:', new Date(arc.msEnd).toString())
     })
     */
+    worlds = ageWorlds.concat(arcs)
   }
 
   var addArcPlacements = function() {
@@ -1333,7 +1345,7 @@
     },
   ]
 
-  var worlds = []
+  var ageWorlds = []
 
   ages.forEach(function(age) {
     if (!age.biomeLayer) {
@@ -1343,18 +1355,10 @@
     var world = Object.assign({}, age)
     world.layer = L.layerGroup([age.biomeLayer], {className: age.name})
     world.layer.name = age.name
-    worlds.push(world)
+    ageWorlds.push(world)
   })
 
-  var addWorldObjects = function() {
-    worlds.forEach(function(world) {
-      var gen = biomeGenerationForTime(world.msStart)
-      var objectLayer = new L.GridLayer.ObjectLayerSprite(gen)
-      objectLayer.name = world.name + " Objects"
-      world.objectLayer = objectLayer
-      world.layer.addLayer(objectLayer)
-    })
-  }
+  worlds = ageWorlds.concat(arcs)
 
   var TileDataCache = L.Class.extend({
     options: {
@@ -1805,15 +1809,24 @@
   }
 
   var setFadeTallObjects = function(status) {
-    arcs.forEach(function(arc) {
-      arc.keyPlacementLayer.eachLayer(function(layer) {
+    worlds.forEach(function(world) {
+      if (world.keyPlacementLayer) {
+        world.keyPlacementLayer.eachLayer(function(layer) {
+          L.Util.setOptions(layer, {fadeTallObjects: status})
+          layer.redraw && layer.redraw()
+        })
+      }
+      if (world.maplogLayer) {
+        world.maplogLayer.eachLayer(function(layer) {
+          L.Util.setOptions(layer, {fadeTallObjects: status})
+          layer.redraw && layer.redraw()
+        })
+      }
+      if (world.objectLayer) {
+        var layer = world.objectLayer
         L.Util.setOptions(layer, {fadeTallObjects: status})
         layer.redraw && layer.redraw()
-      })
-      arc.maplogLayer.eachLayer(function(layer) {
-        L.Util.setOptions(layer, {fadeTallObjects: status})
-        layer.redraw && layer.redraw()
-      })
+      }
     })
   }
 
@@ -2128,11 +2141,6 @@
   var baseLayerByTime = function(map, ms, reason) {
     //console.log(ms, reason)
     var targetLayer
-    arcs.forEach(function(arc) {
-      if (ms > arc.msStart && ms <= arc.msEnd) {
-        targetLayer = arc.layer
-      }
-    })
     worlds.forEach(function(world) {
       if (ms > world.msStart && ms <= world.msEnd) {
         targetLayer = world.layer
