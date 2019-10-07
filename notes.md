@@ -8,6 +8,11 @@
 - integrate object data
   - wide object blocking
   - changes over time
+    - biome defs in generaton options
+  - limits for screenshot layers
+    - 213 (tomatos etc) through 232 (259 bear cave)
+  - remove selectable layers
+  - base layer group
 
 - time jump for searched lives not setting timeline UI position
 - year on timeline

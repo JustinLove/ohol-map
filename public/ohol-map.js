@@ -74,7 +74,7 @@
   var baseAttributionLayer = L.layerGroup([], {attribution: attribution})
 
   var biomeImageLayer = L.tileLayer(oholMapConfig.mainTiles, {
-    className: 'crisp',
+    className: 'crisp biome-image-layer',
     errorTileUrl: 'ground_U.png',
     minZoom: 2,
     maxZoom: 31,
@@ -82,8 +82,10 @@
     maxNativeZoom: 24,
     attribution: attribution,
   })
+  biomeImageLayer.name = 'biome image layer'
 
   var screenshotImageLayer = L.tileLayer(oholMapConfig.mainTiles, {
+    className: 'screenshot-image-layer',
     //errorTileUrl: 'ground_U.png',
     minZoom: 2,
     minZoom: 25,
@@ -93,18 +95,16 @@
     attribution: attribution,
     bounds: [[-512, -512], [511, 511]],
   })
+  screenshotImageLayer.name = 'screenshot image layer'
 
   var base = {};
 
-  base['Badlands Age'] = null
-  base['Arctic Age'] = null
-  base['Desert Age'] = null
-  base['Jungle Age'] = null
-  base['Arc Age'] = L.layerGroup([])
-  base['Uncertainty'] = L.layerGroup([])
+  var oholBase = L.layerGroup([], {className: 'ohol-base'})
+  oholBase.name = 'ohol base'
+  base['OHOL'] = oholBase
 
   base['Crucible'] = L.tileLayer(oholMapConfig.crucibleTiles, {
-    className: 'crisp',
+    className: 'crisp crucible',
     errorTileUrl: 'ground_U.png',
     minZoom: 2,
     maxZoom: 31,
@@ -112,8 +112,10 @@
     maxNativeZoom: 25,
     attribution: attribution,
   });
+  base['Crucible'].name = 'cruicible'
 
-  var dataOverlay = L.layerGroup([])
+  var dataOverlay = L.layerGroup([], {className: 'data-overlay'})
+  dataOverlay.name = 'data overlay'
   dataOverlay.on('add', function(ev) {
     var map = ev.target._map
     legendControl.redraw()
@@ -134,7 +136,8 @@
     })
   })
 
-  var baseFade = L.layerGroup([])
+  var baseFade = L.layerGroup([], {className: 'base-fade'})
+  baseFade.name = 'base fade'
   baseFade.on('add', function(ev) {
     var map = ev.target._map
     L.DomUtil.setOpacity(map.getPane('tilePane'), 0.3)
@@ -149,7 +152,8 @@
     L.DomUtil.removeClass(map.getPane('tilePane'), 'blur')
   })
 
-  var monumentOverlay = L.layerGroup([])
+  var monumentOverlay = L.layerGroup([], {className: 'monument-overlay'})
+  monumentOverlay.name = 'monument overlay'
 
   var overlays = {
     graticule: null,
@@ -159,7 +163,8 @@
     "Fade": baseFade,
   }
 
-  var searchOverlay = L.layerGroup([])
+  var searchOverlay = L.layerGroup([], {className: 'search-overlay'})
+  searchOverlay.name = 'search overlay'
   var focusMarker = null;
 
   var updateMonumentLayer = function(layer, data) {
@@ -180,6 +185,8 @@
 
   L.GridLayer.CheckerLayer = L.GridLayer.extend({
     options: {
+      name: 'checker layer',
+      className: 'checker-layer',
       pane: 'overlayPane',
     },
     createTile: function (coords, done) {
@@ -835,7 +842,8 @@
 
   L.GridLayer.BiomeLayer = L.GridLayer.extend({
     options: Object.assign({
-      className: 'crisp',
+      name: 'biome layer',
+      className: 'crisp biome-layer',
       biomeColors: [
         greenColor,
         swampColor,
@@ -1045,7 +1053,8 @@
   L.GridLayer.ObjectLayerPixel = L.GridLayer.extend({
     options: Object.assign({
       pane: 'overlayPane',
-      className: 'crisp',
+      name: 'object layer pixel',
+      className: 'crisp object-layer-pixel',
       minZoom: 24,
       maxZoom: 31,
       //minNativeZoom: 24,
@@ -1181,11 +1190,14 @@
   var updateArcs = function(arcData) {
     arcs = arcData.map(function(arc, i) {
       var biomeLayer = createArcBiomeLayer(arc.start * 1000, arc.seed)
+      biomeLayer.name = 'arc ' + arc.seed + ' biome'
+      var layer = L.layerGroup([biomeLayer], {className: arc.seed.toString()})
+      layer.name = 'arc ' + arc.seed
       return {
         msStart: arc.start * 1000,
         msEnd: arc.end * 1000,
         seed: arc.seed,
-        layer: L.layerGroup([biomeLayer]),
+        layer: layer,
         biomeLayer: biomeLayer,
         keyPlacementLayer: null,
         maplogLayer: null,
@@ -1226,6 +1238,7 @@
 
   var biomeGenerationForTime = function(msStart, seed) {
     seed = seed || biomeGenerationOptions.biomeSeedOffset
+    var name = seed.toString()
     if (msStart >= msStartOfSpecialAge) {
       return {
         computeMapBiomeIndex: topographicMapBiomeIndex,
@@ -1323,8 +1336,10 @@
   worlds.forEach(function(world) {
     if (!world.biomeLayer) {
       world.biomeLayer = new L.GridLayer.BiomeLayer(biomeGenerationForTime(world.msStart))
+      world.biomeLayer.name = world.name + ' Biome'
     }
-    world.layer = L.layerGroup([world.biomeLayer])
+    world.layer = L.layerGroup([world.biomeLayer], {className: world.name})
+    world.layer.name = world.name
   })
 
   var addWorldObjects = function() {
@@ -1336,11 +1351,6 @@
       world.layer.addLayer(objectLayer)
     })
   }
-
-  base['Badlands Age'] = worlds[0].layer
-  base['Arctic Age'] = worlds[1].layer
-  base['Desert Age'] = worlds[2].layer
-  base['Jungle Age'] = worlds[3].layer
 
   var TileDataCache = L.Class.extend({
     options: {
@@ -1734,7 +1744,7 @@
   })
 
   var arcUpdateTiles = function(ms) {
-    base['Arc Age'].eachLayer(function(group) {
+    oholBase.eachLayer(function(group) {
       group.eachLayer(function(sub) {
         if (sub.eachLayer) {
           sub.eachLayer(function(layer) {
@@ -2015,12 +2025,12 @@
   })
 
   var pointOverlay = new L.GridLayer.PointOverlay({
-    className: 'interactive',
+    className: 'interactive point-overlay',
   })
   pointOverlay.name = 'point overlay'
 
   var animOverlay = new L.GridLayer.PointOverlay({
-    className: 'interactive',
+    className: 'interactive anim-overlay',
     time: 0,
     alternateStatic: pointOverlay,
   })
@@ -2116,38 +2126,25 @@
     var targetLayer
     arcs.forEach(function(arc) {
       if (ms > arc.msStart && ms <= arc.msEnd) {
-        targetLayer = 'Arc Age'
-        //console.log(arc.msStart, ms, arc.msEnd)
-        base['Arc Age'].addLayer(arc.layer)
-      } else {
-        base['Arc Age'].removeLayer(arc.layer)
+        targetLayer = arc.layer
       }
     })
-    if (targetLayer) {
-      //skip
-    } else if (ms > msStartOfRandomAge) {
-      targetLayer = 'Uncertainty'
-    } else if (ms > msStartOfJungleAge) {
-      targetLayer = 'Jungle Age'
-    } else if (ms > msStartOfDesertAge) {
-      targetLayer = 'Desert Age'
-    } else if (ms > msStartOfArcticAge) {
-      targetLayer = 'Arctic Age'
-    } else {
-      targetLayer = 'Badlands Age'
-    }
+    worlds.forEach(function(world) {
+      if (ms > world.msStart && ms <= world.msEnd) {
+        targetLayer = world.layer
+      }
+    })
     var changes = 0
-    Object.keys(base).forEach(function(key) {
-      if (map.hasLayer(base[key])) {
-        if (key != targetLayer) {
-          map.removeLayer(base[key])
-          changes++
-        }
-      } else {
-        if (key == targetLayer) {
-          map.addLayer(base[key])
-          changes++
-        }
+    if (targetLayer && !oholBase.hasLayer(targetLayer)) {
+      //console.log('add', targetLayer.name)
+      oholBase.addLayer(targetLayer)
+      changes++
+    }
+    oholBase.eachLayer(function(layer) {
+      if (layer != targetLayer) {
+        //console.log('remove', layer && layer.name)
+        oholBase.removeLayer(layer)
+        changes++
       }
     })
     if (changes > 0) {
@@ -2182,14 +2179,20 @@
     })
   }
 
+  var mapUpdateTask = null
   var setMapTime = function(map, ms, reason) {
     mapTime = ms
-    if (map) baseLayerByTime(map, ms, reason)
-    riftLayerByTime(ms, map && map.getZoom())
-    animOverlay.updateTiles(ms)
-    arcUpdateTiles(ms)
-    L.Util.setOptions(legendControl, {time: ms})
-    legendControl.redraw()
+    if (mapUpdateTask) {
+      clearTimeout(mapUpdateTask)
+    }
+    mapUpdateTask = setTimeout(function() {
+      if (map) baseLayerByTime(map, ms, reason)
+      riftLayerByTime(ms, map && map.getZoom())
+      animOverlay.updateTiles(ms)
+      arcUpdateTiles(ms)
+      L.Util.setOptions(legendControl, {time: ms})
+      legendControl.redraw()
+    }, 10)
   }
 
   var setPointColor = function(color) {
@@ -2703,6 +2706,7 @@
 
     var t = Date.now()
     setMapTime(map, t, 'inhabit')
+    oholBase.addTo(map)
     //base['Topographic Test'].addTo(map)
     overlays['Rift'].addTo(map)
     //overlays['Checker'].addTo(map)
