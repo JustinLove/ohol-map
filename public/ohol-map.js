@@ -494,7 +494,7 @@
       pickedBiome = secondPlace.biome
     }
 
-    var biome = biomes[options.biomeMap[pickedBiome]]
+    var biome = options.biomes[options.biomeMap[pickedBiome]]
     var biomeObjects = biome.objects
     var numObjects = biomeObjects.length
 
@@ -919,6 +919,7 @@
   })
 
   var objectGenerationOptions = Object.assign({
+    biomes: [],
     gridSeed: 9753,
     densitySeed: 5379,
     densityRoughness: 0.1,
@@ -1192,8 +1193,7 @@
   var addWorldObjects = function() {
     ageWorlds.forEach(function(world) {
       //console.log(world.name, 'objects')
-      var gen = biomeGenerationForTime(world.msStart)
-      var objectLayer = new L.GridLayer.ObjectLayerSprite(gen)
+      var objectLayer = new L.GridLayer.ObjectLayerSprite(world.generation)
       objectLayer.name = world.name + " Objects"
       world.objectLayer = objectLayer
       world.layer.addLayer(objectLayer)
@@ -1252,7 +1252,6 @@
 
   var biomeGenerationForTime = function(msStart, seed) {
     seed = seed || biomeGenerationOptions.biomeSeedOffset
-    var name = seed.toString()
     if (msStart >= msStartOfSpecialAge) {
       return {
         computeMapBiomeIndex: topographicMapBiomeIndex,
@@ -1328,28 +1327,70 @@
       msStart: 0,
       msEnd: msStartOfArcticAge,
       biomeLayer: badlandsAge,
+      generation: {
+        biomeMap: badlandsBiomeMap,
+      },
     },
     {
       name: "Arctic Age",
       msStart: msStartOfArcticAge+1,
       msEnd: msStartOfDesertAge,
+      generation: {
+        biomeMap: arcticBiomeMap,
+      }
     },
     {
       name: "Desert Age",
       msStart: msStartOfDesertAge+1,
       msEnd: msStartOfJungleAge,
+      generation: {
+        biomeMap: desertBiomeMap,
+      }
     },
     {
       name: "Jungle Age",
       msStart: msStartOfJungleAge+1,
       msEnd: msStartOfRandomAge,
       biomeLayer: L.layerGroup([biomeImageLayer, screenshotImageLayer]),
+      generation: {
+        biomeMap: jungleBiomeMap,
+      }
+    },
+    {
+      name: "Random Age",
+      msStart: msStartOfRandomAge+1,
+      msEnd: msStartOfTopographicAge,
+      generation: {
+        biomeMap: jungleBiomeMap,
+      }
+    },
+    {
+      name: "Topographic Age",
+      msStart: msStartOfTopographicAge+1,
+      msEnd: msStartOfSpecialAge,
+      generation: {
+        computeMapBiomeIndex: topographicMapBiomeIndex,
+        biomeTotalWeight: topographicBiomeTotalWeight,
+        biomeCumuWeights: topographicBiomeCumuWeights,
+        biomeMap: topographicBiomeMap,
+      }
+    },
+    {
+      name: "Special Age",
+      msStart: msStartOfSpecialAge+1,
+      generation: {
+        computeMapBiomeIndex: topographicMapBiomeIndex,
+        biomeTotalWeight: specialBiomeTotalWeight,
+        biomeCumuWeights: specialBiomeCumuWeights,
+        biomeMap: specialBiomeMap,
+        numSpecialBiomes: 3,
+      }
     },
   ]
 
   ages.forEach(function(age) {
     if (!age.biomeLayer) {
-      age.biomeLayer = new L.GridLayer.BiomeLayer(biomeGenerationForTime(age.msStart))
+      age.biomeLayer = new L.GridLayer.BiomeLayer(age.generation)
       age.biomeLayer.name = age.name + ' Biome'
     }
     var world = Object.assign({}, age)
@@ -1370,6 +1411,7 @@
         age = ages[ageIndex]
       }
       var world = Object.assign({}, age, ver)
+      world.generation = Object.assign({biomes: ver.biomes}, age.generation)
       world.name = age.name + ' ' + ver.id.toString()
       world.layer = L.layerGroup([age.biomeLayer], {className: world.id.toString()})
       world.layer.name = world.name
@@ -1798,6 +1840,7 @@
       return new L.layerGroup([
         baseAttributionLayer,
         new L.GridLayer.KeyPlacementSprite(keyPlacementCache, Object.assign({
+          biomes: biomes,
           dataTime: end.toString(),
         }, gen))
       ])
@@ -1823,6 +1866,7 @@
         new L.GridLayer.MaplogSprite(maplogCache, Object.assign({
           dataTime: sEnd.toString(),
           time: ms,
+          biomes: biomes,
         }, gen))
       ])
     } else {
@@ -2165,19 +2209,20 @@
     var targetLayer
     worlds.forEach(function(world) {
       if (ms > world.msStart && ms <= world.msEnd) {
+        //console.log(world.generation)
         targetLayer = world.layer
       }
     })
     var changes = 0
     oholBase.eachLayer(function(layer) {
       if (layer != targetLayer) {
-        console.log('remove', layer && layer.name)
+        //console.log('remove', layer && layer.name)
         oholBase.removeLayer(layer)
         changes++
       }
     })
     if (targetLayer && !oholBase.hasLayer(targetLayer)) {
-      console.log('add', targetLayer.name)
+      //console.log('add', targetLayer.name)
       oholBase.addLayer(targetLayer)
       changes++
     }
