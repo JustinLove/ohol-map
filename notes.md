@@ -4,7 +4,6 @@
   - track drawing lag
   - optional natural objects?
   - moving objects off biome was a code change
-  - small object blocking broke
 - tile gen
   - overdraw missing for large natural objets
 - integrate object data
@@ -12,9 +11,8 @@
     - versions can overlap arcs
     - process world sublayers to reuse common layers (biomes)
     - uncertainty may be missing
-  - limits for screenshot layers
-    - 213 (tomatos etc) through 232 (259 bear cave)
   - early arcs may overlap jungle age
+  - rift sizes
 
 - time jump for searched lives not setting timeline UI position
 - year on timeline
@@ -84,5 +82,8 @@
   - cross compilation/webassembly
 - significant UI lag
   - webworker?
+
+  - x limits for screenshot layers
+    - x 213 (tomatos etc) through 232 (259 bear cave)
 
 ## release

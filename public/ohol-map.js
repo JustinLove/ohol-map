@@ -840,6 +840,8 @@
   var msStartOfArcticAge = Date.parse("2018-03-08")
   var msStartOfDesertAge = Date.parse("2018-03-31")
   var msStartOfJungleAge = Date.parse("2018-11-19")
+  var msStartOfScreenshotAge = Date.parse("2019-03-29T22:26:53.000Z")
+  var msEndOfScreenshotAge = Date.parse( "2019-08-24T22:04:47.000Z")
   var msStartOfRandomAge = Date.parse("Jul 27 2019 21:00:00 GMT-0000")
   var msStartOfTopographicAge = Date.parse("Jul 31 2019 01:25:24 GMT-0000")
   var msStartOfSpecialAge = Date.parse("Aug 1 2019 02:08:47 GMT-0000")
@@ -1373,8 +1375,24 @@
     {
       name: "Jungle Age",
       msStart: msStartOfJungleAge+1,
-      msEnd: msStartOfRandomAge,
+      msEnd: msStartOfScreenshotAge,
+      generation: {
+        biomeMap: jungleBiomeMap,
+      }
+    },
+    {
+      name: "Jungle Age (screenshot)",
+      msStart: msStartOfScreenshotAge+1,
+      msEnd: msEndOfScreenshotAge,
       biomeLayer: L.layerGroup([biomeImageLayer, screenshotImageLayer]),
+      generation: {
+        biomeMap: jungleBiomeMap,
+      }
+    },
+    {
+      name: "Jungle Age",
+      msStart: msEndOfScreenshotAge+1,
+      msEnd: msStartOfRandomAge,
       generation: {
         biomeMap: jungleBiomeMap,
       }
