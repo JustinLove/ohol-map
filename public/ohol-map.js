@@ -7,7 +7,6 @@
   var apiUrl = oholMapConfig.apiUrl
 
   var arcs = []
-  var ageWorlds = []
   var worlds = []
 
   var barrierRadius = null
@@ -841,7 +840,6 @@
   var msStartOfDesertAge = Date.parse("2018-03-31")
   var msStartOfJungleAge = Date.parse("2018-11-19")
   var msStartOfScreenshotAge = Date.parse("2019-03-29T22:26:53.000Z")
-  var msEndOfScreenshotAge = Date.parse( "2019-08-24T22:04:47.000Z")
   var msStartOfRandomAge = Date.parse("Jul 27 2019 21:00:00 GMT-0000")
   var msStartOfTopographicAge = Date.parse("Jul 31 2019 01:25:24 GMT-0000")
   var msStartOfSpecialAge = Date.parse("Aug 1 2019 02:08:47 GMT-0000")
@@ -1214,109 +1212,21 @@
   })
   overlays['Object Sprite'] = objectOverlaySprite
 
-  var addWorldObjects = function() {
-    ageWorlds.forEach(function(world) {
-      //console.log(world.name, 'objects')
-      var objectLayer = new L.GridLayer.ObjectLayerSprite(world.generation)
-      //var objectLayer = new L.GridLayer.ObjectLayerPixel(world.generation)
-      objectLayer.name = world.name + " Objects"
-      world.objectLayer = objectLayer
-      world.layer.addLayer(objectLayer)
-    })
-  }
-
   var updateArcs = function(arcData) {
     arcs = arcData.map(function(arc, i) {
-      var biomeLayer = createArcBiomeLayer(arc.start * 1000, arc.seed)
-      biomeLayer.name = 'arc ' + arc.seed + ' biome'
-      var layer = L.layerGroup([biomeLayer], {className: arc.seed.toString()})
-      layer.name = 'arc ' + arc.seed
       return {
         msStart: arc.start * 1000,
         msEnd: arc.end * 1000,
         seed: arc.seed,
-        layer: layer,
-        biomeLayer: biomeLayer,
-        keyPlacementLayer: null,
-        maplogLayer: null,
       }
     })
-    /*
-    if (objectSize.length > 0 && biomes.length > 0) {
-      addArcPlacements()
-    }
-    */
     /*
     arcs.forEach(function(arc, i) {
       console.log('Fr:', new Date(arc.msStart).toString())
       console.log('To:', new Date(arc.msEnd).toString())
     })
     */
-    worlds = ageWorlds.concat(arcs)
-  }
-
-  var addArcPlacements = function() {
-    arcs.forEach(function(arc) {
-      var keyPlacementLayer = createArcKeyPlacementLayer(arc.msEnd/1000, arc.seed)
-      keyPlacementLayer.name = "key placement"
-      arc.keyPlacementLayer = keyPlacementLayer
-      var maplogLayer = createArcMaplogLayer(arc.msStart, arc.msEnd/1000, arc.seed)
-      maplogLayer.name = "maplog"
-      arc.maplogLayer = maplogLayer
-      L.Util.setOptions(keyPlacementLayer, {alternateAnim: maplogLayer})
-      L.Util.setOptions(maplogLayer, {alternateStatic: keyPlacementLayer})
-      if (dataAnimated) {
-        arc.layer.addLayer(maplogLayer)
-      } else {
-        arc.layer.addLayer(keyPlacementLayer)
-      }
-    })
-  }
-
-  var createArcBiomeLayer = function(msStart, seed) {
-    return new L.GridLayer.BiomeLayer(biomeGenerationForTime(msStart, seed))
-  }
-
-  var biomeGenerationForTime = function(msStart, seed) {
-    seed = seed || biomeGenerationOptions.biomeSeedOffset
-    if (msStart >= msStartOfSpecialAge) {
-      return {
-        computeMapBiomeIndex: topographicMapBiomeIndex,
-        biomeTotalWeight: specialBiomeTotalWeight,
-        biomeCumuWeights: specialBiomeCumuWeights,
-        biomeSeedOffset: seed,
-        biomeMap: specialBiomeMap,
-        numSpecialBiomes: 3,
-      }
-    } else if (msStart >= msStartOfTopographicAge) {
-      return {
-        computeMapBiomeIndex: topographicMapBiomeIndex,
-        biomeTotalWeight: topographicBiomeTotalWeight,
-        biomeCumuWeights: topographicBiomeCumuWeights,
-        biomeSeedOffset: seed,
-        biomeMap: topographicBiomeMap,
-      }
-    } else if (msStart >= msStartOfJungleAge) {
-      return {
-        biomeSeedOffset: seed,
-        biomeMap: jungleBiomeMap,
-      }
-    } else if (msStart >= msStartOfDesertAge) {
-      return {
-        biomeSeedOffset: seed,
-        biomeMap: desertBiomeMap,
-      }
-    } else if (msStart >= msStartOfArcticAge) {
-      return {
-        biomeSeedOffset: seed,
-        biomeMap: arcticBiomeMap,
-      }
-    } else {
-      return {
-        biomeSeedOffset: seed,
-        biomeMap: badlandsBiomeMap,
-      }
-    }
+    rebuildWorlds()
   }
 
   var badlandsBaseBiome = new L.GridLayer.BiomeLayer({
@@ -1385,16 +1295,8 @@
     {
       name: "Jungle Age (screenshot)",
       msStart: msStartOfScreenshotAge+1,
-      msEnd: msEndOfScreenshotAge,
-      biomeLayer: L.layerGroup([biomeImageLayer, screenshotImageLayer]),
-      generation: {
-        biomeMap: jungleBiomeMap,
-      }
-    },
-    {
-      name: "Jungle Age",
-      msStart: msEndOfScreenshotAge+1,
       msEnd: msStartOfRandomAge,
+      biomeLayer: L.layerGroup([biomeImageLayer, screenshotImageLayer]),
       generation: {
         biomeMap: jungleBiomeMap,
       }
@@ -1436,40 +1338,7 @@
       age.biomeLayer = new L.GridLayer.BiomeLayer(age.generation)
       age.biomeLayer.name = age.name + ' Biome'
     }
-    var world = Object.assign({}, age)
-    world.layer = L.layerGroup([age.biomeLayer], {className: age.name})
-    world.layer.name = age.name
-    ageWorlds.push(world)
   })
-
-  worlds = ageWorlds.concat(arcs)
-
-  var updateVersions = function(versionData) {
-    //console.log(versionData)
-    var ageIndex = 0
-    var age = ages[ageIndex]
-    ageWorlds = versionData.map(function(ver) {
-      while (ver.msStart > age.msEnd && ageIndex < ages.length-1) {
-        ageIndex += 1
-        age = ages[ageIndex]
-      }
-      var world = Object.assign({}, age, ver)
-      world.generation = Object.assign({
-        biomes: ver.biomes,
-        gridPlacements: ver.gridPlacements,
-        objects: ver.objects,
-      }, age.generation)
-      world.name = age.name + ' ' + ver.id.toString()
-      world.layer = L.layerGroup([age.biomeLayer], {className: world.id.toString()})
-      world.layer.name = world.name
-      return world
-    })
-    for (var i = 0;i < ageWorlds.length-1;i++) {
-      ageWorlds[i].msEnd = ageWorlds[i+1].msStart-1
-    }
-    //console.log(ageWorlds)
-    worlds = ageWorlds.concat(arcs)
-  }
 
   var rebuildWorlds = function() {
     var ageIndex = -1
@@ -1516,7 +1385,7 @@
       }
       //console.log(nextTime, ageIndex, verIndex, arcIndex)
 
-      var world = Object.assign({seed: arc && arc.seed}, age, ver)
+      var world = Object.assign({seed: arc && arc.seed}, age, ver, {msStart: nextTime})
 
       var seed = (arc && arc.seed) || biomeGenerationOptions.biomeSeedOffset
       world.generation = Object.assign({}, age.generation)
@@ -1572,6 +1441,8 @@
       worlds[i].msEnd = worlds[i+1].msStart-1
     }
   }
+
+  rebuildWorlds()
 
   var TileDataCache = L.Class.extend({
     options: {
@@ -2346,7 +2217,7 @@
     var targetLayer
     worlds.forEach(function(world) {
       if (ms > world.msStart && ms <= world.msEnd) {
-        //console.log(world.generation)
+        //console.log('pick', world)
         targetLayer = world.layer
       }
     })
@@ -2957,9 +2828,6 @@
     //map.setView([0,0], 24)
 
     objectLoad(map).then(function() {
-      updateVersions(versions)
-      //addWorldObjects()
-      //addArcPlacements()
       rebuildWorlds()
       toggleAnimationControls(map)
       baseLayerByTime(map, mapTime, 'objectload')
