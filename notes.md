@@ -8,11 +8,11 @@
   - overdraw missing for large natural objets
 - integrate object data
   - changes over time
-    - versions can overlap arcs
+    - ages, versions, arcs
     - process world sublayers to reuse common layers (biomes)
     - uncertainty may be missing
-  - early arcs may overlap jungle age
   - rift sizes
+- server dependant
 
 - time jump for searched lives not setting timeline UI position
 - year on timeline

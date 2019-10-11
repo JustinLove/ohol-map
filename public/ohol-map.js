@@ -1241,9 +1241,11 @@
         maplogLayer: null,
       }
     })
+    /*
     if (objectSize.length > 0 && biomes.length > 0) {
       addArcPlacements()
     }
+    */
     /*
     arcs.forEach(function(arc, i) {
       console.log('Fr:', new Date(arc.msStart).toString())
@@ -1467,6 +1469,108 @@
     }
     //console.log(ageWorlds)
     worlds = ageWorlds.concat(arcs)
+  }
+
+  var rebuildWorlds = function() {
+    var ageIndex = -1
+    var age
+    var verIndex = -1
+    var ver
+    var arcIndex = -1
+    var arc
+    var crazy = 0
+    worlds = []
+    while ((ageIndex < ages.length-1 || verIndex < versions.length-1 || arcIndex < arcs.length-1) && crazy++ < 10+ages.length + versions.length + arcs.length) {
+      //console.log(ageIndex, ages.length, verIndex, versions.length, arcIndex, arcs.length)
+      age = ages[ageIndex+1]
+      ver = versions[verIndex+1]
+      arc = arcs[arcIndex+1]
+      //console.log(age, ver, arc)
+      var nextTime = Number.MAX_SAFE_INTEGER
+      if (age && age.msStart < nextTime) nextTime = age.msStart
+      if (ver && ver.msStart < nextTime) nextTime = ver.msStart
+      if (arc && arc.msStart < nextTime) nextTime = arc.msStart
+      while (ageIndex+1 < ages.length && ages[ageIndex+1].msStart <= nextTime) {
+        ageIndex++
+      }
+      if (ageIndex >= 0) {
+        age = ages[ageIndex]
+      } else {
+        age = null
+      }
+      while (verIndex+1 < versions.length && versions[verIndex+1].msStart <= nextTime) {
+        verIndex++
+      }
+      if (verIndex >= 0) {
+        ver = versions[verIndex]
+      } else {
+        ver = null
+      }
+      while (arcIndex+1 < arcs.length && arcs[arcIndex+1].msStart <= nextTime) {
+        arcIndex++
+      }
+      if (arcIndex >= 0 && nextTime <= arcs[arcIndex].msEnd) {
+        arc = arcs[arcIndex]
+      } else {
+        arc = null
+      }
+      //console.log(nextTime, ageIndex, verIndex, arcIndex)
+
+      var world = Object.assign({seed: arc && arc.seed}, age, ver)
+
+      var seed = (arc && arc.seed) || biomeGenerationOptions.biomeSeedOffset
+      world.generation = Object.assign({}, age.generation)
+      if (arc) {
+        world.generation.biomeSeedOffset = arc.seed
+      }
+      if (ver) {
+        world.generation.biomes = ver.biomes
+        world.generation.gridPlacements = ver.gridPlacements
+        world.generation.objects = ver.objects
+      }
+      world.layer = L.layerGroup([], {className: ver && ver.id.toString()})
+      if (arc) {
+        world.biomeLayer = new L.GridLayer.BiomeLayer(world.generation)
+        world.layer.addLayer(world.biomeLayer)
+      } else if (age) {
+        world.layer.addLayer(age.biomeLayer)
+      }
+      if (objects.length > 0) {
+        if (arc && arc.msStart > msStartOfRandomAge) {
+          var keyPlacementLayer = createArcKeyPlacementLayer(arc.msEnd/1000, world.generation)
+          keyPlacementLayer.name = "key placement"
+          world.keyPlacementLayer = keyPlacementLayer
+          var maplogLayer = createArcMaplogLayer(arc.msStart, arc.msEnd/1000, world.generation)
+          maplogLayer.name = "maplog"
+          world.maplogLayer = maplogLayer
+          L.Util.setOptions(keyPlacementLayer, {alternateAnim: maplogLayer})
+          L.Util.setOptions(maplogLayer, {alternateStatic: keyPlacementLayer})
+          if (dataAnimated) {
+            world.layer.addLayer(maplogLayer)
+          } else {
+            world.layer.addLayer(keyPlacementLayer)
+          }
+        } else {
+          var objectLayer = new L.GridLayer.ObjectLayerSprite(world.generation)
+          //var objectLayer = new L.GridLayer.ObjectLayerPixel(world.generation)
+          objectLayer.name = world.name + " Objects"
+          world.objectLayer = objectLayer
+          world.layer.addLayer(objectLayer)
+        }
+      }
+
+      world.name = [
+        age && age.name,
+        ver && ver.id.toString(),
+        arc && arc.seed.toString()
+      ].filter(function(x) {return !!x}).join(' ')
+      world.layer.name = world.name
+
+      worlds.push(world)
+    }
+    for (var i = 0;i < worlds.length-1;i++) {
+      worlds[i].msEnd = worlds[i+1].msStart-1
+    }
   }
 
   var TileDataCache = L.Class.extend({
@@ -1879,19 +1983,13 @@
     datamaxzoom: 24,
   })
 
-  var createArcKeyPlacementLayer = function(end, seed) {
-    if (end*1000 > msStartOfRandomAge) {
-      var gen = biomeGenerationForTime(end*1000, seed)
-      return new L.layerGroup([
-        baseAttributionLayer,
-        new L.GridLayer.KeyPlacementSprite(keyPlacementCache, Object.assign({
-          biomes: biomes,
-          dataTime: end.toString(),
-        }, gen))
-      ])
-    } else {
-      return L.layerGroup([])
-    }
+  var createArcKeyPlacementLayer = function(end, gen) {
+    return new L.layerGroup([
+      baseAttributionLayer,
+      new L.GridLayer.KeyPlacementSprite(keyPlacementCache, Object.assign({
+        dataTime: end.toString(),
+      }, gen))
+    ])
   }
 
   var maplogCache = new TileDataCache(oholMapConfig.maplog, {
@@ -1899,24 +1997,18 @@
     datamaxzoom: 27,
   })
 
-  var createArcMaplogLayer = function(msStart, sEnd, seed) {
-    if (sEnd*1000 > msStartOfRandomAge) {
-      var ms = sEnd*1000
-      if (msStart < mapTime && mapTime < sEnd*1000) {
-        ms = mapTime
-      }
-      var gen = biomeGenerationForTime(msStart, seed)
-      return new L.layerGroup([
-        baseAttributionLayer,
-        new L.GridLayer.MaplogSprite(maplogCache, Object.assign({
-          dataTime: sEnd.toString(),
-          time: ms,
-          biomes: biomes,
-        }, gen))
-      ])
-    } else {
-      return L.layerGroup([])
+  var createArcMaplogLayer = function(msStart, sEnd, gen) {
+    var ms = sEnd*1000
+    if (msStart < mapTime && mapTime < sEnd*1000) {
+      ms = mapTime
     }
+    return new L.layerGroup([
+      baseAttributionLayer,
+      new L.GridLayer.MaplogSprite(maplogCache, Object.assign({
+        dataTime: sEnd.toString(),
+        time: ms,
+      }, gen))
+    ])
   }
 
   var setFadeTallObjects = function(status) {
@@ -2866,8 +2958,9 @@
 
     objectLoad(map).then(function() {
       updateVersions(versions)
-      addWorldObjects()
-      addArcPlacements()
+      //addWorldObjects()
+      //addArcPlacements()
+      rebuildWorlds()
       toggleAnimationControls(map)
       baseLayerByTime(map, mapTime, 'objectload')
       //objectOverlayPixel.addTo(map)
@@ -2978,8 +3071,8 @@
         case 'animOverlay':
           dataAnimated = message.status
           toggleAnimated(dataOverlay, message.status)
-          arcs.forEach(function(arc) {
-            toggleAnimated(arc.layer, message.status)
+          worlds.forEach(function(world) {
+            toggleAnimated(world.layer, message.status)
           })
           L.Util.setOptions(legendControl, {dataAnimated: message.status})
           legendControl.redraw()
