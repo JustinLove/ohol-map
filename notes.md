@@ -8,10 +8,10 @@
   - overdraw missing for large natural objets
 - integrate object data
   - changes over time
-    - ages, versions, arcs
-    - process world sublayers to reuse common layers (biomes)
     - uncertainty may be missing
+      - esp start of random age
   - rift sizes
+- use changing object layers to avoid visual flashing?
 - server dependant
 
 - time jump for searched lives not setting timeline UI position
@@ -84,6 +84,6 @@
   - webworker?
 
   - x limits for screenshot layers
-    - x 213 (tomatos etc) through 232 (259 bear cave)
+    - x 218 (electrum) through 232 (259 bear cave)
 
 ## release

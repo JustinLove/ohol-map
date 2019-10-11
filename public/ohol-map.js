@@ -839,7 +839,7 @@
   var msStartOfArcticAge = Date.parse("2018-03-08")
   var msStartOfDesertAge = Date.parse("2018-03-31")
   var msStartOfJungleAge = Date.parse("2018-11-19")
-  var msStartOfScreenshotAge = Date.parse("2019-03-29T22:26:53.000Z")
+  var msStartOfScreenshotAge = Date.parse("2019-04-27T21:15:24.000Z")
   var msStartOfRandomAge = Date.parse("Jul 27 2019 21:00:00 GMT-0000")
   var msStartOfTopographicAge = Date.parse("Jul 31 2019 01:25:24 GMT-0000")
   var msStartOfSpecialAge = Date.parse("Aug 1 2019 02:08:47 GMT-0000")
@@ -1397,12 +1397,9 @@
         world.generation.gridPlacements = ver.gridPlacements
         world.generation.objects = ver.objects
       }
-      world.layer = L.layerGroup([], {className: ver && ver.id.toString()})
       if (arc) {
         world.biomeLayer = new L.GridLayer.BiomeLayer(world.generation)
-        world.layer.addLayer(world.biomeLayer)
-      } else if (age) {
-        world.layer.addLayer(age.biomeLayer)
+        world.biomeLayer.name = 'biome ' + arc.seed
       }
       if (objects.length > 0) {
         if (arc && arc.msStart > msStartOfRandomAge) {
@@ -1414,17 +1411,11 @@
           world.maplogLayer = maplogLayer
           L.Util.setOptions(keyPlacementLayer, {alternateAnim: maplogLayer})
           L.Util.setOptions(maplogLayer, {alternateStatic: keyPlacementLayer})
-          if (dataAnimated) {
-            world.layer.addLayer(maplogLayer)
-          } else {
-            world.layer.addLayer(keyPlacementLayer)
-          }
         } else {
           var objectLayer = new L.GridLayer.ObjectLayerSprite(world.generation)
           //var objectLayer = new L.GridLayer.ObjectLayerPixel(world.generation)
           objectLayer.name = world.name + " Objects"
           world.objectLayer = objectLayer
-          world.layer.addLayer(objectLayer)
         }
       }
 
@@ -1433,7 +1424,6 @@
         ver && ver.id.toString(),
         arc && arc.seed.toString()
       ].filter(function(x) {return !!x}).join(' ')
-      world.layer.name = world.name
 
       worlds.push(world)
     }
@@ -1836,16 +1826,14 @@
   })
 
   var arcUpdateTiles = function(ms) {
-    oholBase.eachLayer(function(group) {
-      group.eachLayer(function(sub) {
-        if (sub.eachLayer) {
-          sub.eachLayer(function(layer) {
-            if (layer.updateTiles) {
-              layer.updateTiles(ms)
-            }
-          })
-        }
-      })
+    oholBase.eachLayer(function(sub) {
+      if (sub.eachLayer) {
+        sub.eachLayer(function(layer) {
+          if (layer.updateTiles) {
+            layer.updateTiles(ms)
+          }
+        })
+      }
     })
   }
 
@@ -2214,26 +2202,37 @@
 
   var baseLayerByTime = function(map, ms, reason) {
     //console.log(ms, reason)
-    var targetLayer
+    var targetWorld
     worlds.forEach(function(world) {
       if (ms > world.msStart && ms <= world.msEnd) {
         //console.log('pick', world)
-        targetLayer = world.layer
+        targetWorld = world
       }
     })
     var changes = 0
+    var layers = []
+    if (targetWorld) {
+      layers = [
+        targetWorld.biomeLayer,
+        targetWorld.objectLayer,
+        !dataAnimated && targetWorld.keyPlacementLayer,
+        dataAnimated && targetWorld.maplogLayer,
+      ].filter(function(x) {return !!x})
+    }
     oholBase.eachLayer(function(layer) {
-      if (layer != targetLayer) {
+      if (layers.indexOf(layer) == -1) {
         //console.log('remove', layer && layer.name)
         oholBase.removeLayer(layer)
         changes++
       }
     })
-    if (targetLayer && !oholBase.hasLayer(targetLayer)) {
-      //console.log('add', targetLayer.name)
-      oholBase.addLayer(targetLayer)
-      changes++
-    }
+    layers.forEach(function(layer) {
+      if (!oholBase.hasLayer(layer)) {
+        //console.log('add', layer.name)
+        oholBase.addLayer(layer)
+        changes++
+      }
+    })
     if (changes > 0) {
       setTimeout(function() {
         toggleAnimationControls(map)
@@ -2939,9 +2938,7 @@
         case 'animOverlay':
           dataAnimated = message.status
           toggleAnimated(dataOverlay, message.status)
-          worlds.forEach(function(world) {
-            toggleAnimated(world.layer, message.status)
-          })
+          toggleAnimated(oholBase, message.status)
           L.Util.setOptions(legendControl, {dataAnimated: message.status})
           legendControl.redraw()
           toggleAnimationControls(map)
