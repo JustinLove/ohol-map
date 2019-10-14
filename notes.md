@@ -2,7 +2,6 @@
   - work with placement layers
     - redraw on rift change
   - track drawing lag
-  - small object fix
   - random placement objects
 - tile gen
   - overdraw missing for large natural objets

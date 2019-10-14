@@ -841,6 +841,8 @@
   var msStartOfJungleAge = Date.parse("2018-11-19")
   var msStartOfNoOffBiomeMovingObjects = Date.parse("2019-03-29T21:48:07.000Z")
   var msStartOfScreenshotAge = Date.parse("2019-04-27T21:15:24.000Z")
+  var msStartOfSmallObjectAge = Date.parse("2019-05-04T17:11:31.000Z")
+  var msStartOfSecondScreenshotAge = Date.parse("2019-05-17T02:07:50.000Z")
   var msStartOfRandomAge = Date.parse("Jul 27 2019 21:00:00 GMT-0000")
   var msStartOfTopographicAge = Date.parse("Jul 31 2019 01:25:24 GMT-0000")
   var msStartOfSpecialAge = Date.parse("Aug 1 2019 02:08:47 GMT-0000")
@@ -1312,8 +1314,27 @@
       }
     },
     {
-      name: "Jungle Age (screenshot)",
+      name: "Jungle Age (screenshot 1)",
       msStart: msStartOfScreenshotAge+1,
+      msEnd: msStartOfSmallObjectAge,
+      biomeLayer: L.layerGroup([biomeImageLayer, screenshotImageLayer]),
+      generation: {
+        biomeMap: jungleBiomeMap,
+      }
+    },
+    {
+      name: "Jungle Age (small objects)",
+      msStart: msStartOfSmallObjectAge+1,
+      msEnd: msStartOfSecondScreenshotAge,
+      generation: {
+        tallHeight: 2 * CELL_D, // heights that block
+        veryTallHeight: 3 * CELL_D,
+        biomeMap: jungleBiomeMap,
+      }
+    },
+    {
+      name: "Jungle Age (screenshot 2)",
+      msStart: msStartOfSecondScreenshotAge+1,
       msEnd: msStartOfRandomAge,
       biomeLayer: L.layerGroup([biomeImageLayer, screenshotImageLayer]),
       generation: {
