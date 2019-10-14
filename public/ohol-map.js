@@ -554,7 +554,7 @@
     //console.log('rand', randValue, i, returnId)
 
     // eliminate off-biome moving objects
-    if (pickedBiome == secondPlace.biome) {
+    if (options.allowOffBiomeMovingObjects != true && pickedBiome == secondPlace.biome) {
       if (biomeObjects[i].moving) {
         return 0
       }
@@ -839,6 +839,7 @@
   var msStartOfArcticAge = Date.parse("2018-03-08")
   var msStartOfDesertAge = Date.parse("2018-03-31")
   var msStartOfJungleAge = Date.parse("2018-11-19")
+  var msStartOfNoOffBiomeMovingObjects = Date.parse("2019-03-29T21:48:07.000Z")
   var msStartOfScreenshotAge = Date.parse("2019-04-27T21:15:24.000Z")
   var msStartOfRandomAge = Date.parse("Jul 27 2019 21:00:00 GMT-0000")
   var msStartOfTopographicAge = Date.parse("Jul 31 2019 01:25:24 GMT-0000")
@@ -962,6 +963,7 @@
     smallHeight: CELL_D, // height which is blocked
     tallHeight: 2, // heights that block
     veryTallHeight: 3,
+    allowOffBiomeMovingObjects: false,
   }, biomeGenerationOptions)
 
   L.GridLayer.SpriteLayer = L.GridLayer.extend({
@@ -1270,6 +1272,7 @@
       msEnd: msStartOfArcticAge,
       biomeLayer: badlandsAge,
       generation: {
+        allowOffBiomeMovingObjects: true,
         biomeMap: badlandsBiomeMap,
       },
     },
@@ -1278,6 +1281,7 @@
       msStart: msStartOfArcticAge+1,
       msEnd: msStartOfDesertAge,
       generation: {
+        allowOffBiomeMovingObjects: true,
         biomeMap: arcticBiomeMap,
       }
     },
@@ -1286,12 +1290,22 @@
       msStart: msStartOfDesertAge+1,
       msEnd: msStartOfJungleAge,
       generation: {
+        allowOffBiomeMovingObjects: true,
         biomeMap: desertBiomeMap,
       }
     },
     {
-      name: "Jungle Age",
+      name: "Jungle Age (off biome animals)",
       msStart: msStartOfJungleAge+1,
+      msEnd: msStartOfNoOffBiomeMovingObjects,
+      generation: {
+        allowOffBiomeMovingObjects: true,
+        biomeMap: jungleBiomeMap,
+      }
+    },
+    {
+      name: "Jungle Age",
+      msStart: msStartOfNoOffBiomeMovingObjects+1,
       msEnd: msStartOfScreenshotAge,
       generation: {
         biomeMap: jungleBiomeMap,
