@@ -318,7 +318,6 @@
   }
 
   var versions = []
-  var biomes = []
   var objects = []
   var objectBounds = []
   var objectSize = []
@@ -2740,10 +2739,7 @@
         }
         versions.push(ver)
       })
-      //biomes = versions[versions.length-1].biomes
-      biomes = versions.filter(function(ver) { return ver.id == 232 })[0].biomes
 
-      //console.log(biomes)
       // object blocking
       //console.log('-2,1', getMapObjectRaw(-2, 1, objectGenerationOptions))
       // off biome moving object
