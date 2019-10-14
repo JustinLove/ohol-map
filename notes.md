@@ -2,8 +2,8 @@
   - work with placement layers
     - redraw on rift change
   - track drawing lag
-  - optional natural objects?
-  - moving objects off biome was a code change
+  - ** optional natural objects?
+  - ** moving objects off biome was a code change
 - tile gen
   - overdraw missing for large natural objets
 - integrate object data

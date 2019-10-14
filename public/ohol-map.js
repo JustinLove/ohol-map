@@ -1385,7 +1385,7 @@
       }
       //console.log(nextTime, ageIndex, verIndex, arcIndex)
 
-      var world = Object.assign({seed: arc && arc.seed}, age, ver, {msStart: nextTime})
+      var world = Object.assign({seed: arc && arc.seed}, age, ver, {msStart: nextTime, msEnd: arc && arc.msEnd})
 
       var seed = (arc && arc.seed) || biomeGenerationOptions.biomeSeedOffset
       world.generation = Object.assign({}, age.generation)
@@ -2204,7 +2204,7 @@
     //console.log(ms, reason)
     var targetWorld
     worlds.forEach(function(world) {
-      if (ms > world.msStart && ms <= world.msEnd) {
+      if (world.msStart < ms && (ms <= world.msEnd || world.msEnd == undefined)) {
         //console.log('pick', world)
         targetWorld = world
       }
