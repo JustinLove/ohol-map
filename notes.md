@@ -2,14 +2,14 @@
   - work with placement layers
     - redraw on rift change
   - track drawing lag
-  - random placement objects
+  - random placement objects - wip
+  - rift sizes
 - tile gen
   - overdraw missing for large natural objets
 - integrate object data
   - changes over time
     - uncertainty may be missing
       - esp start of random age
-  - rift sizes
 - use changing object layers to avoid visual flashing?
 - server dependant
 

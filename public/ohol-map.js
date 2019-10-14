@@ -55,6 +55,15 @@
     },
   ]
 
+  // todo: version data
+  var randomMapPlacements = [
+    {
+      msStart: Date.parse("2019-10-12 16:02:11-05:00"),
+      id: 2285,
+      count: 5,
+    },
+  ]
+
   var CELL_D = 128
   var objectBoundsPadding = 15
 
@@ -282,6 +291,7 @@
   }
 
   var oneOverIntMax = 1.0 / 4294967295;
+  var invMAXPlusOne = 1.0 / (4294967295 + 1);
 
   var getXYRandom = function(inX, inY) {
     return xxTweakedHash2D(inX, inY) * oneOverIntMax
@@ -315,6 +325,36 @@
       )
 
     return sum * oneOverIntMax
+  }
+
+  // implemented based on Jason Rohrer
+  // https://github.com/jasonrohrer/minorGems/blob/master/util/random/CustomRandomSource.h
+  // https://github.com/jasonrohrer/minorGems/blob/master/util/random/RandSource32.h
+  var CustomRandomSource = function(state) {
+    this.state = state
+  }
+
+  var genRand32 = function(state) {
+    var custnum1 = Math.imul( state            , 0xFEA09B9D) + 1
+    var custnum2 = Math.imul((state ^ custnum1), 0x9C129511) + 1
+    var custnum3 = Math.imul( state            , 0x2512CFB8) + 1
+    var custnum4 = Math.imul((state ^ custnum3), 0xB89C8895) + 1
+    var custnum5 = Math.imul( state            , 0x6BF962c1) + 1
+    var custnum6 = Math.imul((state ^ custnum5), 0x4BF962C1) + 1
+    return (custnum2 ^ custnum4 ^ custnum6) >>> 0
+  }
+
+  CustomRandomSource.prototype.genRand32 = function() {
+    this.state = genRand32(this.state)
+    return this.state
+  }
+
+  CustomRandomSource.prototype.getRandomBoundedInt = function(inRangeStart, inRangeEnd) {
+    var randFloat = this.genRand32() * invMAXPlusOne
+    var onePastRange = inRangeEnd + 1
+    var magnitude = randFloat * (onePastRange - inRangeStart)
+    //console.log(randFloat, onePastRange, magnitude)
+    return magnitude = inRangeStart + magnitude
   }
 
   var versions = []
@@ -944,6 +984,7 @@
     biomes: [],
     gridPlacements: [],
     objects: [],
+    randSeed: 124567,
     gridSeed: 9753,
     densitySeed: 5379,
     densityRoughness: 0.1,
@@ -1469,6 +1510,37 @@
     for (var i = 0;i < worlds.length-1;i++) {
       worlds[i].msEnd = worlds[i+1].msStart-1
     }
+    worlds.forEach(function(world) {
+      var safeR = 353 - 2
+      var placementRandomSource = new CustomRandomSource(objectGenerationOptions.randSeed)
+      var options = Object.assign({}, biomeGenerationOptions, world.generation)
+      if (!world.generation.biomes) return
+      world.placements = []
+      randomMapPlacements.filter(function(place) {
+        return (place.msStart < world.msEnd)
+      }).forEach(function(place) {
+        var toPlace = place.count
+        var crazy = 0
+        while (toPlace > 0 && crazy++ < 2000) {
+          var pickX = placementRandomSource.getRandomBoundedInt(-safeR, safeR)
+          var pickY = placementRandomSource.getRandomBoundedInt(-safeR, safeR)
+          var bi = options.computeMapBiomeIndex(pickX, pickY, options)
+          var pickB = options.biomeMap[bi]
+          //console.log(pickX, pickY, pickB)
+          // todo: biomeloop
+          if (pickB == 4) {
+            specialMapPlacements.push({
+              msStart: place.msStart,
+              x: pickX,
+              y: pickY,
+              id: place.id,
+            })
+            toPlace--
+          }
+        }
+        console.log(specialMapPlacements, crazy, world.name)
+      })
+    })
   }
 
   rebuildWorlds()
