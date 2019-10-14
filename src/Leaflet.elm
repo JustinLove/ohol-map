@@ -17,6 +17,7 @@ port module Leaflet exposing
   , pointColor
   , pointLocation
   , fadeTallObjects
+  , showNaturalObjectsAboveZoom
   , event)
 
 import OHOLData as Data
@@ -168,6 +169,14 @@ fadeTallObjects status =
   Encode.object
     [ ("kind", Encode.string "fadeTallObjects")
     , ("status", Encode.bool status)
+    ]
+    |> leafletCommand
+
+showNaturalObjectsAboveZoom : Int -> Cmd msg
+showNaturalObjectsAboveZoom zoom =
+  Encode.object
+    [ ("kind", Encode.string "showNaturalObjectsAboveZoom")
+    , ("zoom", Encode.int zoom)
     ]
     |> leafletCommand
 

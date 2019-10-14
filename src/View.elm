@@ -51,6 +51,7 @@ type Msg
   | Play
   | Pause
   | ToggleFadeTallObjects Bool
+  | SelectNaturalObjectZoom Int
   | SelectPointColor PointColor
   | SelectPointLocation PointLocation
   | SelectMatchingLife Life
@@ -856,6 +857,17 @@ cosmetics model =
         , checked = model.fadeTallObjects
         , label = Input.labelRight [ padding 6 ] (text "Fade Tall Objects")
         , icon = Input.defaultCheckbox
+        }
+      , Input.slider
+        [ Background.color control ]
+        { onChange = round >> SelectNaturalObjectZoom
+        , label = Input.labelAbove [] <|
+          text ("Natural Objects Above Zoom: " ++ (model.showNaturalObjectsAboveZoom |> String.fromInt))
+        , min = 24
+        , max = 32
+        , value = model.showNaturalObjectsAboveZoom |> toFloat
+        , thumb = Input.defaultThumb
+        , step = Just 1
         }
       ]
 

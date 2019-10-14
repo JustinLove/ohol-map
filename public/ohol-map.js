@@ -1149,10 +1149,15 @@
   L.GridLayer.ObjectLayerSprite = L.GridLayer.SpriteLayer.extend({
     options: Object.assign({
       pane: 'overlayPane',
+      showNaturalObjectsAboveZoom: 26,
     }, objectGenerationOptions),
     createTile: function (coords, done) {
       var layer = this
       var options = layer.options
+      if (coords.z < options.showNaturalObjectsAboveZoom) {
+        done()
+        return document.createElement('div');
+      }
       var tile = document.createElement('canvas');
       var tileSize = layer.getTileSize();
       var superscale = Math.pow(2, options.supersample)
@@ -1495,7 +1500,9 @@
   var objectImages = []
 
   L.GridLayer.KeyPlacementSprite = L.GridLayer.SpriteLayer.extend({
-    options: Object.assign({}, objectGenerationOptions),
+    options: Object.assign({
+      showNaturalObjectsAboveZoom: 26,
+    }, objectGenerationOptions),
     initialize: function(cache, options) {
       this._cache = cache;
       options = L.Util.setOptions(this, options);
@@ -1574,24 +1581,26 @@
         })
 
         var natural = []
-        for (var y = -paddingUp;y < bottom;y++) {
-          for (var x = -paddingX;x < right;x++) {
-            if (occupied[[x, y].join(' ')]) {
-              continue
-            }
-            var wx = startX + x
-            var wy = startY - y
-            var v = getMapObjectRaw(wx, wy, options)
-            if (v == 0) continue
-            var size = objectSize[v]
-            var tooSmall = !size || size <= minSize
-            if (!tooSmall) {
-              natural.push({
-                x: x,
-                y: y,
-                id: v,
-                floor: false,
-              })
+        if (coords.z >= options.showNaturalObjectsAboveZoom) {
+          for (var y = -paddingUp;y < bottom;y++) {
+            for (var x = -paddingX;x < right;x++) {
+              if (occupied[[x, y].join(' ')]) {
+                continue
+              }
+              var wx = startX + x
+              var wy = startY - y
+              var v = getMapObjectRaw(wx, wy, options)
+              if (v == 0) continue
+              var size = objectSize[v]
+              var tooSmall = !size || size <= minSize
+              if (!tooSmall) {
+                natural.push({
+                  x: x,
+                  y: y,
+                  id: v,
+                  floor: false,
+                })
+              }
             }
           }
         }
@@ -1663,6 +1672,7 @@
   L.GridLayer.MaplogSprite = L.GridLayer.SpriteLayer.extend({
     options: Object.assign({
       time: 0,
+      showNaturalObjectsAboveZoom: 26,
     }, objectGenerationOptions),
     initialize: function(cache, options) {
       this._cache = cache;
@@ -1736,19 +1746,21 @@
         })
 
         var natural = []
-        for (var y = -paddingUp;y < bottom;y++) {
-          for (var x = -paddingX;x < right;x++) {
-            var wx = startX + x
-            var wy = startY - y
-            var v = getMapObjectRaw(wx, wy, options)
-            if (v == 0) continue
-            natural.push({
-              t: 2,
-              x: x,
-              y: y,
-              id: v,
-              key: [x, y].join(' '),
-            })
+        if (coords.z >= options.showNaturalObjectsAboveZoom) {
+          for (var y = -paddingUp;y < bottom;y++) {
+            for (var x = -paddingX;x < right;x++) {
+              var wx = startX + x
+              var wy = startY - y
+              var v = getMapObjectRaw(wx, wy, options)
+              if (v == 0) continue
+              natural.push({
+                t: 2,
+                x: x,
+                y: y,
+                id: v,
+                key: [x, y].join(' '),
+              })
+            }
           }
         }
 
@@ -1870,23 +1882,23 @@
     ])
   }
 
-  var setFadeTallObjects = function(status) {
+  var setObjectLayerOptions = function(options) {
     worlds.forEach(function(world) {
       if (world.keyPlacementLayer) {
         world.keyPlacementLayer.eachLayer(function(layer) {
-          L.Util.setOptions(layer, {fadeTallObjects: status})
+          L.Util.setOptions(layer, options)
           layer.redraw && layer.redraw()
         })
       }
       if (world.maplogLayer) {
         world.maplogLayer.eachLayer(function(layer) {
-          L.Util.setOptions(layer, {fadeTallObjects: status})
+          L.Util.setOptions(layer, options)
           layer.redraw && layer.redraw()
         })
       }
       if (world.objectLayer) {
         var layer = world.objectLayer
-        L.Util.setOptions(layer, {fadeTallObjects: status})
+        L.Util.setOptions(layer, options)
         layer.redraw && layer.redraw()
       }
     })
@@ -2959,7 +2971,10 @@
           setPointLocation(message.location)
           break;
         case 'fadeTallObjects':
-          setFadeTallObjects(message.status)
+          setObjectLayerOptions({fadeTallObjects: message.status})
+          break
+        case 'showNaturalObjectsAboveZoom':
+          setObjectLayerOptions({showNaturalObjectsAboveZoom: message.zoom})
           break
         default:
           console.log('unknown message', message)

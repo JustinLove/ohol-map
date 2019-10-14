@@ -73,6 +73,7 @@ type alias Model =
   , timeRange : Maybe (Posix, Posix)
   , player : Player
   , fadeTallObjects : Bool
+  , showNaturalObjectsAboveZoom : Int
   , pointColor : PointColor
   , pointLocation : PointLocation
   , selectedServer : Maybe Server
@@ -128,6 +129,7 @@ init config location key =
       , timeRange = Nothing
       , player = Stopped
       , fadeTallObjects = False
+      , showNaturalObjectsAboveZoom = 26
       , pointColor = LineageColor
       , pointLocation = BirthLocation
       , selectedServer = Nothing
@@ -245,6 +247,12 @@ update msg model =
         | fadeTallObjects = fade
         }
       , Leaflet.fadeTallObjects fade
+      )
+    UI (View.SelectNaturalObjectZoom zoom) ->
+      ( { model
+        | showNaturalObjectsAboveZoom = zoom
+        }
+      , Leaflet.showNaturalObjectsAboveZoom zoom
       )
     UI (View.SelectPointColor color) ->
       ( { model
