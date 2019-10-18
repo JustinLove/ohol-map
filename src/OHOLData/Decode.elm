@@ -7,7 +7,7 @@ module OHOLData.Decode exposing
   , timeStamp
   )
 
-import OHOLData exposing (Life, Server, Arc, Objects, Version, Spawn, SpawnChange(..))
+import OHOLData exposing (Life, Server, Arc, Objects, VersionChange, Spawn, SpawnChange(..))
 
 import Json.Decode exposing (..)
 import Time exposing (Posix)
@@ -61,9 +61,9 @@ objects =
     |> map2 (|>) (field "bounds" value)
     |> map2 (|>) (field "spawnChanges" (list version))
 
-version : Decoder Version
+version : Decoder VersionChange
 version =
-  succeed Version
+  succeed VersionChange
     |> map2 (|>) (field "id" int)
     |> map2 (|>) (field "date" dateTime)
     |> map2 (|>) (field "spawnChanges" (list spawnChange))

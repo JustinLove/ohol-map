@@ -477,7 +477,7 @@ update msg model =
       let _ = Debug.log "fetch arcs failed" error in
       ({model | arcs = Failed error, currentArc = Nothing, timeRange = Nothing}, Cmd.none)
     ObjectsReceived (Ok objects) ->
-      ( {model | versions = Data objects.spawnChanges}
+      ( {model | versions = Data (Debug.log "versions" <| Data.completeVersions objects.spawnChanges)}
       , Leaflet.objectBounds objects.ids objects.bounds
       )
     ObjectsReceived (Err error) ->
