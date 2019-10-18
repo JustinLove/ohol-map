@@ -2790,7 +2790,7 @@
         })
         var ver = {
           id: version.id,
-          msStart: Date.parse(version.date),
+          msStart: new Date(version.date),
           biomes: biomesSnapshot,
           gridPlacements: gridPlacementsSnapShot,
           objects: objectSnapshot,

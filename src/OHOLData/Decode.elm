@@ -3,10 +3,11 @@ module OHOLData.Decode exposing
   , servers
   , arcs
   , objects
+  , version
   , timeStamp
   )
 
-import OHOLData exposing (Life, Server, Arc, Objects)
+import OHOLData exposing (Life, Server, Arc, Objects, Version, Spawn, SpawnChange(..))
 
 import Json.Decode exposing (..)
 import Time exposing (Posix)
@@ -58,7 +59,69 @@ objects =
   succeed Objects
     |> map2 (|>) (field "ids" value)
     |> map2 (|>) (field "bounds" value)
-    |> map2 (|>) (field "spawnChanges" value)
+    |> map2 (|>) (field "spawnChanges" (list version))
+
+version : Decoder Version
+version =
+  succeed Version
+    |> map2 (|>) (field "id" int)
+    |> map2 (|>) (field "date" dateTime)
+    |> map2 (|>) (field "spawnChanges" (list spawnChange))
+
+spawnChange : Decoder SpawnChange
+spawnChange =
+  oneOf
+    [ removed |> map Removed
+    , spawn |> map Changed
+    ]
+
+removed : Decoder Int
+removed =
+  (field "removed" bool)
+    |> andThen (\r ->
+      if r then
+        (field "id" id)
+      else
+        fail "not a removal"
+      )
+
+spawn : Decoder Spawn
+spawn =
+  succeed Spawn
+    |> map2 (|>) (field "id" id)
+    |> map2 (|>) (field "mapChance" float)
+    |> map2 (|>) (field "biomes" (list int))
+    |> map2 (|>) (oneOf
+      [ (field "moving" bool)
+      , succeed False
+      ]
+    )
+    |> map2 (|>) (oneOf
+      [ (field "leftBlockingRadius" int)
+      , succeed 0
+      ]
+    )
+    |> map2 (|>) (oneOf
+      [ (field "rightBlockingRadius" int)
+      , succeed 0
+      ]
+    )
+    |> map2 (|>) (maybe (field "gridPlacement" int))
+    |> map2 (|>) (maybe (field "randPlacement" int))
+
+id : Decoder Int
+id =
+  string
+    |> map String.toInt
+    |> andThen (\mid -> mid
+      |> Maybe.map succeed
+      |> Maybe.withDefault (fail "bad id")
+    )
+
+dateTime : Decoder Posix
+dateTime =
+  int
+    |> map Time.millisToPosix
 
 timeStamp : Decoder Posix
 timeStamp =

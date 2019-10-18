@@ -1,4 +1,4 @@
-module OHOLData exposing (Life, Server, Arc, Objects)
+module OHOLData exposing (Life, Server, Arc, Objects, Version, Spawn, SpawnChange(..))
 
 import Time exposing (Posix)
 import Json.Decode exposing (Value)
@@ -33,5 +33,26 @@ type alias Arc =
 type alias Objects =
   { ids: Value
   , bounds: Value
-  , spawnChanges: Value
+  , spawnChanges: List Version
   }
+
+type alias Version =
+  { id: Int
+  , start: Posix
+  , spawnChanges: List SpawnChange
+  }
+
+type alias Spawn =
+  { id: Int
+  , mapchance: Float
+  , biomes: List Int
+  , moving: Bool
+  , leftBlockingRadius: Int
+  , rightBlockingRadius: Int
+  , gridPlacement: Maybe Int
+  , randPlacement: Maybe Int
+  }
+
+type SpawnChange
+  = Removed Int
+  | Changed Spawn

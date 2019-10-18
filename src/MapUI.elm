@@ -1,7 +1,7 @@
 module MapUI exposing (..)
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
-import OHOLData as Data exposing (Server, Arc)
+import OHOLData as Data exposing (Server, Arc, Version)
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
 import View exposing
@@ -80,7 +80,7 @@ type alias Model =
   , selectedServer : Maybe Server
   , servers : RemoteData (List Server)
   , arcs : RemoteData (List Arc)
-  , versions : RemoteData (Json.Decode.Value)
+  , versions : RemoteData (List Version)
   , monuments : Dict Int Json.Decode.Value
   , dataLayer : RemoteData Bool
   , lives : RemoteData (List Life)
