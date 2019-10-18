@@ -358,7 +358,6 @@
   }
 
   var versions = []
-  var objects = []
   var objectBounds = []
   var objectSize = []
   var gridPlacements = []
@@ -1481,7 +1480,7 @@
         world.biomeLayer = new L.GridLayer.BiomeLayer(world.generation)
         world.biomeLayer.name = 'biome ' + arc.seed
       }
-      if (objects.length > 0) {
+      if (objectBounds.length > 0) {
         if (arc && arc.msStart > msStartOfRandomAge) {
           var keyPlacementLayer = createArcKeyPlacementLayer(arc.msEnd/1000, world.generation)
           keyPlacementLayer.name = "key placement"
@@ -2731,7 +2730,7 @@
 
     //var mapGen = Promise.resolve()
     var mapGen = objectMaster.then(function(wrapper) {
-      objects = new Array(wrapper.ids.length)
+      /*
       for (var i = 0;i < wrapper.ids.length;i++) {
         if (wrapper.names[i].match('gridPlacement')) {
           gridPlacements.push({
@@ -2742,6 +2741,7 @@
           })
         }
       }
+      */
       var biomeState = []
       var objectState = {}
       wrapper.spawnChanges.forEach(function(version) {
