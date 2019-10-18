@@ -12,6 +12,7 @@ module OHOLData exposing
 
 import Dict exposing (Dict)
 import Json.Decode exposing (Value)
+import Set exposing (Set)
 import Time exposing (Posix)
 
 type alias Life =
@@ -68,15 +69,13 @@ type SpawnChange
   = Removed Int
   | Changed Spawn
 
-type alias Biome =
-  { id: Int
-  , objects: List Spawn
-  }
+type alias Biome = List Spawn
 
 type alias Version =
   { id: Int
   , start: Posix
   , objects: Dict Int Spawn
+  , biomes: Dict Int Biome
   }
 
 completeVersions : List VersionChange -> List Version
@@ -90,6 +89,7 @@ emptyVersion =
   { id = 0
   , start = (Time.millisToPosix 0)
   , objects = Dict.empty
+  , biomes = Dict.empty
   }
 
 addVersionChange : VersionChange -> List Version -> List Version
@@ -103,10 +103,27 @@ addVersionChange change versions =
 
 applyVersionChange : VersionChange -> Version -> Version
 applyVersionChange change previous =
-  { id = change.id
-  , start = change.start
-  , objects = List.foldl applySpawnChange previous.objects change.spawnChanges
-  }
+  let
+    objects = List.foldl applySpawnChange previous.objects change.spawnChanges
+    biomeSet = List.foldl
+      (\{biomes} set -> Set.union set (Set.fromList biomes))
+      Set.empty
+      (Dict.values objects)
+    biomeDict = Set.foldl
+      (\biomeId accum ->
+        Dict.insert
+          biomeId
+          (List.filter (\spawn -> List.member biomeId spawn.biomes) (Dict.values objects))
+          accum
+      )
+      Dict.empty
+      biomeSet
+  in
+    { id = change.id
+    , start = change.start
+    , objects = objects
+    , biomes = biomeDict
+    }
 
 applySpawnChange : SpawnChange -> Dict Int Spawn -> Dict Int Spawn
 applySpawnChange change objects =
