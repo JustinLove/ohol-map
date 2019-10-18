@@ -1,6 +1,7 @@
-module OHOLData exposing (Life, Server, Arc)
+module OHOLData exposing (Life, Server, Arc, Objects)
 
 import Time exposing (Posix)
+import Json.Decode exposing (Value)
 
 type alias Life =
   { birthX : Int
@@ -27,4 +28,10 @@ type alias Arc =
   , start: Posix
   , end: Posix
   , seed: Int
+  }
+
+type alias Objects =
+  { ids: Value
+  , bounds: Value
+  , spawnChanges: Value
   }

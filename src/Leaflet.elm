@@ -7,6 +7,7 @@ port module Leaflet exposing
   , currentTime
   , currentServer
   , arcList
+  , objectBounds
   , monumentList
   , dataLayer
   , displayResults
@@ -77,6 +78,15 @@ arcList arcs time =
     [ ("kind", Encode.string "arcList")
     , ("arcs", Encode.arcs arcs)
     , ("time", Encode.timeStamp time)
+    ]
+    |> leafletCommand
+
+objectBounds : Encode.Value -> Encode.Value -> Cmd msg
+objectBounds ids bounds =
+  Encode.object
+    [ ("kind", Encode.string "objectBounds")
+    , ("ids", ids)
+    , ("bounds", bounds)
     ]
     |> leafletCommand
 

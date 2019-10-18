@@ -36,6 +36,7 @@ type Msg
   | LineageLives (Result Http.Error Json.Decode.Value)
   | ServerList (Result Http.Error (List Data.Server))
   | ArcList (Result Http.Error (List Data.Arc))
+  | ObjectsReceived (Result Http.Error Data.Objects)
   | MonumentList Int (Result Http.Error Json.Decode.Value)
   | DataLayer (Result Http.Error Json.Decode.Value)
   | FetchUpTo Posix
@@ -79,6 +80,7 @@ type alias Model =
   , selectedServer : Maybe Server
   , servers : RemoteData (List Server)
   , arcs : RemoteData (List Arc)
+  , versions : RemoteData (Json.Decode.Value)
   , monuments : Dict Int Json.Decode.Value
   , dataLayer : RemoteData Bool
   , lives : RemoteData (List Life)
@@ -135,6 +137,7 @@ init config location key =
       , selectedServer = Nothing
       , servers = NotRequested
       , arcs = NotRequested
+      , versions = NotRequested
       , monuments = Dict.empty
       , dataLayer = NotRequested
       , lives = NotRequested
@@ -150,7 +153,8 @@ init config location key =
         Just _ -> Cmd.none
         Nothing -> Time.now |> Task.perform CurrentTimeNotice
       , fetchServers model.cachedApiUrl
-      , fetchArcs model.cachedApiUrl
+      , fetchArcs
+      , fetchObjects
       , Leaflet.animOverlay model.dataAnimated
       ]
     )
@@ -472,6 +476,13 @@ update msg model =
     ArcList (Err error) ->
       let _ = Debug.log "fetch arcs failed" error in
       ({model | arcs = Failed error, currentArc = Nothing, timeRange = Nothing}, Cmd.none)
+    ObjectsReceived (Ok objects) ->
+      ( {model | versions = Data objects.spawnChanges}
+      , Leaflet.objectBounds objects.ids objects.bounds
+      )
+    ObjectsReceived (Err error) ->
+      let _ = Debug.log "fetch objects failed" error in
+      (model, Cmd.none)
     MonumentList serverId (Ok monuments) ->
       ( {model | monuments = Dict.insert serverId monuments model.monuments}
       , Leaflet.monumentList serverId monuments
@@ -826,11 +837,18 @@ fetchServers baseUrl =
     , expect = Http.expectJson ServerList Decode.servers
     }
 
-fetchArcs : String -> Cmd Msg
-fetchArcs baseUrl =
+fetchArcs : Cmd Msg
+fetchArcs =
   Http.get
     { url = Url.relative ["kp/arcs.json"] []
     , expect = Http.expectJson ArcList Decode.arcs
+    }
+
+fetchObjects : Cmd Msg
+fetchObjects =
+  Http.get
+    { url = Url.relative ["static/objects.json"] []
+    , expect = Http.expectJson ObjectsReceived Decode.objects
     }
 
 myLife : Data.Life -> Life

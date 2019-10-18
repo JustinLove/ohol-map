@@ -2714,20 +2714,6 @@
       return response.json()
     })
 
-    var size = objectMaster.then(function(wrapper) {
-      objectBounds = new Array(wrapper.ids.length)
-      for (var i = 0;i < wrapper.ids.length;i++) {
-        var id = parseInt(wrapper.ids[i])
-        var bounds = wrapper.bounds[i]
-        objectBounds[id] = bounds
-        objectSize[id] = Math.min(
-          bounds[2] - bounds[0] - 30,
-          bounds[3] - bounds[1] - 30)
-      }
-    }).catch(function(err) {
-      console.log(err)
-    })
-
     //var mapGen = Promise.resolve()
     var mapGen = objectMaster.then(function(wrapper) {
       /*
@@ -2821,7 +2807,7 @@
     }).catch(function(err) {
       console.log(err)
     })
-    return Promise.all([size, mapGen])
+    return Promise.all([mapGen])
   }
 
   var toggleAnimated = function(parent, status) {
@@ -3011,6 +2997,17 @@
           updateArcs(message.arcs.data)
           var ms = message.time * 1000
           setMapTime(map, ms, 'arcList')
+          break;
+        case 'objectBounds':
+          objectBounds = new Array(message.ids.length)
+          for (var i = 0;i < message.ids.length;i++) {
+            var id = parseInt(message.ids[i])
+            var bounds = message.bounds[i]
+            objectBounds[id] = bounds
+            objectSize[id] = Math.min(
+              bounds[2] - bounds[0] - 30,
+              bounds[3] - bounds[1] - 30)
+          }
           break;
         case 'monumentList':
           updateMonumentLayer(monumentOverlay, message.monuments.data)

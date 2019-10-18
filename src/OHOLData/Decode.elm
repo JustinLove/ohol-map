@@ -2,10 +2,11 @@ module OHOLData.Decode exposing
   ( lives
   , servers
   , arcs
+  , objects
   , timeStamp
   )
 
-import OHOLData exposing (Life, Server, Arc)
+import OHOLData exposing (Life, Server, Arc, Objects)
 
 import Json.Decode exposing (..)
 import Time exposing (Posix)
@@ -51,6 +52,13 @@ arc =
     |> map2 (|>) (field "start" timeStamp)
     |> map2 (|>) (field "end" timeStamp)
     |> map2 (|>) (field "seed" int)
+
+objects : Decoder Objects
+objects =
+  succeed Objects
+    |> map2 (|>) (field "ids" value)
+    |> map2 (|>) (field "bounds" value)
+    |> map2 (|>) (field "spawnChanges" value)
 
 timeStamp : Decoder Posix
 timeStamp =
