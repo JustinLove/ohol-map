@@ -69,13 +69,14 @@ type SpawnChange
   = Removed Int
   | Changed Spawn
 
-type alias Biome = List Spawn
+type alias Biome = OrderedList Spawn
+type alias BiomeSet = Dict Int Biome
 
 type alias Version =
   { id: Int
   , start: Posix
   , objects: Dict Int Spawn
-  , biomes: Dict Int Biome
+  , biomes: BiomeSet
   }
 
 completeVersions : List VersionChange -> List Version
@@ -103,30 +104,51 @@ addVersionChange change versions =
 
 applyVersionChange : VersionChange -> Version -> Version
 applyVersionChange change previous =
-  let
-    objects = List.foldl applySpawnChange previous.objects change.spawnChanges
-    biomeSet = List.foldl
-      (\{biomes} set -> Set.union set (Set.fromList biomes))
-      Set.empty
-      (Dict.values objects)
-    biomeDict = Set.foldl
-      (\biomeId accum ->
-        Dict.insert
-          biomeId
-          (List.filter (\spawn -> List.member biomeId spawn.biomes) (Dict.values objects))
-          accum
-      )
-      Dict.empty
-      biomeSet
-  in
-    { id = change.id
-    , start = change.start
-    , objects = objects
-    , biomes = biomeDict
-    }
+  { id = change.id
+  , start = change.start
+  , objects = List.foldl applySpawnChangeToObjects previous.objects change.spawnChanges
+  , biomes = List.foldl applySpawnChangeToBiomes previous.biomes change.spawnChanges
+  }
 
-applySpawnChange : SpawnChange -> Dict Int Spawn -> Dict Int Spawn
-applySpawnChange change objects =
+applySpawnChangeToObjects : SpawnChange -> Dict Int Spawn -> Dict Int Spawn
+applySpawnChangeToObjects change objects =
   case change of
     Removed id -> Dict.remove id objects
     Changed spawn -> Dict.insert spawn.id spawn objects
+
+applySpawnChangeToBiomes : SpawnChange -> BiomeSet -> BiomeSet
+applySpawnChangeToBiomes change biomes =
+  case change of
+    Removed id ->
+      biomes
+        |> Dict.map (\bid biome -> orderedRemove .id id biome)
+    Changed spawn ->
+      spawn.biomes
+        |> List.foldl (changeSpawn spawn) biomes
+
+changeSpawn : Spawn -> Int -> BiomeSet -> BiomeSet
+changeSpawn spawn bid biomes =
+  Dict.update bid (\mbiome ->
+    case mbiome of
+      Just biome -> Just <| orderedUpdate .id spawn biome
+      Nothing -> Just [spawn]
+    ) biomes
+
+type alias OrderedList a = List a
+
+orderedRemove : (a -> id) -> id -> OrderedList a -> OrderedList a
+orderedRemove fid id list =
+  List.filter (\x -> (fid x) /= id) list
+
+orderedUpdate : (a -> comparable) -> a -> OrderedList a -> OrderedList a
+orderedUpdate fid x list =
+  case list of
+    h :: t ->
+      if (fid h) == (fid x) then
+        x :: t
+      else if (fid x) < (fid h) then
+        x :: h :: t
+      else
+        h :: orderedUpdate fid x t
+    [] ->
+      [x]
