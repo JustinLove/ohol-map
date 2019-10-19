@@ -59,6 +59,7 @@ type alias Spawn =
   , mapChance: Float
   , biomes: List Int
   , moving: Bool
+  , wide: Bool
   , leftBlockingRadius: Int
   , rightBlockingRadius: Int
   , gridPlacement: Maybe Int

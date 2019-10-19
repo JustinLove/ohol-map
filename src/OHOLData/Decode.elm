@@ -96,6 +96,7 @@ spawn =
       , succeed False
       ]
     )
+    |> map2 (|>) (succeed False)
     |> map2 (|>) (oneOf
       [ (field "leftBlockingRadius" int)
       , succeed 0
@@ -108,6 +109,7 @@ spawn =
     )
     |> map2 (|>) (maybe (field "gridPlacement" int))
     |> map2 (|>) (maybe (field "randPlacement" int))
+    |> map (\obj -> {obj | wide = obj.leftBlockingRadius > 0 || obj.rightBlockingRadius > 0})
 
 id : Decoder Int
 id =
