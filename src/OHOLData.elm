@@ -56,7 +56,7 @@ type alias VersionChange =
 
 type alias Spawn =
   { id: Int
-  , mapchance: Float
+  , mapChance: Float
   , biomes: List Int
   , moving: Bool
   , leftBlockingRadius: Int
@@ -69,7 +69,12 @@ type SpawnChange
   = Removed Int
   | Changed Spawn
 
-type alias Biome = OrderedList Spawn
+type alias Biome =
+  { id: Int
+  , objects: OrderedList Spawn
+  , totalChanceWeight: Float
+  }
+
 type alias BiomeSet = Dict Int Biome
 
 type alias Version =
@@ -111,7 +116,9 @@ applyVersionChange change previous =
   { id = change.id
   , start = change.start
   , objects = List.foldl applySpawnChangeToObjects previous.objects change.spawnChanges
-  , biomes = List.foldl applySpawnChangeToBiomes previous.biomes change.spawnChanges
+  , biomes = change.spawnChanges
+    |> List.foldl applySpawnChangeToBiomes previous.biomes
+    |> Dict.map (\bid biome -> calculateChance biome)
   , gridPlacements = List.foldl (applySpawnChangeToPlacements .gridPlacement) previous.gridPlacements change.spawnChanges
   , randPlacements = List.foldl (applySpawnChangeToPlacements .randPlacement) previous.randPlacements change.spawnChanges
   }
@@ -127,7 +134,7 @@ applySpawnChangeToBiomes change biomes =
   case change of
     Removed id ->
       biomes
-        |> Dict.map (\bid biome -> orderedRemove .id id biome)
+        |> Dict.map (\bid biome -> {biome | objects = orderedRemove .id id biome.objects})
     Changed spawn ->
       if spawn.gridPlacement == Nothing && spawn.randPlacement == Nothing then
         spawn.biomes
@@ -135,12 +142,25 @@ applySpawnChangeToBiomes change biomes =
       else
         biomes
 
+calculateChance : Biome -> Biome
+calculateChance biome =
+  { biome
+  | totalChanceWeight =
+    biome.objects
+      |> List.map .mapChance
+      |> List.foldl (+) 0
+  }
+
 changeSpawn : Spawn -> Int -> BiomeSet -> BiomeSet
 changeSpawn spawn bid biomes =
   Dict.update bid (\mbiome ->
     case mbiome of
-      Just biome -> Just <| orderedUpdate .id spawn biome
-      Nothing -> Just [spawn]
+      Just biome -> Just <| {biome | objects = orderedUpdate .id spawn biome.objects}
+      Nothing -> Just
+        { id = bid
+        , objects = [spawn]
+        , totalChanceWeight = 0
+        }
     ) biomes
 
 applySpawnChangeToPlacements : (Spawn -> Maybe a) -> SpawnChange -> OrderedList Spawn -> OrderedList Spawn
