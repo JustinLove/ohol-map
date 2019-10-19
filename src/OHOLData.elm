@@ -77,6 +77,8 @@ type alias Version =
   , start: Posix
   , objects: Dict Int Spawn
   , biomes: BiomeSet
+  , gridPlacements: List Spawn
+  , randPlacements: List Spawn
   }
 
 completeVersions : List VersionChange -> List Version
@@ -91,6 +93,8 @@ emptyVersion =
   , start = (Time.millisToPosix 0)
   , objects = Dict.empty
   , biomes = Dict.empty
+  , gridPlacements = []
+  , randPlacements = []
   }
 
 addVersionChange : VersionChange -> List Version -> List Version
@@ -108,6 +112,8 @@ applyVersionChange change previous =
   , start = change.start
   , objects = List.foldl applySpawnChangeToObjects previous.objects change.spawnChanges
   , biomes = List.foldl applySpawnChangeToBiomes previous.biomes change.spawnChanges
+  , gridPlacements = List.foldl (applySpawnChangeToPlacements .gridPlacement) previous.gridPlacements change.spawnChanges
+  , randPlacements = List.foldl (applySpawnChangeToPlacements .randPlacement) previous.randPlacements change.spawnChanges
   }
 
 applySpawnChangeToObjects : SpawnChange -> Dict Int Spawn -> Dict Int Spawn
@@ -123,8 +129,11 @@ applySpawnChangeToBiomes change biomes =
       biomes
         |> Dict.map (\bid biome -> orderedRemove .id id biome)
     Changed spawn ->
-      spawn.biomes
-        |> List.foldl (changeSpawn spawn) biomes
+      if spawn.gridPlacement == Nothing && spawn.randPlacement == Nothing then
+        spawn.biomes
+          |> List.foldl (changeSpawn spawn) biomes
+      else
+        biomes
 
 changeSpawn : Spawn -> Int -> BiomeSet -> BiomeSet
 changeSpawn spawn bid biomes =
@@ -133,6 +142,16 @@ changeSpawn spawn bid biomes =
       Just biome -> Just <| orderedUpdate .id spawn biome
       Nothing -> Just [spawn]
     ) biomes
+
+applySpawnChangeToPlacements : (Spawn -> Maybe a) -> SpawnChange -> OrderedList Spawn -> OrderedList Spawn
+applySpawnChangeToPlacements filter change placements =
+  case change of
+    Removed id -> orderedRemove .id id placements
+    Changed spawn ->
+      if (filter spawn) /= Nothing then
+        orderedUpdate .id spawn placements
+      else
+        orderedRemove .id spawn.id placements
 
 type alias OrderedList a = List a
 
