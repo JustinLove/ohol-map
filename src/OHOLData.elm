@@ -195,7 +195,47 @@ orderedUpdate fid x list =
     [] ->
       [x]
 
-type alias Age =
+worldMerge : Posix -> Maybe Age -> Maybe Version -> Maybe Arc -> World
+worldMerge start mage mver marc =
+  let
+    name =
+      [ mage |> Maybe.map .name
+      , mver |> Maybe.map (.id >> String.fromInt)
+      , marc |> Maybe.map (.seed >> String.fromInt)
+      ]
+      |> List.filterMap identity
+      |> String.join " "
+    ageGen = mage
+      |> Maybe.map .generation
+      |> Maybe.withDefault defaultGeneration
+    generation = 
+      { ageGen
+      | biomeSeedOffset = marc
+        |> Maybe.map .seed
+        |> Maybe.withDefault defaultGeneration.biomeSeedOffset
+      , objects = mver
+        |> Maybe.map .objects
+        |> Maybe.withDefault emptyVersion.objects
+      , biomes = mver
+        |> Maybe.map .biomes
+        |> Maybe.withDefault emptyVersion.biomes
+      , gridPlacements = mver
+        |> Maybe.map .gridPlacements
+        |> Maybe.withDefault emptyVersion.gridPlacements
+      , randPlacements = mver
+        |> Maybe.map .randPlacements
+        |> Maybe.withDefault emptyVersion.randPlacements
+      }
+  in
+    { name = name
+    , start = start
+    , end = marc |> Maybe.map .end
+    , biomeLayer = mage |> Maybe.andThen .biomeLayer
+    , generation = generation
+    }
+
+type alias Age = World
+type alias World =
   { name: String
   , start: Posix
   , end: Maybe Posix
@@ -212,6 +252,11 @@ type alias Generation =
   , biomeTotalWeight: Float
   , biomeCumuWeights: List Float
   , numSpecialBiomes: Int
+  , objects: Dict Int Spawn
+  , biomes: BiomeSet
+  , gridPlacements: List Spawn
+  , randPlacements: List Spawn
+  , biomeSeedOffset: Int
   }
 
 ages : List Age
@@ -354,6 +399,11 @@ defaultGeneration =
   , biomeTotalWeight = 0
   , biomeCumuWeights = []
   , numSpecialBiomes = 0
+  , objects = Dict.empty
+  , biomes = Dict.empty
+  , gridPlacements = []
+  , randPlacements = []
+  , biomeSeedOffset = 723
   }
 
 jungleBiomeMap =
