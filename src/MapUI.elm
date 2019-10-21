@@ -105,6 +105,7 @@ main = Browser.application
 init : Config -> Url -> Navigation.Key -> (Model, Cmd Msg)
 init config location key =
   let
+    _ = Debug.log "ages" Data.ages
     initialModel =
       { location = location
       , navigationKey = key
@@ -477,7 +478,7 @@ update msg model =
       let _ = Debug.log "fetch arcs failed" error in
       ({model | arcs = Failed error, currentArc = Nothing, timeRange = Nothing}, Cmd.none)
     ObjectsReceived (Ok objects) ->
-      ( {model | versions = Data (Debug.log "versions" <| Data.completeVersions objects.spawnChanges)}
+      ( {model | versions = Data (Data.completeVersions objects.spawnChanges)}
       , Leaflet.objectBounds objects.ids objects.bounds
       )
     ObjectsReceived (Err error) ->

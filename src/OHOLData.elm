@@ -8,9 +8,11 @@ module OHOLData exposing
   , SpawnChange(..)
   , Version
   , completeVersions
+  , ages
   )
 
 import Dict exposing (Dict)
+import Iso8601
 import Json.Decode exposing (Value)
 import Set exposing (Set)
 import Time exposing (Posix)
@@ -192,3 +194,125 @@ orderedUpdate fid x list =
         h :: orderedUpdate fid x t
     [] ->
       [x]
+
+type alias Age =
+  { name: String
+  , start: Posix
+  , end: Maybe Posix
+  --, generation: ???/
+  }
+
+humanTime : String -> Posix
+humanTime s =
+  Iso8601.toTime s
+    |> Result.mapError (Debug.log ("time error " ++ s))
+    |> Result.withDefault (Time.millisToPosix 0)
+
+ages : List Age
+ages =
+  [ { name = "Badlands Age"
+    , start = Time.millisToPosix 0
+    , end = Nothing
+    --, biomeLayer = badlandsAge
+    --, generation =
+    --  { allowOffBiomeMovingObjects = true
+    --  , biomeMap = badlandsBiomeMap
+    --  }
+    }
+  , { name = "Arctic Age"
+    , start = humanTime "2018-03-08"
+    , end = Nothing
+    --, generation =
+    --  { allowOffBiomeMovingObjects = true
+    --  , biomeMap = arcticBiomeMap
+    --  }
+    }
+  , { name = "Desert Age"
+    , start = humanTime "2018-03-31"
+    , end = Nothing
+    --  generation = {
+    --  , allowOffBiomeMovingObjects = true
+    --  , biomeMap = desertBiomeMap
+    --  }
+    }
+  , { name = "Jungle Age (off biome animals)"
+    , start = humanTime "2018-11-19"
+    , end = Nothing
+    --  generation = {
+    --  , allowOffBiomeMovingObjects = true
+    --  , biomeMap = jungleBiomeMap
+    --  }
+    }
+  , { name = "Jungle Age"
+    , start = humanTime "2019-03-29T21:48:07.000Z"
+    , end = Nothing
+    --  generation = {
+    --  , biomeMap = jungleBiomeMap
+    --  }
+    }
+  , { name = "Jungle Age (screenshot 1)"
+    , start = humanTime "2019-04-27T21:15:24.000Z"
+    , end = Nothing
+    --, biomeLayer = L.layerGroup([biomeImageLayer screenshotImageLayer]),
+    --  generation = {
+    --  , biomeMap = jungleBiomeMap
+    --  }
+    }
+  , { name = "Jungle Age (small objects)"
+    , start = humanTime "2019-05-04T17:11:31.000Z"
+    , end = Nothing
+    --  generation = {
+    --  , tallHeight = 2 * CELL_D // heights that block
+    --  , veryTallHeight = 3 * CELL_D
+    --  , biomeMap = jungleBiomeMap
+    --  }
+    }
+  , { name = "Jungle Age (screenshot 2)"
+    , start = humanTime "2019-05-17T02:07:50.000Z"
+    , end = Nothing
+    --, biomeLayer = L.layerGroup([biomeImageLayer screenshotImageLayer]),
+    --  generation = {
+    --  , biomeMap = jungleBiomeMap
+    --  }
+    }
+  , { name = "Random Age"
+    , start = humanTime "2019-07-27T21:00:00Z"
+    , end = Nothing
+    --  generation = {
+    --  , biomeMap = jungleBiomeMap
+    --  }
+    }
+  , { name = "Topographic Age"
+    , start = humanTime "2019-07-31T01:25:24Z"
+    , end = Nothing
+    --  generation = {
+    --  , computeMapBiomeIndex = topographicMapBiomeIndex
+    --  , biomeTotalWeight = topographicBiomeTotalWeight
+    --  , biomeCumuWeights = topographicBiomeCumuWeights
+    --  , biomeMap = topographicBiomeMap
+    --  }
+    }
+  , { name = "Special Age"
+    , start = humanTime "2019-08-01T02:08:47Z"
+    , end = Nothing
+    --  generation = {
+    --  , computeMapBiomeIndex = topographicMapBiomeIndex
+    --  , biomeTotalWeight = specialBiomeTotalWeight
+    --  , biomeCumuWeights = specialBiomeCumuWeights
+    --  , biomeMap = specialBiomeMap
+    --  , numSpecialBiomes = 3
+    --  }
+    }
+  ]
+  |> List.foldr (\age (mtime, newages) ->
+      ( Just age.start
+      , { age
+        | end = mtime
+        , start = age.start
+          |> Time.posixToMillis
+          |> (+) 1
+          |> Time.millisToPosix
+        } :: newages
+      )
+    ) (Nothing, [])
+  |> Tuple.second

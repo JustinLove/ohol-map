@@ -10,6 +10,8 @@
   - changes over time
     - uncertainty may be missing
       - esp start of random age
+  - functional conversion
+    - permitted biomes were biome indexes not ids
 - use changing object layers to avoid visual flashing?
 - server dependant
 
