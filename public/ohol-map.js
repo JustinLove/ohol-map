@@ -863,9 +863,6 @@
     specialBiomeCumuWeights[i] = specialBiomeTotalWeight
   })
 
-  var numSpecialBiomes = 3
-  var regularBiomesLimit = specialBiomeMap.length - numSpecialBiomes
-
   var greenColor = hsvToRgb(89/360, 0.49, 0.67)
   var swampColor = hsvToRgb(253/360, 0.17, 0.65)
   var plainsColor = hsvToRgb(36/360, 0.75, 0.90)

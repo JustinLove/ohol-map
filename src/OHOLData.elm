@@ -199,109 +199,128 @@ type alias Age =
   { name: String
   , start: Posix
   , end: Maybe Posix
-  --, generation: ???/
+  , biomeLayer: Maybe String
+  , generation: Generation
   }
 
-humanTime : String -> Posix
-humanTime s =
-  Iso8601.toTime s
-    |> Result.mapError (Debug.log ("time error " ++ s))
-    |> Result.withDefault (Time.millisToPosix 0)
+type alias Generation =
+  { allowOffBiomeMovingObjects: Bool
+  , biomeMap: List Int
+  , tallHeight: Int
+  , veryTallHeight: Int
+  , computeMapBiomeIndex: String
+  , biomeTotalWeight: Float
+  , biomeCumuWeights: List Float
+  , numSpecialBiomes: Int
+  }
 
 ages : List Age
 ages =
   [ { name = "Badlands Age"
     , start = Time.millisToPosix 0
     , end = Nothing
-    --, biomeLayer = badlandsAge
-    --, generation =
-    --  { allowOffBiomeMovingObjects = true
-    --  , biomeMap = badlandsBiomeMap
-    --  }
+    , biomeLayer = Just "badlandsAge"
+    , generation =
+      { defaultGeneration
+      | biomeMap = badlandsBiomeMap
+      , allowOffBiomeMovingObjects = True
+      }
     }
   , { name = "Arctic Age"
     , start = humanTime "2018-03-08"
     , end = Nothing
-    --, generation =
-    --  { allowOffBiomeMovingObjects = true
-    --  , biomeMap = arcticBiomeMap
-    --  }
+    , biomeLayer = Nothing
+    , generation =
+      { defaultGeneration
+      | biomeMap = arcticBiomeMap
+      , allowOffBiomeMovingObjects = True
+      }
     }
   , { name = "Desert Age"
     , start = humanTime "2018-03-31"
     , end = Nothing
-    --  generation = {
-    --  , allowOffBiomeMovingObjects = true
-    --  , biomeMap = desertBiomeMap
-    --  }
+    , biomeLayer = Nothing
+    , generation =
+      { defaultGeneration
+      | biomeMap = desertBiomeMap
+      , allowOffBiomeMovingObjects = True
+      }
     }
   , { name = "Jungle Age (off biome animals)"
     , start = humanTime "2018-11-19"
     , end = Nothing
-    --  generation = {
-    --  , allowOffBiomeMovingObjects = true
-    --  , biomeMap = jungleBiomeMap
-    --  }
+    , biomeLayer = Nothing
+    , generation =
+      { defaultGeneration
+      | biomeMap = jungleBiomeMap
+      , allowOffBiomeMovingObjects = True
+      }
     }
   , { name = "Jungle Age"
     , start = humanTime "2019-03-29T21:48:07.000Z"
     , end = Nothing
-    --  generation = {
-    --  , biomeMap = jungleBiomeMap
-    --  }
+    , biomeLayer = Nothing
+    , generation =
+      { defaultGeneration
+      | biomeMap = jungleBiomeMap
+      }
     }
   , { name = "Jungle Age (screenshot 1)"
     , start = humanTime "2019-04-27T21:15:24.000Z"
     , end = Nothing
-    --, biomeLayer = L.layerGroup([biomeImageLayer screenshotImageLayer]),
-    --  generation = {
-    --  , biomeMap = jungleBiomeMap
-    --  }
+    , biomeLayer = Just "screenshot" --L.layerGroup([biomeImageLayer screenshotImageLayer]),
+    , generation =
+      { defaultGeneration
+      | biomeMap = jungleBiomeMap
+      }
     }
   , { name = "Jungle Age (small objects)"
     , start = humanTime "2019-05-04T17:11:31.000Z"
     , end = Nothing
-    --  generation = {
-    --  , tallHeight = 2 * CELL_D // heights that block
-    --  , veryTallHeight = 3 * CELL_D
-    --  , biomeMap = jungleBiomeMap
-    --  }
+    , biomeLayer = Nothing
+    , generation =
+      { defaultGeneration
+      | biomeMap = jungleBiomeMap
+      , tallHeight = 2 * cellD -- heights that block
+      , veryTallHeight = 3 * cellD
+      }
     }
   , { name = "Jungle Age (screenshot 2)"
     , start = humanTime "2019-05-17T02:07:50.000Z"
     , end = Nothing
-    --, biomeLayer = L.layerGroup([biomeImageLayer screenshotImageLayer]),
-    --  generation = {
-    --  , biomeMap = jungleBiomeMap
-    --  }
+    , biomeLayer = Just "screenshot" --L.layerGroup([biomeImageLayer screenshotImageLayer]),
+    , generation =
+      { defaultGeneration
+      | biomeMap = jungleBiomeMap
+      }
     }
   , { name = "Random Age"
     , start = humanTime "2019-07-27T21:00:00Z"
     , end = Nothing
-    --  generation = {
-    --  , biomeMap = jungleBiomeMap
-    --  }
+    , biomeLayer = Nothing
+    , generation =
+      { defaultGeneration
+      | biomeMap = jungleBiomeMap
+      }
     }
   , { name = "Topographic Age"
     , start = humanTime "2019-07-31T01:25:24Z"
     , end = Nothing
-    --  generation = {
-    --  , computeMapBiomeIndex = topographicMapBiomeIndex
-    --  , biomeTotalWeight = topographicBiomeTotalWeight
-    --  , biomeCumuWeights = topographicBiomeCumuWeights
-    --  , biomeMap = topographicBiomeMap
-    --  }
+    , biomeLayer = Nothing
+    , generation =
+      { defaultGeneration
+      | biomeMap = topographicBiomeMap
+      } |> topographic topographicBiomeWeights
     }
   , { name = "Special Age"
     , start = humanTime "2019-08-01T02:08:47Z"
     , end = Nothing
-    --  generation = {
-    --  , computeMapBiomeIndex = topographicMapBiomeIndex
-    --  , biomeTotalWeight = specialBiomeTotalWeight
-    --  , biomeCumuWeights = specialBiomeCumuWeights
-    --  , biomeMap = specialBiomeMap
-    --  , numSpecialBiomes = 3
-    --  }
+    , biomeLayer = Nothing
+    , generation =
+      { defaultGeneration
+      | biomeMap = specialBiomeMap
+      , numSpecialBiomes = 3
+      } |> topographic specialBiomeWeights
     }
   ]
   |> List.foldr (\age (mtime, newages) ->
@@ -316,3 +335,109 @@ ages =
       )
     ) (Nothing, [])
   |> Tuple.second
+
+humanTime : String -> Posix
+humanTime s =
+  Iso8601.toTime s
+    |> Result.mapError (Debug.log ("time error " ++ s))
+    |> Result.withDefault (Time.millisToPosix 0)
+
+cellD = 128
+
+defaultGeneration : Generation
+defaultGeneration =
+  { allowOffBiomeMovingObjects = False
+  , biomeMap = jungleBiomeMap
+  , tallHeight = 2
+  , veryTallHeight = 3
+  , computeMapBiomeIndex = "competeMapBiomeIndex"
+  , biomeTotalWeight = 0
+  , biomeCumuWeights = []
+  , numSpecialBiomes = 0
+  }
+
+jungleBiomeMap =
+  [ 0
+  , 3
+  , 4
+  , 5
+  , 2
+  , 1
+  , 6
+  ]
+desertBiomeMap =
+  [ 0
+  , 3
+  , 4
+  , 5
+  , 2
+  , 1
+  ]
+arcticBiomeMap =
+  [ 0
+  , 3
+  , 4
+  , 2
+  , 1
+  ]
+badlandsBiomeMap =
+  [ 0
+  , 3
+  , 2
+  , 1
+  ]
+
+topographicBiomeMap =
+  [ 1
+  , 0
+  , 2
+  , 6
+  , 5
+  , 3
+  , 4
+  ]
+
+topographicBiomeWeights =
+  [ 0.32
+  , 0.11
+  , 0.08
+  , 0.05
+  , 0.05
+  , 0.13
+  , 0.25
+  ]
+
+topographic : List Float -> Generation -> Generation
+topographic weights gen =
+  { gen
+  | computeMapBiomeIndex = "topographicMapBiomeIndex"
+  , biomeTotalWeight = List.sum topographicBiomeWeights
+  , biomeCumuWeights = topographicBiomeWeights
+    |> List.foldl (\w (accum, result) ->
+      ( accum + w
+      , (accum + w) :: result
+      )
+    ) (0, [])
+    |> Tuple.second
+    |> List.reverse
+  }
+
+specialBiomeMap =
+  [ 1
+  , 0
+  , 2
+  , 3
+  , 6
+  , 5
+  , 4
+  ]
+
+specialBiomeWeights =
+  [ 0.32
+  , 0.12
+  , 0.09
+  , 0.11
+  , 0.11
+  , 0.11
+  , 0.13
+  ]
