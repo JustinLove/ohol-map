@@ -105,7 +105,7 @@ main = Browser.application
 init : Config -> Url -> Navigation.Key -> (Model, Cmd Msg)
 init config location key =
   let
-    _ = Debug.log "ages" Data.ages
+    _ = Debug.log "worlds" <| Data.rebuildWorlds Data.codeChanges [] []
     initialModel =
       { location = location
       , navigationKey = key

@@ -8,7 +8,8 @@ module OHOLData exposing
   , SpawnChange(..)
   , Version
   , completeVersions
-  , ages
+  , codeChanges
+  , rebuildWorlds
   )
 
 import Dict exposing (Dict)
@@ -234,6 +235,72 @@ worldMerge start mage mver marc =
     , generation = generation
     }
 
+rebuildWorlds : List Age -> List Version -> List Arc -> List World
+rebuildWorlds ages versions arcs =
+  rebuildWorldsTimed
+    (series ages)
+    (series versions)
+    (series arcs)
+    []
+
+rebuildWorldsTimed : Series Age -> Series Version -> Series Arc -> List World -> List World
+rebuildWorldsTimed ages versions arcs worlds =
+  let
+    maybeNextTime =
+      [ seriesNextTime ages
+      , seriesNextTime versions
+      , seriesNextTime arcs
+      ]
+      |> List.filterMap identity
+      |> List.minimum
+      |> Debug.log "time"
+    nextAges = seriesAdvance maybeNextTime ages
+    mage = seriesCurrent nextAges
+    nextVersions = seriesAdvance maybeNextTime versions
+    mver = seriesCurrent nextVersions
+    nextArcs = seriesAdvance maybeNextTime arcs
+    marc = seriesCurrent nextArcs
+  in
+    case maybeNextTime of
+      Just nextTime ->
+        rebuildWorldsTimed
+          nextAges
+          nextVersions
+          nextArcs
+          ((worldMerge (Time.millisToPosix nextTime) mage mver marc) :: worlds)
+      Nothing ->
+        worlds
+
+type Series a = Series (Maybe a) (List a)
+type alias TimeSeries a = Series {a|start:Posix}
+
+series : List a -> Series a
+series = Series Nothing
+
+seriesMapNext : (a -> b) -> Series a -> Maybe b
+seriesMapNext f (Series _ upcoming) =
+  upcoming
+    |> List.head
+    |> Maybe.map f
+
+seriesNextTime : TimeSeries a -> Maybe Int
+seriesNextTime =
+  seriesMapNext (.start >> Time.posixToMillis)
+
+seriesCurrent : Series a -> Maybe a
+seriesCurrent (Series current _) = current
+
+seriesAdvance : Maybe Int -> TimeSeries a -> TimeSeries a
+seriesAdvance mtime ((Series current upcoming) as s) =
+  case (mtime, seriesNextTime s) of
+    (Just time, Just start) ->
+      if start <= time then
+        Series (List.head upcoming) (List.drop 1 upcoming)
+      else
+        s
+    _ ->
+      s
+
 type alias Age = World
 type alias World =
   { name: String
@@ -259,8 +326,8 @@ type alias Generation =
   , biomeSeedOffset: Int
   }
 
-ages : List Age
-ages =
+codeChanges : List Age
+codeChanges =
   [ { name = "Badlands Age"
     , start = Time.millisToPosix 0
     , end = Nothing
