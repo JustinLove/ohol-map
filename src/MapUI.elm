@@ -1,7 +1,7 @@
 module MapUI exposing (..)
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
-import OHOLData as Data exposing (Server, Arc, Version)
+import OHOLData as Data exposing (Server, Arc, Version, World)
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
 import View exposing
@@ -81,6 +81,7 @@ type alias Model =
   , servers : RemoteData (List Server)
   , arcs : RemoteData (List Arc)
   , versions : RemoteData (List Version)
+  , worlds : List World
   , monuments : Dict Int Json.Decode.Value
   , dataLayer : RemoteData Bool
   , lives : RemoteData (List Life)
@@ -105,7 +106,6 @@ main = Browser.application
 init : Config -> Url -> Navigation.Key -> (Model, Cmd Msg)
 init config location key =
   let
-    _ = Debug.log "worlds" <| Data.rebuildWorlds Data.codeChanges [] []
     initialModel =
       { location = location
       , navigationKey = key
@@ -139,6 +139,7 @@ init config location key =
       , servers = NotRequested
       , arcs = NotRequested
       , versions = NotRequested
+      , worlds = Data.rebuildWorlds Data.codeChanges [] []
       , monuments = Dict.empty
       , dataLayer = NotRequested
       , lives = NotRequested
@@ -452,6 +453,13 @@ update msg model =
           in
           ( { model
             | arcs = Data arcs
+            , worlds = Data.rebuildWorlds
+                Data.codeChanges
+                (case model.versions of
+                  Data versions -> versions
+                  _ -> []
+                )
+                arcs
             , currentArc = lastArc
             , timeRange = lastArc |> Maybe.map (\{start, end} -> (start, end))
             }
@@ -478,7 +486,19 @@ update msg model =
       let _ = Debug.log "fetch arcs failed" error in
       ({model | arcs = Failed error, currentArc = Nothing, timeRange = Nothing}, Cmd.none)
     ObjectsReceived (Ok objects) ->
-      ( {model | versions = Data (Data.completeVersions objects.spawnChanges)}
+      let
+        versions = Data.completeVersions objects.spawnChanges
+      in
+      ( { model
+        | versions = Data versions
+        , worlds = Data.rebuildWorlds
+          Data.codeChanges
+          versions
+          (case model.arcs of
+            Data arcs -> arcs
+            _ -> []
+          )
+        }
       , Leaflet.objectBounds objects.ids objects.bounds
       )
     ObjectsReceived (Err error) ->
