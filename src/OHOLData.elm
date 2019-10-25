@@ -237,14 +237,31 @@ worldMerge start mage mver marc =
 
 rebuildWorlds : List Age -> List Version -> List Arc -> List World
 rebuildWorlds ages versions arcs =
-  rebuildWorldsTimed
+  let
+    _ = Debug.log "advance 0" <| advance 0 ages
+    _ = Debug.log "current 0" <| current 0 ages
+    _ = Debug.log "nextTime 0" <| listNextTime 0 ages
+    _ = Debug.log "current 1" <| current 1 ages
+    _ = Debug.log "nextTime 1" <| listNextTime 1 ages
+  in
+  rebuildWorldsTime
+    0
+    ages
+    versions
+    arcs
+    []
+  --[]
+  {-
+  rebuildWorldsSeries
     (series ages)
     (series versions)
     (series arcs)
     []
+  -}
+    |> List.reverse
 
-rebuildWorldsTimed : Series Age -> Series Version -> Series Arc -> List World -> List World
-rebuildWorldsTimed ages versions arcs worlds =
+rebuildWorldsSeries : Series Age -> Series Version -> Series Arc -> List World -> List World
+rebuildWorldsSeries ages versions arcs worlds =
   let
     maybeNextTime =
       [ seriesNextTime ages
@@ -263,7 +280,7 @@ rebuildWorldsTimed ages versions arcs worlds =
   in
     case maybeNextTime of
       Just nextTime ->
-        rebuildWorldsTimed
+        rebuildWorldsSeries
           nextAges
           nextVersions
           nextArcs
@@ -288,10 +305,10 @@ seriesNextTime =
   seriesMapNext (.start >> Time.posixToMillis)
 
 seriesCurrent : Series a -> Maybe a
-seriesCurrent (Series current _) = current
+seriesCurrent (Series cur _) = cur
 
 seriesAdvance : Maybe Int -> TimeSeries a -> TimeSeries a
-seriesAdvance mtime ((Series current upcoming) as s) =
+seriesAdvance mtime ((Series _ upcoming) as s) =
   case (mtime, seriesNextTime s) of
     (Just time, Just start) ->
       if start <= time then
@@ -300,6 +317,69 @@ seriesAdvance mtime ((Series current upcoming) as s) =
         s
     _ ->
       s
+
+rebuildWorldsTime : Int -> List Age -> List Version -> List Arc -> List World -> List World
+rebuildWorldsTime lastTime ages versions arcs worlds =
+  let
+    maybeNextTime =
+      [ listNextTime lastTime ages
+      , listNextTime lastTime versions
+      , listNextTime lastTime arcs
+      ]
+      |> List.filterMap identity
+      |> List.minimum
+      |> Debug.log "time"
+  in
+    case maybeNextTime of
+      Just nextTime ->
+        rebuildWorldsTime
+          nextTime
+          (advance nextTime ages)
+          (advance nextTime versions)
+          (advance nextTime arcs)
+          ((worldMerge (Time.millisToPosix nextTime)
+            (current nextTime ages)
+            (current nextTime versions)
+            (current nextTime arcs)
+          ) :: worlds)
+      Nothing ->
+        worlds
+
+current : Int -> List {a|start:Posix} -> Maybe {a|start:Posix}
+current time list =
+  let
+    inRange = List.head list
+      |> Maybe.map (.start >> Time.posixToMillis >> (\x -> time >= x))
+      |> Maybe.withDefault False
+  in
+    if inRange then
+      List.head list
+    else
+      Nothing
+
+advance : Int -> List {a|start:Posix} -> List {a|start:Posix}
+advance time list =
+  let
+    next = List.drop 1 list
+  in
+    if (Debug.log "next current" <| current time next) /= Nothing then
+      advance time next
+    else
+      list
+
+listNextTime : Int -> List {a|start:Posix} -> Maybe Int
+listNextTime time list =
+  case current time list of
+    Just _ ->
+      listFirstTime (List.drop 1 list)
+    Nothing ->
+      listFirstTime list
+
+listFirstTime : List {a|start:Posix} -> Maybe Int
+listFirstTime list =
+  list
+    |> List.head
+    |> Maybe.map (.start >> Time.posixToMillis)
 
 type alias Age = World
 type alias World =
