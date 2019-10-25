@@ -237,6 +237,13 @@ worldMerge start mage mver marc =
 
 rebuildWorlds : List Age -> List Version -> List Arc -> List World
 rebuildWorlds ages versions arcs =
+  rebuildWorldsTimeList
+    (timeList ages versions arcs)
+    ages
+    versions
+    arcs
+    []
+     {-
   let
     _ = Debug.log "advance 0" <| advance 0 ages
     _ = Debug.log "current 0" <| current 0 ages
@@ -250,6 +257,7 @@ rebuildWorlds ages versions arcs =
     versions
     arcs
     []
+    -}
   --[]
   {-
   rebuildWorldsSeries
@@ -362,7 +370,7 @@ advance time list =
   let
     next = List.drop 1 list
   in
-    if (Debug.log "next current" <| current time next) /= Nothing then
+    if (current time next) /= Nothing then
       advance time next
     else
       list
@@ -380,6 +388,48 @@ listFirstTime list =
   list
     |> List.head
     |> Maybe.map (.start >> Time.posixToMillis)
+
+rebuildWorldsTimeList : List Int -> List Age -> List Version -> List Arc -> List World -> List World
+rebuildWorldsTimeList times ages versions arcs worlds =
+  case times of
+    nextTime :: rest ->
+      let _ = Debug.log "time" nextTime in
+      rebuildWorldsTimeList
+        rest
+        (advance nextTime ages)
+        (advance nextTime versions)
+        (advance nextTime arcs)
+        ((worldMerge (Time.millisToPosix nextTime)
+          (current nextTime ages)
+          (current nextTime versions)
+          (current nextTime arcs)
+        ) :: worlds)
+    [] ->
+      worlds
+
+timeList : List Age -> List Version -> List Arc -> List Int
+timeList ages versions arcs =
+  [ List.map .start ages
+  , List.map .start versions
+  , List.map .start arcs
+  ]
+    |> List.concat
+    |> List.map Time.posixToMillis
+    |> List.sort
+    |> Debug.log "sorted"
+    |> List.foldr compressValues []
+    |> Debug.log "compressed"
+
+compressValues : Int -> List Int -> List Int
+compressValues value accum =
+  case accum of
+    last :: rest ->
+      if last - value < 2 then
+        accum
+      else
+        value :: accum
+    [] ->
+      [value]
 
 type alias Age = World
 type alias World =
