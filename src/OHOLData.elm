@@ -232,6 +232,7 @@ worldMerge start mage mver marc =
     { name = name
     , start = start
     , end = marc |> Maybe.map .end
+    , dataTime = marc |> Maybe.map .end
     , biomeLayer = mage |> Maybe.andThen .biomeLayer
     , generation = generation
     }
@@ -245,6 +246,7 @@ rebuildWorlds ages versions arcs =
     arcs
     []
     |> List.reverse
+    |> fixupEndTime
 
 rebuildWorldsTimeList : List Int -> List Age -> List Version -> List Arc -> List World -> List World
 rebuildWorldsTimeList times ages versions arcs worlds =
@@ -315,6 +317,7 @@ type alias World =
   { name: String
   , start: Posix
   , end: Maybe Posix
+  , dataTime: Maybe Posix
   , biomeLayer: Maybe String
   , generation: Generation
   }
@@ -340,6 +343,7 @@ codeChanges =
   [ { name = "Badlands Age"
     , start = Time.millisToPosix 0
     , end = Nothing
+    , dataTime = Nothing
     , biomeLayer = Just "badlandsAge"
     , generation =
       { defaultGeneration
@@ -350,6 +354,7 @@ codeChanges =
   , { name = "Arctic Age"
     , start = humanTime "2018-03-08"
     , end = Nothing
+    , dataTime = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -360,6 +365,7 @@ codeChanges =
   , { name = "Desert Age"
     , start = humanTime "2018-03-31"
     , end = Nothing
+    , dataTime = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -370,6 +376,7 @@ codeChanges =
   , { name = "Jungle Age (off biome animals)"
     , start = humanTime "2018-11-19"
     , end = Nothing
+    , dataTime = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -380,6 +387,7 @@ codeChanges =
   , { name = "Jungle Age"
     , start = humanTime "2019-03-29T21:48:07.000Z"
     , end = Nothing
+    , dataTime = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -389,6 +397,7 @@ codeChanges =
   , { name = "Jungle Age (screenshot 1)"
     , start = humanTime "2019-04-27T21:15:24.000Z"
     , end = Nothing
+    , dataTime = Nothing
     , biomeLayer = Just "screenshot" --L.layerGroup([biomeImageLayer screenshotImageLayer]),
     , generation =
       { defaultGeneration
@@ -398,6 +407,7 @@ codeChanges =
   , { name = "Jungle Age (small objects)"
     , start = humanTime "2019-05-04T17:11:31.000Z"
     , end = Nothing
+    , dataTime = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -409,6 +419,7 @@ codeChanges =
   , { name = "Jungle Age (screenshot 2)"
     , start = humanTime "2019-05-17T02:07:50.000Z"
     , end = Nothing
+    , dataTime = Nothing
     , biomeLayer = Just "screenshot" --L.layerGroup([biomeImageLayer screenshotImageLayer]),
     , generation =
       { defaultGeneration
@@ -418,6 +429,7 @@ codeChanges =
   , { name = "Random Age"
     , start = humanTime "2019-07-27T21:00:00Z"
     , end = Nothing
+    , dataTime = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -427,6 +439,7 @@ codeChanges =
   , { name = "Topographic Age"
     , start = humanTime "2019-07-31T01:25:24Z"
     , end = Nothing
+    , dataTime = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -436,6 +449,7 @@ codeChanges =
   , { name = "Special Age"
     , start = humanTime "2019-08-01T02:08:47Z"
     , end = Nothing
+    , dataTime = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -444,18 +458,30 @@ codeChanges =
       } |> topographic specialBiomeWeights
     }
   ]
-  |> List.foldr (\age (mtime, newages) ->
-      ( Just age.start
-      , { age
+  |> fixupEndTime
+  |> fixupStartTime
+
+fixupEndTime : List World -> List World
+fixupEndTime =
+  List.foldr (\world (mtime, newages) ->
+      ( Just world.start
+      , { world
         | end = mtime
-        , start = age.start
-          |> Time.posixToMillis
-          |> (+) 1
-          |> Time.millisToPosix
         } :: newages
       )
     ) (Nothing, [])
-  |> Tuple.second
+  >> Tuple.second
+
+fixupStartTime : List Age -> List Age
+fixupStartTime =
+  List.map (\age ->
+      { age
+      | start = age.start
+        |> Time.posixToMillis
+        |> (+) 1
+        |> Time.millisToPosix
+      }
+    )
 
 humanTime : String -> Posix
 humanTime s =
