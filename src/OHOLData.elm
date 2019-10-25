@@ -252,7 +252,7 @@ rebuildWorldsTimeList : List Int -> List Age -> List Version -> List Arc -> List
 rebuildWorldsTimeList times ages versions arcs worlds =
   case times of
     nextTime :: rest ->
-      let _ = Debug.log "time" nextTime in
+      --let _ = Debug.log "time" nextTime in
       rebuildWorldsTimeList
         rest
         (advance nextTime ages)
@@ -297,9 +297,7 @@ timeList ages versions arcs =
     |> List.concat
     |> List.map Time.posixToMillis
     |> List.sort
-    |> Debug.log "sorted"
     |> List.foldr compressValues []
-    |> Debug.log "compressed"
 
 compressValues : Int -> List Int -> List Int
 compressValues value accum =

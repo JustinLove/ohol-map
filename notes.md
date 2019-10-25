@@ -12,6 +12,7 @@
       - esp start of random age
   - functional conversion
     - permitted biomes were biome indexes not ids
+    - world encoder
 - use changing object layers to avoid visual flashing?
 - server dependant
 
