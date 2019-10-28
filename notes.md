@@ -3,6 +3,7 @@
     - redraw on rift change
   - track drawing lag
   - random placement objects - wip
+    - wrong spots
     - changed to biome seed
   - rift sizes
 - tile gen
@@ -12,8 +13,6 @@
   - changes over time
     - uncertainty may be missing
       - esp start of random age
-  - functional conversion
-    - permitted biomes were biome indexes not ids
 - use changing object layers to avoid visual flashing?
 - server dependant
 

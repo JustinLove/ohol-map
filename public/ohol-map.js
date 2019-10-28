@@ -350,7 +350,6 @@
   var versions = []
   var objectBounds = []
   var objectSize = []
-  var gridPlacements = []
 
   var competeMapBiomeIndex = function(inX, inY, options, secondPlace) {
     var maxValue = -Number.MAX_VALUE
@@ -488,13 +487,13 @@
     // grid objects
     for (var i = 0;i < options.gridPlacements.length;i++) {
       var gp = options.gridPlacements[i]
-      if (inX % gp.spacing == 0 && inY % gp.spacing == 0) {
+      if (inX % gp.gridPlacement == 0 && inY % gp.gridPlacement == 0) {
         pickedBiome = options.computeMapBiomeIndex(inX, inY, options, secondPlace)
         if (pickedBiome == -1) {
           return 0;
         }
 
-        if (gp.permittedBiomes.indexOf(pickedBiome) != -1) {
+        if (gp.biomes.indexOf(options.biomeMap[pickedBiome]) != -1) {
           if (grid) grid.grid = true
           return gp.id
         }
@@ -1339,8 +1338,7 @@
           var bi = options.computeMapBiomeIndex(pickX, pickY, options)
           var pickB = options.biomeMap[bi]
           //console.log(pickX, pickY, pickB)
-          // todo: biomeloop
-          if (pickB == 4) {
+          if (place.biomes.indexOf(pickB) != -1) {
             world.generation.placements.push({
               msStart: world.msStart,
               x: pickX,
@@ -2142,6 +2140,7 @@
     var layers = []
     if (targetWorld) {
       console.log(targetWorld.generation.placements)
+      console.log(targetWorld.generation.gridPlacements)
       layers = [
         targetWorld.biomeLayer,
         targetWorld.objectLayer,
