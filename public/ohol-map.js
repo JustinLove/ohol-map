@@ -54,15 +54,6 @@
     },
   ]
 
-  // todo: version data
-  var randomMapPlacements = [
-    {
-      msStart: Date.parse("2019-10-12 16:02:11-05:00"),
-      id: 2285,
-      count: 5,
-    },
-  ]
-
   var CELL_D = 128
   var objectBoundsPadding = 15
 
@@ -974,6 +965,8 @@
   var objectGenerationOptions = Object.assign({
     biomes: [],
     gridPlacements: [],
+    randPlacements: [],
+    placements: [],
     objects: [],
     randSeed: 124567,
     gridSeed: 9753,
@@ -1304,8 +1297,8 @@
       return world
     })
     if (objectBounds.length > 0) {
-      addArcLayers()
       chooseRandPlacements()
+      addArcLayers()
     }
   }
 
@@ -1331,17 +1324,14 @@
 
   var chooseRandPlacements = function() {
     worlds.forEach(function(world) {
-      //console.log(world)
-      if (!world.generation.biomes) return
+      var options = Object.assign({}, biomeGenerationOptions, world.generation)
+      if (options.biomes.length < 1 || options.randPlacements.length < 1) return
       var safeR = 353 - 2
       var placementRandomSource = new CustomRandomSource(objectGenerationOptions.randSeed)
-      var options = Object.assign({}, biomeGenerationOptions, world.generation)
-      world.placements = []
-      /*
-      randomMapPlacements.filter(function(place) {
-        return (place.msStart < world.msEnd)
-      }).forEach(function(place) {
-        var toPlace = place.count
+      world.generation.placements = specialMapPlacements.concat()
+      //console.log(world)
+      options.randPlacements.forEach(function(place) {
+        var toPlace = place.randPlacement
         var crazy = 0
         while (toPlace > 0 && crazy++ < 2000) {
           var pickX = placementRandomSource.getRandomBoundedInt(-safeR, safeR)
@@ -1351,8 +1341,8 @@
           //console.log(pickX, pickY, pickB)
           // todo: biomeloop
           if (pickB == 4) {
-            specialMapPlacements.push({
-              msStart: place.msStart,
+            world.generation.placements.push({
+              msStart: world.msStart,
               x: pickX,
               y: pickY,
               id: place.id,
@@ -1360,9 +1350,8 @@
             toPlace--
           }
         }
-        console.log(specialMapPlacements, crazy, world.name)
+        //console.log(world.generation.placements, crazy, world.name)
       })
-      */
     })
   }
 
@@ -1471,7 +1460,7 @@
       layer._cache.loadTile(coords, {time: options.dataTime}).then(function(text) {
         var occupied = {}
 
-        var special = specialMapPlacements.filter(function(place) {
+        var special = options.placements.filter(function(place) {
           return (place.msStart/1000 < options.dataTime
                   && startX <= place.x && place.x <= endX
                   && endY <= place.y && place.y <= startY)
@@ -1691,7 +1680,7 @@
           }
         }
 
-        var special = specialMapPlacements.filter(function(place) {
+        var special = options.placements.filter(function(place) {
           return (place.msStart/1000 < layer.options.dataTime
                   && startX <= place.x && place.x <= endX
                   && endY <= place.y && place.y <= startY)
@@ -2152,6 +2141,7 @@
     var changes = 0
     var layers = []
     if (targetWorld) {
+      console.log(targetWorld.generation.placements)
       layers = [
         targetWorld.biomeLayer,
         targetWorld.objectLayer,
@@ -2685,7 +2675,7 @@
     var positionSet = false
 
     var command = function(message) {
-      console.log(message)
+      //console.log(message)
       switch (message.kind) {
         case 'setView':
           if (positionSet) {
@@ -2730,8 +2720,8 @@
               bounds[2] - bounds[0] - 30,
               bounds[3] - bounds[1] - 30)
           }
-          addArcLayers()
           chooseRandPlacements()
+          addArcLayers()
           toggleAnimationControls(map)
           baseLayerByTime(map, mapTime, 'objectbounds')
           //objectOverlayPixel.addTo(map)

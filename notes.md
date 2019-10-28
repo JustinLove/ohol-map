@@ -3,16 +3,17 @@
     - redraw on rift change
   - track drawing lag
   - random placement objects - wip
+    - changed to biome seed
   - rift sizes
 - tile gen
   - overdraw missing for large natural objets
+  - http://localhost:8000/public/index.html#x=5&y=2&z=29&t=1570914891
 - integrate object data
   - changes over time
     - uncertainty may be missing
       - esp start of random age
   - functional conversion
     - permitted biomes were biome indexes not ids
-    - world encoder
 - use changing object layers to avoid visual flashing?
 - server dependant
 
