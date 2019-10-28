@@ -203,10 +203,7 @@ orderedUpdate fid x list =
 worldMerge : Posix -> Maybe Age -> Maybe Version -> Maybe Arc -> World
 worldMerge start mage mver marc =
   let
-    _ = Debug.log "start" start
-    _ = Debug.log "mage" mage
-    _ = Debug.log "mver" mver
-    _ = Debug.log "marc" marc
+    --_ = Debug.log "start" start
     name =
       [ mage |> Maybe.map .name
       , mver |> Maybe.map (.id >> String.fromInt)
@@ -260,7 +257,7 @@ rebuildWorldsTimeList times ages versions arcs worlds =
   case times of
     nextTime :: rest ->
       let
-        _ = Debug.log "time" nextTime
+        --_ = Debug.log "time" nextTime
         nextAges = advance nextTime ages
         nextVersions = advance nextTime versions
         nextArcs = advance nextTime arcs

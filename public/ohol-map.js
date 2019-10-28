@@ -1555,8 +1555,8 @@
 
   var addArcLayers = function() {
     worlds.forEach(function(world) {
-      if (world.msStart > msStartOfRandomAge) {
-        var keyPlacementLayer = createArcKeyPlacementLayer(world.msEnd/1000, world.generation)
+      if (world.msStart > msStartOfRandomAge && world.dataTime) {
+        var keyPlacementLayer = createArcKeyPlacementLayer(world.dataTime, world.generation)
         keyPlacementLayer.name = "key placement"
         world.keyPlacementLayer = keyPlacementLayer
         var maplogLayer = createArcMaplogLayer(world.msStart, world.dataTime, world.generation)
@@ -2347,12 +2347,12 @@
   }
 
   var baseLayerByTime = function(map, ms, reason) {
-    console.log(ms, reason)
+    //console.log(ms, reason)
     var targetWorld
     worlds.forEach(function(world) {
-      console.log(world.msStart, ms, world.msEnd, world.name)
+      //console.log(world.msStart, ms, world.msEnd, world.name)
       if (world.msStart < ms && (ms <= world.msEnd || world.msEnd == undefined)) {
-        console.log('pick', world)
+        //console.log('pick', world)
         targetWorld = world
       }
     })
@@ -2368,14 +2368,14 @@
     }
     oholBase.eachLayer(function(layer) {
       if (layers.indexOf(layer) == -1) {
-        console.log('remove', layer && layer.name)
+        //console.log('remove', layer && layer.name)
         oholBase.removeLayer(layer)
         changes++
       }
     })
     layers.forEach(function(layer) {
       if (!oholBase.hasLayer(layer)) {
-        console.log('add', layer.name)
+        //console.log('add', layer.name)
         oholBase.addLayer(layer)
         changes++
       }

@@ -133,7 +133,6 @@ msTime : Posix -> Value
 msTime time =
   time
     |> Time.posixToMillis
-    |> (\t -> t // 1000)
     |> int
 
 maybe : (a -> Value) -> Maybe a -> Value
