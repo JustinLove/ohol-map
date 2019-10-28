@@ -8,6 +8,7 @@ module OHOLData exposing
   , SpawnChange(..)
   , Version
   , World
+  , Generation
   , completeVersions
   , codeChanges
   , rebuildWorlds

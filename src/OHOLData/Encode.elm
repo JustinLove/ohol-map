@@ -5,10 +5,13 @@ module OHOLData.Encode exposing
   , server
   , arcs
   , arc
+  , spawn
+  , generation
+  , world
   , timeStamp
   )
 
-import OHOLData exposing (Life, Server, Arc)
+import OHOLData exposing (Life, Server, Arc, Spawn, Generation, World)
 
 import Json.Encode exposing (..)
 import Time exposing (Posix)
@@ -56,12 +59,60 @@ arcs data =
     ]
 
 arc : Arc -> Value
-arc s =
+arc a =
   object
-    [ ("server_id", int s.serverId)
-    , ("start", timeStamp s.start)
-    , ("end", timeStamp s.end)
-    , ("seed", int s.seed)
+    [ ("server_id", int a.serverId)
+    , ("start", timeStamp a.start)
+    , ("end", timeStamp a.end)
+    , ("seed", int a.seed)
+    ]
+
+spawn : Spawn -> Value
+spawn s =
+  [ [ ("id", int s.id)
+    , ("mapChance", float s.mapChance)
+    , ("biomes", list int s.biomes)
+    , ("moving", bool s.moving)
+    , ("wide", bool s.wide)
+    , ("leftBlockingRadius", int s.leftBlockingRadius)
+    , ("rightBlockingRadius", int s.rightBlockingRadius)
+    ]
+  , s.gridPlacement
+    |> Maybe.map (\x -> [("gridPlacement", int x)])
+    |> Maybe.withDefault []
+  , s.randPlacement
+    |> Maybe.map (\x -> [("randPlacement", int x)])
+    |> Maybe.withDefault []
+  ]
+    |> List.concat
+    |> object
+
+generation : Generation -> Value
+generation g =
+  object
+    [ ("allowOffBiomeMovingObjects", bool g.allowOffBiomeMovingObjects)
+    , ("biomeMap", list int g.biomeMap)
+    , ("tallHeight", int g.tallHeight)
+    , ("veryTallHeight", int g.veryTallHeight)
+    , ("computeMapBiomeIndex", string g.computeMapBiomeIndex)
+    , ("biomeTotalWeight", float g.biomeTotalWeight)
+    , ("biomeCumuWeights", list float g.biomeCumuWeights)
+    , ("numSpecialBiomes", int g.numSpecialBiomes)
+    , ("objects", dict String.fromInt spawn g.objects)
+    , ("gridPlacements", list spawn g.gridPlacements)
+    , ("randPlacements", list spawn g.randPlacements)
+    , ("biomeSeedOffset", int g.biomeSeedOffset)
+    ]
+
+world : World -> Value
+world w =
+  object
+    [ ("name", string w.name)
+    , ("start", timeStamp w.start)
+    , ("end", maybe timeStamp w.end)
+    , ("dataTime", maybe timeStamp w.dataTime)
+    , ("biomeLayer", maybe string w.biomeLayer)
+    , ("generation", generation w.generation)
     ]
 
 timeStamp : Posix -> Value
@@ -70,3 +121,7 @@ timeStamp time =
     |> Time.posixToMillis
     |> (\t -> t // 1000)
     |> int
+
+maybe : (a -> Value) -> Maybe a -> Value
+maybe encoder =
+  Maybe.map encoder >> Maybe.withDefault null
