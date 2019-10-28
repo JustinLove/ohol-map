@@ -6,6 +6,7 @@ port module Leaflet exposing
   , setView
   , currentTime
   , currentServer
+  , worldList
   , arcList
   , objectBounds
   , monumentList
@@ -69,6 +70,14 @@ currentServer server =
   Encode.object
     [ ("kind", Encode.string "currentServer")
     , ("server", Encode.server server)
+    ]
+    |> leafletCommand
+
+worldList : List Data.World -> Cmd msg
+worldList worlds =
+  Encode.object
+    [ ("kind", Encode.string "worldList")
+    , ("worlds", Encode.worlds worlds)
     ]
     |> leafletCommand
 

@@ -8,6 +8,7 @@ module OHOLData.Encode exposing
   , spawn
   , generation
   , world
+  , worlds
   , timeStamp
   )
 
@@ -104,12 +105,18 @@ generation g =
     , ("biomeSeedOffset", int g.biomeSeedOffset)
     ]
 
+worlds : List World -> Value
+worlds data =
+  object
+    [ ("data", list world data)
+    ]
+
 world : World -> Value
 world w =
   object
     [ ("name", string w.name)
-    , ("start", timeStamp w.start)
-    , ("end", maybe timeStamp w.end)
+    , ("msStart", msTime w.start)
+    , ("msEnd", maybe msTime w.end)
     , ("dataTime", maybe timeStamp w.dataTime)
     , ("biomeLayer", maybe string w.biomeLayer)
     , ("generation", generation w.generation)
@@ -117,6 +124,13 @@ world w =
 
 timeStamp : Posix -> Value
 timeStamp time =
+  time
+    |> Time.posixToMillis
+    |> (\t -> t // 1000)
+    |> int
+
+msTime : Posix -> Value
+msTime time =
   time
     |> Time.posixToMillis
     |> (\t -> t // 1000)

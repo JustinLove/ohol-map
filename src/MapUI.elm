@@ -158,6 +158,7 @@ init config location key =
       , fetchArcs
       , fetchObjects
       , Leaflet.animOverlay model.dataAnimated
+      , Leaflet.worldList model.worlds
       ]
     )
 
@@ -450,20 +451,24 @@ update msg model =
         Just _ ->
           let
             lastArc = arcs |> List.reverse |> List.head
+            worlds = Data.rebuildWorlds
+              Data.codeChanges
+              (case model.versions of
+                Data versions -> versions
+                _ -> []
+              )
+              arcs
           in
           ( { model
             | arcs = Data arcs
-            , worlds = Data.rebuildWorlds
-                Data.codeChanges
-                (case model.versions of
-                  Data versions -> versions
-                  _ -> []
-                )
-                arcs
+            , worlds = worlds
             , currentArc = lastArc
             , timeRange = lastArc |> Maybe.map (\{start, end} -> (start, end))
             }
-          , Leaflet.arcList arcs (model.mapTime |> Maybe.withDefault model.time)
+          , Cmd.batch
+            [ Leaflet.arcList arcs (model.mapTime |> Maybe.withDefault model.time)
+            , Leaflet.worldList worlds
+            ]
           )
         Nothing ->
           let
@@ -488,18 +493,22 @@ update msg model =
     ObjectsReceived (Ok objects) ->
       let
         versions = Data.completeVersions objects.spawnChanges
-      in
-      ( { model
-        | versions = Data versions
-        , worlds = Data.rebuildWorlds
+        worlds = Data.rebuildWorlds
           Data.codeChanges
           versions
           (case model.arcs of
             Data arcs -> arcs
             _ -> []
           )
+      in
+      ( { model
+        | versions = Data versions
+        , worlds = worlds
         }
-      , Leaflet.objectBounds objects.ids objects.bounds
+      , Cmd.batch
+        [ Leaflet.objectBounds objects.ids objects.bounds
+        , Leaflet.worldList worlds
+        ]
       )
     ObjectsReceived (Err error) ->
       let _ = Debug.log "fetch objects failed" error in

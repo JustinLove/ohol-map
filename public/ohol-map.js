@@ -467,6 +467,11 @@
     return pickedBiome
   }
 
+  var computeMapBiomeIndexFunctions = {
+    "competeMapBiomeIndex": competeMapBiomeIndex,
+    "topographicMapBiomeIndex": topographicMapBiomeIndex,
+  }
+
   // inKnee in 0..inf, smaller values make harder knees
   // intput in 0..1
   // output in 0..1
@@ -1271,7 +1276,6 @@
       console.log('To:', new Date(arc.msEnd).toString())
     })
     */
-    rebuildWorlds()
   }
 
   var badlandsBaseBiome = new L.GridLayer.BiomeLayer({
@@ -1302,6 +1306,11 @@
   var server3 = new L.layerGroup([server3Biome, server3Map])
 
   var badlandsAge = new L.layerGroup([badlandsBaseBiome])
+
+  var biomeLayers = {
+    "badlandsAge": badlandsAge,
+    "screenshot": L.layerGroup([biomeImageLayer, screenshotImageLayer]),
+  }
 
   var ages = [
     {
@@ -1539,7 +1548,47 @@
     })
   }
 
-  rebuildWorlds()
+  var updateWorlds = function(worldData) {
+    worlds = worldData.map(function(world) {
+      world.generation.computeMapBiomeIndex = computeMapBiomeIndexFunctions[world.generation.computeMapBiomeIndex]
+      if (!world.generation.computeMapBiomeIndex) {
+        console.log(world, "no biome index function")
+      }
+      if (world.biomeLayer) {
+        world.biomeLayer = biomeLayers[world.biomeLayer]
+        if (!world.biomeLayer) {
+          console.log(world, "no biome layer")
+        }
+      } else {
+        world.biomeLayer = new L.GridLayer.BiomeLayer(world.generation)
+        world.biomeLayer.name = world.name + ' Biome'
+      }
+      return world
+    })
+    if (objectBounds.length > 0) {
+      addArcLayers()
+    }
+  }
+
+  var addArcLayers = function() {
+    worlds.forEach(function(world) {
+      if (world.msStart > msStartOfRandomAge) {
+        var keyPlacementLayer = createArcKeyPlacementLayer(world.msEnd/1000, world.generation)
+        keyPlacementLayer.name = "key placement"
+        world.keyPlacementLayer = keyPlacementLayer
+        var maplogLayer = createArcMaplogLayer(world.msStart, world.dataTime, world.generation)
+        maplogLayer.name = "maplog"
+        world.maplogLayer = maplogLayer
+        L.Util.setOptions(keyPlacementLayer, {alternateAnim: maplogLayer})
+        L.Util.setOptions(maplogLayer, {alternateStatic: keyPlacementLayer})
+      } else {
+        var objectLayer = new L.GridLayer.ObjectLayerSprite(world.generation)
+        //var objectLayer = new L.GridLayer.ObjectLayerPixel(world.generation)
+        objectLayer.name = world.name + " Objects"
+        world.objectLayer = objectLayer
+      }
+    })
+  }
 
   var TileDataCache = L.Class.extend({
     options: {
@@ -2925,7 +2974,7 @@
     //map.setView([0,0], 24)
 
     objectLoad(map).then(function() {
-      rebuildWorlds()
+      addArcLayers()
       toggleAnimationControls(map)
       baseLayerByTime(map, mapTime, 'objectload')
       //objectOverlayPixel.addTo(map)
@@ -2989,6 +3038,10 @@
               badlandsAge.removeLayer(server3)
             }
           }
+          break;
+        case 'worldList':
+          console.log(message.worlds.data)
+          updateWorlds(message.worlds.data)
           break;
         case 'arcList':
           updateArcs(message.arcs.data)
