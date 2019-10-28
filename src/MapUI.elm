@@ -482,7 +482,8 @@ update msg model =
             , mapTime = mlastTime
             }
           , Cmd.batch
-            [ Leaflet.worldList worlds
+            [ Leaflet.currentTime lastTime
+            , Leaflet.worldList worlds
             , Time.now |> Task.perform (ShowTimeNotice lastTime)
             ]
           )

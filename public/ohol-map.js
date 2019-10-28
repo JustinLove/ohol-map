@@ -2347,11 +2347,12 @@
   }
 
   var baseLayerByTime = function(map, ms, reason) {
-    //console.log(ms, reason)
+    console.log(ms, reason)
     var targetWorld
     worlds.forEach(function(world) {
+      console.log(world.msStart, ms, world.msEnd, world.name)
       if (world.msStart < ms && (ms <= world.msEnd || world.msEnd == undefined)) {
-        //console.log('pick', world)
+        console.log('pick', world)
         targetWorld = world
       }
     })
@@ -2367,14 +2368,14 @@
     }
     oholBase.eachLayer(function(layer) {
       if (layers.indexOf(layer) == -1) {
-        //console.log('remove', layer && layer.name)
+        console.log('remove', layer && layer.name)
         oholBase.removeLayer(layer)
         changes++
       }
     })
     layers.forEach(function(layer) {
       if (!oholBase.hasLayer(layer)) {
-        //console.log('add', layer.name)
+        console.log('add', layer.name)
         oholBase.addLayer(layer)
         changes++
       }
@@ -2938,7 +2939,7 @@
           }
           addArcLayers()
           toggleAnimationControls(map)
-          baseLayerByTime(map, mapTime, 'objectload')
+          baseLayerByTime(map, mapTime, 'objectbounds')
           //objectOverlayPixel.addTo(map)
           //objectOverlaySprite.addTo(map)
           break;

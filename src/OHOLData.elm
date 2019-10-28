@@ -12,6 +12,8 @@ module OHOLData exposing
   , completeVersions
   , codeChanges
   , rebuildWorlds
+  , current
+  , advance
   )
 
 import Dict exposing (Dict)
@@ -201,6 +203,10 @@ orderedUpdate fid x list =
 worldMerge : Posix -> Maybe Age -> Maybe Version -> Maybe Arc -> World
 worldMerge start mage mver marc =
   let
+    _ = Debug.log "start" start
+    _ = Debug.log "mage" mage
+    _ = Debug.log "mver" mver
+    _ = Debug.log "marc" marc
     name =
       [ mage |> Maybe.map .name
       , mver |> Maybe.map (.id >> String.fromInt)
@@ -253,38 +259,44 @@ rebuildWorldsTimeList : List Int -> List Age -> List Version -> List Arc -> List
 rebuildWorldsTimeList times ages versions arcs worlds =
   case times of
     nextTime :: rest ->
-      --let _ = Debug.log "time" nextTime in
+      let
+        _ = Debug.log "time" nextTime
+        nextAges = advance nextTime ages
+        nextVersions = advance nextTime versions
+        nextArcs = advance nextTime arcs
+      in
       rebuildWorldsTimeList
         rest
-        (advance nextTime ages)
-        (advance nextTime versions)
-        (advance nextTime arcs)
+        nextAges
+        nextVersions
+        nextArcs
         ((worldMerge (Time.millisToPosix nextTime)
-          (current nextTime ages)
-          (current nextTime versions)
-          (current nextTime arcs)
+          (current nextTime nextAges)
+          (current nextTime nextVersions)
+          (current nextTime nextArcs)
         ) :: worlds)
     [] ->
       worlds
 
+inRange : Int -> List {a|start:Posix} -> Bool
+inRange time list =
+  List.head list
+    |> Maybe.map (.start >> Time.posixToMillis >> (\x -> time >= x))
+    |> Maybe.withDefault False
+
 current : Int -> List {a|start:Posix} -> Maybe {a|start:Posix}
 current time list =
-  let
-    inRange = List.head list
-      |> Maybe.map (.start >> Time.posixToMillis >> (\x -> time >= x))
-      |> Maybe.withDefault False
-  in
-    if inRange then
-      List.head list
-    else
-      Nothing
+  if inRange time list then
+    List.head list
+  else
+    Nothing
 
 advance : Int -> List {a|start:Posix} -> List {a|start:Posix}
 advance time list =
   let
     next = List.drop 1 list
   in
-    if (current time next) /= Nothing then
+    if inRange time next then
       advance time next
     else
       list
@@ -304,7 +316,8 @@ compressValues : Int -> List Int -> List Int
 compressValues value accum =
   case accum of
     last :: rest ->
-      if last - value < 10*60*1000 then
+      --if last - value < 10*60*1000 then
+      if last - value < 1000 then
         accum
       else
         value :: accum
@@ -465,7 +478,9 @@ fixupEndTime =
   List.foldr (\world (mtime, newages) ->
       ( Just world.start
       , { world
-        | end = mtime
+        | end = case mtime of
+          Just _ -> mtime
+          Nothing -> world.end
         } :: newages
       )
     ) (Nothing, [])
