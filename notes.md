@@ -1,10 +1,12 @@
 - object generation
+  - **** object placements went wrong
   - work with placement layers
     - redraw on rift change
   - track drawing lag
   - random placement objects - wip
     - wrong spots
     - changed to biome seed
+    - nosaj missing from spawn data
   - rift sizes
 - tile gen
   - overdraw missing for large natural objets
