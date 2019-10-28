@@ -6,7 +6,6 @@
   var cachedApiUrl = oholMapConfig.cachedApiUrl
   var apiUrl = oholMapConfig.apiUrl
 
-  var arcs = []
   var worlds = []
 
   var barrierRadius = null
@@ -1261,22 +1260,6 @@
     //offset: 0.2,
   })
   overlays['Object Sprite'] = objectOverlaySprite
-
-  var updateArcs = function(arcData) {
-    arcs = arcData.map(function(arc, i) {
-      return {
-        msStart: arc.start * 1000,
-        msEnd: arc.end * 1000,
-        seed: arc.seed,
-      }
-    })
-    /*
-    arcs.forEach(function(arc, i) {
-      console.log('Fr:', new Date(arc.msStart).toString())
-      console.log('To:', new Date(arc.msEnd).toString())
-    })
-    */
-  }
 
   var badlandsBaseBiome = new L.GridLayer.BiomeLayer({
     biomeMap: badlandsBiomeMap,
@@ -2755,94 +2738,6 @@
 
   var pointLegendControl = L.control.pointLegend({ position: 'topleft' })
 
-  var objectLoad = function(map) {
-    var objectMaster = fetch('static/objects.json').then(function(response) {
-      return response.json()
-    })
-
-    //var mapGen = Promise.resolve()
-    var mapGen = objectMaster.then(function(wrapper) {
-      /*
-      for (var i = 0;i < wrapper.ids.length;i++) {
-        if (wrapper.names[i].match('gridPlacement')) {
-          gridPlacements.push({
-            name: wrapper.names[i],
-            id: parseInt(wrapper.ids[i]),
-            spacing: parseInt(wrapper.names[i].match(/gridPlacement(\d+)/)[1], 10),
-            permittedBiomes: [],
-          })
-        }
-      }
-      */
-      var biomeState = []
-      var objectState = {}
-      wrapper.spawnChanges.forEach(function(version) {
-        version.spawnChanges.forEach(function(change) {
-          change.id = parseInt(change.id, 10)
-          objectState[change.id] = change
-          if (change.removed) {
-            biomeState.forEach(function(biome) {
-              delete biome.objects[change.id]
-            })
-            return
-          }
-          var grid = false
-          for (var i = 0;i < gridPlacements.length;i++) {
-            if (gridPlacements[i].id == change.id) {
-              gridPlacements[i].permittedBiomes = change.biomes.map(function(bi) { return jungleBiomeMap.indexOf(bi)})
-              grid = true
-            }
-          }
-          change.biomes.forEach(function(bi) {
-            if (!biomeState[bi]) {
-              biomeState[bi] = {id: bi, objects: {}}
-            }
-          })
-
-          if (!grid) {
-            biomeState.forEach(function(biome) {
-              if (change.biomes.indexOf(biome.id) == -1 || change.mapChance == 0) {
-                delete biome.objects[change.id]
-              } else {
-                biome.objects[change.id] = change
-              }
-            })
-          }
-        })
-        var biomesSnapshot = biomeState.map(function(biome) {
-          return {
-            id: biome.id,
-            objects: JSON.parse(JSON.stringify(Object.values(biome.objects))).sort(function(a, b) {return a.id - b.id})
-          }
-        })
-        biomesSnapshot.forEach(function(biome) {
-          biome.totalChanceWeight = biome.objects.reduce(function(total, spawnable) {
-            return total + spawnable.mapChance
-          }, 0)
-        })
-        var gridPlacementsSnapShot = gridPlacements.filter(function(placement) {
-          return placement.permittedBiomes.length > 0
-        }).map(function(placement) {
-          return Object.assign({}, placement)
-        })
-        var objectSnapshot = {}
-        Object.keys(objectState).forEach(function(id) {
-          var obj = objectState[id]
-          objectSnapshot[id] = {
-            wide: (obj.leftBlockingRadius && obj.leftBlockingRadius != 0) || (obj.rightBlockingRadius && obj.rightBlockingRadius != 0),
-            leftBlockingRadius: obj.leftBlockingRadius,
-            rightBlockingRadius: obj.rightBlockingRadius,
-          }
-        })
-        var ver = {
-          id: version.id,
-          msStart: new Date(version.date),
-          biomes: biomesSnapshot,
-          gridPlacements: gridPlacementsSnapShot,
-          objects: objectSnapshot,
-        }
-        versions.push(ver)
-      })
 
       // object blocking
       //console.log('-2,1', getMapObjectRaw(-2, 1, objectGenerationOptions))
@@ -2850,11 +2745,6 @@
       //console.log('19,15', getBaseMap(19, 15, objectGenerationOptions))
       // object bounds height transparent padding
       //console.log('80,8', getMapObjectRaw(80, 8, objectGenerationOptions))
-    }).catch(function(err) {
-      console.log(err)
-    })
-    return Promise.all([mapGen])
-  }
 
   var toggleAnimated = function(parent, status) {
     parent.eachLayer(function(layer) {
@@ -2973,14 +2863,6 @@
     sidebarToggle.addTo(map)
     //map.setView([0,0], 24)
 
-    objectLoad(map).then(function() {
-      addArcLayers()
-      toggleAnimationControls(map)
-      baseLayerByTime(map, mapTime, 'objectload')
-      //objectOverlayPixel.addTo(map)
-      //objectOverlaySprite.addTo(map)
-    })
-
     if (app.ports.leafletEvent) {
       map.on('moveend', function(ev) {
         var center = ev.target.getCenter()
@@ -3009,6 +2891,7 @@
     var positionSet = false
 
     var command = function(message) {
+      console.log(message)
       switch (message.kind) {
         case 'setView':
           if (positionSet) {
@@ -3043,11 +2926,6 @@
           console.log(message.worlds.data)
           updateWorlds(message.worlds.data)
           break;
-        case 'arcList':
-          updateArcs(message.arcs.data)
-          var ms = message.time * 1000
-          setMapTime(map, ms, 'arcList')
-          break;
         case 'objectBounds':
           objectBounds = new Array(message.ids.length)
           for (var i = 0;i < message.ids.length;i++) {
@@ -3058,6 +2936,11 @@
               bounds[2] - bounds[0] - 30,
               bounds[3] - bounds[1] - 30)
           }
+          addArcLayers()
+          toggleAnimationControls(map)
+          baseLayerByTime(map, mapTime, 'objectload')
+          //objectOverlayPixel.addTo(map)
+          //objectOverlaySprite.addTo(map)
           break;
         case 'monumentList':
           updateMonumentLayer(monumentOverlay, message.monuments.data)

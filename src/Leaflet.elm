@@ -7,7 +7,6 @@ port module Leaflet exposing
   , currentTime
   , currentServer
   , worldList
-  , arcList
   , objectBounds
   , monumentList
   , dataLayer
@@ -78,15 +77,6 @@ worldList worlds =
   Encode.object
     [ ("kind", Encode.string "worldList")
     , ("worlds", Encode.worlds worlds)
-    ]
-    |> leafletCommand
-
-arcList : List Data.Arc -> Posix -> Cmd msg
-arcList arcs time =
-  Encode.object
-    [ ("kind", Encode.string "arcList")
-    , ("arcs", Encode.arcs arcs)
-    , ("time", Encode.timeStamp time)
     ]
     |> leafletCommand
 

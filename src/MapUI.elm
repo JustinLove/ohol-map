@@ -152,7 +152,7 @@ init config location key =
       [ cmd
       , Time.here |> Task.perform CurrentZone
       , case model.mapTime of
-        Just _ -> Cmd.none
+        Just time -> Cmd.none
         Nothing -> Time.now |> Task.perform CurrentTimeNotice
       , fetchServers model.cachedApiUrl
       , fetchArcs
@@ -447,18 +447,18 @@ update msg model =
       let _ = Debug.log "fetch servers failed" error in
       ({model | servers = Failed error}, Cmd.none)
     ArcList (Ok arcs) ->
+      let
+        lastArc = arcs |> List.reverse |> List.head
+        worlds = Data.rebuildWorlds
+          Data.codeChanges
+          (case model.versions of
+            Data versions -> versions
+            _ -> []
+          )
+          arcs
+      in
       case model.mapTime of
         Just _ ->
-          let
-            lastArc = arcs |> List.reverse |> List.head
-            worlds = Data.rebuildWorlds
-              Data.codeChanges
-              (case model.versions of
-                Data versions -> versions
-                _ -> []
-              )
-              arcs
-          in
           ( { model
             | arcs = Data arcs
             , worlds = worlds
@@ -466,13 +466,12 @@ update msg model =
             , timeRange = lastArc |> Maybe.map (\{start, end} -> (start, end))
             }
           , Cmd.batch
-            [ Leaflet.arcList arcs (model.mapTime |> Maybe.withDefault model.time)
+            [ Leaflet.currentTime (model.mapTime |> Maybe.withDefault model.time)
             , Leaflet.worldList worlds
             ]
           )
         Nothing ->
           let
-            lastArc = arcs |> List.reverse |> List.head
             mlastTime = lastArc |> Maybe.map .end
             lastTime = mlastTime |> Maybe.withDefault model.time
           in
@@ -483,7 +482,7 @@ update msg model =
             , mapTime = mlastTime
             }
           , Cmd.batch
-            [ Leaflet.arcList arcs lastTime
+            [ Leaflet.worldList worlds
             , Time.now |> Task.perform (ShowTimeNotice lastTime)
             ]
           )
