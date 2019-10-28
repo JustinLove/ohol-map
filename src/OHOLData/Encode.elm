@@ -6,13 +6,14 @@ module OHOLData.Encode exposing
   , arcs
   , arc
   , spawn
+  , biome
   , generation
   , world
   , worlds
   , timeStamp
   )
 
-import OHOLData exposing (Life, Server, Arc, Spawn, Generation, World)
+import OHOLData exposing (Life, Server, Arc, Spawn, Biome, Generation, World)
 
 import Json.Encode exposing (..)
 import Time exposing (Posix)
@@ -88,6 +89,14 @@ spawn s =
     |> List.concat
     |> object
 
+biome : Biome -> Value
+biome b =
+  object
+    [ ("id", int b.id)
+    , ("objects", list spawn b.objects)
+    , ("totalChanceWeight", float b.totalChanceWeight)
+    ]
+
 generation : Generation -> Value
 generation g =
   object
@@ -100,6 +109,7 @@ generation g =
     , ("biomeCumuWeights", list float g.biomeCumuWeights)
     , ("numSpecialBiomes", int g.numSpecialBiomes)
     , ("objects", dict String.fromInt spawn g.objects)
+    , ("biomes", dict String.fromInt biome g.biomes)
     , ("gridPlacements", list spawn g.gridPlacements)
     , ("randPlacements", list spawn g.randPlacements)
     , ("biomeSeedOffset", int g.biomeSeedOffset)

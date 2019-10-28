@@ -6,6 +6,7 @@ module OHOLData exposing
   , VersionChange
   , Spawn
   , SpawnChange(..)
+  , Biome
   , Version
   , World
   , Generation

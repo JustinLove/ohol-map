@@ -506,8 +506,8 @@ update msg model =
         , worlds = worlds
         }
       , Cmd.batch
-        [ Leaflet.objectBounds objects.ids objects.bounds
-        , Leaflet.worldList worlds
+        [ Leaflet.worldList worlds
+        , Leaflet.objectBounds objects.ids objects.bounds
         ]
       )
     ObjectsReceived (Err error) ->
