@@ -340,9 +340,9 @@
     var custnum2 = Math.imul((state ^ custnum1), 0x9C129511) + 1
     var custnum3 = Math.imul( state            , 0x2512CFB8) + 1
     var custnum4 = Math.imul((state ^ custnum3), 0xB89C8895) + 1
-    var custnum5 = Math.imul( state            , 0x6BF962c1) + 1
+    var custnum5 = Math.imul( state            , 0x6BF962C1) + 1
     var custnum6 = Math.imul((state ^ custnum5), 0x4BF962C1) + 1
-    return (custnum2 ^ custnum4 ^ custnum6) >>> 0
+    return (custnum2 ^ (custnum4 >> 11) ^ (custnum6 >> 22)) >>> 0
   }
 
   CustomRandomSource.prototype.genRand32 = function() {
@@ -1334,10 +1334,11 @@
 
   var chooseRandPlacements = function() {
     worlds.forEach(function(world) {
-      var options = Object.assign({}, biomeGenerationOptions, world.generation)
+      var options = Object.assign({}, objectGenerationOptions, world.generation)
       if (options.biomes.length < 1 || options.randPlacements.length < 1) return
       var safeR = 353 - 2
-      var placementRandomSource = new CustomRandomSource(objectGenerationOptions.randSeed)
+      var placementRandomSource = new CustomRandomSource(options.randSeed)
+      console.log('------------------------', options.randSeed)
       world.generation.placements = specialMapPlacements.concat()
       //console.log(world)
       options.randPlacements.forEach(function(place) {

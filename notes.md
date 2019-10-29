@@ -13,6 +13,7 @@
   - changes over time
     - uncertainty may be missing
       - esp start of random age
+  - lazy create layers
 - use changing object layers to avoid visual flashing?
 - server dependant
 
