@@ -2141,6 +2141,7 @@
     if (targetWorld) {
       console.log(targetWorld.generation.placements)
       console.log(targetWorld.generation.gridPlacements)
+      //console.log(targetWorld.generation.biomes)
       layers = [
         targetWorld.biomeLayer,
         targetWorld.objectLayer,

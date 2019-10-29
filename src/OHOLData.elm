@@ -145,11 +145,20 @@ applySpawnChangeToBiomes change biomes =
       biomes
         |> Dict.map (\bid biome -> {biome | objects = orderedRemove .id id biome.objects})
     Changed spawn ->
-      if spawn.gridPlacement == Nothing && spawn.randPlacement == Nothing then
-        spawn.biomes
-          |> List.foldl (changeSpawn spawn) biomes
-      else
-        biomes
+      spawn.biomes
+        |> List.foldl ensureBiome biomes
+        |> Dict.map (changedSpawn spawn)
+
+spawnsIn : Int -> Spawn -> Bool
+spawnsIn bid spawn =
+  spawn.gridPlacement == Nothing && spawn.randPlacement == Nothing && spawn.mapChance > 0 && List.member bid spawn.biomes
+
+changedSpawn : Spawn -> Int -> Biome -> Biome
+changedSpawn spawn bid biome =
+  if spawnsIn bid spawn then
+    {biome|objects = orderedUpdate .id spawn biome.objects}
+  else
+    {biome|objects = orderedRemove .id spawn.id biome.objects}
 
 calculateChance : Biome -> Biome
 calculateChance biome =
@@ -160,14 +169,14 @@ calculateChance biome =
       |> List.foldl (+) 0
   }
 
-changeSpawn : Spawn -> Int -> BiomeSet -> BiomeSet
-changeSpawn spawn bid biomes =
+ensureBiome : Int -> BiomeSet -> BiomeSet
+ensureBiome bid biomes =
   Dict.update bid (\mbiome ->
     case mbiome of
-      Just biome -> Just <| {biome | objects = orderedUpdate .id spawn biome.objects}
+      Just biome -> mbiome
       Nothing -> Just
         { id = bid
-        , objects = [spawn]
+        , objects = []
         , totalChanceWeight = 0
         }
     ) biomes
