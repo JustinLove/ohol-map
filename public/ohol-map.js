@@ -342,9 +342,9 @@
   CustomRandomSource.prototype.getRandomBoundedInt = function(inRangeStart, inRangeEnd) {
     var randFloat = this.genRand32() * invMAXPlusOne
     var onePastRange = inRangeEnd + 1
-    var magnitude = randFloat * (onePastRange - inRangeStart)
-    //console.log(randFloat, onePastRange, magnitude)
-    return magnitude = inRangeStart + magnitude
+    var magnitude = (randFloat * (onePastRange - inRangeStart))>>>0
+    //console.log(randFloat, onePastRange, magnitude, inRangeStart + magnitude)
+    return inRangeStart + magnitude
   }
 
   var versions = []
@@ -1337,7 +1337,7 @@
           var pickY = placementRandomSource.getRandomBoundedInt(-safeR, safeR)
           var bi = options.computeMapBiomeIndex(pickX, pickY, options)
           var pickB = options.biomeMap[bi]
-          //console.log(pickX, pickY, pickB)
+          console.log(pickX, pickY, pickB)
           if (place.biomes.indexOf(pickB) != -1) {
             world.generation.placements.push({
               msStart: world.msStart,
