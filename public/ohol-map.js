@@ -159,8 +159,8 @@
     graticule: null,
     "Rift": riftOverlay,
     "Life Data": dataOverlay,
-    "Monuments": monumentOverlay,
     "Fade": baseFade,
+    "Monuments": monumentOverlay,
   }
 
   var searchOverlay = L.layerGroup([], {className: 'search-overlay'})
@@ -178,6 +178,17 @@
           opacity: Math.max(0.4, Math.min(1.0, 1.0 - (age / (age+30))))
         })
         .bindPopup(date.toString())
+        .addTo(layer)
+      //L.circle([point.y, point.x], {radius: 21000, fill: false}).addTo(layer)
+    })
+  }
+
+  var updatePlacementLayer = function(layer, data) {
+    layer.clearLayers()
+    L.Util.setOptions(layer, {data: data})
+    data.forEach(function(point) {
+      L.marker([point.y, point.x], {})
+        .bindPopup(point.id.toString())
         .addTo(layer)
       //L.circle([point.y, point.x], {radius: 21000, fill: false}).addTo(layer)
     })
@@ -2126,6 +2137,10 @@
     }))
   }
 
+  var randOverlay = L.layerGroup([], {className: 'rand-overlay'})
+  randOverlay.name = 'rand overlay'
+  overlays["Rand Placements"] = randOverlay;
+
   var baseLayerByTime = function(map, ms, reason) {
     //console.log(ms, reason)
     var targetWorld
@@ -2142,6 +2157,9 @@
       console.log(targetWorld.generation.placements)
       console.log(targetWorld.generation.gridPlacements)
       //console.log(targetWorld.generation.biomes)
+      if (targetWorld.generation.placements) {
+        updatePlacementLayer(randOverlay, targetWorld.generation.placements)
+      }
       layers = [
         targetWorld.biomeLayer,
         targetWorld.objectLayer,
