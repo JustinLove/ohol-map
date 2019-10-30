@@ -584,8 +584,8 @@ topographic : List Float -> Generation -> Generation
 topographic weights gen =
   { gen
   | computeMapBiomeIndex = "topographicMapBiomeIndex"
-  , biomeTotalWeight = List.sum topographicBiomeWeights
-  , biomeCumuWeights = topographicBiomeWeights
+  , biomeTotalWeight = List.sum weights
+  , biomeCumuWeights = weights
     |> List.foldl (\w (accum, result) ->
       ( accum + w
       , (accum + w) :: result
