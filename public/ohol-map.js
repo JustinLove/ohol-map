@@ -336,13 +336,19 @@
   }
 
   var genRand32 = function(state) {
+    //console.log('i', state)
     var custnum1 = Math.imul( state            , 0xFEA09B9D) + 1
     var custnum2 = Math.imul((state ^ custnum1), 0x9C129511) + 1
+    //console.log('2', custnum2 >>> 0)
     var custnum3 = Math.imul( state            , 0x2512CFB8) + 1
     var custnum4 = Math.imul((state ^ custnum3), 0xB89C8895) + 1
+    //console.log('4', custnum4 >>> 0)
     var custnum5 = Math.imul( state            , 0x6BF962C1) + 1
     var custnum6 = Math.imul((state ^ custnum5), 0x4BF962C1) + 1
-    return (custnum2 ^ (custnum4 >> 11) ^ (custnum6 >> 22)) >>> 0
+    //console.log('6', custnum6 >>> 0)
+    var out = (custnum2 ^ (custnum4 >>> 11) ^ (custnum6 >>> 22)) >>> 0
+    //console.log('o', out)
+    return out
   }
 
   CustomRandomSource.prototype.genRand32 = function() {
@@ -1336,12 +1342,13 @@
     worlds.forEach(function(world) {
       var options = Object.assign({}, objectGenerationOptions, world.generation)
       if (options.biomes.length < 1 || options.randPlacements.length < 1) return
-      var safeR = 353 - 2
+      var safeR = 354 - 2
       var placementRandomSource = new CustomRandomSource(options.randSeed)
-      console.log('------------------------', options.randSeed)
+      console.log('------------------------', options.randSeed, safeR)
       world.generation.placements = specialMapPlacements.concat()
-      //console.log(world)
+      console.log(world.name)
       options.randPlacements.forEach(function(place) {
+        console.log('vvvv  seeking', place.id, place.biomes)
         var toPlace = place.randPlacement
         var crazy = 0
         while (toPlace > 0 && crazy++ < 2000) {
@@ -1351,6 +1358,7 @@
           var pickB = options.biomeMap[bi]
           console.log(pickX, pickY, pickB)
           if (place.biomes.indexOf(pickB) != -1) {
+            console.log('hit')
             world.generation.placements.push({
               msStart: world.msStart,
               x: pickX,
@@ -2149,6 +2157,7 @@
       //console.log(world.msStart, ms, world.msEnd, world.name)
       if (world.msStart < ms && (ms <= world.msEnd || world.msEnd == undefined)) {
         //console.log('pick', world)
+        console.log('pick', world.name)
         targetWorld = world
       }
     })
@@ -2825,4 +2834,9 @@
   }
 
   inhabit('map')
+
+  var testSource = new CustomRandomSource(124567)
+  for (var i = 0;i< 3;i++) {
+    console.log('sample', i, testSource.getRandomBoundedInt(-352,352))
+  }
 })()
