@@ -52,7 +52,7 @@ arc =
     |> map2 (|>) (succeed 17)
     |> map2 (|>) (field "start" timeStamp)
     |> map2 (|>) (field "end" timeStamp)
-    |> map2 (|>) (field "seed" int)
+    |> map2 (|>) (field "seed" (nullable int))
 
 objects : Decoder Objects
 objects =

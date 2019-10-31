@@ -47,7 +47,7 @@ type alias Arc =
   { serverId : Int
   , start: Posix
   , end: Posix
-  , seed: Int
+  , seed: Maybe Int
   }
 
 type alias Objects =
@@ -217,7 +217,7 @@ worldMerge start mage mver marc =
     name =
       [ mage |> Maybe.map .name
       , mver |> Maybe.map (.id >> String.fromInt)
-      , marc |> Maybe.map (.seed >> String.fromInt)
+      , marc |> Maybe.andThen .seed |> Maybe.map String.fromInt
       ]
       |> List.filterMap identity
       |> String.join " "
@@ -228,7 +228,7 @@ worldMerge start mage mver marc =
       { ageGen
       | biomeSeedOffset = marc
         |> Maybe.map .seed
-        |> Maybe.withDefault defaultGeneration.biomeSeedOffset
+        |> Maybe.withDefault ageGen.biomeSeedOffset
       , objects = mver
         |> Maybe.map .objects
         |> Maybe.withDefault emptyVersion.objects
@@ -354,7 +354,7 @@ type alias Generation =
   , biomes: BiomeSet
   , gridPlacements: List Spawn
   , randPlacements: List Spawn
-  , biomeSeedOffset: Int
+  , biomeSeedOffset: Maybe Int
   }
 
 codeChanges : List Age
@@ -453,6 +453,7 @@ codeChanges =
     , generation =
       { defaultGeneration
       | biomeMap = jungleBiomeMap
+      , biomeSeedOffset = Nothing
       }
     }
   , { name = "Topographic Age"
@@ -463,6 +464,7 @@ codeChanges =
     , generation =
       { defaultGeneration
       | biomeMap = topographicBiomeMap
+      , biomeSeedOffset = Nothing
       } |> topographic topographicBiomeWeights
     }
   , { name = "Special Age"
@@ -473,6 +475,7 @@ codeChanges =
     , generation =
       { defaultGeneration
       | biomeMap = specialBiomeMap
+      , biomeSeedOffset = Nothing
       , numSpecialBiomes = 3
       } |> topographic specialBiomeWeights
     }
@@ -526,7 +529,7 @@ defaultGeneration =
   , biomes = Dict.empty
   , gridPlacements = []
   , randPlacements = []
-  , biomeSeedOffset = 723
+  , biomeSeedOffset = Just 723
   }
 
 jungleBiomeMap =

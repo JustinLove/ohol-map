@@ -882,8 +882,6 @@
   var desertColor = hsvToRgb(37/360, 0.65, 0.62)
   var jungleColor = hsvToRgb(90/360, 0.87, 0.48)
 
-  var msStartOfRandomAge = Date.parse("Jul 27 2019 21:00:00 GMT-0000")
-
   var biomeGenerationOptions = {
     computeMapBiomeIndex: competeMapBiomeIndex,
     biomeOffset: 0.83332,
@@ -1306,7 +1304,7 @@
         if (!world.biomeLayer) {
           console.log(world, "no biome layer")
         }
-      } else {
+      } else if (world.generation.biomeSeedOffset) {
         world.biomeLayer = new L.GridLayer.BiomeLayer(world.generation)
         world.biomeLayer.name = world.name + ' Biome'
       }
@@ -1320,7 +1318,7 @@
 
   var addArcLayers = function() {
     worlds.forEach(function(world) {
-      if (world.msStart > msStartOfRandomAge && world.dataTime) {
+      if (world.dataTime) {
         var keyPlacementLayer = createArcKeyPlacementLayer(world.dataTime, world.generation)
         keyPlacementLayer.name = "key placement"
         world.keyPlacementLayer = keyPlacementLayer
@@ -1329,7 +1327,7 @@
         world.maplogLayer = maplogLayer
         L.Util.setOptions(keyPlacementLayer, {alternateAnim: maplogLayer})
         L.Util.setOptions(maplogLayer, {alternateStatic: keyPlacementLayer})
-      } else {
+      } else if (world.generation.biomeSeedOffset) {
         var objectLayer = new L.GridLayer.ObjectLayerSprite(world.generation)
         //var objectLayer = new L.GridLayer.ObjectLayerPixel(world.generation)
         objectLayer.name = world.name + " Objects"
@@ -1341,14 +1339,14 @@
   var chooseRandPlacements = function() {
     worlds.forEach(function(world) {
       var options = Object.assign({}, objectGenerationOptions, world.generation)
-      if (options.biomes.length < 1 || options.randPlacements.length < 1) return
+      if (options.biomes.length < 1 || options.randPlacements.length < 1 || options.randSeed == null || options.biomeSeedOffset == null) return
       var safeR = 354 - 2
       var placementRandomSource = new CustomRandomSource(options.randSeed)
-      console.log('------------------------', options.randSeed, safeR)
+      //console.log('------------------------', options.randSeed, safeR)
       world.generation.placements = specialMapPlacements.concat()
-      console.log(world.name)
+      //console.log(world.name)
       options.randPlacements.forEach(function(place) {
-        console.log('vvvv  seeking', place.id, place.biomes)
+        //console.log('vvvv  seeking', place.id, place.biomes)
         var toPlace = place.randPlacement
         var crazy = 0
         while (toPlace > 0 && crazy++ < 2000) {
@@ -1356,9 +1354,9 @@
           var pickY = placementRandomSource.getRandomBoundedInt(-safeR, safeR)
           var bi = options.computeMapBiomeIndex(pickX, pickY, options)
           var pickB = options.biomeMap[bi]
-          console.log(pickX, pickY, pickB)
+          //console.log(pickX, pickY, pickB)
           if (place.biomes.indexOf(pickB) != -1) {
-            console.log('hit')
+            //console.log('hit')
             world.generation.placements.push({
               msStart: world.msStart,
               x: pickX,
@@ -1515,7 +1513,7 @@
         })
 
         var natural = []
-        if (coords.z >= options.showNaturalObjectsAboveZoom) {
+        if (coords.z >= options.showNaturalObjectsAboveZoom && options.biomeSeedOffset) {
           for (var y = -paddingUp;y < bottom;y++) {
             for (var x = -paddingX;x < right;x++) {
               if (occupied[[x, y].join(' ')]) {
@@ -1680,7 +1678,7 @@
         })
 
         var natural = []
-        if (coords.z >= options.showNaturalObjectsAboveZoom) {
+        if (coords.z >= options.showNaturalObjectsAboveZoom && options.biomeSeedOffset) {
           for (var y = -paddingUp;y < bottom;y++) {
             for (var x = -paddingX;x < right;x++) {
               var wx = startX + x
