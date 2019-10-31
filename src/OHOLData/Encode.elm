@@ -113,6 +113,7 @@ generation g =
     , ("gridPlacements", list spawn g.gridPlacements)
     , ("randPlacements", list spawn g.randPlacements)
     , ("biomeSeedOffset", maybe int g.biomeSeedOffset)
+    , ("randSeed", maybe int g.randSeed)
     ]
 
 worlds : List World -> Value

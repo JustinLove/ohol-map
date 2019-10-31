@@ -1339,7 +1339,12 @@
   var chooseRandPlacements = function() {
     worlds.forEach(function(world) {
       var options = Object.assign({}, objectGenerationOptions, world.generation)
-      if (options.biomes.length < 1 || options.randPlacements.length < 1 || options.randSeed == null || options.biomeSeedOffset == null) return
+      if (options.biomes.length < 1
+       || options.randPlacements.length < 1
+       || options.randSeed == null
+       || options.biomeSeedOffset == null) {
+         return
+      }
       var safeR = 354 - 2
       var placementRandomSource = new CustomRandomSource(options.randSeed)
       //console.log('------------------------', options.randSeed, safeR)

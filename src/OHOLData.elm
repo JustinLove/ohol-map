@@ -229,6 +229,9 @@ worldMerge start mage mver marc =
       | biomeSeedOffset = marc
         |> Maybe.map .seed
         |> Maybe.withDefault ageGen.biomeSeedOffset
+      , randSeed = case ageGen.randSeed of
+        Just seed -> Just seed
+        Nothing -> marc |> Maybe.andThen .seed
       , objects = mver
         |> Maybe.map .objects
         |> Maybe.withDefault emptyVersion.objects
@@ -355,6 +358,7 @@ type alias Generation =
   , gridPlacements: List Spawn
   , randPlacements: List Spawn
   , biomeSeedOffset: Maybe Int
+  , randSeed: Maybe Int
   }
 
 codeChanges : List Age
@@ -479,6 +483,20 @@ codeChanges =
       , numSpecialBiomes = 3
       } |> topographic specialBiomeWeights
     }
+  , { name = "Special Age (seeded placements)"
+    -- the short arc just before here had no tapped tarry spots or nosaj, so ambiguous
+    , start = humanTime "2019-10-23T17:57:00Z"
+    , end = Nothing
+    , dataTime = Nothing
+    , biomeLayer = Nothing
+    , generation =
+      { defaultGeneration
+      | biomeMap = specialBiomeMap
+      , biomeSeedOffset = Nothing
+      , randSeed = Nothing
+      , numSpecialBiomes = 3
+      } |> topographic specialBiomeWeights
+    }
   ]
   |> fixupEndTime
   |> fixupStartTime
@@ -530,6 +548,7 @@ defaultGeneration =
   , gridPlacements = []
   , randPlacements = []
   , biomeSeedOffset = Just 723
+  , randSeed = Just 124567
   }
 
 jungleBiomeMap =
