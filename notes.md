@@ -2,17 +2,12 @@
   - work with placement layers
     - redraw on rift change
   - track drawing lag
-  - random placement objects - wip
-    - wrong spots
-    - changed to biome seed
   - rift sizes
+  - last arc used wrong oil placement
 - tile gen
   - overdraw missing for large natural objets
   - http://localhost:8000/public/index.html#x=5&y=2&z=29&t=1570914891
 - integrate object data
-  - changes over time
-    - uncertainty may be missing
-      - esp start of random age
   - lazy create layers
 - use changing object layers to avoid visual flashing?
 - server dependant

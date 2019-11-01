@@ -8,6 +8,8 @@
 
   var worlds = []
 
+  var showNaturalObjectsAboveZoom = 26
+
   var barrierRadius = null
   var riftOptions = {
     fill: false,
@@ -1191,7 +1193,7 @@
   L.GridLayer.ObjectLayerSprite = L.GridLayer.SpriteLayer.extend({
     options: Object.assign({
       pane: 'overlayPane',
-      showNaturalObjectsAboveZoom: 26,
+      showNaturalObjectsAboveZoom: showNaturalObjectsAboveZoom,
     }, objectGenerationOptions),
     createTile: function (coords, done) {
       var layer = this
@@ -1438,7 +1440,7 @@
 
   L.GridLayer.KeyPlacementSprite = L.GridLayer.SpriteLayer.extend({
     options: Object.assign({
-      showNaturalObjectsAboveZoom: 26,
+      showNaturalObjectsAboveZoom: showNaturalObjectsAboveZoom,
     }, objectGenerationOptions),
     initialize: function(cache, options) {
       this._cache = cache;
@@ -1609,7 +1611,7 @@
   L.GridLayer.MaplogSprite = L.GridLayer.SpriteLayer.extend({
     options: Object.assign({
       time: 0,
-      showNaturalObjectsAboveZoom: 26,
+      showNaturalObjectsAboveZoom: showNaturalObjectsAboveZoom,
     }, objectGenerationOptions),
     initialize: function(cache, options) {
       this._cache = cache;
@@ -2206,7 +2208,7 @@
     barrierRadius = null
     for (var i = riftHistory.length - 1;i >= 0;i--) {
       if (ms > riftHistory[i].ms) {
-        if (!zoom || zoom < 25) {
+        if (!zoom || zoom < showNaturalObjectsAboveZoom) {
           targetLayer = riftHistory[i].layer
         }
         barrierRadius = riftHistory[i].radius
@@ -2824,6 +2826,8 @@
           break
         case 'showNaturalObjectsAboveZoom':
           setObjectLayerOptions({showNaturalObjectsAboveZoom: message.zoom})
+          showNaturalObjectsAboveZoom = message.zoom
+          riftLayerByTime(mapTime, map.getZoom())
           break
         default:
           console.log('unknown message', message)
