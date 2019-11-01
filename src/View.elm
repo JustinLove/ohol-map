@@ -59,6 +59,7 @@ type Msg
   | SelectMode Mode
   | SelectServer Server
   | SelectArc Int
+  | SelectArcCoarse Int
   | SelectShow
 
 type Mode
@@ -654,21 +655,19 @@ arcSelect model =
     Loading -> showLoading model.arcs
     Failed error -> showError error
     Data list ->
-      Input.slider
-        [ Background.color control ]
-        { onChange = round >> SelectArc
-        , label = Input.labelBelow [] <|
-          case model.currentArc of
-            Just arc ->
-              column []
-                [ text <| date model.zone arc.start
-                , text <| date model.zone arc.end
-                ]
-            Nothing ->
-              text "Arc"
-        , min = 0
-        , max = ((List.length list) - 1) |> toFloat
-        , value = list
+      let
+        coarseIndex = list
+          |> List.indexedMap (\i a -> (i, a))
+          |> List.filterMap (\(i,a) ->
+            if Just a == model.coarseArc then
+              Just i
+            else
+              Nothing
+            )
+          |> List.head
+          |> Maybe.withDefault 0
+          |> toFloat
+        arcIndex = list
           |> List.indexedMap (\i a -> (i, a))
           |> List.filterMap (\(i,a) ->
             if Just a == model.currentArc then
@@ -679,9 +678,37 @@ arcSelect model =
           |> List.head
           |> Maybe.withDefault 0
           |> toFloat
-        , thumb = Input.defaultThumb
-        , step = Nothing
-        }
+      in
+      column [ width fill, spacing 2 ]
+      [ Input.slider
+          [ Background.color control ]
+          { onChange = round >> SelectArcCoarse
+          , label = Input.labelAbove [] <| text "Coarse"
+          , min = 0
+          , max = ((List.length list) - 1) |> toFloat
+          , value = coarseIndex
+          , thumb = Input.defaultThumb
+          , step = Nothing
+          }
+      , Input.slider
+          [ Background.color control ]
+          { onChange = round >> SelectArc
+          , label = Input.labelAbove [] <| text "Fine"
+          , min = max (coarseIndex - 7) 0
+          , max = min (coarseIndex + 7) (((List.length list) - 1) |> toFloat)
+          , value = arcIndex
+          , thumb = Input.defaultThumb
+          , step = Nothing
+          }
+      , case model.currentArc of
+          Just arc ->
+            column []
+              [ text <| date model.zone arc.start
+              , text <| date model.zone arc.end
+              ]
+          Nothing ->
+            text "Arc"
+      ]
 
 serverMinTime : RemoteData (List Server) -> Maybe Server -> Float
 serverMinTime =

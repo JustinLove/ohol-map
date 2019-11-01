@@ -66,6 +66,7 @@ type alias Model =
   , startTime : Posix
   , mapTime : Maybe Posix
   , hoursPeriod : Int
+  , coarseArc : Maybe Arc
   , currentArc : Maybe Arc
   , dataAnimated : Bool
   , lifeDataVisible : Bool
@@ -124,6 +125,7 @@ init config location key =
       , startTime = Time.millisToPosix 0
       , mapTime = Nothing
       , hoursPeriod = 48
+      , coarseArc = Nothing
       , currentArc = Nothing
       , dataAnimated = False
       , lifeDataVisible = False
@@ -326,6 +328,35 @@ update msg model =
         Nothing ->
           ( { model
             | currentArc = marc
+            , coarseArc = marc
+            , timeRange = Nothing
+            }
+          , Cmd.none
+          )
+    UI (View.SelectArcCoarse index) ->
+      let
+        marc = case model.arcs of
+          Data list ->
+            list
+              |> List.drop index
+              |> List.head
+          _ -> Nothing
+      in
+      case marc of
+        Just arc ->
+          let time = increment arc.start in
+          { model
+          | currentArc = marc
+          , coarseArc = marc
+          , coarseStartTime = time
+          , startTime = time
+          , timeRange = Just (arc.start, arc.end)
+          }
+            |> setTime time
+        Nothing ->
+          ( { model
+            | currentArc = marc
+            , coarseArc = marc
             , timeRange = Nothing
             }
           , Cmd.none
@@ -463,6 +494,7 @@ update msg model =
             | arcs = Data arcs
             , worlds = worlds
             , currentArc = lastArc
+            , coarseArc = lastArc
             , timeRange = lastArc |> Maybe.map (\{start, end} -> (start, end))
             }
           , Cmd.batch
@@ -478,6 +510,7 @@ update msg model =
           ( { model
             | arcs = Data arcs
             , currentArc = lastArc
+            , coarseArc = lastArc
             , timeRange = lastArc |> Maybe.map (\{start, end} -> (start, end))
             , mapTime = mlastTime
             }
@@ -489,7 +522,7 @@ update msg model =
           )
     ArcList (Err error) ->
       let _ = Debug.log "fetch arcs failed" error in
-      ({model | arcs = Failed error, currentArc = Nothing, timeRange = Nothing}, Cmd.none)
+      ({model | arcs = Failed error, currentArc = Nothing, coarseArc = Nothing, timeRange = Nothing}, Cmd.none)
     ObjectsReceived (Ok objects) ->
       let
         versions = Data.completeVersions objects.spawnChanges
@@ -802,6 +835,7 @@ timeSelectionForTime model =
                 { model
                 | timeMode = ArcRange
                 , currentArc = newArc
+                , coarseArc = newArc
                 , timeRange = Just (arc.start, arc.end)
                 }
               Nothing ->

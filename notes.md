@@ -8,7 +8,6 @@
 - use changing object layers to avoid visual flashing?
 - server dependant
 
-- arc slider getting awkward
 - time jump for searched lives not setting timeline UI position
 - year on timeline
 - yesterday not jumping to time
