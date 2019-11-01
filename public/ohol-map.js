@@ -1485,21 +1485,6 @@
       layer._cache.loadTile(coords, {time: options.dataTime}).then(function(text) {
         var occupied = {}
 
-        var special = options.placements.filter(function(place) {
-          return (place.msStart/1000 < options.dataTime
-                  && startX <= place.x && place.x <= endX
-                  && endY <= place.y && place.y <= startY)
-        }).map(function(place) {
-          var out = {
-            x: place.x - startX,
-            y: -(place.y - startY),
-            id: place.id
-          }
-          out.key = [out.x, out.y].join(' ')
-          occupied[out.key] = true
-          return out
-        })
-
         //console.timeEnd('data tile ' + JSON.stringify(coords))
         //console.time('data processing ' + JSON.stringify(coords))
         var placements = text.split("\n").filter(function(line) {
@@ -1519,6 +1504,24 @@
             console.log(e, parts, line)
           }
           return out
+        })
+
+        var special = []
+        options.placements.filter(function(place) {
+          return (place.msStart/1000 < options.dataTime
+                  && startX <= place.x && place.x <= endX
+                  && endY <= place.y && place.y <= startY)
+        }).forEach(function(place) {
+          var out = {
+            x: place.x - startX,
+            y: -(place.y - startY),
+            id: place.id
+          }
+          out.key = [out.x, out.y].join(' ')
+          if (!occupied[out.key]) {
+            occupied[out.key] = true
+            special.push(out)
+          }
         })
 
         var natural = []
@@ -1547,7 +1550,7 @@
         }
 
         tile._keyplace =
-          special.concat(natural, placements)
+          natural.concat(special, placements)
 
           .filter(function(placement) {
 
