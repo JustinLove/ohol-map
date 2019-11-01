@@ -1515,7 +1515,8 @@
           var out = {
             x: place.x - startX,
             y: -(place.y - startY),
-            id: place.id
+            id: place.id,
+            floor: false,
           }
           out.key = [out.x, out.y].join(' ')
           if (!occupied[out.key]) {
@@ -1702,6 +1703,7 @@
                 x: x,
                 y: y,
                 id: v,
+                floor: false,
                 key: [x, y].join(' '),
               })
             }
@@ -1714,10 +1716,11 @@
                   && endY <= place.y && place.y <= startY)
         }).map(function(place) {
           var out = {
-            t: 2,
+            t: 3,
             x: place.x - startX,
             y: -(place.y - startY),
             id: place.id,
+            floor: false,
           }
           out.key = [out.x, out.y].join(' ')
           return out
@@ -2168,7 +2171,7 @@
       //console.log(world.msStart, ms, world.msEnd, world.name)
       if (world.msStart < ms && (ms <= world.msEnd || world.msEnd == undefined)) {
         //console.log('pick', world)
-        console.log('pick', world.name)
+        //console.log('pick', world.name)
         targetWorld = world
       }
     })
@@ -2194,14 +2197,14 @@
     }
     oholBase.eachLayer(function(layer) {
       if (layers.indexOf(layer) == -1) {
-        console.log('remove', layer && layer.name)
+        //console.log('remove', layer && layer.name)
         oholBase.removeLayer(layer)
         changes++
       }
     })
     layers.forEach(function(layer) {
       if (!oholBase.hasLayer(layer)) {
-        console.log('add', layer.name)
+        //console.log('add', layer.name)
         oholBase.addLayer(layer)
         changes++
       }
