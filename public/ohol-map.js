@@ -242,7 +242,7 @@
     },
   })
 
-  overlays['Checker'] = new L.GridLayer.CheckerLayer()
+  //overlays['Checker'] = new L.GridLayer.CheckerLayer()
 
 
   // fractal generation copying https://github.com/jasonrohrer/OneLife/blob/master/commonSource/fractalNoise.cpp
@@ -1188,10 +1188,12 @@
     },
   })
 
+  /*
   var objectOverlayPixel = new L.GridLayer.ObjectLayerPixel({
     opacity: 0.5,
   })
   overlays['Object Pixel'] = objectOverlayPixel
+  */
 
   L.GridLayer.ObjectLayerSprite = L.GridLayer.SpriteLayer.extend({
     options: Object.assign({
@@ -1258,11 +1260,13 @@
     },
   })
 
+  /*
   var objectOverlaySprite = new L.GridLayer.ObjectLayerSprite({
     //opacity: 0.2,
     //offset: 0.2,
   })
   overlays['Object Sprite'] = objectOverlaySprite
+  */
 
   var badlandsBaseBiome = new L.GridLayer.BiomeLayer({
     biomeMap: badlandsBiomeMap,
@@ -2160,9 +2164,9 @@
     }))
   }
 
-  var randOverlay = L.layerGroup([], {className: 'rand-overlay'})
-  randOverlay.name = 'rand overlay'
-  overlays["Rand Placements"] = randOverlay;
+  var specialOverlay = L.layerGroup([], {className: 'special-overlay'})
+  specialOverlay.name = 'special overlay'
+  overlays["Special Placements"] = specialOverlay;
 
   var baseLayerByTime = function(map, ms, reason) {
     //console.log(ms, reason)
@@ -2186,7 +2190,7 @@
       //console.log(targetWorld.generation.gridPlacements)
       //console.log(targetWorld.generation.biomes)
       if (targetWorld.generation.placements) {
-        updatePlacementLayer(randOverlay, targetWorld.generation.placements)
+        updatePlacementLayer(specialOverlay, targetWorld.generation.placements)
       }
       layers = [
         targetWorld.biomeLayer,
