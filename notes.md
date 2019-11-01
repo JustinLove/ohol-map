@@ -1,5 +1,4 @@
 - object generation
-  - special placements overdraw
   - track drawing lag
   - rift sizes
   - last arc used wrong oil placement
@@ -10,7 +9,6 @@
 - server dependant
 
 - arc slider getting awkward
-- swap legends
 - lineage legend flickering
 - time jump for searched lives not setting timeline UI position
 - year on timeline

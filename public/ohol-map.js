@@ -124,8 +124,8 @@
   dataOverlay.on('add', function(ev) {
     var map = ev.target._map
     legendControl.redraw()
-    map.addControl(legendControl)
     map.addControl(pointLegendControl)
+    map.addControl(legendControl)
     setTimeout(function() {
       toggleAnimationControls(map)
       map.addLayer(baseFade)
@@ -133,8 +133,8 @@
   })
   dataOverlay.on('remove', function(ev) {
     var map = ev.target._map
-    map.removeControl(legendControl)
     map.removeControl(pointLegendControl)
+    map.removeControl(legendControl)
     setTimeout(function() {
       toggleAnimationControls(map)
       map.removeLayer(baseFade)
