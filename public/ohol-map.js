@@ -1316,10 +1316,13 @@
 
   var createWorldLayers = function(world) {
     if (!world.biomeLayer && world.generation.biomeSeedOffset) {
+      //console.log('biome layer', world.name)
       world.biomeLayer = new L.GridLayer.BiomeLayer(world.generation)
       world.biomeLayer.name = world.name + ' Biome'
     }
-    if (!world.keyPlacementLayer && world.dataTime) {
+    if (world.dataTime) {
+      if (world.keyPlacementLayer) return
+      //console.log('maplog layer', world.name)
       var keyPlacementLayer = createArcKeyPlacementLayer(world.dataTime, world.generation)
       keyPlacementLayer.name = "key placement"
       world.keyPlacementLayer = keyPlacementLayer
@@ -1328,8 +1331,10 @@
       world.maplogLayer = maplogLayer
       L.Util.setOptions(keyPlacementLayer, {alternateAnim: maplogLayer})
       L.Util.setOptions(maplogLayer, {alternateStatic: keyPlacementLayer})
-    } else if (!world.objectLayer && world.generation.biomeSeedOffset) {
-      var objectLayer = new L.GridLayer.ObjectLayerSprite(world.generation)
+    } else if (world.generation.biomeSeedOffset) {
+      if (world.objectLayer) return
+      //console.log('object layer', world.name)
+      var objectLayer = new L.GridLayer.ObjectLayerSprite(Object.assign({}, world.generation, objectLayerOptions))
       //var objectLayer = new L.GridLayer.ObjectLayerPixel(world.generation)
       objectLayer.name = world.name + " Objects"
       world.objectLayer = objectLayer
@@ -1337,7 +1342,7 @@
   }
 
   var chooseRandPlacements = function(world) {
-    if (world.placements) return;
+    if (world.generation.placements) return;
     var options = Object.assign({}, objectGenerationOptions, world.generation)
     if (options.biomes.length < 1
      || options.randPlacements.length < 1
@@ -1795,7 +1800,7 @@
       baseAttributionLayer,
       new L.GridLayer.KeyPlacementSprite(keyPlacementCache, Object.assign({
         dataTime: end.toString(),
-      }, gen))
+      }, gen, objectLayerOptions))
     ])
   }
 
@@ -1814,7 +1819,7 @@
       new L.GridLayer.MaplogSprite(maplogCache, Object.assign({
         dataTime: sEnd.toString(),
         time: ms,
-      }, gen))
+      }, gen, objectLayerOptions))
     ])
   }
 
@@ -2160,15 +2165,17 @@
       //console.log(world.msStart, ms, world.msEnd, world.name)
       if (world.msStart < ms && (ms <= world.msEnd || world.msEnd == undefined)) {
         //console.log('pick', world)
-        //console.log('pick', world.name)
+        console.log('pick', world.name)
         targetWorld = world
       }
     })
     var changes = 0
     var layers = []
     if (targetWorld) {
-      createWorldLayers(targetWorld)
-      chooseRandPlacements(targetWorld)
+      if (objectBounds.length > 0) {
+        chooseRandPlacements(targetWorld)
+        createWorldLayers(targetWorld)
+      }
       //console.log(targetWorld.generation.placements)
       //console.log(targetWorld.generation.gridPlacements)
       //console.log(targetWorld.generation.biomes)
@@ -2184,14 +2191,14 @@
     }
     oholBase.eachLayer(function(layer) {
       if (layers.indexOf(layer) == -1) {
-        //console.log('remove', layer && layer.name)
+        console.log('remove', layer && layer.name)
         oholBase.removeLayer(layer)
         changes++
       }
     })
     layers.forEach(function(layer) {
       if (!oholBase.hasLayer(layer)) {
-        //console.log('add', layer.name)
+        console.log('add', layer.name)
         oholBase.addLayer(layer)
         changes++
       }

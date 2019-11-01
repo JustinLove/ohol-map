@@ -1,4 +1,5 @@
 - object generation
+  - special placements overdraw
   - track drawing lag
   - rift sizes
   - last arc used wrong oil placement
@@ -8,6 +9,7 @@
 - use changing object layers to avoid visual flashing?
 - server dependant
 
+- arc slider getting awkward
 - swap legends
 - lineage legend flickering
 - time jump for searched lives not setting timeline UI position
