@@ -9,7 +9,6 @@
 - server dependant
 
 - arc slider getting awkward
-- lineage legend flickering
 - time jump for searched lives not setting timeline UI position
 - year on timeline
 - yesterday not jumping to time

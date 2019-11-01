@@ -2513,12 +2513,13 @@
 
         var key = point.lineage.toString()
         var prior = lineages[key]
-        if (prior && prior.name && !point.name) break;
+        if (prior && prior.name && !point.name) continue;
         if (!prior || !prior.name || point.chain > prior.chain) {
           lineages[key] = point
         }
       }
       L.Util.setOptions(this, {lineages: lineages})
+      this._time = this.options.time
     },
   });
 
