@@ -1,17 +1,15 @@
 - object generation
-  - work with placement layers
-    - redraw on rift change
   - track drawing lag
   - rift sizes
   - last arc used wrong oil placement
 - tile gen
   - overdraw missing for large natural objets
   - http://localhost:8000/public/index.html#x=5&y=2&z=29&t=1570914891
-- integrate object data
-  - lazy create layers
 - use changing object layers to avoid visual flashing?
 - server dependant
 
+- swap legends
+- lineage legend flickering
 - time jump for searched lives not setting timeline UI position
 - year on timeline
 - yesterday not jumping to time
@@ -34,6 +32,7 @@
   - do we need all four sprite bounds?
 - always load certain objects (walls/floors)
 - expired objects
+- tapout radius
 - canvas perf
   - render all points of color at once
   - pre-downscale sprites
@@ -43,7 +42,6 @@
 
 
 - local/UTC toggle
-- data update - dug barrel cactus - mabye after worldgen
 - more accurate biome age times
 - bookmarking layers
 - in-app help

@@ -8,7 +8,10 @@
 
   var worlds = []
 
-  var showNaturalObjectsAboveZoom = 26
+  var objectLayerOptions = {
+    fadeTallObjects: false,
+    showNaturalObjectsAboveZoom: 26,
+  }
 
   var barrierRadius = null
   var riftOptions = {
@@ -1193,7 +1196,7 @@
   L.GridLayer.ObjectLayerSprite = L.GridLayer.SpriteLayer.extend({
     options: Object.assign({
       pane: 'overlayPane',
-      showNaturalObjectsAboveZoom: showNaturalObjectsAboveZoom,
+      showNaturalObjectsAboveZoom: objectLayerOptions.showNaturalObjectsAboveZoom,
     }, objectGenerationOptions),
     createTile: function (coords, done) {
       var layer = this
@@ -1306,75 +1309,69 @@
         if (!world.biomeLayer) {
           console.log(world, "no biome layer")
         }
-      } else if (world.generation.biomeSeedOffset) {
-        world.biomeLayer = new L.GridLayer.BiomeLayer(world.generation)
-        world.biomeLayer.name = world.name + ' Biome'
       }
       return world
     })
-    if (objectBounds.length > 0) {
-      chooseRandPlacements()
-      addArcLayers()
+  }
+
+  var createWorldLayers = function(world) {
+    if (!world.biomeLayer && world.generation.biomeSeedOffset) {
+      world.biomeLayer = new L.GridLayer.BiomeLayer(world.generation)
+      world.biomeLayer.name = world.name + ' Biome'
+    }
+    if (!world.keyPlacementLayer && world.dataTime) {
+      var keyPlacementLayer = createArcKeyPlacementLayer(world.dataTime, world.generation)
+      keyPlacementLayer.name = "key placement"
+      world.keyPlacementLayer = keyPlacementLayer
+      var maplogLayer = createArcMaplogLayer(world.msStart, world.dataTime, world.generation)
+      maplogLayer.name = "maplog"
+      world.maplogLayer = maplogLayer
+      L.Util.setOptions(keyPlacementLayer, {alternateAnim: maplogLayer})
+      L.Util.setOptions(maplogLayer, {alternateStatic: keyPlacementLayer})
+    } else if (!world.objectLayer && world.generation.biomeSeedOffset) {
+      var objectLayer = new L.GridLayer.ObjectLayerSprite(world.generation)
+      //var objectLayer = new L.GridLayer.ObjectLayerPixel(world.generation)
+      objectLayer.name = world.name + " Objects"
+      world.objectLayer = objectLayer
     }
   }
 
-  var addArcLayers = function() {
-    worlds.forEach(function(world) {
-      if (world.dataTime) {
-        var keyPlacementLayer = createArcKeyPlacementLayer(world.dataTime, world.generation)
-        keyPlacementLayer.name = "key placement"
-        world.keyPlacementLayer = keyPlacementLayer
-        var maplogLayer = createArcMaplogLayer(world.msStart, world.dataTime, world.generation)
-        maplogLayer.name = "maplog"
-        world.maplogLayer = maplogLayer
-        L.Util.setOptions(keyPlacementLayer, {alternateAnim: maplogLayer})
-        L.Util.setOptions(maplogLayer, {alternateStatic: keyPlacementLayer})
-      } else if (world.generation.biomeSeedOffset) {
-        var objectLayer = new L.GridLayer.ObjectLayerSprite(world.generation)
-        //var objectLayer = new L.GridLayer.ObjectLayerPixel(world.generation)
-        objectLayer.name = world.name + " Objects"
-        world.objectLayer = objectLayer
-      }
-    })
-  }
-
-  var chooseRandPlacements = function() {
-    worlds.forEach(function(world) {
-      var options = Object.assign({}, objectGenerationOptions, world.generation)
-      if (options.biomes.length < 1
-       || options.randPlacements.length < 1
-       || options.randSeed == null
-       || options.biomeSeedOffset == null) {
-         return
-      }
-      var safeR = 354 - 2
-      var placementRandomSource = new CustomRandomSource(options.randSeed)
-      //console.log('------------------------', options.randSeed, safeR)
-      world.generation.placements = specialMapPlacements.concat()
-      //console.log(world.name)
-      options.randPlacements.forEach(function(place) {
-        //console.log('vvvv  seeking', place.id, place.biomes)
-        var toPlace = place.randPlacement
-        var crazy = 0
-        while (toPlace > 0 && crazy++ < 2000) {
-          var pickX = placementRandomSource.getRandomBoundedInt(-safeR, safeR)
-          var pickY = placementRandomSource.getRandomBoundedInt(-safeR, safeR)
-          var bi = options.computeMapBiomeIndex(pickX, pickY, options)
-          var pickB = options.biomeMap[bi]
-          //console.log(pickX, pickY, pickB)
-          if (place.biomes.indexOf(pickB) != -1) {
-            //console.log('hit')
-            world.generation.placements.push({
-              msStart: world.msStart,
-              x: pickX,
-              y: pickY,
-              id: place.id,
-            })
-            toPlace--
-          }
+  var chooseRandPlacements = function(world) {
+    if (world.placements) return;
+    var options = Object.assign({}, objectGenerationOptions, world.generation)
+    if (options.biomes.length < 1
+     || options.randPlacements.length < 1
+     || options.randSeed == null
+     || options.biomeSeedOffset == null) {
+       return
+    }
+    var safeR = 354 - 2
+    var placementRandomSource = new CustomRandomSource(options.randSeed)
+    //console.log('------------------------', options.randSeed, safeR)
+    world.generation.placements = specialMapPlacements.concat()
+    //console.log('rand placements', world.name)
+    options.randPlacements.forEach(function(place) {
+      //console.log('vvvv  seeking', place.id, place.biomes)
+      var toPlace = place.randPlacement
+      var crazy = 0
+      while (toPlace > 0 && crazy++ < 2000) {
+        var pickX = placementRandomSource.getRandomBoundedInt(-safeR, safeR)
+        var pickY = placementRandomSource.getRandomBoundedInt(-safeR, safeR)
+        var bi = options.computeMapBiomeIndex(pickX, pickY, options)
+        var pickB = options.biomeMap[bi]
+        //console.log(pickX, pickY, pickB)
+        if (place.biomes.indexOf(pickB) != -1) {
+          //console.log('hit')
+          world.generation.placements.push({
+            msStart: world.msStart,
+            x: pickX,
+            y: pickY,
+            id: place.id,
+          })
+          toPlace--
         }
-        //console.log(world.generation.placements, crazy, world.name)
-      })
+      }
+      //console.log(world.generation.placements, crazy, world.name)
     })
   }
 
@@ -1440,7 +1437,7 @@
 
   L.GridLayer.KeyPlacementSprite = L.GridLayer.SpriteLayer.extend({
     options: Object.assign({
-      showNaturalObjectsAboveZoom: showNaturalObjectsAboveZoom,
+      showNaturalObjectsAboveZoom: objectLayerOptions.showNaturalObjectsAboveZoom,
     }, objectGenerationOptions),
     initialize: function(cache, options) {
       this._cache = cache;
@@ -1611,7 +1608,7 @@
   L.GridLayer.MaplogSprite = L.GridLayer.SpriteLayer.extend({
     options: Object.assign({
       time: 0,
-      showNaturalObjectsAboveZoom: showNaturalObjectsAboveZoom,
+      showNaturalObjectsAboveZoom: objectLayerOptions.showNaturalObjectsAboveZoom,
     }, objectGenerationOptions),
     initialize: function(cache, options) {
       this._cache = cache;
@@ -1822,6 +1819,7 @@
   }
 
   var setObjectLayerOptions = function(options) {
+    Object.assign(objectLayerOptions, options)
     worlds.forEach(function(world) {
       if (world.keyPlacementLayer) {
         world.keyPlacementLayer.eachLayer(function(layer) {
@@ -2162,15 +2160,17 @@
       //console.log(world.msStart, ms, world.msEnd, world.name)
       if (world.msStart < ms && (ms <= world.msEnd || world.msEnd == undefined)) {
         //console.log('pick', world)
-        console.log('pick', world.name)
+        //console.log('pick', world.name)
         targetWorld = world
       }
     })
     var changes = 0
     var layers = []
     if (targetWorld) {
-      console.log(targetWorld.generation.placements)
-      console.log(targetWorld.generation.gridPlacements)
+      createWorldLayers(targetWorld)
+      chooseRandPlacements(targetWorld)
+      //console.log(targetWorld.generation.placements)
+      //console.log(targetWorld.generation.gridPlacements)
       //console.log(targetWorld.generation.biomes)
       if (targetWorld.generation.placements) {
         updatePlacementLayer(randOverlay, targetWorld.generation.placements)
@@ -2208,7 +2208,7 @@
     barrierRadius = null
     for (var i = riftHistory.length - 1;i >= 0;i--) {
       if (ms > riftHistory[i].ms) {
-        if (!zoom || zoom < showNaturalObjectsAboveZoom) {
+        if (!zoom || zoom < objectLayerOptions.showNaturalObjectsAboveZoom) {
           targetLayer = riftHistory[i].layer
         }
         barrierRadius = riftHistory[i].radius
@@ -2740,7 +2740,6 @@
           }
           break;
         case 'worldList':
-          console.log(message.worlds.data)
           updateWorlds(message.worlds.data)
           break;
         case 'objectBounds':
@@ -2753,10 +2752,8 @@
               bounds[2] - bounds[0] - 30,
               bounds[3] - bounds[1] - 30)
           }
-          chooseRandPlacements()
-          addArcLayers()
-          toggleAnimationControls(map)
           baseLayerByTime(map, mapTime, 'objectbounds')
+          toggleAnimationControls(map)
           //objectOverlayPixel.addTo(map)
           //objectOverlaySprite.addTo(map)
           break;
@@ -2826,7 +2823,6 @@
           break
         case 'showNaturalObjectsAboveZoom':
           setObjectLayerOptions({showNaturalObjectsAboveZoom: message.zoom})
-          showNaturalObjectsAboveZoom = message.zoom
           riftLayerByTime(mapTime, map.getZoom())
           break
         default:
@@ -2842,8 +2838,10 @@
 
   inhabit('map')
 
+  /*
   var testSource = new CustomRandomSource(124567)
   for (var i = 0;i< 3;i++) {
     console.log('sample', i, testSource.getRandomBoundedInt(-352,352))
   }
+  */
 })()
