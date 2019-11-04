@@ -208,6 +208,11 @@ update msg model =
         }
       , Cmd.none
       )
+    UI (View.ToggleUTC utc) ->
+      if utc then
+        ( { model | zone = Time.utc }, Cmd.none )
+      else
+        ( model, Time.here |> Task.perform CurrentZone )
     UI (View.ToggleAnimated animated) ->
       ( { model
         | dataAnimated = animated

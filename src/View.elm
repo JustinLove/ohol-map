@@ -44,6 +44,7 @@ type Msg
   | StartTime Posix
   | HoursBefore Int
   | HoursAfter Int
+  | ToggleUTC Bool
   | ToggleAnimated Bool
   | GameSecondsPerSecond Int
   | FramesPerSecond Int
@@ -215,10 +216,16 @@ timeline model =
                 { onPress = Just Pause
                 , label = el [ centerX ] <| icon "pause2"
                 }
-          , ( time
-              |> dateWithSeconds model.zone
-              |> text
-            )
+          , if model.zone == Time.utc then
+              Input.button []
+                { onPress = Just (ToggleUTC False)
+                , label = dateWithZone model.zone time
+                }
+            else
+              Input.button []
+                { onPress = Just (ToggleUTC True)
+                , label = dateWithZone model.zone time
+                }
           , ( model.currentArc
               |> Maybe.andThen (yearOfArc time)
               |> Maybe.map (\s -> text (", " ++ s))
@@ -425,6 +432,20 @@ dateWithSeconds zone time =
     second = Time.toSecond zone time |> String.fromInt |> String.padLeft 2 '0'
   in
     (date zone time) ++ ":" ++ second
+
+dateWithZone : Time.Zone -> Posix -> Element Msg
+dateWithZone zone time =
+  row []
+    [ text (dateWithSeconds zone time)
+    , text " "
+    , (if zone == Time.utc then
+        "utc"
+      else
+        "local"
+      )
+        |> text
+        |> el [ Font.size 16, Font.color (rgb 0.4 0.4 0.4), alignBottom, padding 2 ]
+    ]
 
 formatMonth : Time.Month -> String
 formatMonth month =
@@ -868,6 +889,15 @@ cosmetics model =
         , options =
           [ Input.option BirthLocation (text "Birth")
           , Input.option DeathLocation (text "Death")
+          ]
+        }
+      , Input.radioRow [ padding 10, spacing 20 ]
+        { onChange = ToggleUTC
+        , selected = Just (model.zone == Time.utc)
+        , label = Input.labelAbove [] (text "Time Zone")
+        , options =
+          [ Input.option False (text "Local")
+          , Input.option True (text "UTC")
           ]
         }
       , Input.checkbox [ padding 10, spacing 2 ]

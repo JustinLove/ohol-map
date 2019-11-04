@@ -1,4 +1,3 @@
-- local/UTC toggle
 - refactoring
 - server dependant
 - server url link
