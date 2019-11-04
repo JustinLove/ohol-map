@@ -1,25 +1,24 @@
-- object generation
-  - track drawing lag
-  - rift sizes
-  - last arc used wrong oil placement
-- tile gen
-  - overdraw missing for large natural objets
-  - http://localhost:8000/public/index.html#x=5&y=2&z=29&t=1570914891
-- use changing object layers to avoid visual flashing?
-- server dependant
-
 - time jump for searched lives not setting timeline UI position
 - year on timeline
 - yesterday not jumping to time
-- incremental zooms - silent failures in heroku
-- find bottleneck - network or render?
-  - load time garbage collection
+- local/UTC toggle
+- server dependant
 - server url link
+- static server list
+
+- tapout radius
+- expired objects
+- time window range graph
+- in-app help
 - animated
   - data lods?
   - keyframes?
   - diffed keyframes?
 - rendering map data
+  - find bottleneck - network or render?
+  - load time garbage collection
+  - use changing object layers to avoid visual flashing?
+  - biome caching?
   - only load needed sprites, need drawing ready management
   - objects to show in pixel layer, color table
   - rift
@@ -28,21 +27,21 @@
   - glitch with maxzoom on object pixel layer https://github.com/Leaflet/Leaflet/pull/6310
   - floor fade effect
   - do we need all four sprite bounds?
+  - custom layer methods
+    - single layer
+    - webworker
+    - typed arrays allow setting whole palette color at once
 - always load certain objects (walls/floors)
-- expired objects
-- tapout radius
 - canvas perf
   - render all points of color at once
   - pre-downscale sprites
   - use whole numbers for positions
   - composting mode tricks
 - biome graphics
+- rift sizes
+- last arc of random oil shows grid placement in final state
 
-
-- local/UTC toggle
-- more accurate biome age times
 - bookmarking layers
-- in-app help
 - sidebar icon toggle
 - map resize handling and sidebar
 - show data for other servers
@@ -57,25 +56,13 @@
 - more logatrimthim slider scale?
 - better lineage color - bright except for problem colors
 - better generatoin color - longer on top?
-- time window range graph
 - better setting of default server
 - paging
 - different coloration methods
   - account
 - grouped heat map
 - leaflet handlers - click events?
-- custom layer methods
-  - single layer
-  - webworker
-
-- might be suitable for close in views
-  - layer group
-- might be sufficient for closer views
-- seeming data match, but too slow, espeically at larger scales
-  - typed arrays allow setting whole palette color at once
-  - cross compilation/webassembly
-- significant UI lag
-  - webworker?
+- more accurate biome age times
 
   - x limits for screenshot layers
     - x 218 (electrum) through 232 (259 bear cave)
