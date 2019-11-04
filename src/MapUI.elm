@@ -40,6 +40,7 @@ type Msg
   | MonumentList Int (Result Http.Error Json.Decode.Value)
   | DataLayer (Result Http.Error Json.Decode.Value)
   | FetchUpTo Posix
+  | PlayRelativeTo Int Posix
   | ShowTimeNotice Posix Posix
   | CurrentTimeNotice Posix
   | CurrentTime Posix
@@ -413,9 +414,15 @@ update msg model =
         | timeRange = Just (min, max)
         , mapTime = mapTime
         }
-      , mapTime
-        |> Maybe.map Leaflet.currentTime
-        |> Maybe.withDefault Cmd.none
+      , Cmd.batch
+        [ mapTime
+          |> Maybe.map Leaflet.currentTime
+          |> Maybe.withDefault Cmd.none
+        , if isYesterday model then
+            Time.now |> Task.perform (PlayRelativeTo 24)
+          else
+            Cmd.none
+        ]
       )
     Event (Ok (Leaflet.SidebarToggle)) ->
       ( { model | sidebarOpen = not model.sidebarOpen }
@@ -581,6 +588,11 @@ update msg model =
           (relativeStartTime model.hoursPeriod time)
           time
       )
+    PlayRelativeTo hoursBefore time ->
+      { model
+      | player = Starting
+      }
+        |> setTime (relativeStartTime hoursBefore time)
     ShowTimeNotice show time ->
       let
         until = time

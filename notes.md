@@ -1,4 +1,3 @@
-- yesterday not jumping to time
 - year on timeline
 - local/UTC toggle
 - refactoring
