@@ -278,8 +278,16 @@ update msg model =
     UI (View.SelectMatchingLife life) ->
       ( { model
         | focus = Just life
+        , timeRange = Just (life.birthTime, life.deathTime |> Maybe.withDefault (relativeEndTime 1 life.birthTime))
+        , mapTime = Just life.birthTime
         }
-      , Leaflet.focus (serverLife life)
+      , Cmd.batch
+        [ Leaflet.currentTime life.birthTime
+        , Navigation.replaceUrl model.navigationKey <|
+          centerUrl model.location (Just life.birthTime) (isYesterday model) model.center
+        , Time.now |> Task.perform (ShowTimeNotice life.birthTime)
+        , Leaflet.focus (serverLife life)
+        ]
       )
     UI (View.SelectLineage life) ->
       ( model
@@ -927,6 +935,9 @@ myLife life =
   , age = life.age
   , birthX = life.birthX
   , birthY = life.birthY
+  , deathTime = life.deathTime
+  , deathX = life.deathX
+  , deathY = life.deathY
   }
 
 serverLife : Life -> Data.Life
@@ -941,6 +952,9 @@ serverLife life =
   , age = life.age
   , birthX = life.birthX
   , birthY = life.birthY
+  , deathTime = life.deathTime
+  , deathX = life.deathX
+  , deathY = life.deathY
   }
 
 fetchMatchingLives : String -> String -> Cmd Msg

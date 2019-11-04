@@ -2142,11 +2142,13 @@
       data: data,
     })
     legendControl.redraw()
-    app.ports.leafletEvent.send({
-      kind: 'dataRange',
-      min: min,
-      max: max,
-    })
+    if (min && max) {
+      app.ports.leafletEvent.send({
+        kind: 'dataRange',
+        min: min,
+        max: max,
+      })
+    }
   }
 
   var moveIfOutOfView = function(data, map) {

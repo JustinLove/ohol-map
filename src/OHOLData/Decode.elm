@@ -28,7 +28,10 @@ life =
     |> map2 (|>) (field "server_id" int)
     |> map2 (|>) (field "epoch" int)
     |> map2 (|>) (field "playerid" int)
-    |> map2 (|>) (field "age" (oneOf [ float, null 0.0 ]))
+    |> map2 (|>) (field "age" (maybe float))
+    |> map2 (|>) (field "death_x" (maybe int))
+    |> map2 (|>) (field "death_y" (maybe int))
+    |> map2 (|>) (field "death_time" (maybe timeStamp))
 
 servers : Decoder (List Server)
 servers =

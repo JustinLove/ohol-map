@@ -97,9 +97,12 @@ type alias Life =
   , name : Maybe String
   , serverId : Int
   , epoch : Int
-  , age : Float
+  , age : Maybe Float
   , birthX : Int
   , birthY : Int
+  , deathTime : Maybe Posix
+  , deathX : Maybe Int
+  , deathY : Maybe Int
   }
 
 centerUrl : Url -> Maybe Posix -> Bool -> Point -> String
@@ -382,8 +385,9 @@ showMatchingLifeDetail model life =
       ]
       [ el [ width (px 30) ]
         (life.age
-          |> ceiling
-          |> String.fromInt
+          |> Maybe.map ceiling
+          |> Maybe.map String.fromInt
+          |> Maybe.withDefault ""
           |> text
         )
       , el [ width (px 140) ]

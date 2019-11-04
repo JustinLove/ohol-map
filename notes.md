@@ -1,7 +1,7 @@
-- time jump for searched lives not setting timeline UI position
-- year on timeline
 - yesterday not jumping to time
+- year on timeline
 - local/UTC toggle
+- refactoring
 - server dependant
 - server url link
 - static server list

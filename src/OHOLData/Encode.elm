@@ -32,11 +32,14 @@ life l =
     , ("birth_time", timeStamp l.birthTime)
     , ("chain", int l.chain)
     , ("lineage", int l.lineage)
-    , ("name", l.name |> Maybe.map string |> Maybe.withDefault null)
+    , ("name", maybe string l.name)
     , ("server_id", int l.serverId)
     , ("epoch", int l.epoch)
     , ("playerid", int l.playerid)
-    , ("age", float l.age)
+    , ("age", maybe float l.age)
+    , ("death_x", maybe int l.deathX)
+    , ("death_y", maybe int l.deathY)
+    , ("death_time", maybe timeStamp l.deathTime)
     ]
 
 servers : List Server -> Value

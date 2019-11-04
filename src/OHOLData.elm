@@ -33,7 +33,10 @@ type alias Life =
   , serverId : Int
   , epoch : Int
   , playerid : Int
-  , age : Float
+  , age : Maybe Float
+  , deathX : Maybe Int
+  , deathY : Maybe Int
+  , deathTime : Maybe Posix
   }
 
 type alias Server =
