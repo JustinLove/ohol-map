@@ -1,4 +1,3 @@
-- year on timeline
 - local/UTC toggle
 - refactoring
 - server dependant

@@ -219,6 +219,11 @@ timeline model =
               |> dateWithSeconds model.zone
               |> text
             )
+          , ( model.currentArc
+              |> Maybe.andThen (yearOfArc time)
+              |> Maybe.map (\s -> text (", " ++ s))
+              |> Maybe.withDefault none
+            )
           ]
         , Input.slider
           [ Background.color control ]
@@ -436,6 +441,22 @@ formatMonth month =
     Time.Oct -> "10"
     Time.Nov -> "11"
     Time.Dec -> "12"
+
+--yearOfArc : Posix -> Arc -> Maybe String
+yearOfArc time arc =
+  let
+    arcStart = arc.start |> Time.posixToMillis
+    arcEnd = arc.end |> Time.posixToMillis
+    ms = time |> Time.posixToMillis
+  in
+    if arcStart <= ms && ms <= arcEnd then
+      ((toFloat (ms - arcStart)) / (60 * 1000))
+        |> round
+        |> String.fromInt
+        |> (\s -> "year " ++ s)
+        |> Just
+    else
+      Nothing
 
 lineageUrl : String -> Int -> Int -> Int -> String
 lineageUrl base serverId epoch playerid =
