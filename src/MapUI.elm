@@ -299,12 +299,13 @@ update msg model =
       )
     UI (View.SelectServer server) ->
       let
+        range = (server.minTime, server.maxTime)
         m2 = { model
           | selectedServer = Just server
-          , coarseStartTime = inRange server.minTime model.coarseStartTime server.maxTime
-          , startTime = inRange server.minTime model.startTime server.maxTime
+          , coarseStartTime = inRange range model.coarseStartTime
+          , startTime = inRange range model.startTime
           , mapTime = model.mapTime
-            |> Maybe.map (\time -> inRange server.minTime time server.maxTime)
+            |> Maybe.map (\time -> inRange range time)
           , dataLayer = Loading
           }
       in
@@ -406,7 +407,7 @@ update msg model =
     Event (Ok (Leaflet.DataRange min max)) ->
       let
         mapTime = model.mapTime
-            |> Maybe.map (inRange min max)
+            |> Maybe.map (inRange (min, max))
       in
       ( { model
         | timeRange = Just (min, max)
@@ -1035,12 +1036,12 @@ extractHashString key location =
     |> Url.Parser.parse (Url.Parser.query (Url.Parser.Query.string key))
     |> Maybe.withDefault Nothing
 
-inRange : Posix -> Posix -> Posix -> Posix
-inRange mint t maxt =
+inRange : (Posix, Posix) -> Posix -> Posix
+inRange (mint, maxt) t =
   let
     mini = Time.posixToMillis mint
-    i = Time.posixToMillis t
     maxi = Time.posixToMillis maxt
+    i = Time.posixToMillis t
   in
     Time.millisToPosix (min maxi (max mini i))
 
