@@ -2314,7 +2314,8 @@
       {start: 10, end: 13, interval: 1000000},
       {start: 14, end: 16, interval: 100000},
       {start: 17, end: 19, interval: 10000},
-      {start: 20, end: 23, interval: 1000},
+      {start: 20, end: 20, interval: 1000},
+      {start: 21, end: 23, interval: 320},
       {start: 24, end: 29, interval: 40},
     ]
   };
