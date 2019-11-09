@@ -33,6 +33,7 @@
     { ms: Date.parse("2019-07-26 17:30:00-05:00"), layer: rift354, radius: 354 },
     { ms: Date.parse("2019-08-13 10:57:00-05:00"), layer: riftGone, radius: null },
     { ms: Date.parse("2019-08-24 16:57:00-05:00"), layer: rift354, radius: 354 },
+    { ms: Date.parse("2019-11-08 16:30:00-06:00"), layer: riftGone, radius: null },
   ]
 
   var barrierObjects = [
