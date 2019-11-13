@@ -1,3 +1,4 @@
+- seedA/B
 - don't need to auto fetch monuments
 - refactoring
 - server dependant
