@@ -499,35 +499,19 @@ update msg model =
       let _ = Debug.log "fetch servers failed" error in
       ({model | servers = Failed error}, Cmd.none)
     ArcList (Ok arcs) ->
-      (let
+      let
         lastArc = arcs |> List.reverse |> List.head
-        m2 =
-          { model
+        mlastTime = lastArc |> Maybe.map .end
+      in
+        ( { model
           | arcs = Data arcs
           , currentArc = lastArc
           , coarseArc = lastArc
           , timeRange = lastArc |> Maybe.map (\{start, end} -> (start, end))
           }
-      in
-      case model.mapTime of
-        Just _ ->
-          ( m2
-          , Leaflet.currentTime (model.mapTime |> Maybe.withDefault model.time)
-          )
-        Nothing ->
-          let
-            mlastTime = lastArc |> Maybe.map .end
-            lastTime = mlastTime |> Maybe.withDefault model.time
-          in
-          ( { m2
-            | mapTime = mlastTime
-            }
-          , Cmd.batch
-            [ Leaflet.currentTime lastTime
-            , Time.now |> Task.perform (ShowTimeNotice lastTime)
-            ]
-          )
-      )
+        , Cmd.none
+        )
+        |> maybeSetTime mlastTime
         |> rebuildWorlds
     ArcList (Err error) ->
       let _ = Debug.log "fetch arcs failed" error in
@@ -755,6 +739,30 @@ arcForTime time marcs =
         |> List.filter (\arc -> isInRange arc.start time arc.end)
         |> List.head
     _ -> Nothing
+
+maybeSetTime : Maybe Posix -> (Model, Cmd Msg) -> (Model, Cmd Msg)
+maybeSetTime mtime (model, cmd) =
+  case model.mapTime of
+    Just _ ->
+      ( model
+      , Cmd.batch
+        [ Leaflet.currentTime (model.mapTime |> Maybe.withDefault model.time)
+        , cmd
+        ]
+      )
+    Nothing ->
+      let
+        time = mtime |> Maybe.withDefault model.time
+      in
+      ( { model
+        | mapTime = mtime
+        }
+      , Cmd.batch
+        [ Leaflet.currentTime time
+        , Time.now |> Task.perform (ShowTimeNotice time)
+        , cmd
+        ]
+      )
 
 setYesterday : Model -> (Model, Cmd Msg)
 setYesterday model =
