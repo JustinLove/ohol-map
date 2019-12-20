@@ -2,6 +2,7 @@ module OHOLData exposing
   ( Life
   , Server
   , Arc
+  , Span
   , Objects
   , VersionChange
   , Spawn
@@ -49,8 +50,13 @@ type alias Server =
 type alias Arc =
   { serverId : Int
   , start: Posix
-  , end: Posix
+  , end: Maybe Posix
   , seed: Maybe Int
+  }
+
+type alias Span =
+  { start: Posix
+  , end: Posix
   }
 
 type alias Objects =
@@ -251,8 +257,8 @@ worldMerge start mage mver marc =
   in
     { name = name
     , start = start
-    , end = marc |> Maybe.map .end
-    , dataTime = marc |> Maybe.map .end
+    , end = marc |> Maybe.andThen .end
+    , dataTime = marc |> Maybe.andThen .end
     , biomeLayer = mage |> Maybe.andThen .biomeLayer
     , generation = generation
     }

@@ -1,7 +1,7 @@
 module MapUI exposing (..)
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
-import OHOLData as Data exposing (Server, Arc, Version, World)
+import OHOLData as Data exposing (Server, Arc, Span, Version, World)
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
 import View exposing
@@ -36,6 +36,7 @@ type Msg
   | LineageLives (Result Http.Error Json.Decode.Value)
   | ServerList (Result Http.Error (List Data.Server))
   | ArcList (Result Http.Error (List Data.Arc))
+  | SpanList (Result Http.Error (List Data.Span))
   | ObjectsReceived (Result Http.Error Data.Objects)
   | MonumentList Int (Result Http.Error Json.Decode.Value)
   | DataLayer (Result Http.Error Json.Decode.Value)
@@ -82,6 +83,7 @@ type alias Model =
   , selectedServer : Maybe Server
   , servers : RemoteData (List Server)
   , arcs : RemoteData (List Arc)
+  , spans : RemoteData (List Span)
   , versions : RemoteData (List Version)
   , worlds : List World
   , monuments : Dict Int Json.Decode.Value
@@ -141,6 +143,7 @@ init config location key =
       , selectedServer = Nothing
       , servers = NotRequested
       , arcs = NotRequested
+      , spans = NotRequested
       , versions = NotRequested
       , worlds = Data.rebuildWorlds Data.codeChanges [] []
       , monuments = Dict.empty
@@ -159,6 +162,7 @@ init config location key =
         Nothing -> Time.now |> Task.perform CurrentTimeNotice
       , fetchServers model.cachedApiUrl
       , fetchArcs
+      , fetchSpans
       , fetchObjects
       , Leaflet.animOverlay model.dataAnimated
       , Leaflet.worldList model.worlds
@@ -284,7 +288,7 @@ update msg model =
     UI (View.SelectMatchingLife life) ->
       ( { model
         | focus = Just life
-        , timeRange = Just (life.birthTime, life.deathTime |> Maybe.withDefault (relativeEndTime 1 life.birthTime))
+        , timeRange = Just (lifeToRange life)
         , mapTime = Just life.birthTime
         }
       , Cmd.batch
@@ -311,7 +315,7 @@ update msg model =
           , coarseStartTime = inRange range model.coarseStartTime
           , startTime = inRange range model.startTime
           , mapTime = model.mapTime
-            |> Maybe.map (\time -> inRange range time)
+            |> Maybe.map (inRange range)
           , dataLayer = Loading
           }
       in
@@ -337,7 +341,7 @@ update msg model =
           | currentArc = marc
           , coarseStartTime = time
           , startTime = time
-          , timeRange = Just (arc.start, arc.end)
+          , timeRange = Just (arcToRange model.time arc)
           }
             |> setTime time
         Nothing ->
@@ -365,7 +369,7 @@ update msg model =
           , coarseArc = marc
           , coarseStartTime = time
           , startTime = time
-          , timeRange = Just (arc.start, arc.end)
+          , timeRange = Just (arcToRange model.time arc)
           }
             |> setTime time
         Nothing ->
@@ -501,13 +505,13 @@ update msg model =
     ArcList (Ok arcs) ->
       let
         lastArc = arcs |> List.reverse |> List.head
-        mlastTime = lastArc |> Maybe.map .end
+        mlastTime = lastArc |> Maybe.andThen .end
       in
         ( { model
           | arcs = Data arcs
           , currentArc = lastArc
           , coarseArc = lastArc
-          , timeRange = lastArc |> Maybe.map (\{start, end} -> (start, end))
+          , timeRange = lastArc |> Maybe.map (arcToRange model.time)
           }
         , Cmd.none
         )
@@ -516,6 +520,22 @@ update msg model =
     ArcList (Err error) ->
       let _ = Debug.log "fetch arcs failed" error in
       ({model | arcs = Failed error, currentArc = Nothing, coarseArc = Nothing, timeRange = Nothing}, Cmd.none)
+    SpanList (Ok spans) ->
+      let
+        lastSpan = spans |> List.reverse |> List.head
+        mlastTime = lastSpan |> Maybe.map .end
+      in
+        ( { model
+          | spans = Data spans
+          , timeRange = lastSpan |> Maybe.map spanToRange
+          }
+        , Cmd.none
+        )
+        |> maybeSetTime mlastTime
+        |> rebuildWorlds
+    SpanList (Err error) ->
+      let _ = Debug.log "fetch spans failed" error in
+      ({model | spans = Failed error}, Cmd.none)
     ObjectsReceived (Ok objects) ->
       ( { model
         | versions = Data (Data.completeVersions objects.spawnChanges)
@@ -710,9 +730,9 @@ setTime time model =
           model.timeRange
         else
           marc
-            |> Maybe.map (\arc -> (arc.start, arc.end))
+            |> Maybe.map (arcToRange model.time)
       animatable = timeRange
-        |> Maybe.map (\(min, max) -> isInRange min time max)
+        |> Maybe.map (\range -> isInRange range time)
         |> Maybe.withDefault False
     in
     ( { model
@@ -736,7 +756,7 @@ arcForTime time marcs =
   case marcs of
     Data arcs ->
       arcs
-        |> List.filter (\arc -> isInRange arc.start time arc.end)
+        |> List.filter (\arc -> isInRange (arcToRange time arc) time)
         |> List.head
     _ -> Nothing
 
@@ -866,7 +886,7 @@ timeSelectionForTime model =
                 | timeMode = ArcRange
                 , currentArc = newArc
                 , coarseArc = newArc
-                , timeRange = Just (arc.start, arc.end)
+                , timeRange = Just (arcToRange model.time arc)
                 }
               Nothing ->
                 timeSelectionAround model
@@ -902,7 +922,7 @@ fetchDataForTime model =
           fetchDataLayer model.apiUrl
             arc.serverId
             arc.start
-            arc.end
+            (arc.end |> Maybe.withDefault model.time)
         Nothing ->
           Cmd.none
 
@@ -934,8 +954,15 @@ fetchServers baseUrl =
 fetchArcs : Cmd Msg
 fetchArcs =
   Http.get
-    { url = Url.relative ["kp/arcs.json"] []
+    { url = Url.relative ["kptest/seeds.json"] []
     , expect = Http.expectJson ArcList Decode.arcs
+    }
+
+fetchSpans : Cmd Msg
+fetchSpans =
+  Http.get
+    { url = Url.relative ["kptest/spans.json"] []
+    , expect = Http.expectJson SpanList Decode.spans
     }
 
 fetchObjects : Cmd Msg
@@ -1066,14 +1093,26 @@ inRange (mint, maxt) t =
   in
     Time.millisToPosix (min maxi (max mini i))
 
-isInRange : Posix -> Posix -> Posix -> Bool
-isInRange mint t maxt =
+isInRange : (Posix, Posix) -> Posix -> Bool
+isInRange (mint, maxt) t =
   let
     mini = Time.posixToMillis mint
-    i = Time.posixToMillis t
     maxi = Time.posixToMillis maxt
+    i = Time.posixToMillis t
   in
     mini < i && i <= maxi
+
+arcToRange : Posix -> Arc -> (Posix, Posix)
+arcToRange default {start,end} =
+  (start, end |> Maybe.withDefault default)
+
+spanToRange : Span -> (Posix, Posix)
+spanToRange {start,end} =
+  (start, end)
+
+lifeToRange : Life -> (Posix, Posix)
+lifeToRange {birthTime, deathTime} =
+  (birthTime, deathTime |> Maybe.withDefault (relativeEndTime 1 birthTime))
 
 increment : Posix -> Posix
 increment =

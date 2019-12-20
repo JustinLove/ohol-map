@@ -467,7 +467,7 @@ formatMonth month =
 yearOfArc time arc =
   let
     arcStart = arc.start |> Time.posixToMillis
-    arcEnd = arc.end |> Time.posixToMillis
+    arcEnd = arc.end |> Maybe.withDefault time |> Time.posixToMillis
     ms = time |> Time.posixToMillis
   in
     if arcStart <= ms && ms <= arcEnd then
@@ -750,7 +750,7 @@ arcSelect model =
           Just arc ->
             column []
               [ text <| date model.zone arc.start
-              , text <| date model.zone arc.end
+              , text <| date model.zone (arc.end |> Maybe.withDefault model.time)
               ]
           Nothing ->
             text "Arc"

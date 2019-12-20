@@ -5,6 +5,8 @@ module OHOLData.Encode exposing
   , server
   , arcs
   , arc
+  , spans
+  , span
   , spawn
   , biome
   , generation
@@ -13,7 +15,7 @@ module OHOLData.Encode exposing
   , timeStamp
   )
 
-import OHOLData exposing (Life, Server, Arc, Spawn, Biome, Generation, World)
+import OHOLData exposing (Life, Server, Arc, Span, Spawn, Biome, Generation, World)
 
 import Json.Encode exposing (..)
 import Time exposing (Posix)
@@ -68,8 +70,21 @@ arc a =
   object
     [ ("server_id", int a.serverId)
     , ("start", timeStamp a.start)
-    , ("end", timeStamp a.end)
+    , ("end", maybe timeStamp a.end)
     , ("seed", maybe int a.seed)
+    ]
+
+spans : List Span -> Value
+spans data =
+  object
+    [ ("data", list span data)
+    ]
+
+span : Span -> Value
+span a =
+  object
+    [ ("start", timeStamp a.start)
+    , ("end", timeStamp a.end)
     ]
 
 spawn : Spawn -> Value
