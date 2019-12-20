@@ -499,71 +499,46 @@ update msg model =
       let _ = Debug.log "fetch servers failed" error in
       ({model | servers = Failed error}, Cmd.none)
     ArcList (Ok arcs) ->
-      let
+      (let
         lastArc = arcs |> List.reverse |> List.head
-        worlds = Data.rebuildWorlds
-          Data.codeChanges
-          (case model.versions of
-            Data versions -> versions
-            _ -> []
-          )
-          arcs
+        m2 =
+          { model
+          | arcs = Data arcs
+          , currentArc = lastArc
+          , coarseArc = lastArc
+          , timeRange = lastArc |> Maybe.map (\{start, end} -> (start, end))
+          }
       in
       case model.mapTime of
         Just _ ->
-          ( { model
-            | arcs = Data arcs
-            , worlds = worlds
-            , currentArc = lastArc
-            , coarseArc = lastArc
-            , timeRange = lastArc |> Maybe.map (\{start, end} -> (start, end))
-            }
-          , Cmd.batch
-            [ Leaflet.currentTime (model.mapTime |> Maybe.withDefault model.time)
-            , Leaflet.worldList worlds
-            ]
+          ( m2
+          , Leaflet.currentTime (model.mapTime |> Maybe.withDefault model.time)
           )
         Nothing ->
           let
             mlastTime = lastArc |> Maybe.map .end
             lastTime = mlastTime |> Maybe.withDefault model.time
           in
-          ( { model
-            | arcs = Data arcs
-            , currentArc = lastArc
-            , coarseArc = lastArc
-            , timeRange = lastArc |> Maybe.map (\{start, end} -> (start, end))
-            , mapTime = mlastTime
+          ( { m2
+            | mapTime = mlastTime
             }
           , Cmd.batch
             [ Leaflet.currentTime lastTime
-            , Leaflet.worldList worlds
             , Time.now |> Task.perform (ShowTimeNotice lastTime)
             ]
           )
+      )
+        |> rebuildWorlds
     ArcList (Err error) ->
       let _ = Debug.log "fetch arcs failed" error in
       ({model | arcs = Failed error, currentArc = Nothing, coarseArc = Nothing, timeRange = Nothing}, Cmd.none)
     ObjectsReceived (Ok objects) ->
-      let
-        versions = Data.completeVersions objects.spawnChanges
-        worlds = Data.rebuildWorlds
-          Data.codeChanges
-          versions
-          (case model.arcs of
-            Data arcs -> arcs
-            _ -> []
-          )
-      in
       ( { model
-        | versions = Data versions
-        , worlds = worlds
+        | versions = Data (Data.completeVersions objects.spawnChanges)
         }
-      , Cmd.batch
-        [ Leaflet.worldList worlds
-        , Leaflet.objectBounds objects.ids objects.bounds
-        ]
+      , Leaflet.objectBounds objects.ids objects.bounds
       )
+        |> rebuildWorlds
     ObjectsReceived (Err error) ->
       let _ = Debug.log "fetch objects failed" error in
       (model, Cmd.none)
@@ -666,6 +641,27 @@ update msg model =
       )
     Navigate (Browser.External url) ->
       (model, Navigation.load url)
+
+remoteDataWithDefault : a -> RemoteData a -> a
+remoteDataWithDefault default data =
+  case data of
+    Data value -> value
+    _ -> default
+
+rebuildWorlds : (Model, Cmd Msg) -> (Model, Cmd Msg)
+rebuildWorlds (model, cmd) =
+  let
+    worlds = Data.rebuildWorlds
+      Data.codeChanges
+      (model.versions |> remoteDataWithDefault [])
+      (model.arcs |> remoteDataWithDefault [])
+  in
+  ( { model | worlds = worlds }
+  , Cmd.batch
+    [ Leaflet.worldList worlds
+    , cmd
+    ]
+  )
 
 requireLives : Model -> (Model, Cmd Msg)
 requireLives model =
