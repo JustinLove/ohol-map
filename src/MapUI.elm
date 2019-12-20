@@ -145,7 +145,7 @@ init config location key =
       , arcs = NotRequested
       , spans = NotRequested
       , versions = NotRequested
-      , worlds = Data.rebuildWorlds Data.codeChanges [] []
+      , worlds = Data.rebuildWorlds Data.codeChanges [] [] []
       , monuments = Dict.empty
       , dataLayer = NotRequested
       , lives = NotRequested
@@ -659,6 +659,7 @@ rebuildWorlds (model, cmd) =
       Data.codeChanges
       (model.versions |> remoteDataWithDefault [])
       (model.arcs |> remoteDataWithDefault [])
+      (model.spans |> remoteDataWithDefault [])
   in
   ( { model | worlds = worlds }
   , Cmd.batch

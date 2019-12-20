@@ -81,10 +81,11 @@ spans data =
     ]
 
 span : Span -> Value
-span a =
+span s =
   object
-    [ ("start", timeStamp a.start)
-    , ("end", timeStamp a.end)
+    [ ("msStart", msTime s.start)
+    , ("msEnd", msTime s.end)
+    , ("dataTime", timeStamp s.end)
     ]
 
 spawn : Spawn -> Value
@@ -147,6 +148,7 @@ world w =
     , ("msStart", msTime w.start)
     , ("msEnd", maybe msTime w.end)
     , ("dataTime", maybe timeStamp w.dataTime)
+    , ("spans", list span w.spans)
     , ("biomeLayer", maybe string w.biomeLayer)
     , ("generation", generation w.generation)
     ]

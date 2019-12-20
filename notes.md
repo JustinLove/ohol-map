@@ -1,5 +1,10 @@
+- index files
+- base times - field of spans
 - seedA/B
-- don't need to auto fetch monuments
+- no off-biome placements
+- special placements missing
+- jump to last monument
+- rebuild selection in-layer
 - refactoring
 - server dependant
 - server url link

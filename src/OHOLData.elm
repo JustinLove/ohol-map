@@ -259,12 +259,13 @@ worldMerge start mage mver marc =
     , start = start
     , end = marc |> Maybe.andThen .end
     , dataTime = marc |> Maybe.andThen .end
+    , spans = []
     , biomeLayer = mage |> Maybe.andThen .biomeLayer
     , generation = generation
     }
 
-rebuildWorlds : List Age -> List Version -> List Arc -> List World
-rebuildWorlds ages versions arcs =
+rebuildWorlds : List Age -> List Version -> List Arc -> List Span -> List World
+rebuildWorlds ages versions arcs spans =
   rebuildWorldsTimeList
     (timeList ages versions arcs)
     ages
@@ -273,6 +274,8 @@ rebuildWorlds ages versions arcs =
     []
     |> List.reverse
     |> fixupEndTime
+    |> assignSpans spans
+    --|> checkSpans spans
 
 rebuildWorldsTimeList : List Int -> List Age -> List Version -> List Arc -> List World -> List World
 rebuildWorldsTimeList times ages versions arcs worlds =
@@ -296,6 +299,39 @@ rebuildWorldsTimeList times ages versions arcs worlds =
         ) :: worlds)
     [] ->
       worlds
+
+assignSpans : List Span -> List World -> List World
+assignSpans spans =
+  List.map (assignWorldSpans spans)
+
+assignWorldSpans : List Span -> World -> World
+assignWorldSpans spans world =
+  { world
+  | spans = List.filter (\span -> (overlap world span) >= 0.5) spans
+  }
+
+overlap : World -> Span -> Float
+overlap world span =
+  let
+    spanStart = Time.posixToMillis span.start
+    spanEnd = Time.posixToMillis span.end
+    worldStart = Time.posixToMillis world.start
+    worldEnd = Time.posixToMillis (world.end |> Maybe.withDefault span.end)
+    end = min worldEnd spanEnd
+    start = max worldStart spanStart
+    length = max 0 (end - start)
+    total = spanEnd - spanStart
+    over = (toFloat length) / (toFloat total)
+  in
+   over
+
+checkSpans : List Span -> List World -> List World
+checkSpans spans worlds =
+  let
+    _ = spans |> List.length |> Debug.log "spans"
+    _ = worlds |> List.concatMap .spans |> List.length |> Debug.log "used"
+  in
+    worlds
 
 inRange : Int -> List {a|start:Posix} -> Bool
 inRange time list =
@@ -343,12 +379,19 @@ compressValues value accum =
     [] ->
       [value]
 
-type alias Age = World
+type alias Age =
+  { name: String
+  , start: Posix
+  , biomeLayer: Maybe String
+  , generation: Generation
+  }
+
 type alias World =
   { name: String
   , start: Posix
   , end: Maybe Posix
   , dataTime: Maybe Posix
+  , spans: List Span
   , biomeLayer: Maybe String
   , generation: Generation
   }
@@ -374,8 +417,6 @@ codeChanges : List Age
 codeChanges =
   [ { name = "Badlands Age"
     , start = Time.millisToPosix 0
-    , end = Nothing
-    , dataTime = Nothing
     , biomeLayer = Just "badlandsAge"
     , generation =
       { defaultGeneration
@@ -385,8 +426,6 @@ codeChanges =
     }
   , { name = "Arctic Age"
     , start = humanTime "2018-03-08"
-    , end = Nothing
-    , dataTime = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -396,8 +435,6 @@ codeChanges =
     }
   , { name = "Desert Age"
     , start = humanTime "2018-03-31"
-    , end = Nothing
-    , dataTime = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -407,8 +444,6 @@ codeChanges =
     }
   , { name = "Jungle Age (off biome animals)"
     , start = humanTime "2018-11-19"
-    , end = Nothing
-    , dataTime = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -418,8 +453,6 @@ codeChanges =
     }
   , { name = "Jungle Age"
     , start = humanTime "2019-03-29T21:48:07.000Z"
-    , end = Nothing
-    , dataTime = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -428,8 +461,6 @@ codeChanges =
     }
   , { name = "Jungle Age (screenshot 1)"
     , start = humanTime "2019-04-27T21:15:24.000Z"
-    , end = Nothing
-    , dataTime = Nothing
     , biomeLayer = Just "screenshot" --L.layerGroup([biomeImageLayer screenshotImageLayer]),
     , generation =
       { defaultGeneration
@@ -438,8 +469,6 @@ codeChanges =
     }
   , { name = "Jungle Age (small objects)"
     , start = humanTime "2019-05-04T17:11:31.000Z"
-    , end = Nothing
-    , dataTime = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -450,8 +479,6 @@ codeChanges =
     }
   , { name = "Jungle Age (screenshot 2)"
     , start = humanTime "2019-05-17T02:07:50.000Z"
-    , end = Nothing
-    , dataTime = Nothing
     , biomeLayer = Just "screenshot" --L.layerGroup([biomeImageLayer screenshotImageLayer]),
     , generation =
       { defaultGeneration
@@ -460,8 +487,6 @@ codeChanges =
     }
   , { name = "Random Age"
     , start = humanTime "2019-07-27T21:00:00Z"
-    , end = Nothing
-    , dataTime = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -471,8 +496,6 @@ codeChanges =
     }
   , { name = "Topographic Age"
     , start = humanTime "2019-07-31T01:25:24Z"
-    , end = Nothing
-    , dataTime = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -482,8 +505,6 @@ codeChanges =
     }
   , { name = "Special Age"
     , start = humanTime "2019-08-01T02:08:47Z"
-    , end = Nothing
-    , dataTime = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -495,8 +516,6 @@ codeChanges =
   , { name = "Special Age (seeded placements)"
     -- the short arc just before here had no tapped tarry spots or nosaj, so ambiguous
     , start = humanTime "2019-10-23T17:57:00Z"
-    , end = Nothing
-    , dataTime = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -507,7 +526,6 @@ codeChanges =
       } |> topographic specialBiomeWeights
     }
   ]
-  |> fixupEndTime
   |> fixupStartTime
 
 fixupEndTime : List World -> List World

@@ -1304,6 +1304,7 @@
   }
 
   var updateWorlds = function(worldData) {
+    console.log(worldData);
     worlds = worldData.map(function(world) {
       world.generation.computeMapBiomeIndex = computeMapBiomeIndexFunctions[world.generation.computeMapBiomeIndex]
       if (!world.generation.computeMapBiomeIndex) {
@@ -1325,17 +1326,19 @@
       world.biomeLayer = new L.GridLayer.BiomeLayer(world.generation)
       world.biomeLayer.name = world.name + ' Biome'
     }
-    if (world.dataTime) {
-      if (world.keyPlacementLayer) return
-      //console.log('maplog layer', world.name)
-      var keyPlacementLayer = createArcKeyPlacementLayer(world.dataTime, world.generation)
-      keyPlacementLayer.name = "key placement"
-      world.keyPlacementLayer = keyPlacementLayer
-      var maplogLayer = createArcMaplogLayer(world.msStart, world.dataTime, world.generation)
-      maplogLayer.name = "maplog"
-      world.maplogLayer = maplogLayer
-      L.Util.setOptions(keyPlacementLayer, {alternateAnim: maplogLayer})
-      L.Util.setOptions(maplogLayer, {alternateStatic: keyPlacementLayer})
+    if (world.spans.length > 0) {
+      world.spans.forEach(function(span) {
+        if (span.keyPlacementLayer) return
+        //console.log('maplog layer', world.name)
+        var keyPlacementLayer = createArcKeyPlacementLayer(span.dataTime, world.generation)
+        keyPlacementLayer.name = "key placement"
+        span.keyPlacementLayer = keyPlacementLayer
+        var maplogLayer = createArcMaplogLayer(span.msStart, span.dataTime, world.generation)
+        maplogLayer.name = "maplog"
+        span.maplogLayer = maplogLayer
+        L.Util.setOptions(keyPlacementLayer, {alternateAnim: maplogLayer})
+        L.Util.setOptions(maplogLayer, {alternateStatic: keyPlacementLayer})
+      })
     } else if (world.generation.biomeSeedOffset) {
       if (world.objectLayer) return
       //console.log('object layer', world.name)
@@ -1837,18 +1840,20 @@
   var setObjectLayerOptions = function(options) {
     Object.assign(objectLayerOptions, options)
     worlds.forEach(function(world) {
-      if (world.keyPlacementLayer) {
-        world.keyPlacementLayer.eachLayer(function(layer) {
-          L.Util.setOptions(layer, options)
-          layer.redraw && layer.redraw()
-        })
-      }
-      if (world.maplogLayer) {
-        world.maplogLayer.eachLayer(function(layer) {
-          L.Util.setOptions(layer, options)
-          layer.redraw && layer.redraw()
-        })
-      }
+      world.spans.forEach(function(span) {
+        if (span.keyPlacementLayer) {
+          span.keyPlacementLayer.eachLayer(function(layer) {
+            L.Util.setOptions(layer, options)
+            layer.redraw && layer.redraw()
+          })
+        }
+        if (span.maplogLayer) {
+          span.maplogLayer.eachLayer(function(layer) {
+            L.Util.setOptions(layer, options)
+            layer.redraw && layer.redraw()
+          })
+        }
+      })
       if (world.objectLayer) {
         var layer = world.objectLayer
         L.Util.setOptions(layer, options)
@@ -2174,12 +2179,18 @@
   var baseLayerByTime = function(map, ms, reason) {
     //console.log(ms, reason)
     var targetWorld
+    var targetSpan
     worlds.forEach(function(world) {
       //console.log(world.msStart, ms, world.msEnd, world.name)
       if (world.msStart < ms && (ms <= world.msEnd || world.msEnd == undefined)) {
         //console.log('pick', world)
         //console.log('pick', world.name)
         targetWorld = world
+        world.spans.forEach(function(span) {
+          if (span.msStart < ms && ms <= span.msEnd) {
+            targetSpan = span
+          }
+        })
       }
     })
     var changes = 0
@@ -2198,8 +2209,8 @@
       layers = [
         targetWorld.biomeLayer,
         targetWorld.objectLayer,
-        !dataAnimated && targetWorld.keyPlacementLayer,
-        dataAnimated && targetWorld.maplogLayer,
+        !dataAnimated && targetSpan && targetSpan.keyPlacementLayer,
+        dataAnimated && targetSpan && targetSpan.maplogLayer,
       ].filter(function(x) {return !!x})
     }
     oholBase.eachLayer(function(layer) {
