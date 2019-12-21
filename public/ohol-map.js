@@ -1419,7 +1419,6 @@
         y: Math.floor(coords.y/cellSize),
         z: dataZoom,
       }
-      var layer = this
       //console.log(datacoords)
       var url = this.getDataTileUrl(datacoords, data)
       if (this._index[url]) {
@@ -1445,6 +1444,110 @@
       }
     }
   })
+
+  var IndexedTileDataCache = L.Class.extend({
+    options: {
+      dataminzoom: 24,
+      datamaxzoom: 24,
+    },
+    getIndexUrl: function(coords, data) {
+      return L.Util.template(this._indexUrl, L.Util.extend(data, coords))
+    },
+    getDataTileUrl: function(coords, data) {
+      return L.Util.template(this._dataUrl, L.Util.extend(data, coords))
+    },
+    initialize: function(indexUrl, dataUrl, options) {
+      this._indexUrl = indexUrl;
+      this._dataUrl = dataUrl;
+      this._list = []
+      this._index = {}
+      options = L.Util.setOptions(this, options);
+    },
+    dataZoom: function(coords) {
+      return Math.max(this.options.dataminzoom, Math.min(this.options.datamaxzoom, coords.z))
+    },
+    expire: function() {
+      while (this._list.length > 100) {
+        var record = this._list.shift()
+        delete this._index[record.url]
+      }
+    },
+    loadFile: function(url) {
+      if (this._index[url]) {
+        var record = this._index[url]
+        this._list.splice(this._list.indexOf(record),1)
+        this._list.push(record)
+        return record.promise
+      } else {
+        var record = {
+          url: url,
+          promise: fetch(url).then(function(response) {
+            if (response.status % 100 == 4) {
+              return Promise.resolve('')
+            }
+            return response.text()
+          }),
+        }
+        this._list.push(record)
+        this._index[url] = record
+        this.expire()
+        //console.log(this._list.length)
+        return record.promise
+      }
+    },
+    loadIndexTile: function(coords, data) {
+      var dataZoom = this.dataZoom(coords)
+      var indexcoords = {
+        z: dataZoom,
+      }
+      var url = this.getIndexUrl(indexcoords, data)
+      return this.loadFile(url)
+    },
+    loadDataTile: function(coords, data) {
+      var dataZoom = this.dataZoom(coords)
+      var cellSize = Math.pow(2, coords.z - dataZoom)
+      var datacoords = {
+        x: Math.floor(coords.x/cellSize),
+        y: Math.floor(coords.y/cellSize),
+        z: dataZoom,
+      }
+      //console.log(datacoords)
+      var url = this.getDataTileUrl(datacoords, data)
+      return this.loadFile(url)
+    },
+    loadTile: function(coords, data) {
+      var cache = this
+      return cache.loadIndexTile(coords, data).then(function(indexText) {
+        //console.log(indexText)
+        var tileTime = {}
+        var currentTime = 0
+        indexText.split("\n").forEach(function(line) {
+          if (line[0] == 't') {
+            currentTime = line.slice(1)
+          } else {
+            var parts = line.split(' ')
+            var y = parts[0]
+            parts.slice(1).forEach(function(x) {
+              tileTime[[x,y].join(' ')] = currentTime
+            })
+          }
+        })
+        //console.log(tileTime)
+        var dataZoom = cache.dataZoom(coords)
+        var cellSize = Math.pow(2, coords.z - dataZoom)
+        var datacoords = {
+          x: Math.floor(coords.x/cellSize),
+          y: Math.floor(coords.y/cellSize),
+          z: dataZoom,
+        }
+        var time = tileTime[[datacoords.x, datacoords.y].join(' ')]
+        data.time = time || data.time
+        //console.log(datacoords, time, data.time)
+        return cache.loadDataTile(coords, data)
+      })
+    },
+  })
+
 
   var TileImage = L.Class.extend({
     options: {
@@ -1821,7 +1924,7 @@
     })
   }
 
-  var keyPlacementCache = new TileDataCache(oholMapConfig.keyPlacements, {
+  var keyPlacementCache = new IndexedTileDataCache(oholMapConfig.keyIndex, oholMapConfig.keyPlacements, {
     dataminzoom: 24,
     datamaxzoom: 24,
   })

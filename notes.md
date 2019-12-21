@@ -1,4 +1,5 @@
-- index files
+- x index files
+  - cache parsed index
 - base times
 - seedA/B
 - no off-biome placements
