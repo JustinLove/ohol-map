@@ -1421,6 +1421,7 @@
       }
     },
     loadTile: function(coords, data) {
+      if (data.time == '0') return Promise.resolve('')
       var datacoords = this.dataCoords(coords)
       //console.log(datacoords)
       var url = this.getDataTileUrl(datacoords, data)
