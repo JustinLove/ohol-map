@@ -57,6 +57,7 @@ type alias Arc =
 type alias Span =
   { start: Posix
   , end: Posix
+  , base: Posix
   }
 
 type alias Objects =
@@ -258,7 +259,6 @@ worldMerge start mage mver marc =
     { name = name
     , start = start
     , end = marc |> Maybe.andThen .end
-    , dataTime = marc |> Maybe.andThen .end
     , spans = []
     , biomeLayer = mage |> Maybe.andThen .biomeLayer
     , generation = generation
@@ -390,7 +390,6 @@ type alias World =
   { name: String
   , start: Posix
   , end: Maybe Posix
-  , dataTime: Maybe Posix
   , spans: List Span
   , biomeLayer: Maybe String
   , generation: Generation

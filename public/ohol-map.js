@@ -243,7 +243,7 @@
     },
   })
 
-  //overlays['Checker'] = new L.GridLayer.CheckerLayer()
+  overlays['Checker'] = new L.GridLayer.CheckerLayer()
 
 
   // fractal generation copying https://github.com/jasonrohrer/OneLife/blob/master/commonSource/fractalNoise.cpp

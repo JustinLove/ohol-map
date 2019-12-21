@@ -67,6 +67,7 @@ span =
   succeed Span
     |> map2 (|>) (field "start" timeStamp)
     |> map2 (|>) (field "end" timeStamp)
+    |> map2 (|>) (field "base" timeStamp)
 
 objects : Decoder Objects
 objects =

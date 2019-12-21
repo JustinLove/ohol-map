@@ -1,5 +1,5 @@
 - index files
-- base times - field of spans
+- base times
 - seedA/B
 - no off-biome placements
 - special placements missing
