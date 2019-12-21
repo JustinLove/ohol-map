@@ -1446,54 +1446,34 @@
     }
   })
 
-  var objectImages = []
-
-  L.GridLayer.KeyPlacementSprite = L.GridLayer.SpriteLayer.extend({
-    options: Object.assign({
-      showNaturalObjectsAboveZoom: objectLayerOptions.showNaturalObjectsAboveZoom,
-    }, objectGenerationOptions),
+  var TileImage = L.Class.extend({
+    options: {
+    },
     initialize: function(cache, options) {
       this._cache = cache;
       options = L.Util.setOptions(this, options);
     },
-    createTile: function (coords, done) {
-      var layer = this
-      var options = layer.options
-      var tile = document.createElement('canvas');
-      var tileSize = layer.getTileSize();
-      var superscale = Math.pow(2, options.supersample)
-      tile.setAttribute('width', tileSize.x*superscale);
-      tile.setAttribute('height', tileSize.y*superscale);
-      var paddingX = 2;
-      var paddingUp = 2;
-      var paddingDown = 4;
-
-      var pnw = L.point(coords.x * tileSize.x, coords.y * tileSize.y)
-      var pse = L.point(pnw.x + tileSize.x, pnw.y + tileSize.y)
-      //console.log('pnw', coords, pnw)
-      var llnw = crs.pointToLatLng(pnw, coords.z)
-      var llse = crs.pointToLatLng(pse, coords.z)
-      //console.log('llnw', coords, llnw)
-
-      var startX = llnw.lng + 0.5
-      var startY = llnw.lat - 0.5
-      var endX = llse.lng + 0.5
-      var endY = llse.lat - 0.5
-      //console.log('start', startX, startY)
-      //console.log('end', endX, endY)
-
-      //console.log(coords)
-      var right = (endX - startX) + paddingX
-      var bottom = (startY - endY) + paddingDown
-      var minSize = 1.5 * Math.pow(2, 31 - coords.z)
-
-      //console.log(datacoords)
-      //console.log('data tile ' + JSON.stringify(coords))
+    getTile: function(coords, data, generation) {
       //console.time('data tile ' + JSON.stringify(coords))
-      layer._cache.loadTile(coords, {time: options.dataTime}).then(function(text) {
+      return this._cache.loadTile(coords, data).then(function(text) {
+        //console.timeEnd('data tile ' + JSON.stringify(coords))
         var occupied = {}
 
-        //console.timeEnd('data tile ' + JSON.stringify(coords))
+        var tileSize = generation.tileSize;
+        var pnw = L.point(coords.x * tileSize, coords.y * tileSize)
+        var pse = L.point(pnw.x + tileSize, pnw.y + tileSize)
+        //console.log('pnw', coords, pnw)
+        var llnw = crs.pointToLatLng(pnw, coords.z)
+        var llse = crs.pointToLatLng(pse, coords.z)
+        //console.log('llnw', coords, llnw)
+
+        var startX = llnw.lng + 0.5
+        var startY = llnw.lat - 0.5
+        var endX = llse.lng + 0.5
+        var endY = llse.lat - 0.5
+        //console.log('start', startX, startY)
+        //console.log('end', endX, endY)
+
         //console.time('data processing ' + JSON.stringify(coords))
         var placements = text.split("\n").filter(function(line) {
           return line != "";
@@ -1515,8 +1495,8 @@
         })
 
         var special = []
-        options.placements.filter(function(place) {
-          return (place.msStart/1000 < options.dataTime
+        generation.placements.filter(function(place) {
+          return (place.msStart/1000 < generation.dataTime
                   && startX <= place.x && place.x <= endX
                   && endY <= place.y && place.y <= startY)
         }).forEach(function(place) {
@@ -1533,8 +1513,15 @@
           }
         })
 
+        var paddingX = 2;
+        var paddingUp = 2;
+        var paddingDown = 4;
+
+        var right = (endX - startX) + paddingX
+        var bottom = (startY - endY) + paddingDown
+        var minSize = 1.5 * Math.pow(2, 31 - coords.z)
         var natural = []
-        if (coords.z >= options.showNaturalObjectsAboveZoom && options.biomeSeedOffset) {
+        if (coords.z >= generation.showNaturalObjectsAboveZoom && generation.biomeSeedOffset) {
           for (var y = -paddingUp;y < bottom;y++) {
             for (var x = -paddingX;x < right;x++) {
               if (occupied[[x, y].join(' ')]) {
@@ -1542,7 +1529,7 @@
               }
               var wx = startX + x
               var wy = startY - y
-              var v = getMapObjectRaw(wx, wy, options)
+              var v = getMapObjectRaw(wx, wy, generation)
               if (v == 0) continue
               var size = objectSize[v]
               var tooSmall = !size || size <= minSize
@@ -1558,8 +1545,8 @@
           }
         }
 
-        tile._keyplace =
-          natural.concat(special, placements)
+        var keyplace =
+          [].concat(natural, special, placements)
 
           .filter(function(placement) {
 
@@ -1575,6 +1562,36 @@
             return true
           })
           .sort(sortTypeAndDrawOrder)
+
+        return keyplace
+      })
+    },
+  })
+
+  var objectImages = []
+
+  L.GridLayer.KeyPlacementSprite = L.GridLayer.SpriteLayer.extend({
+    options: Object.assign({
+      showNaturalObjectsAboveZoom: objectLayerOptions.showNaturalObjectsAboveZoom,
+    }, objectGenerationOptions),
+    initialize: function(cache, options) {
+      this._cache = cache;
+      options = L.Util.setOptions(this, options);
+    },
+    createTile: function (coords, done) {
+      var layer = this
+      var options = layer.options
+      var tile = document.createElement('canvas');
+      var tileSize = layer.getTileSize();
+      var superscale = Math.pow(2, options.supersample)
+      tile.setAttribute('width', tileSize.x*superscale);
+      tile.setAttribute('height', tileSize.y*superscale);
+      //console.log(coords)
+
+      //console.log(datacoords)
+      //console.log('data tile ' + JSON.stringify(coords))
+      layer._cache.getTile(coords, {time: options.dataTime}, options).then(function(keyplace) {
+        tile._keyplace = keyplace
 
         //console.timeEnd('data processing ' + JSON.stringify(coords))
         //console.time('load images' + JSON.stringify(coords))
@@ -1734,7 +1751,7 @@
           return out
         })
 
-        tile._maplog = natural.concat(special, placements)
+        tile._maplog = [].concat(natural, special, placements)
 
         var time = layer.options.time
         tile.coords = coords
@@ -1809,10 +1826,12 @@
     datamaxzoom: 24,
   })
 
+  var keyPlacementImage = new TileImage(keyPlacementCache, {})
+
   var createArcKeyPlacementLayer = function(end, gen) {
     return new L.layerGroup([
       baseAttributionLayer,
-      new L.GridLayer.KeyPlacementSprite(keyPlacementCache, Object.assign({
+      new L.GridLayer.KeyPlacementSprite(keyPlacementImage, Object.assign({
         dataTime: end.toString(),
       }, gen, objectLayerOptions))
     ])
