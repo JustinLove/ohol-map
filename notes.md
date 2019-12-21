@@ -1,11 +1,13 @@
 - x index files
   - cache parsed index
-- base times
+- x base times
+  - special case 0 to skip lookup
 - seedA/B
 - no off-biome placements
 - special placements missing
 - jump to last monument
 - rebuild selection in-layer
+- server time selections dont set animation range
 - refactoring
 - server dependant
 - server url link
