@@ -1364,7 +1364,8 @@
         L.Util.setOptions(keyPlacementLayer, {alternateAnim: maplogLayer})
         L.Util.setOptions(maplogLayer, {alternateStatic: keyPlacementLayer})
       })
-    } else if (world.generation.biomeRandSeedA) {
+    }
+    if (world.generation.biomeRandSeedA) {
       if (world.objectLayer) return
       //console.log('object layer', world.name)
       var objectLayer = new L.GridLayer.ObjectLayerSprite(Object.assign({}, world.generation, objectLayerOptions))
@@ -2277,11 +2278,12 @@
       //console.log(world.msStart, ms, world.msEnd, world.name)
       if (world.msStart < ms && (ms <= world.msEnd || world.msEnd == undefined)) {
         //console.log('pick', world)
-        console.log('pick', world.name)
+        //console.log('pick', world.name)
         targetWorld = world
         world.spans.forEach(function(span) {
           if (span.msStart < ms && ms <= span.msEnd) {
             targetSpan = span
+            //console.log('pick span')
           }
         })
       }
@@ -2301,7 +2303,7 @@
       }
       layers = [
         targetWorld.biomeLayer,
-        targetWorld.objectLayer,
+        !targetSpan && targetWorld.objectLayer,
         !dataAnimated && targetSpan && targetSpan.keyPlacementLayer,
         dataAnimated && targetSpan && targetSpan.maplogLayer,
       ].filter(function(x) {return !!x})

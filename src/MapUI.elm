@@ -336,14 +336,17 @@ update msg model =
       in
       case marc of
         Just arc ->
-          let time = increment arc.start in
+          let
+            start = increment arc.start
+            end = arc.end |> Maybe.withDefault model.time
+          in
           { model
           | currentArc = marc
-          , coarseStartTime = time
-          , startTime = time
+          , coarseStartTime = start
+          , startTime = start
           , timeRange = Just (arcToRange model.time arc)
           }
-            |> setTime time
+            |> setTime end
         Nothing ->
           ( { model
             | currentArc = marc
@@ -363,15 +366,18 @@ update msg model =
       in
       case marc of
         Just arc ->
-          let time = increment arc.start in
+          let
+            start = increment arc.start
+            end = arc.end |> Maybe.withDefault model.time
+          in
           { model
           | currentArc = marc
           , coarseArc = marc
-          , coarseStartTime = time
-          , startTime = time
+          , coarseStartTime = start
+          , startTime = start
           , timeRange = Just (arcToRange model.time arc)
           }
-            |> setTime time
+            |> setTime end
         Nothing ->
           ( { model
             | currentArc = marc
