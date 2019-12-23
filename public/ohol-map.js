@@ -62,6 +62,7 @@
 
   var CELL_D = 128
   var objectBoundsPadding = 15
+  var objectIDMask = 0x0001FFFF;
 
   var scale = Math.pow(2, 24)
   var crs = L.extend({}, L.CRS.Simple, {
@@ -1559,7 +1560,7 @@
             t: t,
             x: parseInt(parts[0],10) - startX,
             y: -(parseInt(parts[1],10) - startY),
-            id: parseInt(parts[2].replace('f', ''),10),
+            id: parseInt(parts[2].replace('f', ''),10) & objectIDMask,
             floor: parts[2][0] == 'f',
           }
           out.key = [out.x, out.y].join(' ')
@@ -1697,7 +1698,7 @@
             t: t,
             x: x - startX,
             y: -(y - startY),
-            id: parseInt(parts[3].replace('f', ''),10),
+            id: parseInt(parts[3].replace('f', ''),10) & objectIDMask,
             floor: parts[3][0] == 'f',
           }
           out.key = [out.x, out.y].join(' ')
