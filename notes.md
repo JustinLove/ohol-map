@@ -1,8 +1,10 @@
 - x index files
   - cache parsed index
-- seedA/B
 - no off-biome placements
-- special placements missing
+- picking last data time of world
+- some lives seem to be missing map - cira 2019-11-02
+- map stones missing
+- special placements missing?
 - jump to last monument
 - rebuild selection in-layer
   - base times where end of log can skip key

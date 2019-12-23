@@ -255,7 +255,8 @@
   //var XX_PRIME32_4 = 668265263
   var XX_PRIME32_5 = 374761393
 
-  var xxSeed = 0;
+  var xxSeedA = 0
+  var xxSeedB = 0
 
   var hex = function(x) {
     if (x < 0) {
@@ -266,10 +267,11 @@
   }
 
   var xxTweakedHash2D = function(inX, inY) {
-    var h32 = xxSeed + inX + XX_PRIME32_5
+    var h32 = xxSeedA + inX + XX_PRIME32_5
     h32 += Math.imul(inY, XX_PRIME32_3)
     h32 = Math.imul(h32, XX_PRIME32_2)
     h32 ^= h32 >>> 13
+    h32 += xxSeedB
     h32 = Math.imul(h32, XX_PRIME32_3)
     h32 ^= h32 >>> 16
     h32 >>>= 0
@@ -385,7 +387,8 @@
     for (var i = 0;i < numBiomes;i++) {
       var biome = options.biomeMap[i]
 
-      xxSeed = biome * options.biomeSeedScale + options.biomeSeedOffset
+      xxSeedA = biome * options.biomeSeedScale + options.biomeRandSeedA
+      xxSeedB = options.biomeRandSeedB
       var randVal = getXYFractal(inX, inY, roughness, scale)
 
       if (randVal > maxValue) {
@@ -415,7 +418,8 @@
     var roughness = options.biomeFractalRoughness
     var weights = options.biomeCumuWeights
 
-    xxSeed = options.biomeSeedOffset
+    xxSeedA = options.biomeRandSeedA
+    xxSeedB = options.biomeRandSeedB
     var randVal = getXYFractal(inX, inY, roughness, scale)
     //console.log('initial', randVal)
 
@@ -445,7 +449,8 @@
       for (var i = regularBiomesLimit;i < numBiomes;i++) {
         var biome = options.biomeMap[i]
 
-        xxSeed = biome * options.biomeSeedScale + options.biomeSeedOffset + options.biomeSeedSpecialOffset
+        xxSeedA = biome * options.biomeSeedScale + options.biomeRandSeedA + options.biomeSeedSpecialOffset
+        xxSeedB = options.biomeRandSeedB
 
         var randVal = getXYFractal(inX, inY, roughness, scale)
 
@@ -523,12 +528,14 @@
       }
     }
 
-    xxSeed = options.densitySeed
+    xxSeedA = options.densitySeed
+    xxSeedB = 0
     var density = getXYFractal(inX, inY, options.densityRoughness, options.densityScale);
     density = sigmoid(density, options.densitySmoothness)
     density *= options.density
 
-    xxSeed = options.presentSeed
+    xxSeedA = options.presentSeed
+    xxSeedB = 0
     if (getXYRandom(inX, inY) >= density) {
       return 0
     }
@@ -542,7 +549,8 @@
     }
 
     // second place check
-    xxSeed = options.secondPlaceSeed
+    xxSeedA = options.secondPlaceSeed
+    xxSeedB = 0
     var firstPlaceChance = options.secondPlaceOffset + options.secondPlaceScale * secondPlace.gap
     if (getXYRandom(inX, inY) > firstPlaceChance) {
       pickedBiome = secondPlace.biome
@@ -561,7 +569,8 @@
     var scale = options.jackpotOffset + numObjects * options.jackpotScale
 
     for (var i = 0;i < numObjects;i++) {
-      xxSeed = options.jackpotSeedOffset + i * options.jackpotSeedScale
+      xxSeedA = options.jackpotSeedOffset + i * options.jackpotSeedScale
+      xxSeedB = 0
       var randVal = getXYFractal( inX, inY, roughness, scale)
 
       if (randVal > maxValue) {
@@ -584,7 +593,8 @@
       */
 
     // weighted object pick
-    xxSeed = options.objectSeed
+    xxSeedA = options.objectSeed
+    xxSeedB = 0
     var randValue = getXYRandom(inX, inY) * totalChance
 
     var i = 0
@@ -632,7 +642,8 @@
       inY == -barrierRadius) {
       if (-barrierRadius <= inX && inX <= barrierRadius
        && -barrierRadius <= inY && inY <= barrierRadius) {
-        xxSeed == options.barrierSeed
+        xxSeedA = options.barrierSeed
+        xxSeedB = 0
         var numOptions = barrierObjects.length
         if (numOptions < 1) return 0
 
@@ -893,7 +904,8 @@
     biomeOffset: 0.83332,
     biomeScale: 0.08333,
     biomeFractalRoughness: 0.55,
-    biomeSeedOffset: 723,
+    biomeRandSeedA: 723, // now 727
+    biomeRandSeedB: 0, // now 941
     biomeSeedScale: 263,
     biomeMap: jungleBiomeMap,
     numSpecialBiomes: 0,
@@ -1321,7 +1333,7 @@
   }
 
   var createWorldLayers = function(world) {
-    if (!world.biomeLayer && world.generation.biomeSeedOffset) {
+    if (!world.biomeLayer && world.generation.biomeRandSeedA) {
       //console.log('biome layer', world.name)
       world.biomeLayer = new L.GridLayer.BiomeLayer(world.generation)
       world.biomeLayer.name = world.name + ' Biome'
@@ -1339,7 +1351,7 @@
         L.Util.setOptions(keyPlacementLayer, {alternateAnim: maplogLayer})
         L.Util.setOptions(maplogLayer, {alternateStatic: keyPlacementLayer})
       })
-    } else if (world.generation.biomeSeedOffset) {
+    } else if (world.generation.biomeRandSeedA) {
       if (world.objectLayer) return
       //console.log('object layer', world.name)
       var objectLayer = new L.GridLayer.ObjectLayerSprite(Object.assign({}, world.generation, objectLayerOptions))
@@ -1355,7 +1367,7 @@
     if (options.biomes.length < 1
      || options.randPlacements.length < 1
      || options.randSeed == null
-     || options.biomeSeedOffset == null) {
+     || options.biomeRandSeedA == null) {
        return
     }
     var safeR = 354 - 2
@@ -1572,7 +1584,7 @@
         var bottom = (startY - endY) + paddingDown
         var minSize = 1.5 * Math.pow(2, 31 - coords.z)
         var natural = []
-        if (coords.z >= generation.showNaturalObjectsAboveZoom && generation.biomeSeedOffset) {
+        if (coords.z >= generation.showNaturalObjectsAboveZoom && generation.biomeRandSeedA) {
           for (var y = -paddingUp;y < bottom;y++) {
             for (var x = -paddingX;x < right;x++) {
               if (occupied[[x, y].join(' ')]) {

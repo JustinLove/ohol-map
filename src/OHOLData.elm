@@ -51,7 +51,8 @@ type alias Arc =
   { serverId : Int
   , start: Posix
   , end: Maybe Posix
-  , seed: Maybe Int
+  , seedA: Maybe Int
+  , seedB: Maybe Int
   }
 
 type alias Span =
@@ -227,7 +228,7 @@ worldMerge start mage mver marc =
     name =
       [ mage |> Maybe.map .name
       , mver |> Maybe.map (.id >> String.fromInt)
-      , marc |> Maybe.andThen .seed |> Maybe.map String.fromInt
+      , marc |> Maybe.andThen .seedA |> Maybe.map String.fromInt
       ]
       |> List.filterMap identity
       |> String.join " "
@@ -236,12 +237,15 @@ worldMerge start mage mver marc =
       |> Maybe.withDefault defaultGeneration
     generation = 
       { ageGen
-      | biomeSeedOffset = marc
-        |> Maybe.map .seed
-        |> Maybe.withDefault ageGen.biomeSeedOffset
+      | biomeRandSeedA = marc
+        |> Maybe.map .seedA
+        |> Maybe.withDefault ageGen.biomeRandSeedA
+      , biomeRandSeedB = marc
+        |> Maybe.map .seedB
+        |> Maybe.withDefault ageGen.biomeRandSeedB
       , randSeed = case ageGen.randSeed of
         Just seed -> Just seed
-        Nothing -> marc |> Maybe.andThen .seed
+        Nothing -> marc |> Maybe.andThen .seedA
       , objects = mver
         |> Maybe.map .objects
         |> Maybe.withDefault emptyVersion.objects
@@ -408,7 +412,8 @@ type alias Generation =
   , biomes: BiomeSet
   , gridPlacements: List Spawn
   , randPlacements: List Spawn
-  , biomeSeedOffset: Maybe Int
+  , biomeRandSeedA: Maybe Int
+  , biomeRandSeedB: Maybe Int
   , randSeed: Maybe Int
   }
 
@@ -490,7 +495,7 @@ codeChanges =
     , generation =
       { defaultGeneration
       | biomeMap = jungleBiomeMap
-      , biomeSeedOffset = Nothing
+      , biomeRandSeedA = Nothing
       }
     }
   , { name = "Topographic Age"
@@ -499,7 +504,7 @@ codeChanges =
     , generation =
       { defaultGeneration
       | biomeMap = topographicBiomeMap
-      , biomeSeedOffset = Nothing
+      , biomeRandSeedA = Nothing
       } |> topographic topographicBiomeWeights
     }
   , { name = "Special Age"
@@ -508,7 +513,7 @@ codeChanges =
     , generation =
       { defaultGeneration
       | biomeMap = specialBiomeMap
-      , biomeSeedOffset = Nothing
+      , biomeRandSeedA = Nothing
       , numSpecialBiomes = 3
       } |> topographic specialBiomeWeights
     }
@@ -519,7 +524,7 @@ codeChanges =
     , generation =
       { defaultGeneration
       | biomeMap = specialBiomeMap
-      , biomeSeedOffset = Nothing
+      , biomeRandSeedA = Nothing
       , randSeed = Nothing
       , numSpecialBiomes = 3
       } |> topographic specialBiomeWeights
@@ -573,7 +578,8 @@ defaultGeneration =
   , biomes = Dict.empty
   , gridPlacements = []
   , randPlacements = []
-  , biomeSeedOffset = Just 723
+  , biomeRandSeedA = Just 723
+  , biomeRandSeedB = Just 0
   , randSeed = Just 124567
   }
 

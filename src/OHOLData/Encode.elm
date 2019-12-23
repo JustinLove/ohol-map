@@ -71,7 +71,8 @@ arc a =
     [ ("server_id", int a.serverId)
     , ("start", timeStamp a.start)
     , ("end", maybe timeStamp a.end)
-    , ("seed", maybe int a.seed)
+    , ("seed", maybe int a.seedA)
+    , ("seed2", maybe int a.seedB)
     ]
 
 spans : List Span -> Value
@@ -132,7 +133,8 @@ generation g =
     , ("biomes", dict String.fromInt biome g.biomes)
     , ("gridPlacements", list spawn g.gridPlacements)
     , ("randPlacements", list spawn g.randPlacements)
-    , ("biomeSeedOffset", maybe int g.biomeSeedOffset)
+    , ("biomeRandSeedA", maybe int g.biomeRandSeedA)
+    , ("biomeRandSeedB", maybe int g.biomeRandSeedB)
     , ("randSeed", maybe int g.randSeed)
     ]
 
