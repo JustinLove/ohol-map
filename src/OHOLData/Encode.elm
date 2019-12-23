@@ -15,7 +15,7 @@ module OHOLData.Encode exposing
   , timeStamp
   )
 
-import OHOLData exposing (Life, Server, Arc, Span, Spawn, Biome, Generation, World)
+import OHOLData exposing (Life, Server, Arc, Span, Spawn, Biome, Generation, SecondPlaceBiomeObjects(..), World)
 
 import Json.Encode exposing (..)
 import Time exposing (Posix)
@@ -121,7 +121,7 @@ biome b =
 generation : Generation -> Value
 generation g =
   object
-    [ ("allowOffBiomeMovingObjects", bool g.allowOffBiomeMovingObjects)
+    [ ("secondPlaceBiomeObjects", secondPlaceBiomeObjects g.secondPlaceBiomeObjects)
     , ("biomeMap", list int g.biomeMap)
     , ("tallHeight", int g.tallHeight)
     , ("veryTallHeight", int g.veryTallHeight)
@@ -137,6 +137,14 @@ generation g =
     , ("biomeRandSeedB", maybe int g.biomeRandSeedB)
     , ("randSeed", maybe int g.randSeed)
     ]
+
+secondPlaceBiomeObjects : SecondPlaceBiomeObjects -> Value
+secondPlaceBiomeObjects second =
+  case second of
+    SecondPlaceObjects -> string "SecondPlaceObjects"
+    SecondPlaceStaticObjects -> string "SecondPlaceStaticObjects"
+    NoMovingObjects -> string "NoMovingObjects"
+    NoSecondPlace -> string "NoSecondPlace"
 
 worlds : List World -> Value
 worlds data =

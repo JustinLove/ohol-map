@@ -11,6 +11,7 @@ module OHOLData exposing
   , Version
   , World
   , Generation
+  , SecondPlaceBiomeObjects(..)
   , completeVersions
   , codeChanges
   , rebuildWorlds
@@ -399,8 +400,14 @@ type alias World =
   , generation: Generation
   }
 
+type SecondPlaceBiomeObjects
+  = SecondPlaceObjects
+  | SecondPlaceStaticObjects
+  | NoMovingObjects
+  | NoSecondPlace
+
 type alias Generation =
-  { allowOffBiomeMovingObjects: Bool
+  { secondPlaceBiomeObjects : SecondPlaceBiomeObjects
   , biomeMap: List Int
   , tallHeight: Int
   , veryTallHeight: Int
@@ -425,7 +432,7 @@ codeChanges =
     , generation =
       { defaultGeneration
       | biomeMap = badlandsBiomeMap
-      , allowOffBiomeMovingObjects = True
+      , secondPlaceBiomeObjects = SecondPlaceObjects
       }
     }
   , { name = "Arctic Age"
@@ -434,7 +441,7 @@ codeChanges =
     , generation =
       { defaultGeneration
       | biomeMap = arcticBiomeMap
-      , allowOffBiomeMovingObjects = True
+      , secondPlaceBiomeObjects = SecondPlaceObjects
       }
     }
   , { name = "Desert Age"
@@ -443,7 +450,7 @@ codeChanges =
     , generation =
       { defaultGeneration
       | biomeMap = desertBiomeMap
-      , allowOffBiomeMovingObjects = True
+      , secondPlaceBiomeObjects = SecondPlaceObjects
       }
     }
   , { name = "Jungle Age (off biome animals)"
@@ -452,7 +459,7 @@ codeChanges =
     , generation =
       { defaultGeneration
       | biomeMap = jungleBiomeMap
-      , allowOffBiomeMovingObjects = True
+      , secondPlaceBiomeObjects = SecondPlaceObjects
       }
     }
   , { name = "Jungle Age"
@@ -529,6 +536,30 @@ codeChanges =
       , numSpecialBiomes = 3
       } |> topographic specialBiomeWeights
     }
+  , { name = "Special Age (no animals)"
+    , start = humanTime "2019-11-16T09:14:00Z"
+    , biomeLayer = Nothing
+    , generation =
+      { defaultGeneration
+      | biomeMap = specialBiomeMap
+      , biomeRandSeedA = Nothing
+      , randSeed = Nothing
+      , numSpecialBiomes = 3
+      , secondPlaceBiomeObjects = NoMovingObjects
+      } |> topographic specialBiomeWeights
+    }
+  , { name = "Special Age (specialists)"
+    , start = humanTime "2019-11-18T18:41:00Z"
+    , biomeLayer = Nothing
+    , generation =
+      { defaultGeneration
+      | biomeMap = specialBiomeMap
+      , biomeRandSeedA = Nothing
+      , randSeed = Nothing
+      , numSpecialBiomes = 3
+      , secondPlaceBiomeObjects = NoSecondPlace
+      } |> topographic specialBiomeWeights
+    }
   ]
   |> fixupStartTime
 
@@ -566,7 +597,7 @@ cellD = 128
 
 defaultGeneration : Generation
 defaultGeneration =
-  { allowOffBiomeMovingObjects = False
+  { secondPlaceBiomeObjects = SecondPlaceStaticObjects
   , biomeMap = jungleBiomeMap
   , tallHeight = 2
   , veryTallHeight = 3

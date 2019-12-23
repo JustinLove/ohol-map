@@ -477,8 +477,21 @@
     }
 
     if (secondPlace) {
-      secondPlace.biome = secondPlaceBiome
-      secondPlace.gap = 0.1
+      switch (options.secondPlaceBiomeObjects) {
+        case 'SecondPlaceObjects':
+        case 'SecondPlaceStaticObjects':
+          secondPlace.biome = secondPlaceBiome
+          secondPlace.gap = 0.1
+          break;
+        case 'NoMovingObjects':
+          secondPlace.biome = pickedBiome
+          secondPlace.gap = 1.0
+          break;
+        case 'NoSecondPlace':
+          secondPlace.biome = secondPlaceBiome
+          secondPlace.gap = 10.0
+          break;
+      }
     }
 
     return pickedBiome
@@ -619,7 +632,7 @@
     //console.log('rand', randValue, i, returnId)
 
     // eliminate off-biome moving objects
-    if (options.allowOffBiomeMovingObjects != true && pickedBiome == secondPlace.biome) {
+    if (options.secondPlaceBiomeObjects != 'SecondPlaceObjects' && pickedBiome == secondPlace.biome) {
       if (biomeObjects[i].moving) {
         return 0
       }
@@ -1021,7 +1034,7 @@
     smallHeight: CELL_D, // height which is blocked
     tallHeight: 2, // heights that block
     veryTallHeight: 3,
-    allowOffBiomeMovingObjects: false,
+    secondPlaceBiomeObjects: 'SecondPlaceStaticObjects',
   }, biomeGenerationOptions)
 
   L.GridLayer.SpriteLayer = L.GridLayer.extend({
@@ -2264,7 +2277,7 @@
       //console.log(world.msStart, ms, world.msEnd, world.name)
       if (world.msStart < ms && (ms <= world.msEnd || world.msEnd == undefined)) {
         //console.log('pick', world)
-        //console.log('pick', world.name)
+        console.log('pick', world.name)
         targetWorld = world
         world.spans.forEach(function(span) {
           if (span.msStart < ms && ms <= span.msEnd) {

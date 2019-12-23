@@ -1,6 +1,5 @@
 - x index files
   - cache parsed index
-- no off-biome placements
 - picking last data time of world
 - some lives seem to be missing map - cira 2019-11-02
 - map stones missing
