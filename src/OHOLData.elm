@@ -14,6 +14,7 @@ module OHOLData exposing
   , SecondPlaceBiomeObjects(..)
   , completeVersions
   , codeChanges
+  , assignDataTime
   , rebuildWorlds
   , current
   , advance
@@ -52,6 +53,7 @@ type alias Arc =
   { serverId : Int
   , start: Posix
   , end: Maybe Posix
+  , dataTime: Maybe Posix
   , seedA: Maybe Int
   , seedB: Maybe Int
   }
@@ -315,7 +317,21 @@ assignWorldSpans spans world =
   | spans = List.filter (\span -> (overlap world span) >= 0.5) spans
   }
 
-overlap : World -> Span -> Float
+assignDataTime : List Span -> List Arc -> List Arc
+assignDataTime spans =
+  List.map (assignArcDataTime spans)
+
+assignArcDataTime : List Span -> Arc -> Arc
+assignArcDataTime spans arc =
+  { arc
+  | dataTime = spans
+    |> List.filter (\span -> (overlap arc span) >= 0.5)
+    |> List.reverse
+    |> List.head
+    |> Maybe.map .end
+  }
+
+overlap : {r|start: Posix, end: Maybe Posix} -> Span -> Float
 overlap world span =
   let
     spanStart = Time.posixToMillis span.start

@@ -338,7 +338,10 @@ update msg model =
         Just arc ->
           let
             start = increment arc.start
-            end = arc.end |> Maybe.withDefault model.time
+            end = arc.dataTime
+              |> Maybe.withDefault (arc.end
+                |> Maybe.withDefault model.time
+                )
           in
           { model
           | currentArc = marc
@@ -368,7 +371,10 @@ update msg model =
         Just arc ->
           let
             start = increment arc.start
-            end = arc.end |> Maybe.withDefault model.time
+            end = arc.dataTime
+              |> Maybe.withDefault (arc.end
+                |> Maybe.withDefault model.time
+                )
           in
           { model
           | currentArc = marc
@@ -511,7 +517,6 @@ update msg model =
     ArcList (Ok arcs) ->
       let
         lastArc = arcs |> List.reverse |> List.head
-        mlastTime = lastArc |> Maybe.andThen .end
       in
         ( { model
           | arcs = Data arcs
@@ -521,7 +526,7 @@ update msg model =
           }
         , Cmd.none
         )
-        |> maybeSetTime mlastTime
+        |> rebuildArcs
         |> rebuildWorlds
     ArcList (Err error) ->
       let _ = Debug.log "fetch arcs failed" error in
@@ -538,6 +543,7 @@ update msg model =
         , Cmd.none
         )
         |> maybeSetTime mlastTime
+        |> rebuildArcs
         |> rebuildWorlds
     SpanList (Err error) ->
       let _ = Debug.log "fetch spans failed" error in
@@ -673,6 +679,13 @@ rebuildWorlds (model, cmd) =
     , cmd
     ]
   )
+
+rebuildArcs : (Model, Cmd Msg) -> (Model, Cmd Msg)
+rebuildArcs (model, cmd) =
+  case (model.arcs, model.spans) of
+    (Data arcs, Data spans) ->
+      ( {model | arcs = Data (Data.assignDataTime spans arcs)}, cmd)
+    _ -> (model, cmd)
 
 requireLives : Model -> (Model, Cmd Msg)
 requireLives model =

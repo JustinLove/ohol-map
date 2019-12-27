@@ -56,6 +56,7 @@ arc =
     |> map2 (|>) (succeed 17)
     |> map2 (|>) (field "start" timeStamp)
     |> map2 (|>) (field "end" (nullable timeStamp))
+    |> map2 (|>) (field "end" (nullable timeStamp))
     |> map2 (|>) (field "seed" (nullable int))
     |> map2 (|>) (field "seed2" (nullable int))
 

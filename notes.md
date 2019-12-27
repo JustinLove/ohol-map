@@ -1,14 +1,14 @@
+- jump to last monument
 - x index files
   - cache parsed index
-- some lives seem to be missing map - cira 2019-11-02
+- server specific data urls
 - special placements missing?
-- picking last data time of world
-- jump to last monument
 - rebuild selection in-layer
   - base times where end of log can skip key
 - server time selections dont set animation range
 - refactoring
 - server dependant
+  - x some lives seem to be missing map - cira 2019-11-02 - server1
 - server url link
 - static server list
 
