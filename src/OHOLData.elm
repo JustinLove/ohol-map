@@ -1,6 +1,7 @@
 module OHOLData exposing
   ( Life
   , Server
+  , Monument
   , Arc
   , Span
   , Objects
@@ -47,6 +48,12 @@ type alias Server =
   , serverName : String
   , minTime: Posix
   , maxTime: Posix
+  }
+
+type alias Monument =
+  { x : Int
+  , y : Int
+  , date : Posix
   }
 
 type alias Arc =

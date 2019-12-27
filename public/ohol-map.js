@@ -2888,7 +2888,7 @@
           break;
         case 'monumentList':
           updateMonumentLayer(monumentOverlay, message.monuments.data)
-          //monumentOverlay.addTo(map)
+          monumentOverlay.addTo(map)
           break;
         case 'dataLayer':
           setDataLayers(message.lives.data)

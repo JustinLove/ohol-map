@@ -1,7 +1,7 @@
 module MapUI exposing (..)
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
-import OHOLData as Data exposing (Server, Arc, Span, Version, World)
+import OHOLData as Data exposing (Server, Monument, Arc, Span, Version, World)
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
 import View exposing
@@ -86,7 +86,7 @@ type alias Model =
   , spans : RemoteData (List Span)
   , versions : RemoteData (List Version)
   , worlds : List World
-  , monuments : Dict Int Json.Decode.Value
+  , monuments : Dict Int (List Monument)
   , dataLayer : RemoteData Bool
   , lives : RemoteData (List Life)
   , focus : Maybe Life
@@ -116,7 +116,7 @@ init config location key =
       , zone = Time.utc
       , time = Time.millisToPosix 0
       , notice = NoNotice
-      , center = Point 0 0 17
+      , center = defaultCenter
       , cachedApiUrl = config.cachedApiUrl
       , apiUrl = config.apiUrl
       , lineageUrl = config.lineageUrl
@@ -558,10 +558,32 @@ update msg model =
     ObjectsReceived (Err error) ->
       let _ = Debug.log "fetch objects failed" error in
       (model, Cmd.none)
-    MonumentList serverId (Ok monuments) ->
-      ( {model | monuments = Dict.insert serverId monuments model.monuments}
-      , Leaflet.monumentList serverId monuments
-      )
+    MonumentList serverId (Ok value) ->
+      let
+        monuments = value
+          |> Json.Decode.decodeValue Decode.monuments
+          |> Result.mapError (Debug.log "monument decode error")
+          |> Result.withDefault []
+        recent = List.head monuments
+          |> Maybe.map (\{x,y} -> Point x y defaultCenter.z)
+          |> Maybe.withDefault defaultCenter
+      in
+      if model.center == defaultCenter && recent /= defaultCenter then
+        ( { model
+          | monuments = Dict.insert serverId monuments model.monuments
+          , center = recent
+          }
+        , Cmd.batch
+          [ Leaflet.monumentList serverId value
+          , Leaflet.setView recent
+          , Navigation.replaceUrl model.navigationKey <|
+            centerUrl model.location model.mapTime (isYesterday model) recent
+          ]
+        )
+      else
+        ( {model | monuments = Dict.insert serverId monuments model.monuments}
+        , Leaflet.monumentList serverId value
+        )
     MonumentList serverId (Err error) ->
       let _ = Debug.log "fetch monuments failed" error in
       (model, Cmd.none)
@@ -878,9 +900,11 @@ coordinateRoute location model =
       (Just x, Just y, Just z) ->
         setViewFromRoute (Point x y z) model
       (Just x, Just y, Nothing) ->
-        setViewFromRoute (Point x y 24) model
+        setViewFromRoute (Point x y defaultCenter.z) model
       _ ->
-        setViewFromRoute (Point 0 0 24) model
+        setViewFromRoute defaultCenter model
+
+defaultCenter = (Point 0 0 25)
 
 setViewFromRoute : Point -> Model -> (Model, Cmd Msg)
 setViewFromRoute point model =

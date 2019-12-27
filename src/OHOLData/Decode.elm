@@ -1,6 +1,7 @@
 module OHOLData.Decode exposing
   ( lives
   , servers
+  , monuments
   , arcs
   , spans
   , objects
@@ -8,7 +9,7 @@ module OHOLData.Decode exposing
   , timeStamp
   )
 
-import OHOLData exposing (Life, Server, Arc, Span, Objects, VersionChange, Spawn, SpawnChange(..))
+import OHOLData exposing (Life, Server, Monument, Arc, Span, Objects, VersionChange, Spawn, SpawnChange(..))
 
 import Json.Decode exposing (..)
 import Time exposing (Posix)
@@ -45,6 +46,17 @@ server =
     |> map2 (|>) (field "server_name" string)
     |> map2 (|>) (field "min_time" timeStamp)
     |> map2 (|>) (field "max_time" timeStamp)
+
+monuments : Decoder (List Monument)
+monuments =
+  field "data" (list monument)
+
+monument : Decoder Monument
+monument =
+  succeed Monument
+    |> map2 (|>) (field "x" int)
+    |> map2 (|>) (field "y" int)
+    |> map2 (|>) (field "date" timeStamp)
 
 arcs : Decoder (List Arc)
 arcs =
