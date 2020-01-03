@@ -1,7 +1,6 @@
 - x index files
   - cache parsed index
 - server specific data urls
-- special placements missing?
 - rebuild selection in-layer
   - base times where end of log can skip key
 - server time selections dont set animation range

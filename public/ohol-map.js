@@ -1519,49 +1519,156 @@
     },
   })
 
-  var decodeKeyPlain = function(text) {
-    return text.split("\n").filter(function(line) {
-      return line != "";
-    }).map(function(line) {
-      var parts = line.split(" ")
-      try {
-      var out = {
-        x: parseInt(parts[0],10),
-        y: parseInt(parts[1],10),
-        id: parseInt(parts[2].replace('f', ''),10) & objectIDMask,
-        floor: parts[2][0] == 'f',
-      }
-      } catch (e) {
-        console.log(e, parts, line)
-      }
-      return out
-    })
+  var firstDecode = function(s) {
+    var first = s.charCodeAt(0)
+    if (first < 97) {
+      return parseInt((String.fromCharCode(first - (65-48)) + s.slice(1)), 10) * -1
+    } else {
+      return parseInt((String.fromCharCode(first - (97-48)) + s.slice(1)), 10)
+    }
   }
 
-  var decodeLogDiff = function(text) {
-    var t = 0
-    var x = 0
+  var decodeKeyPlain = function(text, coords) {
+    try {
+      return text.split("\n").filter(function(line) {
+        return line != "";
+      }).map(function(line) {
+        var parts = line.split(" ")
+        try {
+        var out = {
+          x: parseInt(parts[0],10),
+          y: parseInt(parts[1],10),
+          id: parseInt(parts[2].replace('f', ''),10) & objectIDMask,
+          floor: parts[2][0] == 'f',
+        }
+        } catch (e) {
+          console.log(e, parts, line)
+          throw "tile decode failed"
+        }
+        return out
+      })
+    } catch (e) {
+      console.log(e, coords)
+      return []
+    }
+  }
+
+  var decodeKeyValueYX = function(text, coords) {
+    var currentValue = 0
+    var id = '0'
+    var floor = false
     var y = 0
-    var placements = text.split("\n").filter(function(line) {
-      return line != "";
-    }).map(function(line) {
-      var parts = line.split(" ")
-      try {
-      t = t + (parseInt(parts[0],10)*10)
-      x = x + parseInt(parts[1],10)
-      y = y + parseInt(parts[2],10)
-      var out = {
-        t: t,
-        x: x,
-        y: y,
-        id: parseInt(parts[3].replace('f', ''),10) & objectIDMask,
-        floor: parts[3][0] == 'f',
-      }
-      } catch (e) {
-        console.log(e, parts, line)
-      }
-      return out
-    })
+    var x = 0
+    var output = []
+    try {
+      text.split("\n").filter(function(line) {
+        return line != "";
+      }).map(function(line) {
+        if (line[0] == 'v') {
+          currentValue = line.slice(1)
+          id = parseInt(currentValue.replace('f', ''),10) & objectIDMask
+          floor = currentValue[0] == 'f'
+        } else {
+          var col = line.match(/(-?\d+)(.*)/)
+          try {
+            y = y + parseInt(col[1],10)
+            col[2].match(/[A-Ja-j]\d*/g).forEach(function(edx) {
+              x = x + firstDecode(edx)
+              var out = {
+                x: x,
+                y: y,
+                id: id,
+                floor: floor,
+              }
+              output.push(out)
+            })
+          } catch (e) {
+            console.log(e, col, line)
+            throw "tile decode error"
+          }
+        }
+      })
+    } catch (e) {
+      console.log(e, coords)
+    }
+    return output
+  }
+
+  var decodeLogDiff = function(text, coords) {
+    try {
+      var t = 0
+      var x = 0
+      var y = 0
+      return text.split("\n").filter(function(line) {
+        return line != "";
+      }).map(function(line) {
+        var parts = line.split(" ")
+        try {
+        t = t + (parseInt(parts[0],10)*10)
+        x = x + parseInt(parts[1],10)
+        y = y + parseInt(parts[2],10)
+        var out = {
+          t: t,
+          x: x,
+          y: y,
+          id: parseInt(parts[3].replace('f', ''),10) & objectIDMask,
+          floor: parts[3][0] == 'f',
+        }
+        } catch (e) {
+          console.log(e, parts, line)
+          throw "tile decode failed"
+        }
+        return out
+      })
+    } catch (e) {
+      console.log(e, coords)
+      return []
+    }
+  }
+
+  var decodeLogValueYXT = function(text, coords) {
+    var currentValue = 0
+    var id = '0'
+    var floor = false
+    var y = 0
+    var x = 0
+    var t = 0
+    var output = []
+    try {
+      text.split("\n").filter(function(line) {
+        return line != "";
+      }).map(function(line) {
+        if (line[0] == 'v') {
+          currentValue = line.slice(1)
+          id = parseInt(currentValue.replace('f', ''),10) & objectIDMask
+          floor = currentValue[0] == 'f'
+        } else if (line[0] == 'y') {
+          y = y + parseInt(line.slice(1),10)
+        } else {
+          var col = line.match(/(-?\d+)(.*)/)
+          try {
+            x = x + parseInt(col[1],10)
+            col[2].match(/[A-Ja-j]\d*/g).forEach(function(edt) {
+              t = t + firstDecode(edt)*10
+              var out = {
+                t: t,
+                x: x,
+                y: y,
+                id: id,
+                floor: floor,
+              }
+              output.push(out)
+            })
+          } catch (e) {
+            console.log(e, col, line)
+            throw "tile decode error"
+          }
+        }
+      })
+    } catch (e) {
+      console.log(e, coords)
+    }
+    return output
   }
 
   var TileKey = L.Class.extend({
@@ -1595,7 +1702,7 @@
         //console.log('end', endX, endY)
 
         //console.time('data processing ' + JSON.stringify(coords))
-        var placements = decodeKeyPlain(text).map(function(place) {
+        var placements = decodeKeyValueYX(text, coords).map(function(place) {
           place.t = t
           place.x = place.x - startX
           place.y = -(place.y - startY)
@@ -1716,7 +1823,7 @@
         var right = (endX - startX) + paddingX
         var bottom = (startY - endY) + paddingDown
 
-        var placements = decodeKeyPlain(text).map(function(place) {
+        var placements = decodeLogValueYXT(text, coords).map(function(place) {
           place.x = place.x - startX
           place.y = -(place.y - startY)
           place.key = [place.x, place.y].join(' ')
