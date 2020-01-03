@@ -1519,6 +1519,50 @@
     },
   })
 
+  var decodeKeyPlain = function(text) {
+    return text.split("\n").filter(function(line) {
+      return line != "";
+    }).map(function(line) {
+      var parts = line.split(" ")
+      try {
+      var out = {
+        x: parseInt(parts[0],10),
+        y: parseInt(parts[1],10),
+        id: parseInt(parts[2].replace('f', ''),10) & objectIDMask,
+        floor: parts[2][0] == 'f',
+      }
+      } catch (e) {
+        console.log(e, parts, line)
+      }
+      return out
+    })
+  }
+
+  var decodeLogDiff = function(text) {
+    var t = 0
+    var x = 0
+    var y = 0
+    var placements = text.split("\n").filter(function(line) {
+      return line != "";
+    }).map(function(line) {
+      var parts = line.split(" ")
+      try {
+      t = t + (parseInt(parts[0],10)*10)
+      x = x + parseInt(parts[1],10)
+      y = y + parseInt(parts[2],10)
+      var out = {
+        t: t,
+        x: x,
+        y: y,
+        id: parseInt(parts[3].replace('f', ''),10) & objectIDMask,
+        floor: parts[3][0] == 'f',
+      }
+      } catch (e) {
+        console.log(e, parts, line)
+      }
+      return out
+    })
+  }
 
   var TileKey = L.Class.extend({
     options: {
@@ -1551,24 +1595,13 @@
         //console.log('end', endX, endY)
 
         //console.time('data processing ' + JSON.stringify(coords))
-        var placements = text.split("\n").filter(function(line) {
-          return line != "";
-        }).map(function(line) {
-          var parts = line.split(" ")
-          try {
-          var out = {
-            t: t,
-            x: parseInt(parts[0],10) - startX,
-            y: -(parseInt(parts[1],10) - startY),
-            id: parseInt(parts[2].replace('f', ''),10) & objectIDMask,
-            floor: parts[2][0] == 'f',
-          }
-          out.key = [out.x, out.y].join(' ')
-          occupied[out.key] = true
-          } catch (e) {
-            console.log(e, parts, line)
-          }
-          return out
+        var placements = decodeKeyPlain(text).map(function(place) {
+          place.t = t
+          place.x = place.x - startX
+          place.y = -(place.y - startY)
+          place.key = [place.x, place.y].join(' ')
+          occupied[place.key] = true
+          return place
         })
 
         var special = []
@@ -1683,29 +1716,11 @@
         var right = (endX - startX) + paddingX
         var bottom = (startY - endY) + paddingDown
 
-        var t = 0
-        var x = 0
-        var y = 0
-        var placements = text.split("\n").filter(function(line) {
-          return line != "";
-        }).map(function(line) {
-          var parts = line.split(" ")
-          try {
-          t = t + (parseInt(parts[0],10)*10)
-          x = x + parseInt(parts[1],10)
-          y = y + parseInt(parts[2],10)
-          var out = {
-            t: t,
-            x: x - startX,
-            y: -(y - startY),
-            id: parseInt(parts[3].replace('f', ''),10) & objectIDMask,
-            floor: parts[3][0] == 'f',
-          }
-          out.key = [out.x, out.y].join(' ')
-          } catch (e) {
-            console.log(e, parts, line)
-          }
-          return out
+        var placements = decodeKeyPlain(text).map(function(place) {
+          place.x = place.x - startX
+          place.y = -(place.y - startY)
+          place.key = [place.x, place.y].join(' ')
+          return place
         }).filter(function(placement) {
 
           var isValid = !isNaN(placement.id) && placement.id < 5000
