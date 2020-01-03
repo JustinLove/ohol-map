@@ -70,6 +70,7 @@
   })
 
   var mapTime = Date.now()
+  var mapServer = 17
   var dataAnimated = false
 
   var attribution = '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible ' +
@@ -1867,7 +1868,7 @@
 
       //console.log(datacoords)
       //console.log('data tile ' + JSON.stringify(coords))
-      layer._cache.getTile(coords, {time: options.dataTime}, options).then(function(keyplace) {
+      layer._cache.getTile(coords, {time: options.dataTime, server: mapServer}, options).then(function(keyplace) {
         tile._keyplace = keyplace
 
         //console.timeEnd('data processing ' + JSON.stringify(coords))
@@ -1939,7 +1940,7 @@
 
       //console.log(coords)
       //console.log(datacoords)
-      layer._cache.getTile(coords, {time: options.dataTime}, {time: options.base}, options).then(function(maplog) {
+      layer._cache.getTile(coords, {time: options.dataTime, server: mapServer}, {time: options.base, server: mapServer}, options).then(function(maplog) {
 
         tile._maplog = maplog
 
@@ -2493,6 +2494,22 @@
     }, 10)
   }
 
+  var setMapServer = function(map, server, reason) {
+    mapServer = message.server.id
+    if (message.server.id == 3) {
+      if (badlandsAge.hasLayer(badlandsBaseBiome)) {
+        badlandsAge.addLayer(server3)
+        badlandsAge.removeLayer(badlandsBaseBiome)
+      }
+    } else {
+      if (badlandsAge.hasLayer(server3)) {
+        badlandsAge.addLayer(badlandsBaseBiome)
+        badlandsAge.removeLayer(server3)
+      }
+    }
+    setMapTime(map, mapTime, reason)
+  }
+
   var setPointColor = function(color) {
     L.Util.setOptions(animOverlay, {
       color: color,
@@ -2977,18 +2994,7 @@
           setMapTime(map, time, 'currentTime')
           break;
         case 'currentServer':
-          var targetLayer
-          if (message.server.id == 3) {
-            if (badlandsAge.hasLayer(badlandsBaseBiome)) {
-              badlandsAge.addLayer(server3)
-              badlandsAge.removeLayer(badlandsBaseBiome)
-            }
-          } else {
-            if (badlandsAge.hasLayer(server3)) {
-              badlandsAge.addLayer(badlandsBaseBiome)
-              badlandsAge.removeLayer(server3)
-            }
-          }
+          setMapServer(map, message.server.id, 'currentServer')
           break;
         case 'worldList':
           updateWorlds(message.worlds.data)

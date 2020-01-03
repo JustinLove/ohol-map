@@ -60,6 +60,8 @@ type alias Model =
   , cachedApiUrl : String
   , apiUrl : String
   , lineageUrl: String
+  , seedsUrl: String
+  , spansUrl: String
   , sidebarOpen : Bool
   , sidebarMode : View.Mode
   , searchTerm : String
@@ -96,6 +98,8 @@ type alias Config =
   { cachedApiUrl: String
   , apiUrl: String
   , lineageUrl: String
+  , seedsUrl: String
+  , spansUrl: String
   }
 
 main = Browser.application
@@ -120,6 +124,8 @@ init config location key =
       , cachedApiUrl = config.cachedApiUrl
       , apiUrl = config.apiUrl
       , lineageUrl = config.lineageUrl
+      , seedsUrl = config.seedsUrl
+      , spansUrl = config.spansUrl
       , sidebarOpen = False
       , sidebarMode = View.LifeSearch
       , searchTerm = ""
@@ -161,8 +167,8 @@ init config location key =
         Just time -> Cmd.none
         Nothing -> Time.now |> Task.perform CurrentTimeNotice
       , fetchServers model.cachedApiUrl
-      , fetchArcs
-      , fetchSpans
+      , fetchArcs model.seedsUrl 17
+      , fetchSpans model.spansUrl 17
       , fetchObjects
       , Leaflet.animOverlay model.dataAnimated
       , Leaflet.worldList model.worlds
@@ -995,17 +1001,17 @@ fetchServers baseUrl =
     , expect = Http.expectJson ServerList Decode.servers
     }
 
-fetchArcs : Cmd Msg
-fetchArcs =
+fetchArcs : String -> Int -> Cmd Msg
+fetchArcs seedsUrl serverId =
   Http.get
-    { url = Url.relative ["kptest/seeds.json"] []
+    { url = Url.relative [seedsUrl |> String.replace "{server}" (String.fromInt serverId)] []
     , expect = Http.expectJson ArcList Decode.arcs
     }
 
-fetchSpans : Cmd Msg
-fetchSpans =
+fetchSpans : String -> Int -> Cmd Msg
+fetchSpans spansUrl serverId =
   Http.get
-    { url = Url.relative ["kptest/spans.json"] []
+    { url = Url.relative [spansUrl |> String.replace "{server}" (String.fromInt serverId)] []
     , expect = Http.expectJson SpanList Decode.spans
     }
 

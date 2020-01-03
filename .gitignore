@@ -11,5 +11,8 @@ public/keyplace
 public/maplog
 public/kp
 public/ml
+public/kptest
+public/mltest
+public/pl
 .~lock*
 elm-stuff
