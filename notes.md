@@ -1,3 +1,4 @@
+- automatic data processing
 - x index files
   - cache parsed index
 - server specific data urls
