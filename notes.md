@@ -1,11 +1,17 @@
 - x index files
   - cache parsed index
 - server specific data urls
+  - using previously loaded seed/span when changing servers
+    - worlds
+  - monument cache
+  - versions per service
+  - one rebuild per set of files fetched?
 - rebuild selection in-layer
   - base times where end of log can skip key
 - server time selections dont set animation range
 - refactoring
 - server dependant
+  - jump to proper server for life
   - x some lives seem to be missing map - cira 2019-11-02 - server1
 - server url link
 - static server list

@@ -554,6 +554,8 @@ update msg model =
     ArcList serverId (Err error) ->
       let _ = Debug.log "fetch arcs failed" error in
       ({model | arcs = Failed error, currentArc = Nothing, coarseArc = Nothing, timeRange = Nothing}, Cmd.none)
+        |> rebuildArcs
+        |> rebuildWorlds
     SpanList serverId (Ok spans) ->
       let
         lastSpan = spans |> List.reverse |> List.head
@@ -572,6 +574,8 @@ update msg model =
     SpanList serverId (Err error) ->
       let _ = Debug.log "fetch spans failed" error in
       ({model | spans = Failed error}, Cmd.none)
+        |> rebuildArcs
+        |> rebuildWorlds
     ObjectsReceived (Ok objects) ->
       ( { model
         | versions = Data (Data.completeVersions objects.spawnChanges)

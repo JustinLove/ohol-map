@@ -2998,6 +2998,7 @@
           break;
         case 'worldList':
           updateWorlds(message.worlds.data)
+          baseLayerByTime(map, mapTime, 'worldList')
           break;
         case 'objectBounds':
           objectBounds = new Array(message.ids.length)
