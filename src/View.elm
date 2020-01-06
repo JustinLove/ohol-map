@@ -60,7 +60,7 @@ type Msg
   | SelectMatchingLife Life
   | SelectLineage Life
   | SelectMode Mode
-  | SelectServer Server
+  | SelectServer Int
   | SelectArc Int
   | SelectArcCoarse Int
   | SelectShow
@@ -558,6 +558,9 @@ dataButtonDisabled =
 
 --startTimeSelect : Model -> Element Msg
 startTimeSelect model =
+  let
+    selectedServer = model.selectedServer |> Maybe.andThen (\id -> Dict.get id model.servers)
+  in
   column [ width fill, spacing 2 ]
     [ Input.slider
       [ Background.color control ]
@@ -573,8 +576,8 @@ startTimeSelect model =
               |> text
             )
           ]
-      , min = serverMinTime model.servers model.selectedServer
-      , max = serverMaxTime model.servers model.selectedServer
+      , min = serverMinTime model.servers selectedServer
+      , max = serverMaxTime model.servers selectedServer
       , value = model.coarseStartTime |> posixToFloat 0
       , thumb = Input.defaultThumb
       , step = Just 1
@@ -802,18 +805,18 @@ posixToFloat offsetDays =
     >> (\x -> x // 1000 + offsetDays*24*60*60)
     >> toFloat
 
-serverSelect : Dict Int Server -> Maybe Server -> Element Msg
-serverSelect servers selectedServer =
+serverSelect : Dict Int Server -> Maybe Int -> Element Msg
+serverSelect servers serverId =
     Input.radioRow [ padding 10, spacing 2, htmlAttribute (Html.Attributes.class "server-select") ]
       { onChange = SelectServer
-      , selected = selectedServer
+      , selected = serverId
       , label = Input.labelAbove [] (text "Server")
       , options = servers |> Dict.values |> List.map serverItem
       }
 
-serverItem : Server -> Input.Option Server Msg
+serverItem : Server -> Input.Option Int Msg
 serverItem server =
-  Input.optionWith server
+  Input.optionWith server.id
     (serverIcon server)
 
 serverDisplayName : Server -> String

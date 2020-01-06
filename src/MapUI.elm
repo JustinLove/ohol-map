@@ -36,7 +36,7 @@ type Msg
   | MatchingLives (Result Http.Error (List Data.Life))
   | LineageLives (Result Http.Error Json.Decode.Value)
   | ServerList (Result Http.Error (List Data.Server))
-  | ArcList (Result Http.Error (List Data.Arc))
+  | ArcList Int (Result Http.Error (List Data.Arc))
   | SpanList (Result Http.Error (List Data.Span))
   | ObjectsReceived (Result Http.Error Data.Objects)
   | MonumentList Int (Result Http.Error Json.Decode.Value)
@@ -83,7 +83,7 @@ type alias Model =
   , showNaturalObjectsAboveZoom : Int
   , pointColor : PointColor
   , pointLocation : PointLocation
-  , selectedServer : Maybe Server
+  , selectedServer : Maybe Int
   , serverList : RemoteData (List Data.Server)
   , servers : Dict Int Server
   , arcs : RemoteData (List Arc)
@@ -170,7 +170,6 @@ init config location key =
         Just time -> Cmd.none
         Nothing -> Time.now |> Task.perform CurrentTimeNotice
       , fetchServers model.cachedApiUrl
-      , fetchArcs model.seedsUrl 17
       , fetchSpans model.spansUrl 17
       , fetchObjects
       , Leaflet.animOverlay model.dataAnimated
@@ -316,24 +315,29 @@ update msg model =
       ( { model | sidebarMode = mode }
       , Leaflet.searchOverlay (mode == View.LifeSearch)
       )
-    UI (View.SelectServer server) ->
-      let
-        range = (server.minTime, server.maxTime)
-        m2 = { model
-          | selectedServer = Just server
-          , coarseStartTime = inRange range model.coarseStartTime
-          , startTime = inRange range model.startTime
-          , mapTime = model.mapTime
-            |> Maybe.map (inRange range)
-          , dataLayer = Loading
-          }
-      in
-      ( m2, Cmd.batch
-        [ fetchDataForTime m2
-        , fetchMonuments model.cachedApiUrl server.id
-        , Leaflet.currentServer server.id
-        ]
-      )
+    UI (View.SelectServer serverId) ->
+      case Dict.get serverId model.servers of
+        Just server ->
+          let
+            range = (server.minTime, server.maxTime)
+            m2 = { model
+              | selectedServer = Just serverId
+              , coarseStartTime = inRange range model.coarseStartTime
+              , startTime = inRange range model.startTime
+              , mapTime = model.mapTime
+                |> Maybe.map (inRange range)
+              , dataLayer = Loading
+              }
+          in
+          ( m2, Cmd.batch
+            [ fetchDataForTime m2
+            , fetchMonuments model.cachedApiUrl serverId
+            , Leaflet.currentServer serverId
+            ]
+          )
+        Nothing ->
+          ({model | selectedServer = Just serverId}
+          , Leaflet.currentServer serverId)
     UI (View.SelectArc index) ->
       let
         marc = case model.arcs of
@@ -502,7 +506,9 @@ update msg model =
     ServerList (Ok serverList) ->
       let
         servers = serverList |> List.map myServer
-        bs2 = servers |> List.reverse |> List.head
+        bs2 = servers
+          |> List.filter (\s -> s.serverName == "bigserver2.onehouronelife.com")
+          |> List.head
         startTime = bs2
           |> Maybe.map .maxTime
           |> Maybe.map (relativeEndTime model.hoursPeriod)
@@ -512,25 +518,27 @@ update msg model =
       ( { model
         | serverList = serverList |> Data
         , servers = servers |> List.map (\s -> (s.id, s)) |> Dict.fromList
-        , selectedServer = bs2
+        , selectedServer = bs2 |> Maybe.map .id
         , coarseStartTime = startTime
         , startTime = startTime
         }
           |> timeSelectionForTime
       , Cmd.batch
         [ fetchMonuments model.cachedApiUrl id
+        , fetchArcs model.seedsUrl id
         --, Leaflet.serverList servers
         ]
       )
     ServerList (Err error) ->
       let _ = Debug.log "fetch servers failed" error in
       ({model | serverList = Failed error, servers = Dict.empty}, Cmd.none)
-    ArcList (Ok arcs) ->
+    ArcList serverId (Ok arcs) ->
       let
         lastArc = arcs |> List.reverse |> List.head
       in
         ( { model
           | arcs = Data arcs
+          , servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | arcs = Data arcs}))
           , currentArc = lastArc
           , coarseArc = lastArc
           , timeRange = lastArc |> Maybe.map (arcToRange model.time)
@@ -539,7 +547,7 @@ update msg model =
         )
         |> rebuildArcs
         |> rebuildWorlds
-    ArcList (Err error) ->
+    ArcList serverId (Err error) ->
       let _ = Debug.log "fetch arcs failed" error in
       ({model | arcs = Failed error, currentArc = Nothing, coarseArc = Nothing, timeRange = Nothing}, Cmd.none)
     SpanList (Ok spans) ->
@@ -613,7 +621,7 @@ update msg model =
     FetchUpTo time ->
       ( model
       , fetchDataLayer model.apiUrl
-          (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
+          (model.selectedServer |> Maybe.withDefault 17)
           (relativeStartTime model.hoursPeriod time)
           time
       )
@@ -733,11 +741,11 @@ requireRecentLives model =
   case model.dataLayer of
     NotRequested ->
       ( {model | dataLayer = Loading}
-      , fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
+      , fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.withDefault 17)
       )
     Failed _ ->
       ( {model | dataLayer = Loading}
-      , fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
+      , fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.withDefault 17)
       )
     _ ->
       (model, Cmd.none)
@@ -768,7 +776,7 @@ yesterday model =
     , framesPerSecond = 1
     }
   , Cmd.batch
-    [ fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
+    [ fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.withDefault 17)
     , Leaflet.animOverlay True
     ]
   )
@@ -966,7 +974,7 @@ fetchDataForTime model =
   case model.timeMode of
     ServerRange ->
       fetchDataLayer model.apiUrl
-        (model.selectedServer |> Maybe.map .id |> Maybe.withDefault 17)
+        (model.selectedServer |> Maybe.withDefault 17)
         model.startTime
         (relativeEndTime model.hoursPeriod model.startTime)
     FromNow ->
@@ -1010,7 +1018,7 @@ fetchArcs : String -> Int -> Cmd Msg
 fetchArcs seedsUrl serverId =
   Http.get
     { url = Url.relative [seedsUrl |> String.replace "{server}" (String.fromInt serverId)] []
-    , expect = Http.expectJson ArcList Decode.arcs
+    , expect = Http.expectJson (ArcList serverId) Decode.arcs
     }
 
 fetchSpans : String -> Int -> Cmd Msg
