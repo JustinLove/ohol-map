@@ -131,7 +131,7 @@
     map.addControl(legendControl)
     setTimeout(function() {
       toggleAnimationControls(map)
-      map.addLayer(baseFade)
+      //map.addLayer(baseFade)
     }, 0)
   })
   dataOverlay.on('remove', function(ev) {
@@ -140,7 +140,7 @@
     map.removeControl(legendControl)
     setTimeout(function() {
       toggleAnimationControls(map)
-      map.removeLayer(baseFade)
+      //map.removeLayer(baseFade)
     })
   })
 
