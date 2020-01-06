@@ -70,7 +70,7 @@ arc =
     |> map2 (|>) (field "end" (nullable timeStamp))
     |> map2 (|>) (field "end" (nullable timeStamp))
     |> map2 (|>) (field "seed" (nullable int))
-    |> map2 (|>) (field "seed2" (nullable int))
+    |> map2 (|>) (field "seedB" (nullable int))
 
 spans : Decoder (List Span)
 spans =

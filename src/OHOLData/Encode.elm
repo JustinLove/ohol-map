@@ -72,7 +72,7 @@ arc a =
     , ("start", timeStamp a.start)
     , ("end", maybe timeStamp a.end)
     , ("seed", maybe int a.seedA)
-    , ("seed2", maybe int a.seedB)
+    , ("seedB", maybe int a.seedB)
     ]
 
 spans : List Span -> Value
