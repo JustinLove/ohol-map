@@ -64,11 +64,11 @@ currentTime time =
     ]
     |> leafletCommand
 
-currentServer : Data.Server -> Cmd msg
-currentServer server =
+currentServer : Int -> Cmd msg
+currentServer serverId =
   Encode.object
     [ ("kind", Encode.string "currentServer")
-    , ("server", Encode.server server)
+    , ("serverId", Encode.int serverId)
     ]
     |> leafletCommand
 

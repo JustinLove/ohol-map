@@ -1331,7 +1331,7 @@
   }
 
   var updateWorlds = function(worldData) {
-    console.log(worldData);
+    //console.log(worldData);
     worlds = worldData.map(function(world) {
       world.generation.computeMapBiomeIndex = computeMapBiomeIndexFunctions[world.generation.computeMapBiomeIndex]
       if (!world.generation.computeMapBiomeIndex) {
@@ -2495,8 +2495,8 @@
   }
 
   var setMapServer = function(map, server, reason) {
-    mapServer = message.server.id
-    if (message.server.id == 3) {
+    mapServer = server
+    if (server == 3) {
       if (badlandsAge.hasLayer(badlandsBaseBiome)) {
         badlandsAge.addLayer(server3)
         badlandsAge.removeLayer(badlandsBaseBiome)
@@ -2994,7 +2994,7 @@
           setMapTime(map, time, 'currentTime')
           break;
         case 'currentServer':
-          setMapServer(map, message.server.id, 'currentServer')
+          setMapServer(map, message.serverId, 'currentServer')
           break;
         case 'worldList':
           updateWorlds(message.worlds.data)

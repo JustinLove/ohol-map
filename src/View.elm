@@ -7,15 +7,17 @@ module View exposing
   , timeNoticeDuration
   , RemoteData(..)
   , Life
+  , Server
   , centerUrl
   , view
   , document
   )
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
-import OHOLData as Data exposing (Server)
+import OHOLData as Data exposing (Monument, Arc, Span, Version, World)
 
 import Browser
+import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
@@ -104,6 +106,18 @@ type alias Life =
   , deathTime : Maybe Posix
   , deathX : Maybe Int
   , deathY : Maybe Int
+  }
+
+type alias Server =
+  { id : Int
+  , serverName : String
+  , minTime: Posix
+  , maxTime: Posix
+  , arcs : RemoteData (List Arc)
+  , spans : RemoteData (List Span)
+  , versions : RemoteData (List Version)
+  , worlds : List World
+  , monuments : RemoteData (List Monument)
   }
 
 centerUrl : Url -> Maybe Posix -> Bool -> Point -> String
@@ -756,28 +770,31 @@ arcSelect model =
             text "Arc"
       ]
 
-serverMinTime : RemoteData (List Server) -> Maybe Server -> Float
+serverMinTime : Dict Int Server -> Maybe Server -> Float
 serverMinTime =
   serverTime .minTime List.minimum
 
-serverMaxTime : RemoteData (List Server) -> Maybe Server -> Float
+serverMaxTime : Dict Int Server -> Maybe Server -> Float
 serverMaxTime =
   serverTime .maxTime List.maximum
 
-serverTime : (Server -> Posix) -> (List Float -> Maybe Float) -> RemoteData (List Server) -> Maybe Server -> Float
+serverTime
+  :  (Server -> Posix)
+  -> (List Float -> Maybe Float)
+  -> Dict Int Server
+  -> Maybe Server
+  -> Float
 serverTime field aggragate servers current =
   case current of
     Just server ->
       server |> field |> posixToFloat 0
     Nothing ->
-      case servers of
-        Data list ->
-          list
-            |> List.map field
-            |> List.map (posixToFloat 0)
-            |> aggragate
-            |> Maybe.withDefault 0
-        _ -> 0
+      servers
+        |> Dict.values
+        |> List.map field
+        |> List.map (posixToFloat 0)
+        |> aggragate
+        |> Maybe.withDefault 0
 
 posixToFloat : Int -> Posix -> Float
 posixToFloat offsetDays =
@@ -785,19 +802,14 @@ posixToFloat offsetDays =
     >> (\x -> x // 1000 + offsetDays*24*60*60)
     >> toFloat
 
-serverSelect : RemoteData (List Server) -> Maybe Server -> Element Msg
+serverSelect : Dict Int Server -> Maybe Server -> Element Msg
 serverSelect servers selectedServer =
-  case servers of
-    NotRequested -> none
-    Loading -> showLoading servers
-    Failed error -> showError error
-    Data list ->
-      Input.radioRow [ padding 10, spacing 2, htmlAttribute (Html.Attributes.class "server-select") ]
-        { onChange = SelectServer
-        , selected = selectedServer
-        , label = Input.labelAbove [] (text "Server")
-        , options = list |> List.map serverItem
-        }
+    Input.radioRow [ padding 10, spacing 2, htmlAttribute (Html.Attributes.class "server-select") ]
+      { onChange = SelectServer
+      , selected = selectedServer
+      , label = Input.labelAbove [] (text "Server")
+      , options = servers |> Dict.values |> List.map serverItem
+      }
 
 serverItem : Server -> Input.Option Server Msg
 serverItem server =

@@ -1,12 +1,13 @@
 module MapUI exposing (..)
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
-import OHOLData as Data exposing (Server, Monument, Arc, Span, Version, World)
+import OHOLData as Data exposing (Monument, Arc, Span, Version, World)
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
 import View exposing
   ( RemoteData(..)
   , Life
+  , Server
   , TimeMode(..)
   , Notice(..)
   , Player(..)
@@ -83,7 +84,8 @@ type alias Model =
   , pointColor : PointColor
   , pointLocation : PointLocation
   , selectedServer : Maybe Server
-  , servers : RemoteData (List Server)
+  , serverList : RemoteData (List Data.Server)
+  , servers : Dict Int Server
   , arcs : RemoteData (List Arc)
   , spans : RemoteData (List Span)
   , versions : RemoteData (List Version)
@@ -147,7 +149,8 @@ init config location key =
       , pointColor = LineageColor
       , pointLocation = BirthLocation
       , selectedServer = Nothing
-      , servers = NotRequested
+      , serverList = NotRequested
+      , servers = Dict.empty
       , arcs = NotRequested
       , spans = NotRequested
       , versions = NotRequested
@@ -328,7 +331,7 @@ update msg model =
       ( m2, Cmd.batch
         [ fetchDataForTime m2
         , fetchMonuments model.cachedApiUrl server.id
-        , Leaflet.currentServer server
+        , Leaflet.currentServer server.id
         ]
       )
     UI (View.SelectArc index) ->
@@ -496,8 +499,9 @@ update msg model =
     LineageLives (Err error) ->
       let _ = Debug.log "fetch lives failed" error in
       ({model | lives = Failed error}, Cmd.none)
-    ServerList (Ok servers) ->
+    ServerList (Ok serverList) ->
       let
+        servers = serverList |> List.map myServer
         bs2 = servers |> List.reverse |> List.head
         startTime = bs2
           |> Maybe.map .maxTime
@@ -506,7 +510,8 @@ update msg model =
         id = bs2 |> Maybe.map .id |> Maybe.withDefault 17
       in
       ( { model
-        | servers = servers |> Data
+        | serverList = serverList |> Data
+        , servers = servers |> List.map (\s -> (s.id, s)) |> Dict.fromList
         , selectedServer = bs2
         , coarseStartTime = startTime
         , startTime = startTime
@@ -519,7 +524,7 @@ update msg model =
       )
     ServerList (Err error) ->
       let _ = Debug.log "fetch servers failed" error in
-      ({model | servers = Failed error}, Cmd.none)
+      ({model | serverList = Failed error, servers = Dict.empty}, Cmd.none)
     ArcList (Ok arcs) ->
       let
         lastArc = arcs |> List.reverse |> List.head
@@ -1054,6 +1059,19 @@ serverLife life =
   , deathTime = life.deathTime
   , deathX = life.deathX
   , deathY = life.deathY
+  }
+
+myServer : Data.Server -> Server
+myServer server =
+  { id = server.id
+  , serverName = server.serverName
+  , minTime = server.minTime
+  , maxTime = server.maxTime
+  , arcs = NotRequested
+  , spans = NotRequested
+  , versions = NotRequested
+  , worlds = Data.rebuildWorlds Data.codeChanges [] [] []
+  , monuments = NotRequested
   }
 
 fetchMatchingLives : String -> String -> Cmd Msg
