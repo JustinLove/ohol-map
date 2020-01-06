@@ -1021,9 +1021,15 @@ showError error =
           "Network Error"
           "Either you or the server went offline"
       Http.BadStatus code ->
-        twoPartMessage 500
-          (code |> String.fromInt)
-          "Server is being naughty again.'"
+        case code of
+          404 ->
+            twoPartMessage 500
+              (code |> String.fromInt)
+              "No Data"
+          _ ->
+            twoPartMessage 500
+              (code |> String.fromInt)
+              "Server is being naughty again."
       Http.BadBody body ->
         twoPartMessage 500
           "Bad Body"

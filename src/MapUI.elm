@@ -37,10 +37,11 @@ type Msg
   | LineageLives (Result Http.Error Json.Decode.Value)
   | ServerList (Result Http.Error (List Data.Server))
   | ArcList Int (Result Http.Error (List Data.Arc))
-  | SpanList (Result Http.Error (List Data.Span))
+  | SpanList Int (Result Http.Error (List Data.Span))
   | ObjectsReceived (Result Http.Error Data.Objects)
   | MonumentList Int (Result Http.Error Json.Decode.Value)
   | DataLayer (Result Http.Error Json.Decode.Value)
+  | NoDataLayer
   | FetchUpTo Posix
   | PlayRelativeTo Int Posix
   | ShowTimeNotice Posix Posix
@@ -170,7 +171,6 @@ init config location key =
         Just time -> Cmd.none
         Nothing -> Time.now |> Task.perform CurrentTimeNotice
       , fetchServers model.cachedApiUrl
-      , fetchSpans model.spansUrl 17
       , fetchObjects
       , Leaflet.animOverlay model.dataAnimated
       , Leaflet.worldList model.worlds
@@ -326,12 +326,15 @@ update msg model =
               , startTime = inRange range model.startTime
               , mapTime = model.mapTime
                 |> Maybe.map (inRange range)
-              , dataLayer = Loading
+              , dataLayer = Data False
+              , player = Stopped
               }
           in
           ( m2, Cmd.batch
-            [ fetchDataForTime m2
-            , fetchMonuments model.cachedApiUrl serverId
+            [ fetchMonuments model.cachedApiUrl serverId
+            , fetchArcs model.seedsUrl serverId
+            , fetchSpans model.spansUrl serverId
+            , Leaflet.dataLayer (Encode.lives [])
             , Leaflet.currentServer serverId
             ]
           )
@@ -526,6 +529,7 @@ update msg model =
       , Cmd.batch
         [ fetchMonuments model.cachedApiUrl id
         , fetchArcs model.seedsUrl id
+        , fetchSpans model.spansUrl id
         --, Leaflet.serverList servers
         ]
       )
@@ -550,13 +554,14 @@ update msg model =
     ArcList serverId (Err error) ->
       let _ = Debug.log "fetch arcs failed" error in
       ({model | arcs = Failed error, currentArc = Nothing, coarseArc = Nothing, timeRange = Nothing}, Cmd.none)
-    SpanList (Ok spans) ->
+    SpanList serverId (Ok spans) ->
       let
         lastSpan = spans |> List.reverse |> List.head
         mlastTime = lastSpan |> Maybe.map .end
       in
         ( { model
           | spans = Data spans
+          , servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | spans = Data spans}))
           , timeRange = lastSpan |> Maybe.map spanToRange
           }
         , Cmd.none
@@ -564,7 +569,7 @@ update msg model =
         |> maybeSetTime mlastTime
         |> rebuildArcs
         |> rebuildWorlds
-    SpanList (Err error) ->
+    SpanList serverId (Err error) ->
       let _ = Debug.log "fetch spans failed" error in
       ({model | spans = Failed error}, Cmd.none)
     ObjectsReceived (Ok objects) ->
@@ -618,6 +623,15 @@ update msg model =
     DataLayer (Err error) ->
       let _ = Debug.log "fetch data failed" error in
       ({model | dataLayer = Failed error}, Cmd.none)
+    NoDataLayer ->
+      ( { model
+        | dataLayer = Data False
+        , player = Stopped
+        }
+      , Cmd.batch
+        [ Leaflet.dataLayer (Encode.lives [])
+        ]
+      )
     FetchUpTo time ->
       ( model
       , fetchDataLayer model.apiUrl
@@ -987,7 +1001,7 @@ fetchDataForTime model =
             arc.start
             (arc.end |> Maybe.withDefault model.time)
         Nothing ->
-          Cmd.none
+          Task.succeed () |> Task.perform (always NoDataLayer)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -1025,7 +1039,7 @@ fetchSpans : String -> Int -> Cmd Msg
 fetchSpans spansUrl serverId =
   Http.get
     { url = Url.relative [spansUrl |> String.replace "{server}" (String.fromInt serverId)] []
-    , expect = Http.expectJson SpanList Decode.spans
+    , expect = Http.expectJson (SpanList serverId) Decode.spans
     }
 
 fetchObjects : Cmd Msg
