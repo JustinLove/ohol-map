@@ -327,9 +327,11 @@ update msg model =
               , dataLayer = Data False
               , player = Stopped
               }
+            (s2, cmd) = requireMonuments model (server, Cmd.none)
           in
-          ( m2, Cmd.batch
-            [ fetchMonuments model.cachedApiUrl serverId
+          ( {m2 | servers = Dict.insert serverId s2 m2.servers}
+          , Cmd.batch
+            [ cmd
             , fetchArcs model.seedsUrl serverId
             , fetchSpans model.spansUrl serverId
             , if model.dataLayer == Data True then
@@ -423,15 +425,13 @@ update msg model =
     Event (Ok (Leaflet.OverlayRemove "Life Data")) ->
       ({model | lifeDataVisible = False}, Cmd.none)
     Event (Ok (Leaflet.OverlayAdd name (Just serverId))) ->
-      let
-        monuments = model.servers
-          |> Dict.get serverId
-          |> Maybe.map .monuments
-          |> Maybe.withDefault (Data [])
-      in
-        if monuments == NotRequested then
-          (model, fetchMonuments model.cachedApiUrl serverId)
-        else
+      case Dict.get serverId model.servers of
+        Just server ->
+          let
+            (s2, cmd) = requireMonuments model (server, Cmd.none)
+          in
+            ({model | servers = Dict.insert serverId s2 model.servers}, cmd)
+        Nothing ->
           (model, Cmd.none)
     Event (Ok (Leaflet.OverlayAdd name _)) ->
       (model, Cmd.none)
@@ -1122,6 +1122,14 @@ fetchLineage baseUrl life =
       ]
     , expect = Http.expectJson LineageLives Json.Decode.value
     }
+
+requireMonuments : Model -> (Server, Cmd Msg) -> (Server, Cmd Msg)
+requireMonuments model (server, cmd) =
+  if server.monuments == NotRequested then
+    ({server|monuments = Loading}
+    , Cmd.batch [cmd, fetchMonuments model.cachedApiUrl server.id])
+  else
+    (server, Cmd.none)
 
 fetchMonuments : String -> Int -> Cmd Msg
 fetchMonuments baseUrl serverId =
