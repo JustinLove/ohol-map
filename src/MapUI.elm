@@ -317,9 +317,14 @@ update msg model =
       case Dict.get serverId model.servers of
         Just server ->
           let
+            (s2, cmd) = (server, Cmd.none)
+              |> requireMonuments model
+              |> requireArcs model
+              |> requireSpans model
             range = (server.minTime, server.maxTime)
             m2 = { model
               | selectedServer = Just serverId
+              , servers = Dict.insert serverId s2 model.servers
               , coarseStartTime = inRange range model.coarseStartTime
               , startTime = inRange range model.startTime
               , mapTime = model.mapTime
@@ -327,13 +332,10 @@ update msg model =
               , dataLayer = Data False
               , player = Stopped
               }
-            (s2, cmd) = requireMonuments model (server, Cmd.none)
           in
-          ( {m2 | servers = Dict.insert serverId s2 m2.servers}
+          ( m2
           , Cmd.batch
             [ cmd
-            , fetchArcs model.seedsUrl serverId
-            , fetchSpans model.spansUrl serverId
             , if model.dataLayer == Data True then
                 Leaflet.dataLayer (Encode.lives [])
               else
@@ -1034,12 +1036,28 @@ fetchServers baseUrl =
     , expect = Http.expectJson ServerList Decode.servers
     }
 
+requireArcs : Model -> (Server, Cmd Msg) -> (Server, Cmd Msg)
+requireArcs model (server, cmd) =
+  if server.arcs == NotRequested then
+    ({server|arcs = Loading}
+    , Cmd.batch [cmd, fetchArcs model.seedsUrl server.id])
+  else
+    (server, Cmd.none)
+
 fetchArcs : String -> Int -> Cmd Msg
 fetchArcs seedsUrl serverId =
   Http.get
     { url = Url.relative [seedsUrl |> String.replace "{server}" (String.fromInt serverId)] []
     , expect = Http.expectJson (ArcList serverId) Decode.arcs
     }
+
+requireSpans : Model -> (Server, Cmd Msg) -> (Server, Cmd Msg)
+requireSpans model (server, cmd) =
+  if server.spans == NotRequested then
+    ({server|spans = Loading}
+    , Cmd.batch [cmd, fetchSpans model.spansUrl server.id])
+  else
+    (server, Cmd.none)
 
 fetchSpans : String -> Int -> Cmd Msg
 fetchSpans spansUrl serverId =
