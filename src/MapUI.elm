@@ -520,22 +520,15 @@ update msg model =
           |> Maybe.map (relativeEndTime model.hoursPeriod)
           |> Maybe.withDefault (Time.millisToPosix 0)
         id = bs2 |> Maybe.map .id |> Maybe.withDefault 17
+        m2 = { model
+          | serverList = serverList |> Data
+          , servers = servers |> List.map (\s -> (s.id, s)) |> Dict.fromList
+          , coarseStartTime = startTime
+          , startTime = startTime
+          }
+            |> timeSelectionForTime
       in
-      ( { model
-        | serverList = serverList |> Data
-        , servers = servers |> List.map (\s -> (s.id, s)) |> Dict.fromList
-        , selectedServer = bs2 |> Maybe.map .id
-        , coarseStartTime = startTime
-        , startTime = startTime
-        }
-          |> timeSelectionForTime
-      , Cmd.batch
-        [ fetchMonuments model.cachedApiUrl id
-        , fetchArcs model.seedsUrl id
-        , fetchSpans model.spansUrl id
-        --, Leaflet.serverList servers
-        ]
-      )
+        update (UI (View.SelectServer id)) m2
     ServerList (Err error) ->
       let _ = Debug.log "fetch servers failed" error in
       ({model | serverList = Failed error, servers = Dict.empty}, Cmd.none)
