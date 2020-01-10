@@ -544,19 +544,18 @@ update msg model =
       in
         ( { model
           | arcs = Data arcs
-          , servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | arcs = Data arcs}))
+          , servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | arcs = Data arcs} |> rebuildArcs))
           , currentArc = lastArc
           , coarseArc = lastArc
           , timeRange = lastArc |> Maybe.map (arcToRange model.time)
           }
+            |> rebuildArcs
         , Cmd.none
         )
-        |> rebuildArcs
         |> rebuildWorlds
     ArcList serverId (Err error) ->
       let _ = Debug.log "fetch arcs failed" error in
       ({model | arcs = Failed error, currentArc = Nothing, coarseArc = Nothing, timeRange = Nothing}, Cmd.none)
-        |> rebuildArcs
         |> rebuildWorlds
     SpanList serverId (Ok spans) ->
       let
@@ -565,18 +564,17 @@ update msg model =
       in
         ( { model
           | spans = Data spans
-          , servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | spans = Data spans}))
+          , servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | spans = Data spans} |> rebuildArcs))
           , timeRange = lastSpan |> Maybe.map spanToRange
           }
+            |> rebuildArcs
         , Cmd.none
         )
         |> maybeSetTime mlastTime
-        |> rebuildArcs
         |> rebuildWorlds
     SpanList serverId (Err error) ->
       let _ = Debug.log "fetch spans failed" error in
       ({model | spans = Failed error}, Cmd.none)
-        |> rebuildArcs
         |> rebuildWorlds
     ObjectsReceived (Ok objects) ->
       ( { model
@@ -743,12 +741,14 @@ rebuildWorlds (model, cmd) =
     ]
   )
 
-rebuildArcs : (Model, Cmd Msg) -> (Model, Cmd Msg)
-rebuildArcs (model, cmd) =
+type alias ArcSpan r = {r|arcs: RemoteData (List Arc), spans: RemoteData (List Span)}
+
+rebuildArcs : ArcSpan r -> ArcSpan r
+rebuildArcs model =
   case (model.arcs, model.spans) of
     (Data arcs, Data spans) ->
-      ( {model | arcs = Data (Data.assignDataTime spans arcs)}, cmd)
-    _ -> (model, cmd)
+      {model | arcs = Data (Data.assignDataTime spans arcs)}
+    _ -> model
 
 requireLives : Model -> (Model, Cmd Msg)
 requireLives model =
