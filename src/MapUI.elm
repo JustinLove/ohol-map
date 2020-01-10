@@ -91,7 +91,6 @@ type alias Model =
   , spans : RemoteData (List Span)
   , versions : RemoteData (List Version)
   , worlds : List World
-  , monuments : Dict Int (List Monument)
   , dataLayer : RemoteData Bool
   , lives : RemoteData (List Life)
   , focus : Maybe Life
@@ -156,7 +155,6 @@ init config location key =
       , spans = NotRequested
       , versions = NotRequested
       , worlds = Data.rebuildWorlds Data.codeChanges [] [] []
-      , monuments = Dict.empty
       , dataLayer = NotRequested
       , lives = NotRequested
       , focus = Nothing
@@ -425,10 +423,16 @@ update msg model =
     Event (Ok (Leaflet.OverlayRemove "Life Data")) ->
       ({model | lifeDataVisible = False}, Cmd.none)
     Event (Ok (Leaflet.OverlayAdd name (Just serverId))) ->
-      if Dict.member serverId model.monuments then
-        (model, Cmd.none)
-      else
-        (model, fetchMonuments model.cachedApiUrl serverId)
+      let
+        monuments = model.servers
+          |> Dict.get serverId
+          |> Maybe.map .monuments
+          |> Maybe.withDefault (Data [])
+      in
+        if monuments == NotRequested then
+          (model, fetchMonuments model.cachedApiUrl serverId)
+        else
+          (model, Cmd.none)
     Event (Ok (Leaflet.OverlayAdd name _)) ->
       (model, Cmd.none)
     Event (Ok (Leaflet.OverlayRemove name)) ->
@@ -594,7 +598,7 @@ update msg model =
       in
       if model.center == defaultCenter && recent /= defaultCenter then
         ( { model
-          | monuments = Dict.insert serverId monuments model.monuments
+          | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | monuments = Data monuments}))
           , center = recent
           }
         , Cmd.batch
@@ -605,7 +609,9 @@ update msg model =
           ]
         )
       else
-        ( {model | monuments = Dict.insert serverId monuments model.monuments}
+        ( { model
+          | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | monuments = Data monuments}))
+          }
         , Leaflet.monumentList serverId value
         )
     MonumentList serverId (Err error) ->
