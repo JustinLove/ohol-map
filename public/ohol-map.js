@@ -2376,6 +2376,7 @@
   }
 
   var moveIfOutOfView = function(data, map) {
+    if (data.length < 1) return
     var bounds = map.getBounds()
     for (var i in data) {
       var point = data[i]
@@ -2383,11 +2384,12 @@
         return
       }
     }
-    var bounds = L.latLngBounds(data.filter(function(point) {
-      return (-40000 < point.birth_x && point.birth_x < 40000)
+    var bounds = data.filter(function(point) {
+      return (-4000000 < point.birth_x && point.birth_x < 4000000)
     }).map(function(point) {
       return [point.birth_y, point.birth_x]
-    }))
+    })
+    map.fitBounds(bounds)
   }
 
   var specialOverlay = L.layerGroup([], {className: 'special-overlay'})

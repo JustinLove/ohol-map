@@ -334,7 +334,10 @@ update msg model =
             [ fetchMonuments model.cachedApiUrl serverId
             , fetchArcs model.seedsUrl serverId
             , fetchSpans model.spansUrl serverId
-            , Leaflet.dataLayer (Encode.lives [])
+            , if model.dataLayer == Data True then
+                Leaflet.dataLayer (Encode.lives [])
+              else
+                Cmd.none
             , Leaflet.currentServer serverId
             ]
           )
