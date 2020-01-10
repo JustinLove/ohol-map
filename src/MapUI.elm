@@ -517,7 +517,7 @@ update msg model =
       ({model | lives = Failed error}, Cmd.none)
     ServerList (Ok serverList) ->
       let
-        servers = serverList |> List.map myServer
+        servers = serverList |> List.map (myServer model.versions)
         bs2 = servers
           |> List.filter (\s -> s.serverName == "bigserver2.onehouronelife.com")
           |> List.head
@@ -577,8 +577,11 @@ update msg model =
       ({model | spans = Failed error}, Cmd.none)
         |> rebuildWorlds
     ObjectsReceived (Ok objects) ->
+      let versions = Data.completeVersions objects.spawnChanges in
       ( { model
-        | versions = Data (Data.completeVersions objects.spawnChanges)
+        | versions = Data versions
+        , servers = model.servers
+          |> Dict.map (\_ server -> {server | versions = Data versions})
         }
       , Leaflet.objectBounds objects.ids objects.bounds
       )
@@ -1107,15 +1110,15 @@ serverLife life =
   , deathY = life.deathY
   }
 
-myServer : Data.Server -> Server
-myServer server =
+myServer : RemoteData (List Version) -> Data.Server -> Server
+myServer versions server =
   { id = server.id
   , serverName = server.serverName
   , minTime = server.minTime
   , maxTime = server.maxTime
   , arcs = NotRequested
   , spans = NotRequested
-  , versions = NotRequested
+  , versions = versions
   , worlds = Data.rebuildWorlds Data.codeChanges [] [] []
   , monuments = NotRequested
   }
