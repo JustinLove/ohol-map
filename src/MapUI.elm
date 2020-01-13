@@ -106,7 +106,6 @@ init config location key =
       , arcs = NotRequested
       , spans = NotRequested
       , versions = NotRequested
-      , worlds = Data.rebuildWorlds Data.codeChanges [] [] []
       , dataLayer = NotRequested
       , lives = NotRequested
       , focus = Nothing
@@ -123,7 +122,7 @@ init config location key =
       , fetchServers model.cachedApiUrl
       , fetchObjects
       , Leaflet.animOverlay model.dataAnimated
-      , Leaflet.worldList model.worlds
+      , Leaflet.worldList (Data.rebuildWorlds Data.codeChanges [] [] [])
       ]
     )
 
@@ -508,7 +507,6 @@ update msg model =
     ArcList serverId (Err error) ->
       let _ = Debug.log "fetch arcs failed" error in
       ({model | arcs = Failed error, currentArc = Nothing, coarseArc = Nothing, timeRange = Nothing}, Cmd.none)
-        |> rebuildWorlds
     SpanList serverId (Ok spans) ->
       let
         lastSpan = spans |> List.reverse |> List.head
@@ -527,7 +525,6 @@ update msg model =
     SpanList serverId (Err error) ->
       let _ = Debug.log "fetch spans failed" error in
       ({model | spans = Failed error}, Cmd.none)
-        |> rebuildWorlds
     ObjectsReceived (Ok objects) ->
       let versions = Data.completeVersions objects.spawnChanges in
       ( { model
@@ -689,7 +686,7 @@ rebuildWorlds (model, cmd) =
       (model.arcs |> remoteDataWithDefault [])
       (model.spans |> remoteDataWithDefault [])
   in
-  ( { model | worlds = worlds }
+  ( model
   , Cmd.batch
     [ Leaflet.worldList worlds
     , cmd

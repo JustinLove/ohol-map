@@ -68,7 +68,6 @@ type alias Model =
   , arcs : RemoteData (List Arc)
   , spans : RemoteData (List Span)
   , versions : RemoteData (List Version)
-  , worlds : List World
   , dataLayer : RemoteData Bool
   , lives : RemoteData (List Life)
   , focus : Maybe Life
