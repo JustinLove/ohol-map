@@ -457,6 +457,7 @@ update msg model =
     ArcList serverId (Err error) ->
       let _ = Debug.log "fetch arcs failed" error in
       ({model | arcs = Failed error, currentArc = Nothing, coarseArc = Nothing, timeRange = Nothing}, Cmd.none)
+        |> rebuildWorlds
     SpanList serverId (Ok spans) ->
       let
         lastSpan = spans |> List.reverse |> List.head
@@ -475,6 +476,7 @@ update msg model =
     SpanList serverId (Err error) ->
       let _ = Debug.log "fetch spans failed" error in
       ({model | spans = Failed error}, Cmd.none)
+        |> rebuildWorlds
     ObjectsReceived (Ok objects) ->
       let versions = Data.completeVersions objects.spawnChanges in
       ( { model
@@ -621,20 +623,16 @@ update msg model =
     Navigate (Browser.External url) ->
       (model, Navigation.load url)
 
-remoteDataWithDefault : a -> RemoteData a -> a
-remoteDataWithDefault default data =
-  case data of
-    Data value -> value
-    _ -> default
-
 rebuildWorlds : (Model, Cmd Msg) -> (Model, Cmd Msg)
 rebuildWorlds (model, cmd) =
   let
+    mServer = currentServer model
+    prop = \field -> Maybe.map field >> Maybe.withDefault NotRequested >> RemoteData.withDefault []
     worlds = Data.rebuildWorlds
       Data.codeChanges
-      (model.versions |> remoteDataWithDefault [])
-      (model.arcs |> remoteDataWithDefault [])
-      (model.spans |> remoteDataWithDefault [])
+      (mServer |> prop .versions)
+      (mServer |> prop .arcs)
+      (mServer |> prop .spans)
   in
   ( model
   , Cmd.batch

@@ -13,6 +13,7 @@ module Model exposing
   , Version
   , World
   , currentArcs
+  , currentServer
   , initialModel
   , defaultCenter
   )
@@ -177,10 +178,15 @@ type Player
   | Starting
   | Playing Posix
 
-currentArcs : Model -> RemoteData (List Arc)
-currentArcs model =
+currentServer : Model -> Maybe Server
+currentServer model =
   model.selectedServer
     |> Maybe.andThen (\id -> Dict.get id model.servers)
+
+currentArcs : Model -> RemoteData (List Arc)
+currentArcs model =
+  model
+    |> currentServer
     |> Maybe.map .arcs
     |> Maybe.withDefault NotRequested
 
