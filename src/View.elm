@@ -8,7 +8,6 @@ module View exposing
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
 import Model exposing (..)
-import OHOLData as Data exposing (Monument, Arc, Span, Version, World)
 import RemoteData exposing (RemoteData(..))
 
 import Browser

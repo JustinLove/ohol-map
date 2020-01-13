@@ -2,7 +2,7 @@ module MapUI exposing (..)
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
 import Model exposing (..)
-import OHOLData as Data exposing (Monument, Arc, Span, Version, World)
+import OHOLData as Data
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
 import RemoteData exposing (RemoteData(..))

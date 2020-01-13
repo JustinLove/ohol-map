@@ -1,16 +1,21 @@
 module Model exposing
-  ( Config
+  ( Arc
+  , Config
   , Life
   , Mode(..)
   , Model
+  , Monument
   , Notice(..)
   , Player(..)
   , Server
+  , Span
   , TimeMode(..)
+  , Version
+  , World
   )
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
-import OHOLData as Data exposing (Monument, Arc, Span, Version, World)
+import OHOLData as Data
 import RemoteData exposing (RemoteData(..))
 
 import Browser.Navigation as Navigation
@@ -18,6 +23,12 @@ import Dict exposing(Dict)
 import Http
 import Time exposing (Posix)
 import Url exposing (Url)
+
+type alias Arc = Data.Arc
+type alias Monument = Data.Monument
+type alias Span = Data.Span
+type alias Version = Data.Version
+type alias World = Data.World
 
 type alias Model =
   { location : Url
