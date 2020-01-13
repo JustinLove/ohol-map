@@ -1,7 +1,12 @@
 - x index files
   - cache parsed index
-- monument cache
-- versions per service
+- services
+  - versions per service
+  - crucuible at least scale params
+  - 2hol
+    - new biome
+    - other params?
+  - object data
 - rebuild selection in-layer
   - base times where end of log can skip key
 - server time selections dont set animation range
@@ -10,6 +15,7 @@
   - jump to proper server for life
   - x some lives seem to be missing map - cira 2019-11-02 - server1
 - static server list
+- static monument lists
 
 - tapout radius
 - expired objects
