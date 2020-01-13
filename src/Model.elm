@@ -69,8 +69,6 @@ type alias Model =
   , selectedServer : Maybe Int
   , serverList : RemoteData (List Data.Server)
   , servers : Dict Int Server
-  , arcs : RemoteData (List Arc)
-  , spans : RemoteData (List Span)
   , versions : RemoteData (List Version)
   , dataLayer : RemoteData Bool
   , lives : RemoteData (List Life)
@@ -113,8 +111,6 @@ initialModel config location key =
   , selectedServer = Nothing
   , serverList = NotRequested
   , servers = Dict.empty
-  , arcs = NotRequested
-  , spans = NotRequested
   , versions = NotRequested
   , dataLayer = NotRequested
   , lives = NotRequested

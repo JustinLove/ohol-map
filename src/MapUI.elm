@@ -444,19 +444,23 @@ update msg model =
         lastArc = arcs |> List.reverse |> List.head
       in
         ( { model
-          | arcs = Data arcs
-          , servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | arcs = Data arcs} |> rebuildArcs))
+          | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | arcs = Data arcs} |> rebuildArcs))
           , currentArc = lastArc
           , coarseArc = lastArc
           , timeRange = lastArc |> Maybe.map (arcToRange model.time)
           }
-            |> rebuildArcs
         , Cmd.none
         )
         |> rebuildWorlds
     ArcList serverId (Err error) ->
       let _ = Debug.log "fetch arcs failed" error in
-      ({model | arcs = Failed error, currentArc = Nothing, coarseArc = Nothing, timeRange = Nothing}, Cmd.none)
+      ( { model
+        | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | arcs = Failed error}))
+        , currentArc = Nothing
+        , coarseArc = Nothing
+        , timeRange = Nothing}
+        , Cmd.none
+      )
         |> rebuildWorlds
     SpanList serverId (Ok spans) ->
       let
@@ -464,18 +468,20 @@ update msg model =
         mlastTime = lastSpan |> Maybe.map .end
       in
         ( { model
-          | spans = Data spans
-          , servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | spans = Data spans} |> rebuildArcs))
+          | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | spans = Data spans} |> rebuildArcs))
           , timeRange = lastSpan |> Maybe.map spanToRange
           }
-            |> rebuildArcs
         , Cmd.none
         )
         |> maybeSetTime mlastTime
         |> rebuildWorlds
     SpanList serverId (Err error) ->
       let _ = Debug.log "fetch spans failed" error in
-      ({model | spans = Failed error}, Cmd.none)
+      ( { model
+        | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | spans = Failed error}))
+        }
+        , Cmd.none
+      )
         |> rebuildWorlds
     ObjectsReceived (Ok objects) ->
       let versions = Data.completeVersions objects.spawnChanges in
