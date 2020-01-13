@@ -1,7 +1,6 @@
 module View exposing
   ( Msg(..)
   , timeNoticeDuration
-  , centerUrl
   , view
   , document
   )
@@ -60,30 +59,6 @@ type Msg
   | SelectShow
 
 timeNoticeDuration = 6000
-
-centerUrl : Url -> Maybe Posix -> Bool -> Point -> String
-centerUrl location mt yd {x, y, z} =
-  { location
-  | fragment =
-    [ Just <| Url.int "x" x
-    , Just <| Url.int "y" y
-    , Just <| Url.int "z" z
-    , mt
-      |> Maybe.map
-      (  Time.posixToMillis
-      >> (\t -> t // 1000)
-      >> Url.int "t"
-      )
-    , if yd then
-        Just <| Url.string "preset" "yesterday"
-      else
-        Nothing
-    ]
-      |> List.filterMap identity
-      |> Url.toQuery
-      |> String.dropLeft 1
-      |> Just
-  } |> Url.toString
 
 document : (Msg -> msg) -> Model -> Browser.Document msg
 document tagger model =
@@ -813,7 +788,7 @@ presets model =
     [ text "Presets"
     , wrappedRow [ padding 10 ]
       [ link [ Font.color selected ]
-          { url = centerUrl model.location model.mapTime True model.center
+          { url = centerUrl model.location model.mapTime True model.selectedServer model.center
           , label = text "Ambient Yesterday"
           }
       ]

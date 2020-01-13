@@ -12,6 +12,7 @@ module Model exposing
   , TimeMode(..)
   , Version
   , World
+  , centerUrl
   , currentArcs
   , currentServer
   , initialModel
@@ -27,6 +28,7 @@ import Dict exposing(Dict)
 import Http
 import Time exposing (Posix)
 import Url exposing (Url)
+import Url.Builder as Url
 
 type alias Arc = Data.Arc
 type alias Monument = Data.Monument
@@ -185,4 +187,29 @@ currentArcs model =
     |> currentServer
     |> Maybe.map .arcs
     |> Maybe.withDefault NotRequested
+
+centerUrl : Url -> Maybe Posix -> Bool -> Maybe Int -> Point -> String
+centerUrl location mt yd ms {x, y, z} =
+  { location
+  | fragment =
+    [ Just <| Url.int "x" x
+    , Just <| Url.int "y" y
+    , Just <| Url.int "z" z
+    , Maybe.map (Url.int "s") ms
+    , mt
+      |> Maybe.map
+      (  Time.posixToMillis
+      >> (\t -> t // 1000)
+      >> Url.int "t"
+      )
+    , if yd then
+        Just <| Url.string "preset" "yesterday"
+      else
+        Nothing
+    ]
+      |> List.filterMap identity
+      |> Url.toQuery
+      |> String.dropLeft 1
+      |> Just
+  } |> Url.toString
 

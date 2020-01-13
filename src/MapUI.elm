@@ -6,10 +6,7 @@ import OHOLData as Data
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
 import RemoteData exposing (RemoteData(..))
-import View exposing
-  ( timeNoticeDuration
-  , centerUrl
-  )
+import View exposing (timeNoticeDuration)
 
 import Browser
 import Browser.Events
@@ -148,7 +145,7 @@ update msg model =
       , Cmd.batch
         [ Leaflet.currentTime time
         , Navigation.replaceUrl model.navigationKey <|
-          centerUrl model.location (Just time) (isYesterday model) model.center
+          centerUrl model.location (Just time) (isYesterday model) model.selectedServer model.center
         ]
       )
     UI (View.Play) ->
@@ -201,7 +198,7 @@ update msg model =
       , Cmd.batch
         [ Leaflet.currentTime life.birthTime
         , Navigation.replaceUrl model.navigationKey <|
-          centerUrl model.location (Just life.birthTime) (isYesterday model) model.center
+          centerUrl model.location (Just life.birthTime) (isYesterday model) model.selectedServer model.center
         , Time.now |> Task.perform (ShowTimeNotice life.birthTime)
         , Leaflet.focus (serverLife life)
         ]
@@ -241,6 +238,8 @@ update msg model =
                 Leaflet.dataLayer (Encode.lives [])
               else
                 Cmd.none
+            , Navigation.replaceUrl model.navigationKey <|
+              centerUrl m2.location m2.mapTime (isYesterday m2) m2.selectedServer m2.center
             , Leaflet.currentServer serverId
             ]
           )
@@ -322,7 +321,7 @@ update msg model =
     Event (Ok (Leaflet.MoveEnd point)) ->
       ( {model|center = point} 
       , Navigation.replaceUrl model.navigationKey <|
-        centerUrl model.location model.mapTime (isYesterday model) point
+        centerUrl model.location model.mapTime (isYesterday model) model.selectedServer point
       )
     Event (Ok (Leaflet.OverlayAdd "Life Data" _)) ->
       requireLives model
@@ -420,14 +419,20 @@ update msg model =
     ServerList (Ok serverList) ->
       let
         servers = serverList |> List.map (myServer model.versions)
-        bs2 = servers
-          |> List.filter (\s -> s.serverName == "bigserver2.onehouronelife.com")
-          |> List.head
-        startTime = bs2
+        current = case model.selectedServer of
+          Just sid ->
+            servers
+              |> List.filter (\s -> s.id == sid)
+              |> List.head
+          Nothing ->
+            servers
+              |> List.filter (\s -> s.serverName == "bigserver2.onehouronelife.com")
+              |> List.head
+        id = current |> Maybe.map .id |> Maybe.withDefault 17
+        startTime = current
           |> Maybe.map .maxTime
           |> Maybe.map (relativeEndTime model.hoursPeriod)
           |> Maybe.withDefault (Time.millisToPosix 0)
-        id = bs2 |> Maybe.map .id |> Maybe.withDefault 17
         m2 = { model
           | serverList = serverList |> Data
           , servers = servers |> List.map (\s -> (s.id, s)) |> Dict.fromList
@@ -514,7 +519,7 @@ update msg model =
           [ Leaflet.monumentList serverId value
           , Leaflet.setView recent
           , Navigation.replaceUrl model.navigationKey <|
-            centerUrl model.location model.mapTime (isYesterday model) recent
+            centerUrl model.location model.mapTime (isYesterday model) model.selectedServer recent
           ]
         )
       else
@@ -613,7 +618,7 @@ update msg model =
                   }
                 , Cmd.batch
                   [ Navigation.replaceUrl model.navigationKey <|
-                      centerUrl model.location (Just msCappedTime) (isYesterday model) model.center
+                      centerUrl model.location (Just msCappedTime) (isYesterday model) model.selectedServer model.center
                   , Leaflet.currentTime msCappedTime
                   ]
                 )
@@ -732,7 +737,7 @@ setTime time model =
     , Cmd.batch
         [ Leaflet.currentTime time
         , Navigation.replaceUrl model.navigationKey <|
-          centerUrl model.location (Just time) (isYesterday model) model.center
+          centerUrl model.location (Just time) (isYesterday model) model.selectedServer model.center
         , Time.now |> Task.perform (ShowTimeNotice time)
         ]
     )
@@ -801,6 +806,7 @@ changeRouteTo location model =
     |> combineRoute (yesterdayRoute location)
     |> combineRoute (timeRoute location)
     |> combineRoute (coordinateRoute location)
+    |> combineRoute (serverRoute location)
 
 yesterdayRoute : Url -> Model -> (Model, Cmd Msg)
 yesterdayRoute location model =
@@ -856,6 +862,20 @@ setViewFromRoute point model =
     ({model|center = point}, Leaflet.setView point)
   else
     (model, Cmd.none)
+
+serverRoute : Url -> Model -> (Model, Cmd Msg)
+serverRoute location model =
+  let
+    ms = extractHashInt "s" location
+  in
+    if model.selectedServer /= ms then
+      case ms of
+        (Just id) ->
+          update (UI (View.SelectServer id)) model
+        _ ->
+          (model, Cmd.none)
+    else
+      (model, Cmd.none)
 
 timeSelectionForTime : Model -> Model
 timeSelectionForTime model =
