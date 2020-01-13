@@ -1,17 +1,13 @@
 module MapUI exposing (..)
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
+import Model exposing (..)
 import OHOLData as Data exposing (Monument, Arc, Span, Version, World)
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
+import RemoteData exposing (RemoteData(..))
 import View exposing
-  ( RemoteData(..)
-  , Life
-  , Server
-  , TimeMode(..)
-  , Notice(..)
-  , Player(..)
-  , timeNoticeDuration
+  ( timeNoticeDuration
   , centerUrl
   )
 
@@ -52,58 +48,6 @@ type Msg
   | CurrentUrl Url
   | Navigate Browser.UrlRequest
 
-type alias Model =
-  { location : Url
-  , navigationKey : Navigation.Key
-  , zone : Time.Zone
-  , time : Posix
-  , notice : Notice
-  , center : Point
-  , cachedApiUrl : String
-  , apiUrl : String
-  , lineageUrl: String
-  , seedsUrl: String
-  , spansUrl: String
-  , sidebarOpen : Bool
-  , sidebarMode : View.Mode
-  , searchTerm : String
-  , timeMode : TimeMode
-  , coarseStartTime : Posix
-  , startTime : Posix
-  , mapTime : Maybe Posix
-  , hoursPeriod : Int
-  , coarseArc : Maybe Arc
-  , currentArc : Maybe Arc
-  , dataAnimated : Bool
-  , lifeDataVisible : Bool
-  , gameSecondsPerSecond : Int
-  , framesPerSecond : Int
-  , timeRange : Maybe (Posix, Posix)
-  , player : Player
-  , fadeTallObjects : Bool
-  , showNaturalObjectsAboveZoom : Int
-  , pointColor : PointColor
-  , pointLocation : PointLocation
-  , selectedServer : Maybe Int
-  , serverList : RemoteData (List Data.Server)
-  , servers : Dict Int Server
-  , arcs : RemoteData (List Arc)
-  , spans : RemoteData (List Span)
-  , versions : RemoteData (List Version)
-  , worlds : List World
-  , dataLayer : RemoteData Bool
-  , lives : RemoteData (List Life)
-  , focus : Maybe Life
-  }
-
-type alias Config =
-  { cachedApiUrl: String
-  , apiUrl: String
-  , lineageUrl: String
-  , seedsUrl: String
-  , spansUrl: String
-  }
-
 main = Browser.application
   { init = init
   , update = update
@@ -129,7 +73,7 @@ init config location key =
       , seedsUrl = config.seedsUrl
       , spansUrl = config.spansUrl
       , sidebarOpen = False
-      , sidebarMode = View.LifeSearch
+      , sidebarMode = LifeSearch
       , searchTerm = ""
       , timeMode = ServerRange
       , coarseStartTime = Time.millisToPosix 0
@@ -311,7 +255,7 @@ update msg model =
       )
     UI (View.SelectMode mode) ->
       ( { model | sidebarMode = mode }
-      , Leaflet.searchOverlay (mode == View.LifeSearch)
+      , Leaflet.searchOverlay (mode == LifeSearch)
       )
     UI (View.SelectServer serverId) ->
       case Dict.get serverId model.servers of
@@ -443,7 +387,7 @@ update msg model =
       ( { model
         | lives = lives |> List.map myLife |> Data
         , sidebarOpen = True
-        , sidebarMode = View.LifeSearch
+        , sidebarMode = LifeSearch
         , searchTerm = ""
         }
       , Cmd.batch
@@ -473,7 +417,7 @@ update msg model =
     Event (Ok (Leaflet.SidebarToggle)) ->
       ( { model | sidebarOpen = not model.sidebarOpen }
       , Leaflet.searchOverlay
-        (model.sidebarOpen == False && model.sidebarMode == View.LifeSearch)
+        (model.sidebarOpen == False && model.sidebarMode == LifeSearch)
       )
     Event (Ok (Leaflet.AnimToggle)) ->
       ( { model

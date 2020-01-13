@@ -1,20 +1,15 @@
 module View exposing
   ( Msg(..)
-  , Mode(..)
-  , TimeMode(..)
-  , Notice(..)
-  , Player(..)
   , timeNoticeDuration
-  , RemoteData(..)
-  , Life
-  , Server
   , centerUrl
   , view
   , document
   )
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
+import Model exposing (..)
 import OHOLData as Data exposing (Monument, Arc, Span, Version, World)
+import RemoteData exposing (RemoteData(..))
 
 import Browser
 import Dict exposing (Dict)
@@ -65,60 +60,7 @@ type Msg
   | SelectArcCoarse Int
   | SelectShow
 
-type Mode
-  = LifeSearch
-  | DataFilter
-  | Cosmetics
-
-type TimeMode
-  = ServerRange
-  | FromNow
-  | ArcRange
-
-type Notice
-  = TimeNotice Posix Posix
-  | NoNotice
-
-type Player
-  = Stopped
-  | Starting
-  | Playing Posix
-
 timeNoticeDuration = 6000
-
-type RemoteData a
-  = NotRequested
-  | Loading
-  | Data a
-  | Failed Http.Error
-
-type alias Life =
-  { birthTime : Posix
-  , generation : Int
-  , playerid : Int
-  , lineage : Int
-  , name : Maybe String
-  , serverId : Int
-  , epoch : Int
-  , age : Maybe Float
-  , birthX : Int
-  , birthY : Int
-  , deathTime : Maybe Posix
-  , deathX : Maybe Int
-  , deathY : Maybe Int
-  }
-
-type alias Server =
-  { id : Int
-  , serverName : String
-  , minTime: Posix
-  , maxTime: Posix
-  , arcs : RemoteData (List Arc)
-  , spans : RemoteData (List Span)
-  , versions : RemoteData (List Version)
-  , worlds : List World
-  , monuments : RemoteData (List Monument)
-  }
 
 centerUrl : Url -> Maybe Posix -> Bool -> Point -> String
 centerUrl location mt yd {x, y, z} =
@@ -144,13 +86,13 @@ centerUrl location mt yd {x, y, z} =
       |> Just
   } |> Url.toString
 
---document : (Msg -> msg) -> model -> Browser.Document msg
+document : (Msg -> msg) -> Model -> Browser.Document msg
 document tagger model =
   { title = "OHOL Map"
   , body = [Html.map tagger (view model)]
   }
 
--- view : model -> Html Msg
+view : Model -> Html Msg
 view model =
   layout
     [ width fill, height fill
@@ -185,7 +127,7 @@ view model =
         )
       ]
 
--- timeOverlay : Model -> Element Msg
+timeOverlay : Model -> Element Msg
 timeOverlay model =
   case model.notice of
     TimeNotice time until ->
@@ -213,7 +155,7 @@ timeOverlay model =
       none
 
 
--- timeline : Model -> Element Msg
+timeline : Model -> Element Msg
 timeline model =
   case (model.mapTime, model.timeRange) of
     (Just time, Just (start, end)) ->
@@ -263,7 +205,7 @@ timeline model =
     _ ->
       none
 
--- sidebar : Model -> Element Msg
+sidebar : Model -> Element Msg
 sidebar model =
   column
     [ width (fill |> maximum 330)
@@ -278,7 +220,7 @@ sidebar model =
         Cosmetics -> cosmetics model
     ]
 
--- modeSelect : Model -> Element Msg
+modeSelect : Model -> Element Msg
 modeSelect model =
   row
     [ width fill
@@ -310,7 +252,7 @@ tabHeader ico name mode current =
           ]
     }
 
--- lifeSearch : Model -> Element Msg
+lifeSearch : Model -> Element Msg
 lifeSearch model =
   column
     [ width fill
@@ -505,7 +447,7 @@ lineageUrl base serverId epoch playerid =
       |> Just
     )
 
--- dataFilter : Model -> Element Msg
+dataFilter : Model -> Element Msg
 dataFilter model =
   el [ width fill, height fill, scrollbarY] <|
     column
@@ -556,7 +498,7 @@ dataButtonDisabled =
       , label = el [ centerX ] <| text "Show"
       }
 
---startTimeSelect : Model -> Element Msg
+startTimeSelect : Model -> Element Msg
 startTimeSelect model =
   let
     selectedServer = model.selectedServer |> Maybe.andThen (\id -> Dict.get id model.servers)
@@ -604,7 +546,7 @@ startTimeSelect model =
       }
     ]
 
---dateRangeSelect : Model -> Element Msg
+dateRangeSelect : Model -> Element Msg
 dateRangeSelect model =
   column
     [ width fill
@@ -683,7 +625,7 @@ reverseLogSlider attributes slider =
     }
 
 
---timeAfterSelect : Model -> Element Msg
+timeAfterSelect : Model -> Element Msg
 timeAfterSelect model =
   logSlider
     [ Background.color control ]
@@ -697,7 +639,7 @@ timeAfterSelect model =
     , step = Nothing
     }
 
---timeBeforeSelect : Model -> Element Msg
+timeBeforeSelect : Model -> Element Msg
 timeBeforeSelect model =
   reverseLogSlider
     [ Background.color control ]
@@ -711,9 +653,9 @@ timeBeforeSelect model =
     , step = Nothing
     }
 
---arcSelect : Model -> Element Msg
+arcSelect : Model -> Element Msg
 arcSelect model =
-  case model.arcs of
+  case model.selectedServer |> Maybe.andThen (\id -> Dict.get id model.servers) |> Maybe.map .arcs |> Maybe.withDefault NotRequested of
     NotRequested -> none
     Loading -> showLoading model.arcs
     Failed error -> showError error
@@ -865,7 +807,7 @@ serverIconForName name status =
   else
     text name
 
---presets : Model -> Element Msg
+presets : Model -> Element Msg
 presets model =
   column []
     [ text "Presets"
@@ -877,7 +819,7 @@ presets model =
       ]
     ]
 
--- cosmetics : Model -> Element Msg
+cosmetics : Model -> Element Msg
 cosmetics model =
   el [ width fill, height fill, scrollbarY] <|
     column
