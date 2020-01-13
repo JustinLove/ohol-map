@@ -244,6 +244,7 @@ update msg model =
             , Leaflet.currentServer serverId
             ]
           )
+            |> rebuildWorlds
         Nothing ->
           ({model | selectedServer = Just serverId}
           , Leaflet.currentServer serverId)
@@ -461,7 +462,6 @@ update msg model =
         , timeRange = Nothing}
         , Cmd.none
       )
-        |> rebuildWorlds
     SpanList serverId (Ok spans) ->
       let
         lastSpan = spans |> List.reverse |> List.head
@@ -482,7 +482,6 @@ update msg model =
         }
         , Cmd.none
       )
-        |> rebuildWorlds
     ObjectsReceived (Ok objects) ->
       let versions = Data.completeVersions objects.spawnChanges in
       ( { model
