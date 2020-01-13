@@ -1,6 +1,5 @@
 module Model exposing
   ( Arc
-  , Config
   , Life
   , Mode(..)
   , Model
@@ -12,6 +11,7 @@ module Model exposing
   , TimeMode(..)
   , Version
   , World
+  , currentArcs
   )
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
@@ -74,14 +74,6 @@ type alias Model =
   , focus : Maybe Life
   }
 
-type alias Config =
-  { cachedApiUrl: String
-  , apiUrl: String
-  , lineageUrl: String
-  , seedsUrl: String
-  , spansUrl: String
-  }
-
 type alias Life =
   { birthTime : Posix
   , generation : Int
@@ -128,4 +120,11 @@ type Player
   = Stopped
   | Starting
   | Playing Posix
+
+currentArcs : Model -> RemoteData (List Arc)
+currentArcs model =
+  model.selectedServer
+    |> Maybe.andThen (\id -> Dict.get id model.servers)
+    |> Maybe.map .arcs
+    |> Maybe.withDefault NotRequested
 

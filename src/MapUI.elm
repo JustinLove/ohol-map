@@ -48,6 +48,14 @@ type Msg
   | CurrentUrl Url
   | Navigate Browser.UrlRequest
 
+type alias Config =
+  { cachedApiUrl: String
+  , apiUrl: String
+  , lineageUrl: String
+  , seedsUrl: String
+  , spansUrl: String
+  }
+
 main = Browser.application
   { init = init
   , update = update
@@ -292,7 +300,7 @@ update msg model =
           , Leaflet.currentServer serverId)
     UI (View.SelectArc index) ->
       let
-        marc = case model.arcs of
+        marc = case currentArcs model of
           Data list ->
             list
               |> List.drop index
@@ -325,7 +333,7 @@ update msg model =
           )
     UI (View.SelectArcCoarse index) ->
       let
-        marc = case model.arcs of
+        marc = case currentArcs model of
           Data list ->
             list
               |> List.drop index
@@ -691,11 +699,11 @@ rebuildWorlds (model, cmd) =
 type alias ArcSpan r = {r|arcs: RemoteData (List Arc), spans: RemoteData (List Span)}
 
 rebuildArcs : ArcSpan r -> ArcSpan r
-rebuildArcs model =
-  case (model.arcs, model.spans) of
+rebuildArcs arcspan =
+  case (arcspan.arcs, arcspan.spans) of
     (Data arcs, Data spans) ->
-      {model | arcs = Data (Data.assignDataTime spans arcs)}
-    _ -> model
+      {arcspan | arcs = Data (Data.assignDataTime spans arcs)}
+    _ -> arcspan
 
 requireLives : Model -> (Model, Cmd Msg)
 requireLives model =
@@ -754,7 +762,7 @@ setTime : Posix -> Model -> (Model, Cmd Msg)
 setTime time model =
   if model.mapTime /= Just time then
     let
-      marc = arcForTime time model.arcs
+      marc = arcForTime time (currentArcs model)
       timeRange =
         if model.lifeDataVisible then
           model.timeRange
@@ -907,7 +915,7 @@ timeSelectionForTime model =
     Nothing ->
       model
     Just time ->
-      case model.arcs of
+      case currentArcs model of
         Data arcs ->
           let
             newArc = arcForTime time (Data arcs)

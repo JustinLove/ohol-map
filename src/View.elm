@@ -654,9 +654,10 @@ timeBeforeSelect model =
 
 arcSelect : Model -> Element Msg
 arcSelect model =
-  case model.selectedServer |> Maybe.andThen (\id -> Dict.get id model.servers) |> Maybe.map .arcs |> Maybe.withDefault NotRequested of
+  let arcs = currentArcs model in
+  case arcs of
     NotRequested -> none
-    Loading -> showLoading model.arcs
+    Loading -> showLoading arcs
     Failed error -> showError error
     Data list ->
       let
