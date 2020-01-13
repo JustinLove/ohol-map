@@ -48,14 +48,6 @@ type Msg
   | CurrentUrl Url
   | Navigate Browser.UrlRequest
 
-type alias Config =
-  { cachedApiUrl: String
-  , apiUrl: String
-  , lineageUrl: String
-  , seedsUrl: String
-  , spansUrl: String
-  }
-
 main = Browser.application
   { init = init
   , update = update
@@ -68,49 +60,7 @@ main = Browser.application
 init : Config -> Url -> Navigation.Key -> (Model, Cmd Msg)
 init config location key =
   let
-    initialModel =
-      { location = location
-      , navigationKey = key
-      , zone = Time.utc
-      , time = Time.millisToPosix 0
-      , notice = NoNotice
-      , center = defaultCenter
-      , cachedApiUrl = config.cachedApiUrl
-      , apiUrl = config.apiUrl
-      , lineageUrl = config.lineageUrl
-      , seedsUrl = config.seedsUrl
-      , spansUrl = config.spansUrl
-      , sidebarOpen = False
-      , sidebarMode = LifeSearch
-      , searchTerm = ""
-      , timeMode = ServerRange
-      , coarseStartTime = Time.millisToPosix 0
-      , startTime = Time.millisToPosix 0
-      , mapTime = Nothing
-      , hoursPeriod = 48
-      , coarseArc = Nothing
-      , currentArc = Nothing
-      , dataAnimated = False
-      , lifeDataVisible = False
-      , gameSecondsPerSecond = 600
-      , framesPerSecond = 10
-      , timeRange = Nothing
-      , player = Stopped
-      , fadeTallObjects = False
-      , showNaturalObjectsAboveZoom = 26
-      , pointColor = LineageColor
-      , pointLocation = BirthLocation
-      , selectedServer = Nothing
-      , serverList = NotRequested
-      , servers = Dict.empty
-      , arcs = NotRequested
-      , spans = NotRequested
-      , versions = NotRequested
-      , dataLayer = NotRequested
-      , lives = NotRequested
-      , focus = Nothing
-      }
-    (model, cmd) = changeRouteTo location initialModel
+    (model, cmd) = changeRouteTo location (initialModel config location key)
   in
     ( model
     , Cmd.batch
@@ -896,8 +846,6 @@ coordinateRoute location model =
         setViewFromRoute (Point x y defaultCenter.z) model
       _ ->
         setViewFromRoute defaultCenter model
-
-defaultCenter = (Point 0 0 25)
 
 setViewFromRoute : Point -> Model -> (Model, Cmd Msg)
 setViewFromRoute point model =

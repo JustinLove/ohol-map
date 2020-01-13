@@ -1,5 +1,6 @@
 module Model exposing
   ( Arc
+  , Config
   , Life
   , Mode(..)
   , Model
@@ -12,6 +13,8 @@ module Model exposing
   , Version
   , World
   , currentArcs
+  , initialModel
+  , defaultCenter
   )
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
@@ -72,6 +75,60 @@ type alias Model =
   , lives : RemoteData (List Life)
   , focus : Maybe Life
   }
+
+initialModel : Config -> Url -> Navigation.Key -> Model
+initialModel config location key =
+  { location = location
+  , navigationKey = key
+  , zone = Time.utc
+  , time = Time.millisToPosix 0
+  , notice = NoNotice
+  , center = defaultCenter
+  , cachedApiUrl = config.cachedApiUrl
+  , apiUrl = config.apiUrl
+  , lineageUrl = config.lineageUrl
+  , seedsUrl = config.seedsUrl
+  , spansUrl = config.spansUrl
+  , sidebarOpen = False
+  , sidebarMode = LifeSearch
+  , searchTerm = ""
+  , timeMode = ServerRange
+  , coarseStartTime = Time.millisToPosix 0
+  , startTime = Time.millisToPosix 0
+  , mapTime = Nothing
+  , hoursPeriod = 48
+  , coarseArc = Nothing
+  , currentArc = Nothing
+  , dataAnimated = False
+  , lifeDataVisible = False
+  , gameSecondsPerSecond = 600
+  , framesPerSecond = 10
+  , timeRange = Nothing
+  , player = Stopped
+  , fadeTallObjects = False
+  , showNaturalObjectsAboveZoom = 26
+  , pointColor = LineageColor
+  , pointLocation = BirthLocation
+  , selectedServer = Nothing
+  , serverList = NotRequested
+  , servers = Dict.empty
+  , arcs = NotRequested
+  , spans = NotRequested
+  , versions = NotRequested
+  , dataLayer = NotRequested
+  , lives = NotRequested
+  , focus = Nothing
+  }
+
+type alias Config =
+  { cachedApiUrl: String
+  , apiUrl: String
+  , lineageUrl: String
+  , seedsUrl: String
+  , spansUrl: String
+  }
+
+defaultCenter = (Point 0 0 25)
 
 type alias Life =
   { birthTime : Posix
