@@ -767,6 +767,16 @@ serverIconForName serverName status =
       , Background.color (if status == Input.Selected then selected else background)
       ]
       (el [ centerX ] (text "ccm"))
+  else if String.endsWith "twohoursonelife.com" serverName then
+    el
+      [ width (px 30)
+      , padding 3
+      , Border.width 1
+      , Border.color foreground
+      , Border.rounded 8
+      , Background.color (if status == Input.Selected then selected else background)
+      ]
+      (el [ centerX ] (text "2h"))
   else if String.startsWith "server" name then
     let
       number = String.replace "server" "" name

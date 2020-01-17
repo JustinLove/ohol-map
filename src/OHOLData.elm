@@ -17,6 +17,7 @@ module OHOLData exposing
   , completeVersions
   , oholCodeChanges
   , crucibleCodeChanges
+  , tholCodeChanges
   , assignDataTime
   , rebuildWorlds
   , current
@@ -609,6 +610,31 @@ crucibleCodeChanges =
   ]
   |> fixupStartTime
 
+tholCodeChanges : List Age
+tholCodeChanges =
+  [ { name = "Two Hours One Life (20264)"
+    , start = humanTime "2019-08-31T13:00:00Z"
+    , biomeLayer = Nothing
+    , generation =
+      { defaultGeneration
+      | biomeMap = thol1BiomeMap
+      , biomeRandSeedA = Just -1691939191
+      , numSpecialBiomes = 3
+      } |> topographic thol1BiomeWeights
+    }
+  , { name = "Two Hours One Life (20265)"
+    , start = humanTime "2019-11-26T19:06:00Z"
+    , biomeLayer = Nothing
+    , generation =
+      { defaultGeneration
+      | biomeMap = thol2BiomeMap
+      , biomeRandSeedA = Just -1691939191
+      , numSpecialBiomes = 3
+      } |> topographic thol2BiomeWeights
+    }
+  ]
+  |> fixupStartTime
+
 fixupEndTime : List World -> List World
 fixupEndTime =
   List.foldr (\world (mtime, newages) ->
@@ -747,4 +773,48 @@ specialBiomeWeights =
   , 0.11
   , 0.11
   , 0.13
+  ]
+
+thol1BiomeMap =
+  [ 1
+  , 0
+  , 2
+  , 7
+  , 3
+  , 6
+  , 5
+  , 4
+  ]
+
+thol1BiomeWeights =
+  [ 0.32
+  , 0.12
+  , 0.09
+  , 0.21
+  , 0.07
+  , 0.07
+  , 0.07
+  , 0.08
+  ]
+
+thol2BiomeMap =
+  [ 7
+  , 0
+  , 1
+  , 2
+  , 3
+  , 6
+  , 5
+  , 4
+  ]
+
+thol2BiomeWeights =
+  [ 0.18
+  , 0.18
+  , 0.13
+  , 0.08
+  , 0.09
+  , 0.09
+  , 0.11
+  , 0.12
   ]

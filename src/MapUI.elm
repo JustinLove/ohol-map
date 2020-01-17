@@ -421,6 +421,7 @@ update msg model =
         servers = serverList
           |> List.map (myServer model.versions)
           |> (++) [crucible NotAvailable model.time]
+          |> (++) [twoHoursOneLife NotAvailable model.time]
         current = case model.selectedServer of
           Just sid ->
             servers
@@ -1050,13 +1051,27 @@ crucible : RemoteData (List Version) -> Posix -> Server
 crucible versions currentTime =
   { id = 18
   , serverName = "server1.oho.life"
-  , minTime = Time.millisToPosix 1559489138000 -- "2019-06-02 10:25:38"
+  , minTime = List.head Data.crucibleCodeChanges |> Maybe.map .start |> Maybe.withDefault (Time.millisToPosix 0)
   , maxTime = currentTime
   , codeChanges = Data.crucibleCodeChanges
   , arcs = NotAvailable
   , spans = NotAvailable
   , versions = versions
   , worlds = Data.rebuildWorlds Data.crucibleCodeChanges [] [] []
+  , monuments = NotAvailable
+  }
+
+twoHoursOneLife : RemoteData (List Version) -> Posix -> Server
+twoHoursOneLife versions currentTime =
+  { id = 19
+  , serverName = "play.twohoursonelife.com"
+  , minTime = List.head Data.tholCodeChanges |> Maybe.map .start |> Maybe.withDefault (Time.millisToPosix 0)
+  , maxTime = currentTime
+  , codeChanges = Data.tholCodeChanges
+  , arcs = NotAvailable
+  , spans = NotAvailable
+  , versions = versions
+  , worlds = Data.rebuildWorlds Data.tholCodeChanges [] [] []
   , monuments = NotAvailable
   }
 

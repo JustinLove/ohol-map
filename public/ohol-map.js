@@ -913,6 +913,7 @@
   var arcticColor = hsvToRgb(0/360, 0.00, 1.0)
   var desertColor = hsvToRgb(37/360, 0.65, 0.62)
   var jungleColor = hsvToRgb(90/360, 0.87, 0.48)
+  var tholWaterColor = hsvToRgb(210/360, 0.52, 0.80)
 
   var biomeGenerationOptions = {
     computeMapBiomeIndex: competeMapBiomeIndex,
@@ -945,6 +946,7 @@
         arcticColor,
         desertColor,
         jungleColor,
+        tholWaterColor,
       ],
       minZoom: 2,
       maxZoom: 31,
