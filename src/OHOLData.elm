@@ -10,11 +10,13 @@ module OHOLData exposing
   , SpawnChange(..)
   , Biome
   , Version
+  , Age
   , World
   , Generation
   , SecondPlaceBiomeObjects(..)
   , completeVersions
-  , codeChanges
+  , oholCodeChanges
+  , crucibleCodeChanges
   , assignDataTime
   , rebuildWorlds
   , current
@@ -447,8 +449,8 @@ type alias Generation =
   , randSeed: Maybe Int
   }
 
-codeChanges : List Age
-codeChanges =
+oholCodeChanges : List Age
+oholCodeChanges =
   [ { name = "Badlands Age"
     , start = Time.millisToPosix 0
     , biomeLayer = Just "badlandsAge"
@@ -582,6 +584,21 @@ codeChanges =
       , numSpecialBiomes = 3
       , secondPlaceBiomeObjects = NoSecondPlace
       } |> topographic specialBiomeWeights
+    }
+  ]
+  |> fixupStartTime
+
+crucibleCodeChanges : List Age
+crucibleCodeChanges =
+  [ { name = "Cruicible"
+    , start = humanTime "2019-06-02"
+    , biomeLayer = Nothing
+    , generation =
+      { defaultGeneration
+      | biomeMap = jungleBiomeMap
+      , tallHeight = 2 * cellD -- heights that block
+      , veryTallHeight = 3 * cellD
+      }
     }
   ]
   |> fixupStartTime

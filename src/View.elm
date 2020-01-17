@@ -766,7 +766,7 @@ serverIconForName serverName status =
       , Border.rounded 8
       , Background.color (if status == Input.Selected then selected else background)
       ]
-      (el [ centerX ] (text "ccw"))
+      (el [ centerX ] (text "ccm"))
   else if String.startsWith "server" name then
     let
       number = String.replace "server" "" name

@@ -69,7 +69,7 @@ init config location key =
       , fetchServers model.cachedApiUrl
       , fetchObjects
       , Leaflet.animOverlay model.dataAnimated
-      , Leaflet.worldList (Data.rebuildWorlds Data.codeChanges [] [] [])
+      , Leaflet.worldList (Data.rebuildWorlds Data.oholCodeChanges [] [] [])
       ]
     )
 
@@ -420,7 +420,7 @@ update msg model =
       let
         servers = serverList
           |> List.map (myServer model.versions)
-          |> (++) [crucible model.versions model.time]
+          |> (++) [crucible NotAvailable model.time]
         current = case model.selectedServer of
           Just sid ->
             servers
@@ -641,7 +641,7 @@ rebuildWorlds (model, cmd) =
     mServer = currentServer model
     prop = \field -> Maybe.map field >> Maybe.withDefault NotRequested >> RemoteData.withDefault []
     worlds = Data.rebuildWorlds
-      Data.codeChanges
+      (mServer |> Maybe.map .codeChanges |> Maybe.withDefault Data.oholCodeChanges)
       (mServer |> prop .versions)
       (mServer |> prop .arcs)
       (mServer |> prop .spans)
@@ -1038,10 +1038,11 @@ myServer versions server =
   , serverName = server.serverName
   , minTime = server.minTime
   , maxTime = server.maxTime
+  , codeChanges = Data.oholCodeChanges
   , arcs = NotRequested
   , spans = NotRequested
   , versions = versions
-  , worlds = Data.rebuildWorlds Data.codeChanges [] [] []
+  , worlds = Data.rebuildWorlds Data.oholCodeChanges [] [] []
   , monuments = NotRequested
   }
 
@@ -1051,10 +1052,11 @@ crucible versions currentTime =
   , serverName = "server1.oho.life"
   , minTime = Time.millisToPosix 1559489138000 -- "2019-06-02 10:25:38"
   , maxTime = currentTime
+  , codeChanges = Data.crucibleCodeChanges
   , arcs = NotAvailable
   , spans = NotAvailable
   , versions = versions
-  , worlds = Data.rebuildWorlds Data.codeChanges [] [] []
+  , worlds = Data.rebuildWorlds Data.crucibleCodeChanges [] [] []
   , monuments = NotAvailable
   }
 

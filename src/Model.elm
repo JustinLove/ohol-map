@@ -150,6 +150,7 @@ type alias Server =
   , serverName : String
   , minTime: Posix
   , maxTime: Posix
+  , codeChanges : List Data.Age
   , arcs : RemoteData (List Arc)
   , spans : RemoteData (List Span)
   , versions : RemoteData (List Version)
