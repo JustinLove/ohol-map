@@ -447,6 +447,9 @@ type alias Generation =
   , biomeRandSeedA: Maybe Int
   , biomeRandSeedB: Maybe Int
   , randSeed: Maybe Int
+  , biomeOffset: Float
+  , biomeScale: Float
+  , biomeFractalRoughness: Float
   }
 
 oholCodeChanges : List Age
@@ -598,6 +601,9 @@ crucibleCodeChanges =
       | biomeMap = jungleBiomeMap
       , tallHeight = 2 * cellD -- heights that block
       , veryTallHeight = 3 * cellD
+      , biomeOffset = 8.3332
+      , biomeScale = 0.8333
+      , biomeFractalRoughness = 0.35
       }
     }
   ]
@@ -652,6 +658,9 @@ defaultGeneration =
   , biomeRandSeedA = Just 723
   , biomeRandSeedB = Just 0
   , randSeed = Just 124567
+  , biomeOffset = 0.83332
+  , biomeScale = 0.08333
+  , biomeFractalRoughness = 0.55
   }
 
 jungleBiomeMap =

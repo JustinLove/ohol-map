@@ -152,6 +152,9 @@ generation g =
     , ("biomeRandSeedA", maybe int g.biomeRandSeedA)
     , ("biomeRandSeedB", maybe int g.biomeRandSeedB)
     , ("randSeed", maybe int g.randSeed)
+    , ("biomeOffset", float g.biomeOffset)
+    , ("biomeScale", float g.biomeScale)
+    , ("biomeFractalRoughness", float g.biomeFractalRoughness)
     ]
 
 secondPlaceBiomeObjects : SecondPlaceBiomeObjects -> Value
