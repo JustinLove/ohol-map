@@ -2,10 +2,8 @@
   - cache parsed index
 - services
   - versions per service
-  - crucuible at least scale params
   - 2hol
-    - new biome
-    - other params?
+    - looks wrong, need comparison data
   - object data
 - rebuild selection in-layer
   - base times where end of log can skip key

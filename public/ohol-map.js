@@ -109,9 +109,9 @@
 
   var oholBase = L.layerGroup([], {className: 'ohol-base'})
   oholBase.name = 'ohol base'
-  base['OHOL'] = oholBase
+  //base['OHOL'] = oholBase
 
-  base['Crucible'] = L.tileLayer(oholMapConfig.crucibleTiles, {
+  var crucibleBase = L.tileLayer(oholMapConfig.crucibleTiles, {
     className: 'crisp crucible',
     errorTileUrl: 'ground_U.png',
     minZoom: 2,
@@ -120,7 +120,8 @@
     maxNativeZoom: 25,
     attribution: attribution,
   });
-  base['Crucible'].name = 'cruicible'
+  crucibleBase.name = 'cruicible'
+  //base['Crucible'] = crucibleBase
 
   var dataOverlay = L.layerGroup([], {className: 'data-overlay'})
   dataOverlay.name = 'data overlay'
