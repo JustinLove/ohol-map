@@ -3,6 +3,8 @@ module OHOLData.Encode exposing
   , life
   , servers
   , server
+  , monuments
+  , monument
   , arcs
   , arc
   , spans
@@ -15,7 +17,7 @@ module OHOLData.Encode exposing
   , timeStamp
   )
 
-import OHOLData exposing (Life, Server, Arc, Span, Spawn, Biome, Generation, SecondPlaceBiomeObjects(..), World)
+import OHOLData exposing (Life, Server, Monument, Arc, Span, Spawn, Biome, Generation, SecondPlaceBiomeObjects(..), World)
 
 import Json.Encode exposing (..)
 import Time exposing (Posix)
@@ -57,6 +59,20 @@ server s =
     , ("server_name", string s.serverName)
     , ("min_time", timeStamp s.minTime)
     , ("max_time", timeStamp s.maxTime)
+    ]
+
+monuments : List Monument -> Value
+monuments data =
+  object
+    [ ("data", list monument data)
+    ]
+
+monument : Monument -> Value
+monument m =
+  object
+    [ ("x", int m.x)
+    , ("y", int m.y)
+    , ("date", timeStamp m.date)
     ]
 
 arcs : List Arc -> Value

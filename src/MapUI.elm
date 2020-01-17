@@ -418,7 +418,9 @@ update msg model =
       ({model | lives = Failed error}, Cmd.none)
     ServerList (Ok serverList) ->
       let
-        servers = serverList |> List.map (myServer model.versions)
+        servers = serverList
+          |> List.map (myServer model.versions)
+          |> (++) [crucible model.versions model.time]
         current = case model.selectedServer of
           Just sid ->
             servers
@@ -646,8 +648,8 @@ rebuildWorlds (model, cmd) =
   in
   ( model
   , Cmd.batch
-    [ Leaflet.worldList worlds
-    , cmd
+    [ cmd
+    , Leaflet.worldList worlds
     ]
   )
 
@@ -965,7 +967,7 @@ requireArcs model (server, cmd) =
     ({server|arcs = Loading}
     , Cmd.batch [cmd, fetchArcs model.seedsUrl server.id])
   else
-    (server, Cmd.none)
+    (server, cmd)
 
 fetchArcs : String -> Int -> Cmd Msg
 fetchArcs seedsUrl serverId =
@@ -980,7 +982,7 @@ requireSpans model (server, cmd) =
     ({server|spans = Loading}
     , Cmd.batch [cmd, fetchSpans model.spansUrl server.id])
   else
-    (server, Cmd.none)
+    (server, cmd)
 
 fetchSpans : String -> Int -> Cmd Msg
 fetchSpans spansUrl serverId =
@@ -1043,6 +1045,19 @@ myServer versions server =
   , monuments = NotRequested
   }
 
+crucible : RemoteData (List Version) -> Posix -> Server
+crucible versions currentTime =
+  { id = 18
+  , serverName = "server1.oho.life"
+  , minTime = Time.millisToPosix 1559489138000 -- "2019-06-02 10:25:38"
+  , maxTime = currentTime
+  , arcs = NotAvailable
+  , spans = NotAvailable
+  , versions = versions
+  , worlds = Data.rebuildWorlds Data.codeChanges [] [] []
+  , monuments = NotAvailable
+  }
+
 fetchMatchingLives : String -> String -> Cmd Msg
 fetchMatchingLives baseUrl term =
   Http.get
@@ -1066,11 +1081,18 @@ fetchLineage baseUrl life =
 
 requireMonuments : Model -> (Server, Cmd Msg) -> (Server, Cmd Msg)
 requireMonuments model (server, cmd) =
-  if server.monuments == NotRequested then
-    ({server|monuments = Loading}
-    , Cmd.batch [cmd, fetchMonuments model.cachedApiUrl server.id])
-  else
-    (server, Cmd.none)
+  case server.monuments of
+    NotRequested ->
+      ({server|monuments = Loading}
+      , Cmd.batch [cmd, fetchMonuments model.cachedApiUrl server.id])
+    NotAvailable ->
+      (server, Cmd.batch [cmd, Leaflet.monumentList server.id (Encode.monuments [])])
+    Loading ->
+      (server, cmd)
+    Data monuments ->
+      (server, Cmd.batch [cmd, Leaflet.monumentList server.id (Encode.monuments monuments)])
+    Failed _ ->
+      (server, cmd)
 
 fetchMonuments : String -> Int -> Cmd Msg
 fetchMonuments baseUrl serverId =

@@ -253,6 +253,8 @@ showResult model remote =
   case remote of
     NotRequested ->
       none
+    NotAvailable ->
+      none
     Loading ->
       el [ centerX, centerY ] <| text "Loading"
     Data lives ->
@@ -439,6 +441,7 @@ dataAction model =
   el [ width fill, padding 5 ] <|
     case model.dataLayer of
       NotRequested -> dataButtonEnabled
+      NotAvailable -> dataButtonDisabled
       Loading -> dataButtonDisabled
       Data _ -> dataButtonEnabled
       Failed _ -> dataButtonEnabled
@@ -632,6 +635,7 @@ arcSelect model =
   let arcs = currentArcs model in
   case arcs of
     NotRequested -> none
+    NotAvailable -> none
     Loading -> showLoading arcs
     Failed error -> showError error
     Data list ->
@@ -736,8 +740,8 @@ serverItem server =
   Input.optionWith server.id
     (serverIcon server)
 
-serverDisplayName : Server -> String
-serverDisplayName {serverName} =
+serverDisplayName : String -> String
+serverDisplayName serverName =
   serverName
     |> String.split "."
     |> List.head
@@ -745,14 +749,25 @@ serverDisplayName {serverName} =
 
 serverIcon : Server -> Input.OptionState -> Element Msg
 serverIcon server =
-  server
-    |> serverDisplayName
-    |> serverIconForName
+  serverIconForName server.serverName
 
 serverIconForName : String -> Input.OptionState -> Element Msg
-serverIconForName name status =
-    el [ htmlAttribute (Html.Attributes.title name) ] <|
-  if String.startsWith "server" name then
+serverIconForName serverName status =
+  let
+    name = serverDisplayName serverName
+  in
+  el [ htmlAttribute (Html.Attributes.title serverName) ] <|
+  if String.endsWith "oho.life" serverName then
+    el
+      [ width (px 45)
+      , padding 3
+      , Border.width 1
+      , Border.color foreground
+      , Border.rounded 8
+      , Background.color (if status == Input.Selected then selected else background)
+      ]
+      (el [ centerX ] (text "ccw"))
+  else if String.startsWith "server" name then
     let
       number = String.replace "server" "" name
     in
@@ -913,6 +928,8 @@ showLoading : RemoteData a -> Element Msg
 showLoading remote =
   case remote of
     NotRequested ->
+      none
+    NotAvailable ->
       none
     Loading ->
       el [ centerX, centerY ] <| text "Loading"
