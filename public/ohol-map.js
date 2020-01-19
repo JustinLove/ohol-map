@@ -246,7 +246,7 @@
     },
   })
 
-  overlays['Checker'] = new L.GridLayer.CheckerLayer()
+  //overlays['Checker'] = new L.GridLayer.CheckerLayer()
 
 
   // fractal generation copying https://github.com/jasonrohrer/OneLife/blob/master/commonSource/fractalNoise.cpp
@@ -1320,7 +1320,7 @@
 
   var server3Map = L.imageOverlay('overlays/server3.png',
     [[-1170.5, -695.5], [-401.5, 1252.5 - 695]], {
-      pane: 'tilePane',
+      pane: 'overlayPane',
       attribution: '<a href="https://onehouronelife.com/forums/viewtopic.php?id=236">rosden</a>',
     })
 
@@ -1328,9 +1328,23 @@
 
   var badlandsAge = new L.layerGroup([badlandsBaseBiome])
 
+  var tw = 734
+  var th = 585
+  var tx = 378.5
+  var ty = 298
+  var hscale = 3.02
+  var vscale = 3.02
+  var tholMap = L.imageOverlay('overlays/thol.png',
+    [[(th-ty)*-vscale, tx*-hscale], [ty*vscale, (tw-tx)*hscale]], {
+      pane: 'overlayPane',
+      attribution: 'GetInMyVan',
+      opacity: 0.7,
+    })
+
   var biomeLayers = {
     "badlandsAge": badlandsAge,
     "screenshot": L.layerGroup([biomeImageLayer, screenshotImageLayer]),
+    "tholMap": tholMap,
   }
 
   var updateWorlds = function(worldData) {
@@ -1340,7 +1354,13 @@
       if (!world.generation.computeMapBiomeIndex) {
         console.log(world, "no biome index function")
       }
-      if (world.biomeLayer) {
+      if (world.biomeLayer == 'tholMap') {
+        world.biomeLayer = L.layerGroup([
+          new L.GridLayer.BiomeLayer(world.generation),
+          tholMap,
+        ])
+        world.biomeLayer.name = world.name + ' Biome'
+      } else if (world.biomeLayer) {
         world.biomeLayer = biomeLayers[world.biomeLayer]
         if (!world.biomeLayer) {
           console.log(world, "no biome layer")
@@ -2558,7 +2578,7 @@
   var options = {
     showOriginLabel: false,
     redraw: 'move',
-    attribution: '<a href="https://github.com/ablakey/Leaflet.SimpleGraticule">ablakey/SimpleGraticle</a>',
+    attribution: '<a href="https://github.com/ablakey/Leaflet.SimpleGraticule">ablakey/SimpleGraticule</a>',
     zoomIntervals: [
       {start: 0,  end: 3,  interval: 1000000000},
       {start: 4,  end: 6,  interval: 100000000},
@@ -2944,6 +2964,7 @@
     //base['Topographic Test'].addTo(map)
     overlays['Rift'].addTo(map)
     //overlays['Checker'].addTo(map)
+    //overlays['graticule'].addTo(map)
     //base['Fractal'].addTo(map)
     //base['Biome'].addTo(map)
     //map.addControl(animToggle)

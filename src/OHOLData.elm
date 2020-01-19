@@ -624,7 +624,7 @@ tholCodeChanges =
     }
   , { name = "Two Hours One Life (20265)"
     , start = humanTime "2019-11-26T19:06:00Z"
-    , biomeLayer = Nothing
+    , biomeLayer = Just "tholMap"
     , generation =
       { defaultGeneration
       | biomeMap = thol2BiomeMap

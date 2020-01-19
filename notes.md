@@ -1,9 +1,10 @@
 - x index files
   - cache parsed index
+- near future can show last known map
+- hide monuments at known resets
 - services
   - versions per service
   - 2hol
-    - looks wrong, need comparison data
   - object data
 - rebuild selection in-layer
   - base times where end of log can skip key
