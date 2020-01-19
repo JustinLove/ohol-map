@@ -421,7 +421,7 @@ update msg model =
         servers = serverList
           |> List.map (myServer model.versions)
           |> (++) [crucible NotAvailable model.time]
-          --|> (++) [twoHoursOneLife NotAvailable model.time]
+          |> (++) [twoHoursOneLife NotAvailable model.time]
         current = case model.selectedServer of
           Just sid ->
             servers
