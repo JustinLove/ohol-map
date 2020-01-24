@@ -73,6 +73,7 @@ monument m =
     [ ("x", int m.x)
     , ("y", int m.y)
     , ("date", timeStamp m.date)
+    , ("end", maybe timeStamp m.end)
     ]
 
 arcs : List Arc -> Value

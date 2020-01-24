@@ -1,20 +1,20 @@
-- x index files
-  - cache parsed index
-- near future can show last known map
 - hide monuments at known resets
+- near future can show last known map
+- server dependant
+  - jump to proper server for life
+  - x some lives seem to be missing map - cira 2019-11-02 - server1
+- server time selections dont set animation range
 - services
   - versions per service
   - 2hol
   - object data
-- rebuild selection in-layer
-  - base times where end of log can skip key
-- server time selections dont set animation range
-- refactoring
-- server dependant
-  - jump to proper server for life
-  - x some lives seem to be missing map - cira 2019-11-02 - server1
 - static server list
 - static monument lists
+- x index files
+  - cache parsed index
+- rebuild selection in-layer
+  - base times where end of log can skip key
+- refactoring
 
 - tapout radius
 - expired objects

@@ -176,19 +176,27 @@
   searchOverlay.name = 'search overlay'
   var focusMarker = null;
 
-  var updateMonumentLayer = function(layer, data) {
+  var updateMonumentLayer = function(layer, ms, data) {
     var now = new Date()
+    ms = ms || now
+    if (data) {
+      L.Util.setOptions(layer, {data: data})
+    } else {
+      data = layer.options.data || [];
+    }
     layer.clearLayers()
-    L.Util.setOptions(layer, {data: data})
     data.forEach(function(point) {
       var date = new Date(point.date*1000)
-      var age = (now - date) / (24 * 60 * 60 * 1000)
-      L.marker([point.y, point.x], {
-          opacity: Math.max(0.4, Math.min(1.0, 1.0 - (age / (age+30))))
-        })
-        .bindPopup(date.toString())
-        .addTo(layer)
-      //L.circle([point.y, point.x], {radius: 21000, fill: false}).addTo(layer)
+      var end = point.end ? new Date(point.end*1000) : ms
+      if (date <= ms && ms <= end) {
+        var age = (now - date) / (24 * 60 * 60 * 1000)
+        L.marker([point.y, point.x], {
+            opacity: Math.max(0.4, Math.min(1.0, 1.0 - (age / (age+30))))
+          })
+          .bindPopup(date.toString())
+          .addTo(layer)
+        //L.circle([point.y, point.x], {radius: 21000, fill: false}).addTo(layer)
+      }
     })
   }
 
@@ -2474,6 +2482,7 @@
     if (changes > 0) {
       setTimeout(function() {
         toggleAnimationControls(map)
+        updateMonumentLayer(monumentOverlay, ms)
       },0)
     }
   }
@@ -3042,7 +3051,7 @@
           //objectOverlaySprite.addTo(map)
           break;
         case 'monumentList':
-          updateMonumentLayer(monumentOverlay, message.monuments.data)
+          updateMonumentLayer(monumentOverlay, mapTime, message.monuments.data)
           monumentOverlay.addTo(map)
           break;
         case 'dataLayer':

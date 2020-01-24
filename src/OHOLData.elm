@@ -20,6 +20,7 @@ module OHOLData exposing
   , tholCodeChanges
   , assignDataTime
   , rebuildWorlds
+  , terminateMonuments
   , current
   , advance
   )
@@ -57,6 +58,7 @@ type alias Monument =
   { x : Int
   , y : Int
   , date : Posix
+  , end : Maybe Posix
   }
 
 type alias Arc =
@@ -409,6 +411,32 @@ compressValues value accum =
         value :: accum
     [] ->
       [value]
+
+terminateMonuments : List Arc -> List Monument -> List Monument
+terminateMonuments arcs monuments =
+  if List.isEmpty arcs then
+    monuments
+  else
+    arcs
+      |> List.foldl addEndTimeToMonuments (List.reverse monuments, [])
+      |> Tuple.second
+
+addEndTimeToMonuments : Arc -> (List Monument, List Monument) -> (List Monument, List Monument)
+addEndTimeToMonuments arc (pending, processed) =
+  case pending of
+    monument :: rest ->
+      let
+        time = Time.posixToMillis monument.date
+        start = Time.posixToMillis arc.start
+        end = arc.end |> Maybe.map Time.posixToMillis |> Maybe.withDefault time
+      in
+        if time < start then
+          addEndTimeToMonuments arc (rest, {monument|end = Just arc.start} :: processed)
+        else if start < time && time <= end then
+          addEndTimeToMonuments arc (rest, {monument|end = arc.end} :: processed)
+        else
+          (pending, processed)
+    [] -> (pending, processed)
 
 type alias Age =
   { name: String

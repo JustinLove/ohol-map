@@ -57,6 +57,7 @@ monument =
     |> map2 (|>) (field "x" int)
     |> map2 (|>) (field "y" int)
     |> map2 (|>) (field "date" timeStamp)
+    |> map2 (|>) (succeed Nothing)
 
 arcs : Decoder (List Arc)
 arcs =

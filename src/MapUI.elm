@@ -505,10 +505,17 @@ update msg model =
       (model, Cmd.none)
     MonumentList serverId (Ok value) ->
       let
+        arcs = model.servers
+          |> Dict.get serverId
+          |> Maybe.map .arcs
+          |> Maybe.withDefault NotRequested
+          |> RemoteData.withDefault []
         monuments = value
           |> Json.Decode.decodeValue Decode.monuments
           |> Result.mapError (Debug.log "monument decode error")
           |> Result.withDefault []
+          |> Data.terminateMonuments arcs
+        updatedValue = Encode.monuments monuments
         recent = List.head monuments
           |> Maybe.map (\{x,y} -> Point x y defaultCenter.z)
           |> Maybe.withDefault defaultCenter
@@ -519,7 +526,7 @@ update msg model =
           , center = recent
           }
         , Cmd.batch
-          [ Leaflet.monumentList serverId value
+          [ Leaflet.monumentList serverId updatedValue
           , Leaflet.setView recent
           , Navigation.replaceUrl model.navigationKey <|
             centerUrl model.location model.mapTime (isYesterday model) model.selectedServer recent
@@ -529,7 +536,7 @@ update msg model =
         ( { model
           | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | monuments = Data monuments}))
           }
-        , Leaflet.monumentList serverId value
+        , Leaflet.monumentList serverId updatedValue
         )
     MonumentList serverId (Err error) ->
       let _ = Debug.log "fetch monuments failed" error in
