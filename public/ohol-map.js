@@ -161,7 +161,10 @@
     L.DomUtil.removeClass(map.getPane('tilePane'), 'blur')
   })
 
-  var monumentOverlay = L.layerGroup([], {className: 'monument-overlay'})
+  var monumentOverlay = L.layerGroup([], {
+    className: 'monument-overlay',
+    showOnlyCurrentMonuments: true,
+  })
   monumentOverlay.name = 'monument overlay'
 
   var overlays = {
@@ -188,7 +191,7 @@
     data.forEach(function(point) {
       var date = new Date(point.date*1000)
       var end = point.end ? new Date(point.end*1000) : ms
-      if (date <= ms && ms <= end) {
+      if (!layer.options.showOnlyCurrentMonuments || (date <= ms && ms <= end)) {
         var age = (now - date) / (24 * 60 * 60 * 1000)
         L.marker([point.y, point.x], {
             opacity: Math.max(0.4, Math.min(1.0, 1.0 - (age / (age+30))))
@@ -3111,6 +3114,10 @@
         case 'pointLocation':
           setPointLocation(message.location)
           break;
+        case 'showOnlyCurrentMonuments':
+          L.Util.setOptions(monumentOverlay, {showOnlyCurrentMonuments: message.status})
+          updateMonumentLayer(monumentOverlay, mapTime)
+          break
         case 'fadeTallObjects':
           setObjectLayerOptions({fadeTallObjects: message.status})
           break

@@ -1,4 +1,7 @@
 - hide monuments at known resets
+  - fade effect
+  - jump to last monument
+  - arcs updating after monuments
 - near future can show last known map
 - server dependant
   - jump to proper server for life

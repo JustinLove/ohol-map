@@ -47,6 +47,7 @@ type Msg
   | Play
   | Pause
   | ToggleFadeTallObjects Bool
+  | ToggleShowOnlyCurrentMonuments Bool
   | SelectNaturalObjectZoom Int
   | SelectPointColor PointColor
   | SelectPointLocation PointLocation
@@ -891,6 +892,12 @@ cosmetics model =
             }
         else
           none
+      , Input.checkbox [ padding 10, spacing 2 ]
+        { onChange = ToggleShowOnlyCurrentMonuments
+        , checked = model.showOnlyCurrentMonuments
+        , label = Input.labelRight [ padding 6 ] (text "Show Only Current Monuments")
+        , icon = Input.defaultCheckbox
+        }
       , Input.checkbox [ padding 10, spacing 2 ]
         { onChange = ToggleFadeTallObjects
         , checked = model.fadeTallObjects

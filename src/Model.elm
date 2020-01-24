@@ -60,6 +60,7 @@ type alias Model =
   , currentArc : Maybe Arc
   , dataAnimated : Bool
   , lifeDataVisible : Bool
+  , showOnlyCurrentMonuments : Bool
   , gameSecondsPerSecond : Int
   , framesPerSecond : Int
   , timeRange : Maybe (Posix, Posix)
@@ -102,6 +103,7 @@ initialModel config location key =
   , currentArc = Nothing
   , dataAnimated = False
   , lifeDataVisible = False
+  , showOnlyCurrentMonuments = True
   , gameSecondsPerSecond = 600
   , framesPerSecond = 10
   , timeRange = Nothing

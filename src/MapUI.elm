@@ -165,6 +165,12 @@ update msg model =
         }
       , Cmd.none
       )
+    UI (View.ToggleShowOnlyCurrentMonuments show) ->
+      ( { model
+        | showOnlyCurrentMonuments = show
+        }
+      , Leaflet.showOnlyCurrentMonuments show
+      )
     UI (View.ToggleFadeTallObjects fade) ->
       ( { model
         | fadeTallObjects = fade

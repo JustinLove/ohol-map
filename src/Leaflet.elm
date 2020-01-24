@@ -17,6 +17,7 @@ port module Leaflet exposing
   , baseLayer
   , pointColor
   , pointLocation
+  , showOnlyCurrentMonuments
   , fadeTallObjects
   , showNaturalObjectsAboveZoom
   , event)
@@ -170,6 +171,14 @@ pointLocation location =
         BirthLocation -> "birth"
         DeathLocation -> "death"
       )
+    ]
+    |> leafletCommand
+
+showOnlyCurrentMonuments : Bool -> Cmd msg
+showOnlyCurrentMonuments status =
+  Encode.object
+    [ ("kind", Encode.string "showOnlyCurrentMonuments")
+    , ("status", Encode.bool status)
     ]
     |> leafletCommand
 
