@@ -522,7 +522,18 @@ update msg model =
           |> Result.withDefault []
           |> Data.terminateMonuments arcs
         updatedValue = Encode.monuments monuments
-        recent = List.head monuments
+        recent = monuments
+          |> dropWhile (\{date} ->
+              case model.mapTime of
+                Just time ->
+                  let
+                    msTime = Time.posixToMillis time
+                    msStart = Time.posixToMillis date
+                  in
+                    msTime < msStart
+                Nothing -> False
+            )
+          |> List.head
           |> Maybe.map (\{x,y} -> Point x y defaultCenter.z)
           |> Maybe.withDefault defaultCenter
       in
@@ -1216,3 +1227,13 @@ increment =
   Time.posixToMillis
   >> (\x -> x + 1000)
   >> Time.millisToPosix
+
+dropWhile : (a -> Bool) -> List a -> List a
+dropWhile test list =
+  case list of
+    head :: rest ->
+      if test head then
+        dropWhile test rest
+      else
+        list
+    [] -> []

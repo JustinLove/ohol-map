@@ -1,5 +1,4 @@
 - hide monuments at known resets
-  - jump to last monument
   - arcs updating after monuments
 - near future can show last known map
 - server dependant
