@@ -192,7 +192,7 @@
       var date = new Date(point.date*1000)
       var end = point.end ? new Date(point.end*1000) : ms
       if (!layer.options.showOnlyCurrentMonuments || (date <= ms && ms <= end)) {
-        var age = (now - date) / (24 * 60 * 60 * 1000)
+        var age = Math.abs(ms - date) / (24 * 60 * 60 * 1000)
         L.marker([point.y, point.x], {
             opacity: Math.max(0.4, Math.min(1.0, 1.0 - (age / (age+30))))
           })
