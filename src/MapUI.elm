@@ -15,6 +15,7 @@ import Browser.Navigation as Navigation
 import Http
 import Json.Decode
 import Dict exposing(Dict)
+import Process
 import Task
 import Time exposing (Posix)
 import Tuple
@@ -32,7 +33,7 @@ type Msg
   | ArcList Int (Result Http.Error (List Data.Arc))
   | SpanList Int (Result Http.Error (List Data.Span))
   | ObjectsReceived (Result Http.Error Data.Objects)
-  | MonumentList Int (Result Http.Error Json.Decode.Value)
+  | MonumentList Int (Result Http.Error (List Data.Monument))
   | DataLayer (Result Http.Error Json.Decode.Value)
   | NoDataLayer
   | FetchUpTo Posix
@@ -467,6 +468,7 @@ update msg model =
         , Cmd.none
         )
         |> rebuildWorlds
+        |> updateMonuments serverId
     ArcList serverId (Err error) ->
       let _ = Debug.log "fetch arcs failed" error in
       ( { model
@@ -509,52 +511,14 @@ update msg model =
     ObjectsReceived (Err error) ->
       let _ = Debug.log "fetch objects failed" error in
       (model, Cmd.none)
-    MonumentList serverId (Ok value) ->
-      let
-        arcs = model.servers
-          |> Dict.get serverId
-          |> Maybe.map .arcs
-          |> Maybe.withDefault NotRequested
-          |> RemoteData.withDefault []
-        monuments = value
-          |> Json.Decode.decodeValue Decode.monuments
-          |> Result.mapError (Debug.log "monument decode error")
-          |> Result.withDefault []
-          |> Data.terminateMonuments arcs
-        updatedValue = Encode.monuments monuments
-        recent = monuments
-          |> dropWhile (\{date} ->
-              case model.mapTime of
-                Just time ->
-                  let
-                    msTime = Time.posixToMillis time
-                    msStart = Time.posixToMillis date
-                  in
-                    msTime < msStart
-                Nothing -> False
-            )
-          |> List.head
-          |> Maybe.map (\{x,y} -> Point x y defaultCenter.z)
-          |> Maybe.withDefault defaultCenter
-      in
-      if model.center == defaultCenter && recent /= defaultCenter then
-        ( { model
-          | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | monuments = Data monuments}))
-          , center = recent
-          }
-        , Cmd.batch
-          [ Leaflet.monumentList serverId updatedValue
-          , Leaflet.setView recent
-          , Navigation.replaceUrl model.navigationKey <|
-            centerUrl model.location model.mapTime (isYesterday model) model.selectedServer recent
-          ]
-        )
-      else
-        ( { model
-          | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | monuments = Data monuments}))
-          }
-        , Leaflet.monumentList serverId updatedValue
-        )
+    MonumentList serverId (Ok monuments) ->
+      ( { model
+        | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | monuments = Data monuments}))
+        }
+      , Cmd.none
+      )
+        |> updateMonuments serverId
+        |> checkDefaultCenter monuments
     MonumentList serverId (Err error) ->
       let _ = Debug.log "fetch monuments failed" error in
       (model, Cmd.none)
@@ -677,6 +641,54 @@ rebuildWorlds (model, cmd) =
     , Leaflet.worldList worlds
     ]
   )
+
+updateMonuments : Int -> (Model, Cmd Msg) -> (Model, Cmd Msg)
+updateMonuments serverId (model, cmd) =
+  let
+    mServer = model.servers |> Dict.get serverId
+    prop = \field -> Maybe.map field >> Maybe.withDefault NotRequested >> RemoteData.withDefault []
+    monuments = Data.terminateMonuments
+      (mServer |> prop .arcs)
+      (mServer |> prop .monuments)
+  in
+  ( model
+  , Cmd.batch
+    [ cmd
+    , Leaflet.monumentList serverId (Encode.monuments monuments)
+    ]
+  )
+
+checkDefaultCenter : List Monument -> (Model, Cmd Msg) -> (Model, Cmd Msg)
+checkDefaultCenter monuments (model, cmd) =
+  if model.center == defaultCenter then
+    let
+      recent = monuments
+        |> dropWhile (\{date} ->
+            case model.mapTime of
+              Just time ->
+                let
+                  msTime = Time.posixToMillis time
+                  msStart = Time.posixToMillis date
+                in
+                  msTime < msStart
+              Nothing -> False
+          )
+        |> List.head
+        |> Maybe.map (\{x,y} -> Point x y defaultCenter.z)
+        |> Maybe.withDefault defaultCenter
+    in
+    if recent /= defaultCenter then
+      ( { model | center = recent }
+      , Cmd.batch
+        [ Leaflet.setView recent
+        , Navigation.replaceUrl model.navigationKey <|
+          centerUrl model.location model.mapTime (isYesterday model) model.selectedServer recent
+        ]
+      )
+    else
+      (model, cmd)
+  else
+    (model, cmd)
 
 type alias ArcSpan r = {r|arcs: RemoteData (List Arc), spans: RemoteData (List Span)}
 
@@ -996,10 +1008,60 @@ requireArcs model (server, cmd) =
 
 fetchArcs : String -> Int -> Cmd Msg
 fetchArcs seedsUrl serverId =
-  Http.get
+  --slowGet (2 * 1000)
+  fastGet
     { url = Url.relative [seedsUrl |> String.replace "{server}" (String.fromInt serverId)] []
-    , expect = Http.expectJson (ArcList serverId) Decode.arcs
+    , decoder = Decode.arcs
+    , tagger = (ArcList serverId)
     }
+
+type alias HttpGet a =
+  { url : String
+  , decoder : Json.Decode.Decoder a
+  , tagger : Result Http.Error a -> Msg
+  }
+
+fastGet : HttpGet a -> Cmd Msg
+fastGet {url, decoder, tagger} =
+  Http.get
+    { url = url
+    , expect = Http.expectJson tagger decoder
+    }
+
+slowGet : Float -> HttpGet a -> Cmd Msg
+slowGet time {url, decoder, tagger} =
+  Process.sleep time
+    |> Task.andThen (\_ ->
+      Http.task
+        { url = url
+        , method = "GET"
+        , headers = []
+        , body = Http.emptyBody
+        , resolver = resolveJson decoder
+        , timeout = Nothing
+        }
+      )
+    |> Task.attempt tagger
+
+resolveJson : Json.Decode.Decoder a -> Http.Resolver Http.Error a
+resolveJson decoder =
+  Http.stringResolver <|
+    \response ->
+      case response of
+        Http.BadUrl_ url ->
+          Err (Http.BadUrl url)
+        Http.Timeout_ ->
+          Err Http.Timeout
+        Http.NetworkError_ ->
+          Err Http.NetworkError
+        Http.BadStatus_ metadata body ->
+          Err (Http.BadStatus metadata.statusCode)
+        Http.GoodStatus_ _ body ->
+          case Json.Decode.decodeString decoder body of
+            Ok value ->
+              Ok value
+            Err err ->
+              Err (Http.BadBody (Json.Decode.errorToString err))
 
 requireSpans : Model -> (Server, Cmd Msg) -> (Server, Cmd Msg)
 requireSpans model (server, cmd) =
@@ -1131,7 +1193,15 @@ requireMonuments model (server, cmd) =
     Loading ->
       (server, cmd)
     Data monuments ->
-      (server, Cmd.batch [cmd, Leaflet.monumentList server.id (Encode.monuments monuments)])
+      ( server
+      , Cmd.batch
+        [ cmd
+        , monuments
+          |> Data.terminateMonuments (server.arcs |> RemoteData.withDefault [])
+          |> Encode.monuments
+          |> Leaflet.monumentList server.id
+        ]
+      )
     Failed _ ->
       (server, cmd)
 
@@ -1141,7 +1211,7 @@ fetchMonuments baseUrl serverId =
     { url = Url.crossOrigin baseUrl ["monuments"]
       [ Url.int "server_id" serverId
       ]
-    , expect = Http.expectJson (MonumentList serverId) Json.Decode.value
+    , expect = Http.expectJson (MonumentList serverId) Decode.monuments
     }
 
 fetchRecentLives : String -> Int -> Cmd Msg
