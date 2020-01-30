@@ -1,3 +1,4 @@
+- (model, cmd) is error prone
 - near future can show last known map
 - server dependant
   - jump to proper server for life

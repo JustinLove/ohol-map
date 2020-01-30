@@ -232,8 +232,6 @@ update msg model =
               , servers = Dict.insert serverId s2 model.servers
               , coarseStartTime = inRange range model.coarseStartTime
               , startTime = inRange range model.startTime
-              , mapTime = model.mapTime
-                |> Maybe.map (inRange range)
               , dataLayer = Data False
               , player = Stopped
               }
@@ -680,7 +678,8 @@ checkDefaultCenter monuments (model, cmd) =
     if recent /= defaultCenter then
       ( { model | center = recent }
       , Cmd.batch
-        [ Leaflet.setView recent
+        [ cmd
+        , Leaflet.setView recent
         , Navigation.replaceUrl model.navigationKey <|
           centerUrl model.location model.mapTime (isYesterday model) model.selectedServer recent
         ]

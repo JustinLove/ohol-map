@@ -162,6 +162,13 @@ timeline model =
               |> Maybe.map (\s -> text (", " ++ s))
               |> Maybe.withDefault none
             )
+            {-
+          , ( time
+              |> Time.posixToMillis
+              |> String.fromInt
+              |> (\s -> text (", " ++ s))
+            )
+            -}
           ]
         , Input.slider
           [ Background.color control ]
