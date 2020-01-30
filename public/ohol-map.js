@@ -179,9 +179,8 @@
   searchOverlay.name = 'search overlay'
   var focusMarker = null;
 
-  var updateMonumentLayer = function(layer, ms, data) {
+  var updateMonumentLayer = function(layer, data) {
     var now = new Date()
-    ms = ms || now
     if (data) {
       L.Util.setOptions(layer, {data: data})
     } else {
@@ -190,15 +189,29 @@
     layer.clearLayers()
     data.forEach(function(point) {
       var date = new Date(point.date*1000)
+      var end = point.end ? new Date(point.end*1000) : now
+      var age = Math.abs(now - date) / (24 * 60 * 60 * 1000)
+      point.monument = L.marker([point.y, point.x], {
+          opacity: Math.max(0.4, Math.min(1.0, 1.0 - (age / (age+30))))
+        })
+        .bindPopup(date.toString())
+        .addTo(layer)
+      //L.circle([point.y, point.x], {radius: 21000, fill: false}).addTo(layer)
+    })
+  }
+
+  var monumentsByTime = function(layer, ms, reason) {
+    var now = new Date()
+    ms = ms || now
+    var data = layer.options.data || [];
+    //console.log('updating monuments', ms, data, reason)
+    data.forEach(function(point) {
+      var date = new Date(point.date*1000)
       var end = point.end ? new Date(point.end*1000) : ms
       if (!layer.options.showOnlyCurrentMonuments || (date <= ms && ms <= end)) {
-        var age = Math.abs(ms - date) / (24 * 60 * 60 * 1000)
-        L.marker([point.y, point.x], {
-            opacity: Math.max(0.4, Math.min(1.0, 1.0 - (age / (age+30))))
-          })
-          .bindPopup(date.toString())
-          .addTo(layer)
-        //L.circle([point.y, point.x], {radius: 21000, fill: false}).addTo(layer)
+        layer.addLayer(point.monument)
+      } else {
+        layer.removeLayer(point.monument)
       }
     })
   }
@@ -2485,7 +2498,6 @@
     if (changes > 0) {
       setTimeout(function() {
         toggleAnimationControls(map)
-        updateMonumentLayer(monumentOverlay, ms)
       },0)
     }
   }
@@ -2523,6 +2535,7 @@
     }
     mapUpdateTask = setTimeout(function() {
       if (map) baseLayerByTime(map, ms, reason)
+      if (monumentOverlay) monumentsByTime(monumentOverlay, ms, reason)
       riftLayerByTime(ms, map && map.getZoom())
       animOverlay.updateTiles(ms)
       arcUpdateTiles(ms)
@@ -3054,7 +3067,8 @@
           //objectOverlaySprite.addTo(map)
           break;
         case 'monumentList':
-          updateMonumentLayer(monumentOverlay, mapTime, message.monuments.data)
+          updateMonumentLayer(monumentOverlay, message.monuments.data)
+          monumentsByTime(monumentOverlay, mapTime, 'monumentList')
           monumentOverlay.addTo(map)
           break;
         case 'dataLayer':
@@ -3116,7 +3130,7 @@
           break;
         case 'showOnlyCurrentMonuments':
           L.Util.setOptions(monumentOverlay, {showOnlyCurrentMonuments: message.status})
-          updateMonumentLayer(monumentOverlay, mapTime)
+          monumentsByTime(monumentOverlay, mapTime, 'showOnlyCurrentMonuments')
           break
         case 'fadeTallObjects':
           setObjectLayerOptions({fadeTallObjects: message.status})
