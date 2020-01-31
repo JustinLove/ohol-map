@@ -1,3 +1,4 @@
+- eve filter
 - (model, cmd) is error prone
 - near future can show last known map
 - server dependant
@@ -8,8 +9,9 @@
   - versions per service
   - 2hol
   - object data
-- static server list
-- static monument lists
+- may not go to time with latest monument
+- other monument reset times
+- optimize monument updates (most time updates will not cross a time that changes anything)
 - x index files
   - cache parsed index
 - rebuild selection in-layer

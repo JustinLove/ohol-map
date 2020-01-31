@@ -993,7 +993,7 @@ subscriptions model =
 fetchServers : String -> Cmd Msg
 fetchServers baseUrl =
   Http.get
-    { url = Url.crossOrigin baseUrl ["servers"] []
+    { url = Url.relative ["data/servers.json"] []
     , expect = Http.expectJson ServerList Decode.servers
     }
 
@@ -1207,9 +1207,7 @@ requireMonuments model (server, cmd) =
 fetchMonuments : String -> Int -> Cmd Msg
 fetchMonuments baseUrl serverId =
   Http.get
-    { url = Url.crossOrigin baseUrl ["monuments"]
-      [ Url.int "server_id" serverId
-      ]
+    { url = Url.relative ["data/monuments/" ++ (String.fromInt serverId) ++ ".json"] []
     , expect = Http.expectJson (MonumentList serverId) Decode.monuments
     }
 
