@@ -1,9 +1,5 @@
 - (model, cmd) is error prone
 - near future can show last known map
-- server dependant
-  - jump to proper server for life
-  - x some lives seem to be missing map - cira 2019-11-02 - server1
-- abstract set server
 - server time selections dont set animation range
 - services
   - versions per service

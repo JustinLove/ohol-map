@@ -207,7 +207,7 @@ update msg model =
         , Leaflet.focus (serverLife life)
         ]
       )
-       |> replaceUrl
+       |> setServer life.serverId
     UI (View.SelectLineage life) ->
       ( model
       , fetchLineage model.apiUrl life
@@ -217,40 +217,8 @@ update msg model =
       , Leaflet.searchOverlay (mode == LifeSearch)
       )
     UI (View.SelectServer serverId) ->
-      case Dict.get serverId model.servers of
-        Just server ->
-          let
-            (s2, cmd) = (server, Cmd.none)
-              |> requireMonuments model
-              |> requireArcs model
-              |> requireSpans model
-            range = (server.minTime, server.maxTime)
-          in
-          ( { model
-            | selectedServer = Just serverId
-            , servers = Dict.insert serverId s2 model.servers
-            , coarseStartTime = inRange range model.coarseStartTime
-            , startTime = inRange range model.startTime
-            , dataLayer = NotRequested
-            , player = Stopped
-            }
-          , Cmd.batch
-            [ cmd
-            , case model.dataLayer of
-              Data x ->
-                if x == serverId then
-                  Cmd.none
-                else
-                  Leaflet.dataLayer (Encode.lives [])
-              _ -> Cmd.none
-            , Leaflet.currentServer serverId
-            ]
-          )
-            |> rebuildWorlds
-            |> replaceUrl
-        Nothing ->
-          ({model | selectedServer = Just serverId}
-          , Leaflet.currentServer serverId)
+      ( model, Cmd.none )
+        |> setServer serverId
     UI (View.SelectArc index) ->
       let
         marc = case currentArcs model of
@@ -440,15 +408,17 @@ update msg model =
           |> Maybe.map .maxTime
           |> Maybe.map (relativeEndTime model.hoursPeriod)
           |> Maybe.withDefault (Time.millisToPosix 0)
-        m2 = { model
+      in
+        ( { model
           | serverList = serverList |> Data
           , servers = servers |> List.map (\s -> (s.id, s)) |> Dict.fromList
           , coarseStartTime = startTime
           , startTime = startTime
           }
             |> timeSelectionForTime
-      in
-        update (UI (View.SelectServer id)) m2
+        , Cmd.none
+        )
+          |> setServer id
     ServerList (Err error) ->
       let _ = Debug.log "fetch servers failed" error in
       ({model | serverList = Failed error, servers = Dict.empty}, Cmd.none)
@@ -826,6 +796,53 @@ isYesterday model =
     && model.framesPerSecond == 1
     && model.dataAnimated
 
+setServer : Int -> (Model, Cmd Msg) -> (Model, Cmd Msg)
+setServer serverId (model, cmd) =
+  if Just serverId /= model.displayServer then
+    case Dict.get serverId model.servers of
+      Just server ->
+        let
+          (s2, c2) = (server, cmd)
+            |> requireMonuments model
+            |> requireArcs model
+            |> requireSpans model
+          range = (server.minTime, server.maxTime)
+        in
+        ( { model
+          | selectedServer = Just serverId
+          , servers = Dict.insert serverId s2 model.servers
+          , coarseStartTime = inRange range model.coarseStartTime
+          , startTime = inRange range model.startTime
+          , dataLayer = NotRequested
+          , player = Stopped
+          }
+        , Cmd.batch
+          [ c2
+          , case model.dataLayer of
+            Data x ->
+              if x == serverId then
+                Cmd.none
+              else
+                Leaflet.dataLayer (Encode.lives [])
+            _ -> Cmd.none
+          , Leaflet.currentServer serverId
+          ]
+        )
+          |> rebuildWorlds
+          |> replaceUrl
+      Nothing ->
+        ( { model
+          | selectedServer = Just serverId
+          , displayServer = Nothing
+          }
+        , Cmd.batch
+          [ cmd
+          , Leaflet.currentServer serverId
+          ]
+        )
+  else
+    (model, cmd)
+
 replaceUrl : (Model, Cmd Msg) -> (Model, Cmd Msg)
 replaceUrl (model, cmd) =
   ( model
@@ -914,7 +931,7 @@ serverRoute location model =
     if model.selectedServer /= ms then
       case ms of
         (Just id) ->
-          update (UI (View.SelectServer id)) model
+          setServer id (model, Cmd.none)
         _ ->
           (model, Cmd.none)
     else

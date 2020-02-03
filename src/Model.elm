@@ -71,6 +71,7 @@ type alias Model =
   , pointColor : PointColor
   , pointLocation : PointLocation
   , selectedServer : Maybe Int
+  , displayServer : Maybe Int
   , serverList : RemoteData (List Data.Server)
   , servers : Dict Int Server
   , versions : RemoteData (List Version)
@@ -115,6 +116,7 @@ initialModel config location key =
   , pointColor = LineageColor
   , pointLocation = BirthLocation
   , selectedServer = Nothing
+  , displayServer = Nothing
   , serverList = NotRequested
   , servers = Dict.empty
   , versions = NotRequested
