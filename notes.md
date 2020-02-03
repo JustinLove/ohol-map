@@ -1,4 +1,3 @@
-- (model, cmd) is error prone
 - server time selections dont set animation range
 - services
   - versions per service

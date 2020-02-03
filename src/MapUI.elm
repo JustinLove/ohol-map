@@ -303,7 +303,7 @@ update msg model =
       case Dict.get serverId model.servers of
         Just server ->
           let
-            (s2, cmd) = requireMonuments model (server, Cmd.none)
+            (s2, cmd) = requireMonuments model server
           in
             ({model | servers = Dict.insert serverId s2 model.servers}, cmd)
         Nothing ->
@@ -590,7 +590,11 @@ update msg model =
       (model, Navigation.load url)
 
 rebuildWorlds : (Model, Cmd Msg) -> (Model, Cmd Msg)
-rebuildWorlds (model, cmd) =
+rebuildWorlds =
+  addCommand rebuildWorldsCommand
+
+rebuildWorldsCommand : Model -> Cmd Msg
+rebuildWorldsCommand model =
   let
     mServer = currentServer model
     prop = \field -> Maybe.map field >> Maybe.withDefault NotRequested >> RemoteData.withDefault []
@@ -600,15 +604,14 @@ rebuildWorlds (model, cmd) =
       (mServer |> prop .arcs)
       (mServer |> prop .spans)
   in
-  ( model
-  , Cmd.batch
-    [ cmd
-    , Leaflet.worldList worlds
-    ]
-  )
+    Leaflet.worldList worlds
 
 updateMonuments : Int -> (Model, Cmd Msg) -> (Model, Cmd Msg)
-updateMonuments serverId (model, cmd) =
+updateMonuments serverId =
+  addCommand (updateMonumentsCommand serverId)
+
+updateMonumentsCommand : Int -> Model -> Cmd Msg
+updateMonumentsCommand serverId model =
   let
     mServer = model.servers |> Dict.get serverId
     prop = \field -> Maybe.map field >> Maybe.withDefault NotRequested >> RemoteData.withDefault []
@@ -616,15 +619,14 @@ updateMonuments serverId (model, cmd) =
       (mServer |> prop .arcs)
       (mServer |> prop .monuments)
   in
-  ( model
-  , Cmd.batch
-    [ cmd
-    , Leaflet.monumentList serverId (Encode.monuments monuments)
-    ]
-  )
+    Leaflet.monumentList serverId (Encode.monuments monuments)
 
 checkDefaultCenter : List Monument -> (Model, Cmd Msg) -> (Model, Cmd Msg)
-checkDefaultCenter monuments (model, cmd) =
+checkDefaultCenter monuments =
+  addUpdate (checkDefaultCenterUpdate monuments)
+
+checkDefaultCenterUpdate : List Monument -> Model -> (Model, Cmd Msg)
+checkDefaultCenterUpdate monuments model =
   if model.center == defaultCenter then
     let
       recent = monuments
@@ -644,16 +646,13 @@ checkDefaultCenter monuments (model, cmd) =
     in
     if recent /= defaultCenter then
       ( { model | center = recent }
-      , Cmd.batch
-        [ cmd
-        , Leaflet.setView recent
-        ]
+      , Leaflet.setView recent
       )
        |> replaceUrl
     else
-      (model, cmd)
+      (model, Cmd.none)
   else
-    (model, cmd)
+    (model, Cmd.none)
 
 type alias ArcSpan r = {r|arcs: RemoteData (List Arc), spans: RemoteData (List Span)}
 
@@ -757,14 +756,15 @@ arcForTime time marcs =
     _ -> Nothing
 
 maybeSetTime : Maybe Posix -> (Model, Cmd Msg) -> (Model, Cmd Msg)
-maybeSetTime mtime (model, cmd) =
+maybeSetTime mtime =
+  addUpdate (maybeSetTimeUpdate mtime)
+
+maybeSetTimeUpdate : Maybe Posix -> Model -> (Model, Cmd Msg)
+maybeSetTimeUpdate mtime model =
   case model.mapTime of
     Just _ ->
       ( model
-      , Cmd.batch
-        [ Leaflet.currentTime (model.mapTime |> Maybe.withDefault model.time)
-        , cmd
-        ]
+      , Leaflet.currentTime (model.mapTime |> Maybe.withDefault model.time)
       )
     Nothing ->
       let
@@ -776,7 +776,6 @@ maybeSetTime mtime (model, cmd) =
       , Cmd.batch
         [ Leaflet.currentTime time
         , Time.now |> Task.perform (ShowTimeNotice time)
-        , cmd
         ]
       )
 
@@ -797,15 +796,19 @@ isYesterday model =
     && model.dataAnimated
 
 setServer : Int -> (Model, Cmd Msg) -> (Model, Cmd Msg)
-setServer serverId (model, cmd) =
+setServer serverId =
+  addUpdate (setServerUpdate serverId)
+
+setServerUpdate : Int -> Model -> (Model, Cmd Msg)
+setServerUpdate serverId model =
   if Just serverId /= model.displayServer then
     case Dict.get serverId model.servers of
       Just server ->
         let
-          (s2, c2) = (server, cmd)
-            |> requireMonuments model
-            |> requireArcs model
-            |> requireSpans model
+          (s2, c2) = (server, Cmd.none)
+            |> addUpdate (requireMonuments model)
+            |> addUpdate (requireArcs model)
+            |> addUpdate (requireSpans model)
           range = (server.minTime, server.maxTime)
         in
         ( { model
@@ -835,30 +838,21 @@ setServer serverId (model, cmd) =
           | selectedServer = Just serverId
           , displayServer = Nothing
           }
-        , Cmd.batch
-          [ cmd
-          , Leaflet.currentServer serverId
-          ]
+        , Leaflet.currentServer serverId
         )
   else
-    (model, cmd)
+    (model, Cmd.none)
 
 replaceUrl : (Model, Cmd Msg) -> (Model, Cmd Msg)
-replaceUrl (model, cmd) =
-  ( model
-  , Cmd.batch
-    [ cmd
-    , Navigation.replaceUrl model.navigationKey <|
-      centerUrl model.location model.mapTime (isYesterday model) model.selectedServer model.center
-    ]
-  )
+replaceUrl =
+  addCommand replaceUrlCommand
 
-combineRoute : (Model -> (Model, Cmd Msg)) -> (Model, Cmd Msg) -> (Model, Cmd Msg)
-combineRoute route (model, cmd) =
-  let
-    (m2, c2) = route model
-  in
-    (m2, Cmd.batch [ cmd, c2 ])
+replaceUrlCommand : Model -> Cmd Msg
+replaceUrlCommand model =
+  Navigation.replaceUrl model.navigationKey <|
+    centerUrl model.location model.mapTime (isYesterday model) model.selectedServer model.center
+
+combineRoute = addUpdate
 
 changeRouteTo : Url -> Model -> (Model, Cmd Msg)
 changeRouteTo location model =
@@ -1021,13 +1015,13 @@ fetchServers baseUrl =
     , expect = Http.expectJson ServerList Decode.servers
     }
 
-requireArcs : Model -> (Server, Cmd Msg) -> (Server, Cmd Msg)
-requireArcs model (server, cmd) =
+requireArcs : Model -> Server -> (Server, Cmd Msg)
+requireArcs model server =
   if server.arcs == NotRequested then
     ({server|arcs = Loading}
-    , Cmd.batch [cmd, fetchArcs model.seedsUrl server.id])
+    , fetchArcs model.seedsUrl server.id)
   else
-    (server, cmd)
+    (server, Cmd.none)
 
 fetchArcs : String -> Int -> Cmd Msg
 fetchArcs seedsUrl serverId =
@@ -1086,13 +1080,13 @@ resolveJson decoder =
             Err err ->
               Err (Http.BadBody (Json.Decode.errorToString err))
 
-requireSpans : Model -> (Server, Cmd Msg) -> (Server, Cmd Msg)
-requireSpans model (server, cmd) =
+requireSpans : Model -> Server -> (Server, Cmd Msg)
+requireSpans model server =
   if server.spans == NotRequested then
     ({server|spans = Loading}
-    , Cmd.batch [cmd, fetchSpans model.spansUrl server.id])
+    , fetchSpans model.spansUrl server.id)
   else
-    (server, cmd)
+    (server, Cmd.none)
 
 fetchSpans : String -> Int -> Cmd Msg
 fetchSpans spansUrl serverId =
@@ -1205,28 +1199,25 @@ fetchLineage baseUrl life =
     , expect = Http.expectJson (LineageLives life.serverId) Json.Decode.value
     }
 
-requireMonuments : Model -> (Server, Cmd Msg) -> (Server, Cmd Msg)
-requireMonuments model (server, cmd) =
+requireMonuments : Model -> Server -> (Server, Cmd Msg)
+requireMonuments model server =
   case server.monuments of
     NotRequested ->
       ({server|monuments = Loading}
-      , Cmd.batch [cmd, fetchMonuments model.cachedApiUrl server.id])
+      , fetchMonuments model.cachedApiUrl server.id)
     NotAvailable ->
-      (server, Cmd.batch [cmd, Leaflet.monumentList server.id (Encode.monuments [])])
+      (server, Leaflet.monumentList server.id (Encode.monuments []))
     Loading ->
-      (server, cmd)
+      (server, Cmd.none)
     Data monuments ->
       ( server
-      , Cmd.batch
-        [ cmd
-        , monuments
-          |> Data.terminateMonuments (server.arcs |> RemoteData.withDefault [])
-          |> Encode.monuments
-          |> Leaflet.monumentList server.id
-        ]
+      , monuments
+        |> Data.terminateMonuments (server.arcs |> RemoteData.withDefault [])
+        |> Encode.monuments
+        |> Leaflet.monumentList server.id
       )
     Failed _ ->
-      (server, cmd)
+      (server, Cmd.none)
 
 fetchMonuments : String -> Int -> Cmd Msg
 fetchMonuments baseUrl serverId =
@@ -1333,3 +1324,19 @@ dropWhile test list =
       else
         list
     [] -> []
+
+addCommand : (model -> Cmd msg) -> (model, Cmd msg) -> (model, Cmd msg)
+addCommand f (model, cmd) =
+  ( model
+  , Cmd.batch
+    [ cmd
+    , f model
+    ]
+  )
+
+addUpdate : (model -> (model, Cmd msg)) -> (model, Cmd msg) -> (model, Cmd msg)
+addUpdate f (model, cmd) =
+  let
+    (m2, c2) = f model
+  in
+    (m2, Cmd.batch [ cmd, c2 ])
