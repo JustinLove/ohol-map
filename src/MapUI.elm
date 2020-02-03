@@ -117,6 +117,8 @@ update msg model =
         }
       , Cmd.none
       )
+    UI (View.ToggleEvesOnly evesOnly) ->
+      ( { model | evesOnly = evesOnly }, Cmd.none )
     UI (View.ToggleUTC utc) ->
       if utc then
         ( { model | zone = Time.utc }, Cmd.none )
@@ -547,6 +549,7 @@ update msg model =
           (model.selectedServer |> Maybe.withDefault 17)
           (relativeStartTime model.hoursPeriod time)
           time
+          model.evesOnly
       )
     PlayRelativeTo hoursBefore time ->
       { model
@@ -960,6 +963,7 @@ fetchDataForTime model =
         (model.selectedServer |> Maybe.withDefault 17)
         model.startTime
         (relativeEndTime model.hoursPeriod model.startTime)
+        model.evesOnly
     FromNow ->
       Task.perform FetchUpTo Time.now
     ArcRange ->
@@ -969,6 +973,7 @@ fetchDataForTime model =
             arc.serverId
             arc.start
             (arc.end |> Maybe.withDefault model.time)
+            model.evesOnly
         Nothing ->
           Task.succeed () |> Task.perform (always NoDataLayer)
 
@@ -1235,15 +1240,20 @@ relativeEndTime hoursPeriod time =
     |> (\x -> x + hoursPeriod * 60 * 60 * 1000)
     |> Time.millisToPosix
 
-fetchDataLayer : String -> Int -> Posix -> Posix -> Cmd Msg
-fetchDataLayer baseUrl serverId startTime endTime =
+fetchDataLayer : String -> Int -> Posix -> Posix -> Bool -> Cmd Msg
+fetchDataLayer baseUrl serverId startTime endTime evesOnly =
   Http.get
     { url = Url.crossOrigin baseUrl ["lives"]
-      [ Url.int "server_id" serverId
-      , Url.int "start_time" (startTime |> Time.posixToMillis |> (\x -> x // 1000))
-      , Url.int "end_time" (endTime |> Time.posixToMillis |> (\x -> x // 1000))
-      , Url.string "limit" "70000"
-      ]
+      ( List.concat
+        [ [ Url.int "server_id" serverId
+          , Url.int "start_time" (startTime |> Time.posixToMillis |> (\x -> x // 1000))
+          , Url.int "end_time" (endTime |> Time.posixToMillis |> (\x -> x // 1000))
+          , Url.int "end_time" (endTime |> Time.posixToMillis |> (\x -> x // 1000))
+          , Url.string "limit" "70000"
+          ]
+        , if evesOnly then [ Url.int "chain" 1 ] else []
+        ]
+      )
     , expect = Http.expectJson DataLayer Json.Decode.value
     }
 

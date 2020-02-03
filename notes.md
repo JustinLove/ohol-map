@@ -1,4 +1,3 @@
-- eve filter
 - (model, cmd) is error prone
 - near future can show last known map
 - server dependant

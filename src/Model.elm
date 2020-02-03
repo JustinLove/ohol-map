@@ -58,6 +58,7 @@ type alias Model =
   , hoursPeriod : Int
   , coarseArc : Maybe Arc
   , currentArc : Maybe Arc
+  , evesOnly : Bool
   , dataAnimated : Bool
   , lifeDataVisible : Bool
   , showOnlyCurrentMonuments : Bool
@@ -101,6 +102,7 @@ initialModel config location key =
   , hoursPeriod = 48
   , coarseArc = Nothing
   , currentArc = Nothing
+  , evesOnly = False
   , dataAnimated = False
   , lifeDataVisible = False
   , showOnlyCurrentMonuments = True

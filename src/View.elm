@@ -39,6 +39,7 @@ type Msg
   | StartTime Posix
   | HoursBefore Int
   | HoursAfter Int
+  | ToggleEvesOnly Bool
   | ToggleUTC Bool
   | ToggleAnimated Bool
   | GameSecondsPerSecond Int
@@ -441,6 +442,7 @@ dataFilter model =
       ]
       [ dataAction model
       , dateRangeSelect model
+      , dataOptions model
       , serverSelect model.servers model.selectedServer
       , presets model
       ]
@@ -733,6 +735,17 @@ posixToFloat offsetDays =
   Time.posixToMillis
     >> (\x -> x // 1000 + offsetDays*24*60*60)
     >> toFloat
+
+dataOptions : Model -> Element Msg
+dataOptions model =
+  column []
+    [ Input.checkbox [ padding 10, spacing 2 ]
+      { onChange = ToggleEvesOnly
+      , checked = model.evesOnly
+      , label = Input.labelRight [ padding 6 ] (text "Eves Only")
+      , icon = Input.defaultCheckbox
+      }
+    ]
 
 serverSelect : Dict Int Server -> Maybe Int -> Element Msg
 serverSelect servers serverId =
