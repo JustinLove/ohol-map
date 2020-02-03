@@ -2459,6 +2459,7 @@
             //console.log('pick span')
           }
         })
+        if (!targetSpan) targetSpan = world.spans[world.spans.length - 1]
       }
     })
     var changes = 0

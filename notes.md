@@ -1,5 +1,4 @@
 - (model, cmd) is error prone
-- near future can show last known map
 - server time selections dont set animation range
 - services
   - versions per service
