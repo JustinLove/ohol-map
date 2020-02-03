@@ -74,7 +74,7 @@ type alias Model =
   , serverList : RemoteData (List Data.Server)
   , servers : Dict Int Server
   , versions : RemoteData (List Version)
-  , dataLayer : RemoteData Bool
+  , dataLayer : RemoteData Int
   , lives : RemoteData (List Life)
   , focus : Maybe Life
   }

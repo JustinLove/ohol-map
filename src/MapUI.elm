@@ -28,13 +28,13 @@ type Msg
   = UI View.Msg
   | Event (Result Json.Decode.Error Leaflet.Event)
   | MatchingLives (Result Http.Error (List Data.Life))
-  | LineageLives (Result Http.Error Json.Decode.Value)
+  | LineageLives Int (Result Http.Error Json.Decode.Value)
   | ServerList (Result Http.Error (List Data.Server))
   | ArcList Int (Result Http.Error (List Data.Arc))
   | SpanList Int (Result Http.Error (List Data.Span))
   | ObjectsReceived (Result Http.Error Data.Objects)
   | MonumentList Int (Result Http.Error (List Data.Monument))
-  | DataLayer (Result Http.Error Json.Decode.Value)
+  | DataLayer Int (Result Http.Error Json.Decode.Value)
   | NoDataLayer
   | FetchUpTo Posix
   | PlayRelativeTo Int Posix
@@ -145,12 +145,9 @@ update msg model =
       )
     UI (View.MapTime time) ->
       ( {model|mapTime = Just time}
-      , Cmd.batch
-        [ Leaflet.currentTime time
-        , Navigation.replaceUrl model.navigationKey <|
-          centerUrl model.location (Just time) (isYesterday model) model.selectedServer model.center
-        ]
+      , Leaflet.currentTime time
       )
+       |> replaceUrl
     UI (View.Play) ->
       ( { model
         | player = Starting
@@ -206,12 +203,11 @@ update msg model =
         }
       , Cmd.batch
         [ Leaflet.currentTime life.birthTime
-        , Navigation.replaceUrl model.navigationKey <|
-          centerUrl model.location (Just life.birthTime) (isYesterday model) model.selectedServer model.center
         , Time.now |> Task.perform (ShowTimeNotice life.birthTime)
         , Leaflet.focus (serverLife life)
         ]
       )
+       |> replaceUrl
     UI (View.SelectLineage life) ->
       ( model
       , fetchLineage model.apiUrl life
@@ -229,28 +225,29 @@ update msg model =
               |> requireArcs model
               |> requireSpans model
             range = (server.minTime, server.maxTime)
-            m2 = { model
-              | selectedServer = Just serverId
-              , servers = Dict.insert serverId s2 model.servers
-              , coarseStartTime = inRange range model.coarseStartTime
-              , startTime = inRange range model.startTime
-              , dataLayer = Data False
-              , player = Stopped
-              }
           in
-          ( m2
+          ( { model
+            | selectedServer = Just serverId
+            , servers = Dict.insert serverId s2 model.servers
+            , coarseStartTime = inRange range model.coarseStartTime
+            , startTime = inRange range model.startTime
+            , dataLayer = NotRequested
+            , player = Stopped
+            }
           , Cmd.batch
             [ cmd
-            , if model.dataLayer == Data True then
-                Leaflet.dataLayer (Encode.lives [])
-              else
-                Cmd.none
-            , Navigation.replaceUrl model.navigationKey <|
-              centerUrl m2.location m2.mapTime (isYesterday m2) m2.selectedServer m2.center
+            , case model.dataLayer of
+              Data x ->
+                if x == serverId then
+                  Cmd.none
+                else
+                  Leaflet.dataLayer (Encode.lives [])
+              _ -> Cmd.none
             , Leaflet.currentServer serverId
             ]
           )
             |> rebuildWorlds
+            |> replaceUrl
         Nothing ->
           ({model | selectedServer = Just serverId}
           , Leaflet.currentServer serverId)
@@ -326,10 +323,10 @@ update msg model =
       , fetchDataForTime model
       )
     Event (Ok (Leaflet.MoveEnd point)) ->
-      ( {model|center = point} 
-      , Navigation.replaceUrl model.navigationKey <|
-        centerUrl model.location model.mapTime (isYesterday model) model.selectedServer point
+      ( {model|center = point}
+      , Cmd.none
       )
+        |> replaceUrl
     Event (Ok (Leaflet.OverlayAdd "Life Data" _)) ->
       requireLives model
     Event (Ok (Leaflet.OverlayRemove "Life Data")) ->
@@ -404,7 +401,7 @@ update msg model =
     MatchingLives (Err error) ->
       let _ = Debug.log "fetch lives failed" error in
       ({model | lives = Failed error}, Cmd.none)
-    LineageLives (Ok value) ->
+    LineageLives serverId (Ok value) ->
       ( { model
         | lives = case value |> Json.Decode.decodeValue Decode.lives of
           Ok lives ->
@@ -414,13 +411,13 @@ update msg model =
               |> Json.Decode.errorToString
               |> Http.BadBody
               |> Failed
-        , dataLayer = Data True
+        , dataLayer = Data serverId
         }
       , Cmd.batch
         [ Leaflet.dataLayer value
         ]
       )
-    LineageLives (Err error) ->
+    LineageLives serverId (Err error) ->
       let _ = Debug.log "fetch lives failed" error in
       ({model | lives = Failed error}, Cmd.none)
     ServerList (Ok serverList) ->
@@ -522,21 +519,21 @@ update msg model =
     MonumentList serverId (Err error) ->
       let _ = Debug.log "fetch monuments failed" error in
       (model, Cmd.none)
-    DataLayer (Ok lives) ->
+    DataLayer serverId (Ok lives) ->
       ( { model
-        | dataLayer = Data True
+        | dataLayer = Data serverId
         , player = if model.dataAnimated then Starting else Stopped
         }
       , Cmd.batch
         [ Leaflet.dataLayer lives
         ]
       )
-    DataLayer (Err error) ->
+    DataLayer serverId (Err error) ->
       let _ = Debug.log "fetch data failed" error in
       ({model | dataLayer = Failed error}, Cmd.none)
     NoDataLayer ->
       ( { model
-        | dataLayer = Data False
+        | dataLayer = NotRequested
         , player = Stopped
         }
       , Cmd.batch
@@ -608,12 +605,9 @@ update msg model =
                   | mapTime = Just msCappedTime
                   , player = if over then Stopped else Playing next
                   }
-                , Cmd.batch
-                  [ Navigation.replaceUrl model.navigationKey <|
-                      centerUrl model.location (Just msCappedTime) (isYesterday model) model.selectedServer model.center
-                  , Leaflet.currentTime msCappedTime
-                  ]
+                , Leaflet.currentTime msCappedTime
                 )
+                  |> replaceUrl
     CurrentZone zone ->
       ({model | zone = zone}, Cmd.none)
     CurrentUrl location ->
@@ -683,10 +677,9 @@ checkDefaultCenter monuments (model, cmd) =
       , Cmd.batch
         [ cmd
         , Leaflet.setView recent
-        , Navigation.replaceUrl model.navigationKey <|
-          centerUrl model.location model.mapTime (isYesterday model) model.selectedServer recent
         ]
       )
+       |> replaceUrl
     else
       (model, cmd)
   else
@@ -777,11 +770,10 @@ setTime time model =
       }
     , Cmd.batch
         [ Leaflet.currentTime time
-        , Navigation.replaceUrl model.navigationKey <|
-          centerUrl model.location (Just time) (isYesterday model) model.selectedServer model.center
         , Time.now |> Task.perform (ShowTimeNotice time)
         ]
     )
+     |> replaceUrl
   else
     (model, Cmd.none)
 
@@ -833,6 +825,16 @@ isYesterday model =
     && model.gameSecondsPerSecond == 1
     && model.framesPerSecond == 1
     && model.dataAnimated
+
+replaceUrl : (Model, Cmd Msg) -> (Model, Cmd Msg)
+replaceUrl (model, cmd) =
+  ( model
+  , Cmd.batch
+    [ cmd
+    , Navigation.replaceUrl model.navigationKey <|
+      centerUrl model.location model.mapTime (isYesterday model) model.selectedServer model.center
+    ]
+  )
 
 combineRoute : (Model -> (Model, Cmd Msg)) -> (Model, Cmd Msg) -> (Model, Cmd Msg)
 combineRoute route (model, cmd) =
@@ -1183,7 +1185,7 @@ fetchLineage baseUrl life =
       , Url.int "epoch" life.epoch
       , Url.int "lineage" life.lineage
       ]
-    , expect = Http.expectJson LineageLives Json.Decode.value
+    , expect = Http.expectJson (LineageLives life.serverId) Json.Decode.value
     }
 
 requireMonuments : Model -> (Server, Cmd Msg) -> (Server, Cmd Msg)
@@ -1223,7 +1225,7 @@ fetchRecentLives baseUrl serverId =
       [ Url.int "server_id" serverId
       , Url.string "period" "P2D"
       ]
-    , expect = Http.expectJson DataLayer Json.Decode.value
+    , expect = Http.expectJson (DataLayer serverId) Json.Decode.value
     }
 
 relativeStartTime : Int -> Posix -> Posix
@@ -1254,7 +1256,7 @@ fetchDataLayer baseUrl serverId startTime endTime evesOnly =
         , if evesOnly then [ Url.int "chain" 1 ] else []
         ]
       )
-    , expect = Http.expectJson DataLayer Json.Decode.value
+    , expect = Http.expectJson (DataLayer serverId) Json.Decode.value
     }
 
 extractHashInt : String -> Url -> Maybe Int
