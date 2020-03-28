@@ -660,6 +660,16 @@ tholCodeChanges =
       , numSpecialBiomes = 3
       } |> topographic thol2BiomeWeights
     }
+  , { name = "Two Hours One Life (20266)"
+    , start = humanTime "2020-03-11T02:00:00Z"
+    , biomeLayer = Just "tholMap"
+    , generation =
+      { defaultGeneration
+      | biomeMap = thol2BiomeMap
+      , biomeRandSeedA = Just 1843009811
+      , numSpecialBiomes = 3
+      } |> topographic thol2BiomeWeights
+    }
   ]
   |> fixupStartTime
 

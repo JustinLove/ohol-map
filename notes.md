@@ -1,7 +1,12 @@
+- generation update right before an update. Span gets assigned to prior world, but the new generation world gets selected as current for the latest time period
+  http://localhost:8000/public/index.html#x=-10652&y=124&z=25&s=17
+  t=1584061390?
+- handle missing lineage
 - server time selections dont set animation range
 - services
   - versions per service
   - 2hol
+    - 2hol spawn seeds: https://github.com/twohoursonelife/OneLife/commit/3e945fd9b844eaaf1a52322a3ddfc100ce6a2aea
   - object data
 - may not go to time with latest monument
 - other monument reset times
