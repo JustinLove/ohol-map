@@ -291,7 +291,7 @@ update msg model =
       , fetchDataForTime model
       )
     Event (Ok (Leaflet.MoveEnd point)) ->
-      ( {model|center = point}
+      ( {model|center = SetCenter point}
       , Cmd.none
       )
         |> replaceUrl
@@ -627,7 +627,7 @@ checkDefaultCenter monuments =
 
 checkDefaultCenterUpdate : List Monument -> Model -> (Model, Cmd Msg)
 checkDefaultCenterUpdate monuments model =
-  if model.center == defaultCenter then
+  if model.center == DefaultCenter then
     let
       recent = monuments
         |> dropWhile (\{date} ->
@@ -645,7 +645,7 @@ checkDefaultCenterUpdate monuments model =
         |> Maybe.withDefault defaultCenter
     in
     if recent /= defaultCenter then
-      ( { model | center = recent }
+      ( { model | center = SetCenter recent }
       , Leaflet.setView recent
       )
        |> replaceUrl
@@ -904,16 +904,20 @@ coordinateRoute location model =
   in
     case (mx, my, mz) of
       (Just x, Just y, Just z) ->
-        setViewFromRoute (Point x y z) model
+        setViewFromRoute (SetCenter (Point x y z)) model
       (Just x, Just y, Nothing) ->
-        setViewFromRoute (Point x y defaultCenter.z) model
+        setViewFromRoute (SetCenter (Point x y defaultCenter.z)) model
       _ ->
-        setViewFromRoute defaultCenter model
+        setViewFromRoute DefaultCenter model
 
-setViewFromRoute : Point -> Model -> (Model, Cmd Msg)
-setViewFromRoute point model =
-  if model.center /= point then
-    ({model|center = point}, Leaflet.setView point)
+setViewFromRoute : Center -> Model -> (Model, Cmd Msg)
+setViewFromRoute center model =
+  if model.center /= center then
+    ( {model|center = center}
+    , case center of
+      DefaultCenter -> Leaflet.setView defaultCenter
+      SetCenter point -> Leaflet.setView point
+    )
   else
     (model, Cmd.none)
 

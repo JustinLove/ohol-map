@@ -3,6 +3,7 @@ module Model exposing
   , Config
   , Life
   , Mode(..)
+  , Center(..)
   , Model
   , Monument
   , Notice(..)
@@ -36,13 +37,17 @@ type alias Span = Data.Span
 type alias Version = Data.Version
 type alias World = Data.World
 
+type Center
+  = DefaultCenter
+  | SetCenter Point
+
 type alias Model =
   { location : Url
   , navigationKey : Navigation.Key
   , zone : Time.Zone
   , time : Posix
   , notice : Notice
-  , center : Point
+  , center : Center
   , cachedApiUrl : String
   , apiUrl : String
   , lineageUrl: String
@@ -87,7 +92,7 @@ initialModel config location key =
   , zone = Time.utc
   , time = Time.millisToPosix 0
   , notice = NoNotice
-  , center = defaultCenter
+  , center = DefaultCenter
   , cachedApiUrl = config.cachedApiUrl
   , apiUrl = config.apiUrl
   , lineageUrl = config.lineageUrl
@@ -195,13 +200,19 @@ currentArcs model =
     |> Maybe.map .arcs
     |> Maybe.withDefault NotRequested
 
-centerUrl : Url -> Maybe Posix -> Bool -> Maybe Int -> Point -> String
-centerUrl location mt yd ms {x, y, z} =
+centerCoord : (Point -> a) -> Center -> Maybe a
+centerCoord f center =
+  case center of
+    DefaultCenter -> Nothing
+    SetCenter cen -> Just (f cen)
+
+centerUrl : Url -> Maybe Posix -> Bool -> Maybe Int -> Center -> String
+centerUrl location mt yd ms center =
   { location
   | fragment =
-    [ Just <| Url.int "x" x
-    , Just <| Url.int "y" y
-    , Just <| Url.int "z" z
+    [ centerCoord (.x >> Url.int "x") center
+    , centerCoord (.y >> Url.int "y") center
+    , centerCoord (.z >> Url.int "z") center
     , Maybe.map (Url.int "s") ms
     , mt
       |> Maybe.map
