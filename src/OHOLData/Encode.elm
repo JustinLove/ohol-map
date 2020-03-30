@@ -17,7 +17,7 @@ module OHOLData.Encode exposing
   , timeStamp
   )
 
-import OHOLData exposing (Life, Server, Monument, Arc, Span, Spawn, Biome, Generation, SecondPlaceBiomeObjects(..), World)
+import OHOLData exposing (Life, Server, Monument, Arc, Span, Spawn, GridPlacement, Biome, Generation, SecondPlaceBiomeObjects(..), World)
 
 import Json.Encode exposing (..)
 import Time exposing (Posix)
@@ -118,7 +118,7 @@ spawn s =
     , ("rightBlockingRadius", int s.rightBlockingRadius)
     ]
   , s.gridPlacement
-    |> Maybe.map (\x -> [("gridPlacement", int x)])
+    |> Maybe.map (\x -> [("gridPlacement", gridPlacment x)])
     |> Maybe.withDefault []
   , s.randPlacement
     |> Maybe.map (\x -> [("randPlacement", int x)])
@@ -126,6 +126,15 @@ spawn s =
   ]
     |> List.concat
     |> object
+
+gridPlacment : GridPlacement -> Value
+gridPlacment g =
+  object
+    [ ("spacingX", int g.spacingX)
+    , ("spacingY", int g.spacingY)
+    , ("phaseX", int g.phaseX)
+    , ("phaseY", int g.phaseY)
+    ]
 
 biome : Biome -> Value
 biome b =

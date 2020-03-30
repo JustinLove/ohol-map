@@ -554,16 +554,17 @@
 
     // grid objects
     for (var i = 0;i < options.gridPlacements.length;i++) {
-      var gp = options.gridPlacements[i]
-      if (inX % gp.gridPlacement == 0 && inY % gp.gridPlacement == 0) {
+      var object = options.gridPlacements[i]
+      var gp = object.gridPlacement
+      if ((inX + gp.phaseX) % gp.spacingX == 0 && (inY + gp.phaseY) % gp.spacingY == 0) {
         pickedBiome = options.computeMapBiomeIndex(inX, inY, options, secondPlace)
         if (pickedBiome == -1) {
           return 0;
         }
 
-        if (gp.biomes.indexOf(options.biomeMap[pickedBiome]) != -1) {
+        if (object.biomes.indexOf(options.biomeMap[pickedBiome]) != -1) {
           if (grid) grid.grid = true
-          return gp.id
+          return object.id
         }
       }
     }

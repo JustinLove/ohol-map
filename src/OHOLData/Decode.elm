@@ -7,9 +7,10 @@ module OHOLData.Decode exposing
   , objects
   , version
   , timeStamp
+  , gridPlacement
   )
 
-import OHOLData exposing (Life, Server, Monument, Arc, Span, Objects, VersionChange, Spawn, SpawnChange(..))
+import OHOLData exposing (Life, Server, Monument, Arc, Span, Objects, VersionChange, Spawn, SpawnChange(..), GridPlacement)
 
 import Json.Decode exposing (..)
 import Time exposing (Posix)
@@ -137,9 +138,29 @@ spawn =
       , succeed 0
       ]
     )
-    |> map2 (|>) (maybe (field "gridPlacement" int))
+    |> map2 (|>) (maybe gridPlacement)
     |> map2 (|>) (maybe (field "randPlacement" int))
     |> map (\obj -> {obj | wide = obj.leftBlockingRadius > 0 || obj.rightBlockingRadius > 0})
+
+gridPlacement : Decoder GridPlacement
+gridPlacement =
+  succeed GridPlacement
+    |> map2 (|>) (field "gridPlacement" int)
+    |> map2 (|>) (oneOf
+      [ (field "gridPlacementY" int)
+      , (field "gridPlacement" int)
+      ]
+    )
+    |> map2 (|>) (oneOf
+      [ (field "gridPlacementPhaseX" int)
+      , succeed 0
+      ]
+    )
+    |> map2 (|>) (oneOf
+      [ (field "gridPlacementPhaseY" int)
+      , succeed 0
+      ]
+    )
 
 id : Decoder Int
 id =

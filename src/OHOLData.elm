@@ -8,6 +8,7 @@ module OHOLData exposing
   , VersionChange
   , Spawn
   , SpawnChange(..)
+  , GridPlacement
   , Biome
   , Version
   , Age
@@ -96,8 +97,15 @@ type alias Spawn =
   , wide: Bool
   , leftBlockingRadius: Int
   , rightBlockingRadius: Int
-  , gridPlacement: Maybe Int
+  , gridPlacement: Maybe GridPlacement
   , randPlacement: Maybe Int
+  }
+
+type alias GridPlacement =
+  { spacingX: Int
+  , spacingY: Int
+  , phaseX: Int
+  , phaseY: Int
   }
 
 type SpawnChange
