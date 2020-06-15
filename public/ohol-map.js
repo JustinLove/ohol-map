@@ -2133,6 +2133,7 @@
   }
 
   var colorlineage = function(id) {
+    id = id || 0
     var hue = (id * 49157) % 359
     var sat = (id * 24593) % 67 + 33
     var light = (id * 12289) % 53 + 20
@@ -2817,7 +2818,7 @@
           }
         }
 
-        var key = point.lineage.toString()
+        var key = (point.lineage || 0).toString()
         var prior = lineages[key]
         if (prior && prior.name && !point.name) continue;
         if (!prior || !prior.name || point.chain > prior.chain) {

@@ -2,7 +2,6 @@
 - generation update right before an update. Span gets assigned to prior world, but the new generation world gets selected as current for the latest time period
   http://localhost:8000/public/index.html#x=-10652&y=124&z=25&s=17
   t=1584061390?
-- handle missing lineage
 - server time selections dont set animation range
 - services
   - versions per service
@@ -59,7 +58,6 @@
 - show data for other servers
   - deselect server
   - collapse server
-- handle null lineage?
 - historical replay
   - Only fetch reasonable amount of data for historical
   - center view on main area?
