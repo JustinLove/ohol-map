@@ -3029,121 +3029,125 @@
     var positionSet = false
 
     var command = function(message) {
-      //console.log(message)
-      switch (message.kind) {
-        case 'setView':
-          if (positionSet) {
-            var center = map.getCenter()
-            if (center.lng != message.x || center.lat != message.y || map.getZoom() != message.z) {
-              map.setView([message.y, message.x], message.z)
-            }
-          } else {
-            map.setView([message.y, message.x], message.z)
-            positionSet = true
-          }
-          break
-        case 'currentTime':
-          var time = message.time * 1000
-          setMapTime(map, time, 'currentTime')
-          break;
-        case 'currentServer':
-          setMapServer(map, message.serverId, 'currentServer')
-          break;
-        case 'worldList':
-          updateWorlds(message.worlds.data)
-          baseLayerByTime(map, mapTime, 'worldList')
-          break;
-        case 'objectBounds':
-          objectBounds = new Array(message.ids.length)
-          for (var i = 0;i < message.ids.length;i++) {
-            var id = parseInt(message.ids[i])
-            var bounds = message.bounds[i]
-            objectBounds[id] = bounds
-            objectSize[id] = Math.min(
-              bounds[2] - bounds[0] - 30,
-              bounds[3] - bounds[1] - 30)
-          }
-          baseLayerByTime(map, mapTime, 'objectbounds')
-          toggleAnimationControls(map)
-          //objectOverlayPixel.addTo(map)
-          //objectOverlaySprite.addTo(map)
-          break;
-        case 'monumentList':
-          updateMonumentLayer(monumentOverlay, message.monuments.data)
-          monumentsByTime(monumentOverlay, mapTime, 'monumentList')
-          monumentOverlay.addTo(map)
-          break;
-        case 'dataLayer':
-          setDataLayers(message.lives.data)
-          moveIfOutOfView(message.lives.data, map)
-          if(!map.hasLayer(dataOverlay)) {
-            map.addLayer(dataOverlay)
-          }
-          break;
-        case 'displayResults':
-          var data = message.lives.data
-          L.Util.setOptions(resultPoints, {
-            data: data,
-          })
-          resultPoints.redraw()
-          break;
-        case 'focus':
-          var life = message.life;
-          if (focusMarker) {
-            focusMarker.remove();
-          }
-          focusMarker = L.marker([life.birth_y, life.birth_x])
-            .bindPopup(life.name)
-            .addTo(searchOverlay)
-            .openPopup()
-          map.setView([life.birth_y, life.birth_x])
-          var ms = life.birth_time*1000
-          setMapTime(map, ms, 'focus')
-          break
-        case 'searchOverlay':
-          if (message.status) {
-            searchOverlay.addTo(map)
-          } else {
-            searchOverlay.remove()
-          }
-          break
-        case 'animOverlay':
-          dataAnimated = message.status
-          toggleAnimated(dataOverlay, message.status)
-          toggleAnimated(oholBase, message.status)
-          L.Util.setOptions(legendControl, {dataAnimated: message.status})
-          legendControl.redraw()
-          toggleAnimationControls(map)
-          break
-        case 'baseLayer':
-          for (var name in base) {
-            if (name == message.layer) {
-              map.addLayer(base[name])
+      try {
+        //console.log(message)
+        switch (message.kind) {
+          case 'setView':
+            if (positionSet) {
+              var center = map.getCenter()
+              if (center.lng != message.x || center.lat != message.y || map.getZoom() != message.z) {
+                map.setView([message.y, message.x], message.z)
+              }
             } else {
-              map.removeLayer(base[name])
+              map.setView([message.y, message.x], message.z)
+              positionSet = true
             }
-          }
-          break;
-        case 'pointColor':
-          setPointColor(message.color)
-          break;
-        case 'pointLocation':
-          setPointLocation(message.location)
-          break;
-        case 'showOnlyCurrentMonuments':
-          L.Util.setOptions(monumentOverlay, {showOnlyCurrentMonuments: message.status})
-          monumentsByTime(monumentOverlay, mapTime, 'showOnlyCurrentMonuments')
-          break
-        case 'fadeTallObjects':
-          setObjectLayerOptions({fadeTallObjects: message.status})
-          break
-        case 'showNaturalObjectsAboveZoom':
-          setObjectLayerOptions({showNaturalObjectsAboveZoom: message.zoom})
-          riftLayerByTime(mapTime, map.getZoom())
-          break
-        default:
-          console.log('unknown message', message)
-          break;
+            break
+          case 'currentTime':
+            var time = message.time * 1000
+            setMapTime(map, time, 'currentTime')
+            break;
+          case 'currentServer':
+            setMapServer(map, message.serverId, 'currentServer')
+            break;
+          case 'worldList':
+            updateWorlds(message.worlds.data)
+            baseLayerByTime(map, mapTime, 'worldList')
+            break;
+          case 'objectBounds':
+            objectBounds = new Array(message.ids.length)
+            for (var i = 0;i < message.ids.length;i++) {
+              var id = parseInt(message.ids[i])
+              var bounds = message.bounds[i]
+              objectBounds[id] = bounds
+              objectSize[id] = Math.min(
+                bounds[2] - bounds[0] - 30,
+                bounds[3] - bounds[1] - 30)
+            }
+            baseLayerByTime(map, mapTime, 'objectbounds')
+            toggleAnimationControls(map)
+            //objectOverlayPixel.addTo(map)
+            //objectOverlaySprite.addTo(map)
+            break;
+          case 'monumentList':
+            updateMonumentLayer(monumentOverlay, message.monuments.data)
+            monumentsByTime(monumentOverlay, mapTime, 'monumentList')
+            monumentOverlay.addTo(map)
+            break;
+          case 'dataLayer':
+            setDataLayers(message.lives.data)
+            moveIfOutOfView(message.lives.data, map)
+            if(!map.hasLayer(dataOverlay)) {
+              map.addLayer(dataOverlay)
+            }
+            break;
+          case 'displayResults':
+            var data = message.lives.data
+            L.Util.setOptions(resultPoints, {
+              data: data,
+            })
+            resultPoints.redraw()
+            break;
+          case 'focus':
+            var life = message.life;
+            if (focusMarker) {
+              focusMarker.remove();
+            }
+            focusMarker = L.marker([life.birth_y, life.birth_x])
+              .bindPopup(life.name)
+              .addTo(searchOverlay)
+              .openPopup()
+            map.setView([life.birth_y, life.birth_x])
+            var ms = life.birth_time*1000
+            setMapTime(map, ms, 'focus')
+            break
+          case 'searchOverlay':
+            if (message.status) {
+              searchOverlay.addTo(map)
+            } else {
+              searchOverlay.remove()
+            }
+            break
+          case 'animOverlay':
+            dataAnimated = message.status
+            toggleAnimated(dataOverlay, message.status)
+            toggleAnimated(oholBase, message.status)
+            L.Util.setOptions(legendControl, {dataAnimated: message.status})
+            legendControl.redraw()
+            toggleAnimationControls(map)
+            break
+          case 'baseLayer':
+            for (var name in base) {
+              if (name == message.layer) {
+                map.addLayer(base[name])
+              } else {
+                map.removeLayer(base[name])
+              }
+            }
+            break;
+          case 'pointColor':
+            setPointColor(message.color)
+            break;
+          case 'pointLocation':
+            setPointLocation(message.location)
+            break;
+          case 'showOnlyCurrentMonuments':
+            L.Util.setOptions(monumentOverlay, {showOnlyCurrentMonuments: message.status})
+            monumentsByTime(monumentOverlay, mapTime, 'showOnlyCurrentMonuments')
+            break
+          case 'fadeTallObjects':
+            setObjectLayerOptions({fadeTallObjects: message.status})
+            break
+          case 'showNaturalObjectsAboveZoom':
+            setObjectLayerOptions({showNaturalObjectsAboveZoom: message.zoom})
+            riftLayerByTime(mapTime, map.getZoom())
+            break
+          default:
+            console.log('unknown message', message)
+            break;
+        }
+      } catch (e) {
+        console.error(e);
       }
     }
 
