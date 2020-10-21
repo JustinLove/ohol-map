@@ -170,6 +170,7 @@
   var overlays = {
     graticule: null,
     "Rift": riftOverlay,
+    "Bands": null,
     "Life Data": dataOverlay,
     "Fade": baseFade,
     "Monuments": monumentOverlay,
@@ -847,6 +848,10 @@
     return [r * 255, g * 255, b * 255];
   }
 
+  function rgbToString(color) {
+    return 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')'
+  }
+
   var jungleBiomeMap = [
     0,
     3,
@@ -940,6 +945,17 @@
   var desertColor = hsvToRgb(37/360, 0.65, 0.62)
   var jungleColor = hsvToRgb(90/360, 0.87, 0.48)
   var tholWaterColor = hsvToRgb(210/360, 0.52, 0.80)
+
+  var bandWidth = Math.pow(2, 31)
+  var bandHeight = 300
+  var bandsOverlay = L.layerGroup([
+    L.rectangle([[bandHeight,-bandWidth], [bandHeight*2,bandWidth]], {color: rgbToString(arcticColor)}),
+    L.rectangle([[0,-bandWidth], [bandHeight,bandWidth]], {color: rgbToString(badlandsColor)}),
+    L.rectangle([[-bandHeight,-bandWidth], [0,bandWidth]], {color: rgbToString(jungleColor)}),
+    L.rectangle([[-bandHeight*2,-bandWidth], [-bandHeight,bandWidth]], {color: rgbToString(desertColor)}),
+  ])
+
+  overlays['Bands'] = bandsOverlay
 
   var biomeGenerationOptions = {
     computeMapBiomeIndex: competeMapBiomeIndex,
@@ -2993,6 +3009,7 @@
     overlays['Rift'].addTo(map)
     //overlays['Checker'].addTo(map)
     //overlays['graticule'].addTo(map)
+    //overlays['Bands'].addTo(map)
     //base['Fractal'].addTo(map)
     //base['Biome'].addTo(map)
     //map.addControl(animToggle)
