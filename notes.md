@@ -1,3 +1,5 @@
+- comma in end_time query
+- image layering on server 3 - fade/lives
 - default position with no active monuments
 - generation update right before an update. Span gets assigned to prior world, but the new generation world gets selected as current for the latest time period
   http://localhost:8000/public/index.html#x=-10652&y=124&z=25&s=17
