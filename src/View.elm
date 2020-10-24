@@ -778,7 +778,17 @@ serverIconForName serverName status =
     name = serverDisplayName serverName
   in
   el [ htmlAttribute (Html.Attributes.title serverName) ] <|
-  if String.endsWith "oho.life" serverName then
+  if "Band" == serverName then
+    el
+      [ width (px 45)
+      , padding 3
+      , Border.width 1
+      , Border.color foreground
+      , Border.rounded 8
+      , Background.color (if status == Input.Selected then selected else background)
+      ]
+      (el [ centerX ] (text "Band"))
+  else if String.endsWith "oho.life" serverName then
     el
       [ width (px 45)
       , padding 3

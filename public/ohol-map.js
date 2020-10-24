@@ -443,6 +443,7 @@
     var numBiomes = options.biomeMap.length
     var regularBiomesLimit = numBiomes - options.numSpecialBiomes
     var scale = options.biomeOffset + options.biomeScale * numBiomes
+    var numBandBiomes = options.biomeBandMap.length
     var roughness = options.biomeFractalRoughness
     var weights = options.biomeCumuWeights
 
@@ -466,36 +467,51 @@
     //console.log('picked', pickedBiome)
 
     if (pickedBiome >= regularBiomesLimit) {
-      pickedBiome = -1
-      scale = options.biomeSpecialOffset + options.biomeSpecialScale * options.numSpecialBiomes
-      roughness = options.biomeSpecialRoughness
-
-      var maxValue = -10
-      var secondMaxValue = -10
-      var secondPlaceBiome = -1
-
-      for (var i = regularBiomesLimit;i < numBiomes;i++) {
-        var biome = options.biomeMap[i]
-
-        xxSeedA = biome * options.biomeSeedScale + options.biomeRandSeedA + options.biomeSeedSpecialOffset
-        xxSeedB = options.biomeRandSeedB
-
-        var randVal = getXYFractal(inX, inY, roughness, scale)
-
-        if (randVal > maxValue) {
-          if (maxValue != -10) {
-            secondMaxValue = maxValue
-          }
-          maxValue = randVal
-          pickedBiome = i
-        }
-      }
-
-      if (maxValue - secondMaxValue < options.biomeSpecialBoundary) {
-        secondPlaceBiome = pickedBiome
+      if (numBandBiomes > 0) {
+        var bandTop = options.biomeBandHeight * numBandBiomes / 2;
         pickedBiome = regularBiomesLimit - 1
+        secondPlaceBiome = Math.max(0, pickedBiome - 1)
+        for(var i = 0;i < numBandBiomes;i++) {
+          var top = bandTop - (options.biomeBandHeight * i);
+          var bottom = top - options.biomeBandHeight;
+          if (bottom < inY && inY <= top) {
+            pickedBiome = options.biomeMap.indexOf(options.biomeBandMap[i])
+            secondPlaceBiome = regularBiomesLimit - 1
+            break
+          }
+        }
       } else {
-        secondPlaceBiome = regularBiomesLimit - 1
+        pickedBiome = -1
+        scale = options.biomeSpecialOffset + options.biomeSpecialScale * options.numSpecialBiomes
+        roughness = options.biomeSpecialRoughness
+
+        var maxValue = -10
+        var secondMaxValue = -10
+        var secondPlaceBiome = -1
+
+        for (var i = regularBiomesLimit;i < numBiomes;i++) {
+          var biome = options.biomeMap[i]
+
+          xxSeedA = biome * options.biomeSeedScale + options.biomeRandSeedA + options.biomeSeedSpecialOffset
+          xxSeedB = options.biomeRandSeedB
+
+          var randVal = getXYFractal(inX, inY, roughness, scale)
+
+          if (randVal > maxValue) {
+            if (maxValue != -10) {
+              secondMaxValue = maxValue
+            }
+            maxValue = randVal
+            pickedBiome = i
+          }
+        }
+
+        if (maxValue - secondMaxValue < options.biomeSpecialBoundary) {
+          secondPlaceBiome = pickedBiome
+          pickedBiome = regularBiomesLimit - 1
+        } else {
+          secondPlaceBiome = regularBiomesLimit - 1
+        }
       }
     } else {
       secondPlaceBiome = pickedBiome - 1
@@ -3048,7 +3064,7 @@
 
     var command = function(message) {
       try {
-        //console.log(message)
+        console.log(message)
         switch (message.kind) {
           case 'setView':
             if (positionSet) {

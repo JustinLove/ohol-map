@@ -394,6 +394,7 @@ update msg model =
           |> List.map (myServer model.versions)
           |> (++) [crucible NotAvailable model.time]
           |> (++) [twoHoursOneLife NotAvailable model.time]
+          |> (++) [future NotAvailable model.time]
         current = case model.selectedServer of
           Just sid ->
             servers
@@ -1152,6 +1153,20 @@ myServer versions server =
   , versions = versions
   , worlds = Data.rebuildWorlds Data.oholCodeChanges [] [] []
   , monuments = NotRequested
+  }
+
+future : RemoteData (List Version) -> Posix -> Server
+future versions currentTime =
+  { id = 20
+  , serverName = "Band"
+  , minTime = List.head Data.futureCodeChanges |> Maybe.map .start |> Maybe.withDefault (Time.millisToPosix 0)
+  , maxTime = currentTime
+  , codeChanges = Data.futureCodeChanges
+  , arcs = NotAvailable
+  , spans = NotAvailable
+  , versions = versions
+  , worlds = Data.rebuildWorlds Data.futureCodeChanges [] [] []
+  , monuments = NotAvailable
   }
 
 crucible : RemoteData (List Version) -> Posix -> Server

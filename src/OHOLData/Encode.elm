@@ -155,6 +155,8 @@ generation g =
     , ("biomeTotalWeight", float g.biomeTotalWeight)
     , ("biomeCumuWeights", list float g.biomeCumuWeights)
     , ("numSpecialBiomes", int g.numSpecialBiomes)
+    , ("biomeBandHeight", int g.biomeBandHeight)
+    , ("biomeBandMap", list int g.biomeBandMap)
     , ("objects", dict String.fromInt spawn g.objects)
     , ("biomes", dict String.fromInt biome g.biomes)
     , ("gridPlacements", list spawn g.gridPlacements)

@@ -17,6 +17,7 @@ module OHOLData exposing
   , SecondPlaceBiomeObjects(..)
   , completeVersions
   , oholCodeChanges
+  , futureCodeChanges
   , crucibleCodeChanges
   , tholCodeChanges
   , assignDataTime
@@ -477,6 +478,8 @@ type alias Generation =
   , biomeTotalWeight: Float
   , biomeCumuWeights: List Float
   , numSpecialBiomes: Int
+  , biomeBandHeight: Int
+  , biomeBandMap: List Int
   , objects: Dict Int Spawn
   , biomes: BiomeSet
   , gridPlacements: List Spawn
@@ -628,6 +631,26 @@ oholCodeChanges =
   ]
   |> fixupStartTime
 
+futureCodeChanges : List Age
+futureCodeChanges =
+  [ { name = "Band Age"
+    , start = humanTime "2020-10-19"
+    , biomeLayer = Nothing
+    , generation =
+      { defaultGeneration
+      | biomeMap = specialBiomeMap
+      , biomeRandSeedA = Just 727
+      , biomeRandSeedB = Just 941
+      , randSeed = Nothing
+      , numSpecialBiomes = 3
+      , secondPlaceBiomeObjects = NoSecondPlace
+      , biomeBandMap = bandBiomeMap
+      , biomeBandHeight = 300
+      } |> topographic specialBiomeWeights
+    }
+  ]
+  |> fixupStartTime
+
 crucibleCodeChanges : List Age
 crucibleCodeChanges =
   [ { name = "Cruicible"
@@ -733,6 +756,8 @@ defaultGeneration =
   , biomeTotalWeight = 0
   , biomeCumuWeights = []
   , numSpecialBiomes = 0
+  , biomeBandHeight = 0
+  , biomeBandMap = []
   , objects = Dict.empty
   , biomes = Dict.empty
   , gridPlacements = []
@@ -794,6 +819,13 @@ topographicBiomeWeights =
   , 0.05
   , 0.13
   , 0.25
+  ]
+
+bandBiomeMap =
+  [ 4
+  , 3
+  , 6
+  , 5
   ]
 
 topographic : List Float -> Generation -> Generation
