@@ -1277,7 +1277,6 @@ fetchDataLayer baseUrl serverId startTime endTime evesOnly =
         [ [ Url.int "server_id" serverId
           , Url.int "start_time" (startTime |> Time.posixToMillis |> (\x -> x // 1000))
           , Url.int "end_time" (endTime |> Time.posixToMillis |> (\x -> x // 1000))
-          , Url.int "end_time" (endTime |> Time.posixToMillis |> (\x -> x // 1000))
           , Url.string "limit" "70000"
           ]
         , if evesOnly then [ Url.int "chain" 1 ] else []

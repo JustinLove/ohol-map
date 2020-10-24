@@ -1,32 +1,21 @@
-- comma in end_time query
-- image layering on server 3 - fade/lives
+- dark mode
 - default position with no active monuments
-- generation update right before an update. Span gets assigned to prior world, but the new generation world gets selected as current for the latest time period
-  http://localhost:8000/public/index.html#x=-10652&y=124&z=25&s=17
-  t=1584061390?
+- image layering on server 3 - fade/lives
+- clientside object search
 - server time selections dont set animation range
+- server search indexes
+
 - services
   - versions per service
-  - 2hol
-    - 2hol spawn seeds: https://github.com/twohoursonelife/OneLife/commit/3e945fd9b844eaaf1a52322a3ddfc100ce6a2aea
   - object data
-- may not go to time with latest monument
-- other monument reset times
-- optimize monument updates (most time updates will not cross a time that changes anything)
 - x index files
   - cache parsed index
-- rebuild selection in-layer
-  - base times where end of log can skip key
 - refactoring
 
 - tapout radius
 - expired objects
 - time window range graph
 - in-app help
-- animated
-  - data lods?
-  - keyframes?
-  - diffed keyframes?
 - rendering map data
   - find bottleneck - network or render?
   - load time garbage collection
@@ -50,16 +39,15 @@
   - pre-downscale sprites
   - use whole numbers for positions
   - composting mode tricks
+- may not go to time with latest monument
+- other monument reset times
+- optimize monument updates (most time updates will not cross a time that changes anything)
 - biome graphics
-- rift sizes
 - last arc of random oil shows grid placement in final state
 
 - bookmarking layers
 - sidebar icon toggle
 - map resize handling and sidebar
-- show data for other servers
-  - deselect server
-  - collapse server
 - historical replay
   - Only fetch reasonable amount of data for historical
   - center view on main area?
@@ -75,6 +63,11 @@
 - grouped heat map
 - leaflet handlers - click events?
 - more accurate biome age times
+- generation update right before an update. Span gets assigned to prior world, but the new generation world gets selected as current for the latest time period
+  http://localhost:8000/public/index.html#x=-10652&y=124&z=25&s=17
+  t=1584061390?
+- rebuild selection in-layer
+  - base times where end of log can skip key
 
   - x limits for screenshot layers
     - x 218 (electrum) through 232 (259 bear cave)
