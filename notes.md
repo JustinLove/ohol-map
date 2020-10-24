@@ -1,5 +1,5 @@
-- dark mode
 - default position with no active monuments
+- dark mode
 - image layering on server 3 - fade/lives
 - clientside object search
 - server time selections dont set animation range
@@ -8,8 +8,6 @@
 - services
   - versions per service
   - object data
-- x index files
-  - cache parsed index
 - refactoring
 
 - tapout radius

@@ -1529,33 +1529,62 @@
       }
     },
     loadTile: function(coords, data) {
+      var cache = this
       if (data.time == '0') return Promise.resolve('')
-      var datacoords = this.dataCoords(coords)
+      var datacoords = cache.dataCoords(coords)
       //console.log(datacoords)
-      var url = this.getDataTileUrl(datacoords, data)
-      if (this._index[url]) {
-        var record = this._index[url]
-        this._list.splice(this._list.indexOf(record),1)
-        this._list.push(record)
+      var url = cache.getDataTileUrl(datacoords, data)
+      if (cache._index[url]) {
+        var record = cache._index[url]
+        cache._list.splice(cache._list.indexOf(record),1)
+        cache._list.push(record)
         return record.promise
       } else {
         var record = {
           url: url,
           promise: fetch(url).then(function(response) {
             if (response.status % 100 == 4) {
-              return Promise.resolve('')
+              return cache.transformTile(Promise.resolve(''))
             }
-            return response.text()
+            return cache.transformTile(response.text())
           }),
         }
-        this._list.push(record)
-        this._index[url] = record
-        this.expire()
-        //console.log(this._list.length)
+        cache._list.push(record)
+        cache._index[url] = record
+        cache.expire()
+        //console.log(cache._list.length)
         return record.promise
       }
-    }
+    },
+    transformTile: function(promise) {
+      return promise
+    },
   })
+
+  var TileIndexCache = TileDataCache.extend({
+    transformTile: function(promise) {
+      return promise.then(parseTileIndex)
+    },
+  })
+
+  var parseTileIndex = function(indexText) {
+    //console.log(indexText)
+    var tileTime = {}
+    var currentTime = 0
+    indexText.split("\n").forEach(function(line) {
+      if (line[0] == 't') {
+        currentTime = line.slice(1)
+      } else {
+        var parts = line.split(' ')
+        var y = parts[0]
+        parts.slice(1).forEach(function(x) {
+          tileTime[[x,y].join(' ')] = currentTime
+        })
+      }
+    })
+    //console.log(tileTime)
+    return tileTime;
+  }
 
   var IndexedTileDataCache = L.Class.extend({
     options: {
@@ -1571,22 +1600,7 @@
     },
     loadTile: function(coords, data) {
       var cache = this
-      return cache._indexCache.loadTile(coords, data).then(function(indexText) {
-        //console.log(indexText)
-        var tileTime = {}
-        var currentTime = 0
-        indexText.split("\n").forEach(function(line) {
-          if (line[0] == 't') {
-            currentTime = line.slice(1)
-          } else {
-            var parts = line.split(' ')
-            var y = parts[0]
-            parts.slice(1).forEach(function(x) {
-              tileTime[[x,y].join(' ')] = currentTime
-            })
-          }
-        })
-        //console.log(tileTime)
+      return cache._indexCache.loadTile(coords, data).then(function(tileTime){
         var datacoords = cache._dataCache.dataCoords(coords)
         var time = tileTime[[datacoords.x, datacoords.y].join(' ')]
         if (time) {
@@ -2092,7 +2106,7 @@
     })
   }
 
-  var keyIndexCache = new TileDataCache(oholMapConfig.keyIndex, {
+  var keyIndexCache = new TileIndexCache(oholMapConfig.keyIndex, {
     dataminzoom: 24,
     datamaxzoom: 24,
   })
@@ -3064,7 +3078,7 @@
 
     var command = function(message) {
       try {
-        console.log(message)
+        //console.log(message)
         switch (message.kind) {
           case 'setView':
             if (positionSet) {
