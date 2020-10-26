@@ -1,8 +1,7 @@
-- default position with no active monuments
 - dark mode
-- image layering on server 3 - fade/lives
 - clientside object search
 - server time selections dont set animation range
+- default position with no active monuments - precalculation
 - server search indexes
 
 - services
@@ -71,3 +70,5 @@
     - x 218 (electrum) through 232 (259 bear cave)
 
 ## release
+
+- updated style

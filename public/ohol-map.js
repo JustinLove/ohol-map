@@ -1377,7 +1377,8 @@
 
   var server3Map = L.imageOverlay('overlays/server3.png',
     [[-1170.5, -695.5], [-401.5, 1252.5 - 695]], {
-      pane: 'overlayPane',
+      className: 'crisp',
+      pane: 'tilePane',
       attribution: '<a href="https://onehouronelife.com/forums/viewtopic.php?id=236">rosden</a>',
     })
 
