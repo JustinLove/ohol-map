@@ -73,5 +73,3 @@
     - x 218 (electrum) through 232 (259 bear cave)
 
 ## release
-
-- updated style
