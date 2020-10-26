@@ -4,6 +4,7 @@ module Model exposing
   , Life
   , Mode(..)
   , Center(..)
+  , Theme(..)
   , Model
   , Monument
   , Notice(..)
@@ -41,9 +42,14 @@ type Center
   = DefaultCenter
   | SetCenter Point
 
+type Theme
+  = Light
+  | Dark
+
 type alias Model =
   { location : Url
   , navigationKey : Navigation.Key
+  , theme : Theme
   , zone : Time.Zone
   , time : Posix
   , notice : Notice
@@ -89,6 +95,7 @@ initialModel : Config -> Url -> Navigation.Key -> Model
 initialModel config location key =
   { location = location
   , navigationKey = key
+  , theme = Dark
   , zone = Time.utc
   , time = Time.millisToPosix 0
   , notice = NoNotice

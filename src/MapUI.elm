@@ -124,6 +124,8 @@ update msg model =
         ( { model | zone = Time.utc }, Cmd.none )
       else
         ( model, Time.here |> Task.perform CurrentZone )
+    UI (View.ChangeTheme theme) ->
+      ( { model | theme = theme }, Cmd.none )
     UI (View.ToggleAnimated animated) ->
       ( { model
         | dataAnimated = animated

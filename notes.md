@@ -1,4 +1,7 @@
 - dark mode
+  - persistent
+  - search point color
+  - slider handles
 - clientside object search
 - server time selections dont set animation range
 - default position with no active monuments - precalculation

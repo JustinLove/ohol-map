@@ -41,6 +41,7 @@ type Msg
   | HoursAfter Int
   | ToggleEvesOnly Bool
   | ToggleUTC Bool
+  | ChangeTheme Theme
   | ToggleAnimated Bool
   | GameSecondsPerSecond Int
   | FramesPerSecond Int
@@ -72,8 +73,9 @@ view : Model -> Html Msg
 view model =
   layout
     [ width fill, height fill
-    , Font.color foreground
-    , Background.color background
+    , Font.color (themePalette model.theme).foreground
+    , Background.color (themePalette model.theme).background
+    , themeClass model.theme
     ] <|
     Keyed.row [ width fill, height fill ]
       [ ( "main"
@@ -133,6 +135,9 @@ timeOverlay model =
 
 timeline : Model -> Element Msg
 timeline model =
+  let
+    palette = themePalette model.theme
+  in
   case (model.mapTime, model.timeRange) of
     (Just time, Just (start, end)) ->
       column [ width fill ]
@@ -151,12 +156,12 @@ timeline model =
           , if model.zone == Time.utc then
               Input.button []
                 { onPress = Just (ToggleUTC False)
-                , label = dateWithZone model.zone time
+                , label = dateWithZone model.zone time palette
                 }
             else
               Input.button []
                 { onPress = Just (ToggleUTC True)
-                , label = dateWithZone model.zone time
+                , label = dateWithZone model.zone time palette
                 }
           , ( model.currentArc
               |> Maybe.andThen (yearOfArc time)
@@ -172,7 +177,7 @@ timeline model =
             -}
           ]
         , Input.slider
-          [ Background.color control ]
+          [ Background.color palette.control ]
           { onChange = round
             >> ((*) 1000)
             >> Time.millisToPosix
@@ -205,9 +210,12 @@ sidebar model =
 
 modeSelect : Model -> Element Msg
 modeSelect model =
+  let
+    palette = (themePalette model.theme)
+  in
   row
     [ width fill
-    , Border.color divider
+    , Border.color palette.divider
     , Border.widthEach
       { bottom = 1
       , left = 0
@@ -215,19 +223,19 @@ modeSelect model =
       , top = 0
       }
     ]
-    [ tabHeader "search" "Search" LifeSearch model.sidebarMode
-    , tabHeader "filter" "Data" DataFilter model.sidebarMode
-    , tabHeader "paint-format" "Format" Cosmetics model.sidebarMode
+    [ tabHeader "search" "Search" LifeSearch model.sidebarMode palette
+    , tabHeader "filter" "Data" DataFilter model.sidebarMode palette
+    , tabHeader "paint-format" "Format" Cosmetics model.sidebarMode palette
     ]
 
-tabHeader : String -> String -> Mode -> Mode -> Element Msg
-tabHeader ico name mode current =
+tabHeader : String -> String -> Mode -> Mode -> Palette -> Element Msg
+tabHeader ico name mode current palette =
   Input.button [ width fill ]
     { onPress = Just (SelectMode mode)
     , label = 
       el
         [ width fill
-        , Background.color (if mode == current then highlight else background)
+        , Background.color (if mode == current then palette.highlight else palette.background)
         ] <|
         row [ centerX, spacing 6 ]
           [ el [ Font.size 16 ] <| icon ico
@@ -242,14 +250,15 @@ lifeSearch model =
     , height fill
     , htmlAttribute <| Html.Attributes.style "height" "100%"
     ]
-    [ searchBox model.searchTerm model.lives
+    [ searchBox (themePalette model.theme) model.searchTerm model.lives
     , showResult model model.lives
     ]
 
-searchBox : String -> RemoteData a -> Element Msg
-searchBox term request =
+searchBox : Palette -> String -> RemoteData a -> Element Msg
+searchBox palette term request =
   Input.text
     [ padding 2
+    , Background.color palette.input
     , htmlAttribute <| on "change" <| targetValue Json.Decode.string Search
     ] <|
     { onChange = Typing
@@ -293,9 +302,9 @@ lifeListHeader =
 showMatchingLife model life =
   row
     [ if Just life == model.focus then
-        Background.color highlight
+        Background.color (themePalette model.theme).highlight
       else
-        Background.color background
+        Background.color (themePalette model.theme).background
     ]
     [ Input.button []
       { onPress = Just (SelectMatchingLife life)
@@ -374,8 +383,8 @@ dateWithSeconds zone time =
   in
     (date zone time) ++ ":" ++ second
 
-dateWithZone : Time.Zone -> Posix -> Element Msg
-dateWithZone zone time =
+dateWithZone : Time.Zone -> Posix -> Palette -> Element Msg
+dateWithZone zone time palette =
   row []
     [ text (dateWithSeconds zone time)
     , text " "
@@ -385,7 +394,7 @@ dateWithZone zone time =
         "local"
       )
         |> text
-        |> el [ Font.size 16, Font.color (rgb 0.4 0.4 0.4), alignBottom, padding 2 ]
+        |> el [ Font.size 16, Font.color palette.deemphasis, alignBottom, padding 2 ]
     ]
 
 formatMonth : Time.Month -> String
@@ -443,43 +452,46 @@ dataFilter model =
       [ dataAction model
       , dateRangeSelect model
       , dataOptions model
-      , serverSelect model.servers model.selectedServer
+      , serverSelect model.servers model.selectedServer (themePalette model.theme)
       , presets model
       ]
 
 dataAction model =
+  let
+    palette = themePalette model.theme
+  in
   el [ width fill, padding 5 ] <|
     case model.dataLayer of
-      NotRequested -> dataButtonEnabled
-      NotAvailable -> dataButtonDisabled
-      Loading -> dataButtonDisabled
-      Data _ -> dataButtonEnabled
-      Failed _ -> dataButtonEnabled
+      NotRequested -> dataButtonEnabled palette
+      NotAvailable -> dataButtonDisabled palette
+      Loading -> dataButtonDisabled palette
+      Data _ -> dataButtonEnabled palette
+      Failed _ -> dataButtonEnabled palette
 
-dataButtonEnabled : Element Msg
-dataButtonEnabled =
+dataButtonEnabled : Palette -> Element Msg
+dataButtonEnabled palette =
     Input.button
       [ width fill
       , padding 5
-      , Border.color divider
+      , Border.color palette.divider
       , Border.width 1
       , Border.rounded 6
-      , Background.color control
+      , Background.color palette.control
       ]
       { onPress = Just SelectShow
       , label = el [ centerX ] <| text "Show"
       }
 
-dataButtonDisabled : Element Msg
-dataButtonDisabled =
+dataButtonDisabled : Palette -> Element Msg
+dataButtonDisabled palette =
     Input.button
       [ width fill
       , padding 5
-      , Border.color divider
+      , Border.color palette.divider
       , Border.width 1
       , Border.rounded 6
-      , Background.color control
-      , Font.color divider
+      , Background.color palette.background
+      , Font.color palette.divider
       ]
       { onPress = Nothing
       , label = el [ centerX ] <| text "Show"
@@ -489,10 +501,11 @@ startTimeSelect : Model -> Element Msg
 startTimeSelect model =
   let
     selectedServer = model.selectedServer |> Maybe.andThen (\id -> Dict.get id model.servers)
+    controlColor = (themePalette model.theme).control
   in
   column [ width fill, spacing 2 ]
     [ Input.slider
-      [ Background.color control ]
+      [ Background.color controlColor ]
       { onChange = round
         >> ((*) 1000)
         >> Time.millisToPosix
@@ -512,7 +525,7 @@ startTimeSelect model =
       , step = Just 1
       }
     , Input.slider
-      [ Background.color control ]
+      [ Background.color controlColor ]
       { onChange = round
         >> ((*) 1000)
         >> Time.millisToPosix
@@ -540,7 +553,7 @@ dateRangeSelect model =
     , spacing 2
     , padding 4
     , Border.width 1
-    , Border.color divider
+    , Border.color (themePalette model.theme).divider
     ]
     [ Input.radioRow [ spacing 10 ]
         { onChange = SelectTimeMode
@@ -615,7 +628,7 @@ reverseLogSlider attributes slider =
 timeAfterSelect : Model -> Element Msg
 timeAfterSelect model =
   logSlider
-    [ Background.color control ]
+    [ Background.color (themePalette model.theme).control ]
     { onChange = round >> HoursAfter
     , label = Input.labelAbove [] <|
       text (hoursText "After" model.hoursPeriod)
@@ -629,7 +642,7 @@ timeAfterSelect model =
 timeBeforeSelect : Model -> Element Msg
 timeBeforeSelect model =
   reverseLogSlider
-    [ Background.color control ]
+    [ Background.color (themePalette model.theme).control ]
     { onChange = round >> HoursBefore
     , label = Input.labelAbove [] <|
       text (hoursText "Before" model.hoursPeriod)
@@ -642,7 +655,10 @@ timeBeforeSelect model =
 
 arcSelect : Model -> Element Msg
 arcSelect model =
-  let arcs = currentArcs model in
+  let
+    arcs = currentArcs model
+    controlColor = (themePalette model.theme).control
+  in
   case arcs of
     NotRequested -> none
     NotAvailable -> none
@@ -675,7 +691,7 @@ arcSelect model =
       in
       column [ width fill, spacing 2 ]
       [ Input.slider
-          [ Background.color control ]
+          [ Background.color controlColor ]
           { onChange = round >> SelectArcCoarse
           , label = Input.labelAbove [] <| text "Coarse"
           , min = 0
@@ -685,7 +701,7 @@ arcSelect model =
           , step = Nothing
           }
       , Input.slider
-          [ Background.color control ]
+          [ Background.color controlColor ]
           { onChange = round >> SelectArc
           , label = Input.labelAbove [] <| text "Fine"
           , min = max (coarseIndex - 7) 0
@@ -747,19 +763,19 @@ dataOptions model =
       }
     ]
 
-serverSelect : Dict Int Server -> Maybe Int -> Element Msg
-serverSelect servers serverId =
+serverSelect : Dict Int Server -> Maybe Int -> Palette -> Element Msg
+serverSelect servers serverId palette =
     Input.radioRow [ padding 10, spacing 2, htmlAttribute (Html.Attributes.class "server-select") ]
       { onChange = SelectServer
       , selected = serverId
       , label = Input.labelAbove [] (text "Server")
-      , options = servers |> Dict.values |> List.map serverItem
+      , options = servers |> Dict.values |> List.map (serverItem palette)
       }
 
-serverItem : Server -> Input.Option Int Msg
-serverItem server =
+serverItem : Palette -> Server -> Input.Option Int Msg
+serverItem palette server =
   Input.optionWith server.id
-    (serverIcon server)
+    (serverIcon palette server)
 
 serverDisplayName : String -> String
 serverDisplayName serverName =
@@ -768,12 +784,12 @@ serverDisplayName serverName =
     |> List.head
     |> Maybe.withDefault serverName
 
-serverIcon : Server -> Input.OptionState -> Element Msg
-serverIcon server =
-  serverIconForName server.serverName
+serverIcon : Palette -> Server -> Input.OptionState -> Element Msg
+serverIcon palette server =
+  serverIconForName palette server.serverName
 
-serverIconForName : String -> Input.OptionState -> Element Msg
-serverIconForName serverName status =
+serverIconForName : Palette -> String -> Input.OptionState -> Element Msg
+serverIconForName palette serverName status =
   let
     name = serverDisplayName serverName
   in
@@ -783,9 +799,9 @@ serverIconForName serverName status =
       [ width (px 45)
       , padding 3
       , Border.width 1
-      , Border.color foreground
+      , Border.color palette.foreground
       , Border.rounded 8
-      , Background.color (if status == Input.Selected then selected else background)
+      , Background.color (if status == Input.Selected then palette.selected else palette.control)
       ]
       (el [ centerX ] (text "Band"))
   else if String.endsWith "oho.life" serverName then
@@ -793,9 +809,9 @@ serverIconForName serverName status =
       [ width (px 45)
       , padding 3
       , Border.width 1
-      , Border.color foreground
+      , Border.color palette.foreground
       , Border.rounded 8
-      , Background.color (if status == Input.Selected then selected else background)
+      , Background.color (if status == Input.Selected then palette.selected else palette.control)
       ]
       (el [ centerX ] (text "ccm"))
   else if String.endsWith "twohoursonelife.com" serverName then
@@ -803,9 +819,9 @@ serverIconForName serverName status =
       [ width (px 30)
       , padding 3
       , Border.width 1
-      , Border.color foreground
+      , Border.color palette.foreground
       , Border.rounded 8
-      , Background.color (if status == Input.Selected then selected else background)
+      , Background.color (if status == Input.Selected then palette.selected else palette.control)
       ]
       (el [ centerX ] (text "2h"))
   else if String.startsWith "server" name then
@@ -816,9 +832,9 @@ serverIconForName serverName status =
         [ width (px 30)
         , padding 3
         , Border.width 1
-        , Border.color foreground
+        , Border.color palette.foreground
         , Border.rounded 8
-        , Background.color (if status == Input.Selected then selected else background)
+        , Background.color (if status == Input.Selected then palette.selected else palette.control)
         ]
         (el [ centerX ] (text number))
   else if String.startsWith "bigserver" name then
@@ -828,11 +844,11 @@ serverIconForName serverName status =
       el
         [ width (px 30)
         , Border.width 4
-        , Border.color foreground
+        , Border.color palette.foreground
         , Border.rounded 8
         , Font.heavy
-        , Font.color (if status == Input.Selected then background else foreground)
-        , Background.color (if status == Input.Selected then selected else background)
+        , Font.color (if status == Input.Selected then palette.background else palette.foreground)
+        , Background.color (if status == Input.Selected then palette.selected else palette.control)
         ]
         (el [ centerX ] (text number))
   else
@@ -843,7 +859,7 @@ presets model =
   column []
     [ text "Presets"
     , wrappedRow [ padding 10 ]
-      [ link [ Font.color selected ]
+      [ link [ Font.color (themePalette model.theme).selected ]
           { url = centerUrl model.location model.mapTime True model.selectedServer model.center
           , label = text "Ambient Yesterday"
           }
@@ -852,6 +868,9 @@ presets model =
 
 cosmetics : Model -> Element Msg
 cosmetics model =
+  let
+    controlColor = (themePalette model.theme).control
+  in
   el [ width fill, height fill, scrollbarY] <|
     column
       [ width (fill |> maximum 300)
@@ -888,6 +907,15 @@ cosmetics model =
           , Input.option True (text "UTC")
           ]
         }
+      , Input.radioRow [ padding 10, spacing 20 ]
+        { onChange = ChangeTheme
+        , selected = Just model.theme
+        , label = Input.labelAbove [] (text "Theme")
+        , options =
+          [ Input.option Dark (text "Dark")
+          , Input.option Light (text "Light")
+          ]
+        }
       , Input.checkbox [ padding 10, spacing 2 ]
         { onChange = ToggleAnimated
         , checked = model.dataAnimated
@@ -896,7 +924,7 @@ cosmetics model =
         }
       , if model.dataAnimated then
           logSlider
-            [ Background.color control ]
+            [ Background.color controlColor ]
             { onChange = round >> GameSecondsPerSecond
             , label = Input.labelAbove [] <|
               text (gameTimeText model.gameSecondsPerSecond)
@@ -910,7 +938,7 @@ cosmetics model =
           none
       , if model.dataAnimated then
           logSlider
-            [ Background.color control ]
+            [ Background.color controlColor ]
             { onChange = round >> FramesPerSecond
             , label = Input.labelAbove [] <|
               text ((model.framesPerSecond |> String.fromInt) ++ " Frames/Second")
@@ -935,7 +963,7 @@ cosmetics model =
         , icon = Input.defaultCheckbox
         }
       , Input.slider
-        [ Background.color control ]
+        [ Background.color controlColor ]
         { onChange = round >> SelectNaturalObjectZoom
         , label = Input.labelAbove [] <|
           text ("Natural Objects Above Zoom: " ++ (model.showNaturalObjectsAboveZoom |> String.fromInt))
@@ -1037,11 +1065,54 @@ targetValue decoder tagger =
   Json.Decode.map tagger
     (Json.Decode.at ["target", "value" ] decoder)
 
-foreground = rgb 0.1 0.1 0.1
-background = rgb 0.98 0.98 0.98
-highlight = rgb 0.8 0.8 0.8
-divider = rgb 0.7 0.7 0.7
-control = rgb 0.90 0.90 0.90
-selected = rgb 0.23 0.6 0.98
+themeClass : Theme -> Attribute Msg
+themeClass theme =
+  (case theme of
+    Light -> "light"
+    Dark -> "dark"
+  )
+  |> Html.Attributes.class
+  |> htmlAttribute
+
+themePalette : Theme -> Palette
+themePalette theme =
+  case theme of
+    Light -> lightTheme
+    Dark -> darkTheme
+
+type alias Palette =
+  { foreground: Color
+  , background: Color
+  , highlight: Color
+  , divider: Color
+  , control: Color
+  , input: Color
+  , selected: Color
+  , deemphasis: Color
+  }
+
+lightTheme : Palette
+lightTheme =
+  { foreground = rgb 0.1 0.1 0.1
+  , background = rgb 0.98 0.98 0.98
+  , highlight = rgb 0.8 0.8 0.8
+  , divider = rgb 0.7 0.7 0.7
+  , control = rgb 0.90 0.90 0.90
+  , input = rgb 1.0 1.0 1.01
+  , selected = rgb 0.23 0.6 0.98
+  , deemphasis = rgb 0.4 0.4 0.4
+  }
+
+darkTheme : Palette
+darkTheme =
+  { foreground = rgb 0.8 0.8 0.8
+  , background = rgb 0.2 0.2 0.2
+  , highlight = rgb 0.4 0.4 0.4
+  , divider = rgb 0.4 0.4 0.4
+  , control = rgb 0.12 0.12 0.12
+  , input = rgb 0.0 0.0 0.0
+  , selected = rgb 0.23 0.6 0.98
+  , deemphasis = rgb 0.6 0.6 0.6
+  }
 
 scaled height = modular (max ((toFloat height)/30) 15) 1.25 >> round

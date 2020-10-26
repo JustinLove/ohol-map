@@ -1,5 +1,5 @@
 body {
-  background: white;
+  background-color: white;
   color: black;
   width: 100%;
   height: 100%;
@@ -36,15 +36,9 @@ body {
   filter: blur(5px);
 }
 
-#sidebar [role="button"]:hover,
-#sidebar a:hover {
-  background-color: #eee;
-}
-
 .swatch {
   padding: 1px 4px;
   margin-top: 2px;
-  color: white;
 }
 
 .timecontrol-close:before {
@@ -75,9 +69,8 @@ body {
 .leaflet-control-point-legend,
 .leaflet-control-color-scale,
 .leaflet-control-map-button {
-  background: #fff;
   background-clip: padding-box;
-  border: 2px solid rgba(0,0,0,0.2);
+  border: 2px solid;
   border-radius: 5px;
 }
 .leaflet-control-map-button-toggle {
@@ -92,7 +85,6 @@ body {
 .leaflet-control-map-button-toggle svg {
   position: relative;
   top: 10px;
-  color: #aaa;
 }
 .leaflet-touch .leaflet-control-map-button-toggle {
   width: 44px;
@@ -108,5 +100,116 @@ svg.icon {
   stroke: currentColor;
   fill: currentColor;
 }
-.icon-github { color: #24292e; }
-.icon-twitter { color: #55acee; }
+
+.light {
+  background-color: white;
+  color: black;
+}
+
+.light #sidebar [role="button"]:hover,
+.light #sidebar a:hover {
+  background-color: #eee;
+}
+
+.light .swatch {
+  color: white;
+}
+
+.light .leaflet-control-point-legend,
+.light .leaflet-control-color-scale,
+.light .leaflet-control-map-button {
+  background-color: #fff;
+  border-color: rgba(0,0,0,0.2);
+}
+
+.light .leaflet-control-map-button-toggle svg {
+  color: #aaa;
+}
+
+.light .icon-github { color: #24292e; }
+.light .icon-twitter { color: #55acee; }
+
+.dark {
+  background-color: #222;
+  color: #ddd;
+}
+
+.dark .leaflet-container {
+  background-color: #222;
+}
+
+.dark .leaflet-bar a,
+.dark .leaflet-bar a:hover {
+  background-color: #111;
+  color: #666;
+  border-bottom-color: #555;
+}
+.dark .leaflet-bar a:hover {
+  background-color: #141414;
+}
+.dark .leaflet-bar a.leaflet-disabled {
+  background-color: #141414;
+  color: #888;
+}
+
+.dark .leaflet-control-layers {
+  background-color: #111;
+}
+.dark .leaflet-touch .leaflet-control-layers,
+.dark .leaflet-touch .leaflet-bar {
+  border-color: rgba(255,255,255,0.2);
+}
+
+.dark .leaflet-control-layers-expanded {
+  color: #ddd;
+  background-color: #141414;
+}
+
+.dark #sidebar [role="button"]:hover,
+.dark #sidebar a:hover {
+  background-color: #000;
+}
+
+.dark .swatch {
+  color: white;
+}
+
+.dark .leaflet-control-point-legend,
+.dark .leaflet-control-color-scale,
+.dark .leaflet-control-map-button {
+  background-color: #111;
+  border-color: rgba(255,255,255,0.2);
+}
+
+.dark .leaflet-control-map-button-toggle svg {
+  color: #666;
+}
+
+.dark .leaflet-container .leaflet-control-attribution {
+  background-color: #000;
+  background-color: rgba(0, 0, 0, 0.7);
+}
+.dark .leaflet-control-attribution,
+.dark .leaflet-control-scale-line {
+  color: #ddd;
+}
+.dark .leaflet-control-scale-line {
+  border-color: #999;
+  background-color: #000;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.dark .leaflet-control-scale-line:not(:first-child) {
+  border-top-color: #999;
+}
+.dark .leaflet-control-scale-line:not(:first-child):not(:last-child) {
+  border-bottom-color: #999;
+}
+
+.dark .leaflet-touch .leaflet-control-layers,
+.dark .leaflet-touch .leaflet-bar {
+  border-color: rgba(255,255,255,0.2);
+}
+
+.dark .icon-github { color: #777; }
+.dark .icon-twitter { color: #55acee; }
+
