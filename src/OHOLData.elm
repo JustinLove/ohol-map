@@ -645,7 +645,7 @@ futureCodeChanges =
       , numSpecialBiomes = 3
       , secondPlaceBiomeObjects = NoSecondPlace
       , biomeBandMap = bandBiomeMap
-      , biomeBandHeight = 300
+      , biomeBandHeight = 200
       } |> topographic specialBiomeWeights
     }
   ]

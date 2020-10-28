@@ -963,7 +963,7 @@
   var tholWaterColor = hsvToRgb(210/360, 0.52, 0.80)
 
   var bandWidth = Math.pow(2, 31)
-  var bandHeight = 300
+  var bandHeight = 200
   var bandsOverlay = L.layerGroup([
     L.rectangle([[bandHeight,-bandWidth], [bandHeight*2,bandWidth]], {color: rgbToString(arcticColor)}),
     L.rectangle([[0,-bandWidth], [bandHeight,bandWidth]], {color: rgbToString(badlandsColor)}),

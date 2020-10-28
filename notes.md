@@ -2,6 +2,10 @@
   - persistent
   - search point color
   - slider handles
+  - old age
+  - graticle
+- fade time
+- family name legend selection
 - clientside object search
 - server time selections dont set animation range
 - default position with no active monuments - precalculation
