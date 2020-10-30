@@ -3041,10 +3041,10 @@
       if (idleTimer) {
         clearTimeout(idleTimer)
       }
-      idleTimer = setTimeout(setIdle, 1*60*1000)
+      idleTimer = setTimeout(setIdle, 1*60*5000)
     }
 
-    var idleTimer = setTimeout(setIdle, 1*60*1000)
+    var idleTimer = setTimeout(setIdle, 1*60*5000)
     L.DomEvent.on(map, 'mousemove', setActive, map);
 
     var t = Date.now()
