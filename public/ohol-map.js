@@ -439,11 +439,21 @@
     return pickedBiome
   }
 
+  var getSpecialBiomeIndexForYBand = function(inY, options) {
+    var radius = (options.specialBiomeBandThickness / 2) >>> 0
+    for(var i = 0;i < options.specialBiomeBandOrder.length;i++) {
+      var yCenter = options.specialBiomeBandYCenter[i]
+      if (Math.abs(inY - yCenter) <= radius) {
+        return options.specialBiomeBandIndexOrder[i]
+      }
+    }
+    return options.specialBiomeBandDefaultIndex
+  }
+
   var topographicMapBiomeIndex = function(inX, inY, options, secondPlace) {
     var numBiomes = options.biomeMap.length
     var regularBiomesLimit = numBiomes - options.numSpecialBiomes
     var scale = options.biomeOffset + options.biomeScale * numBiomes
-    var numBandBiomes = options.biomeBandMap.length
     var roughness = options.biomeFractalRoughness
     var weights = options.biomeCumuWeights
 
@@ -467,19 +477,9 @@
     //console.log('picked', pickedBiome)
 
     if (pickedBiome >= regularBiomesLimit) {
-      if (numBandBiomes > 0) {
-        var bandTop = options.biomeBandHeight * numBandBiomes / 2;
-        pickedBiome = regularBiomesLimit - 1
-        secondPlaceBiome = Math.max(0, pickedBiome - 1)
-        for(var i = 0;i < numBandBiomes;i++) {
-          var top = bandTop - (options.biomeBandHeight * i);
-          var bottom = top - options.biomeBandHeight;
-          if (bottom < inY && inY <= top) {
-            pickedBiome = options.biomeMap.indexOf(options.biomeBandMap[i])
-            secondPlaceBiome = regularBiomesLimit - 1
-            break
-          }
-        }
+      if (options.specialBiomeBandOrder.length > 0) {
+        pickedBiome = getSpecialBiomeIndexForYBand(inY, options)
+        secondPlaceBiome = regularBiomesLimit - 1
       } else {
         pickedBiome = -1
         scale = options.biomeSpecialOffset + options.biomeSpecialScale * options.numSpecialBiomes
@@ -983,6 +983,10 @@
     biomeSeedScale: 263,
     biomeMap: jungleBiomeMap,
     numSpecialBiomes: 0,
+    specialBiomeBandThickess: 0,
+    specialBiomeBandOrder: [],
+    specialBiomeBandIndexOrder: [],
+    specialBiomeBandDefaultIndex: 1,
     biomeSeedSpecialOffset: 38475,
     biomeSpecialOffset: 2.4999,
     biomeSpecialScale: 0.2499,
@@ -1412,6 +1416,11 @@
       if (!world.generation.computeMapBiomeIndex) {
         console.log(world, "no biome index function")
       }
+      world.generation.specialBiomeBandIndexOrder =
+        world.generation.specialBiomeBandOrder.map(function(id) {
+          return world.generation.biomeMap.indexOf(id);
+        });
+      world.generation.specialBiomeBandDefaultIndex = world.generation.biomeMap.indexOf(world.generation.specialBiomeBandDefault);
       if (world.biomeLayer == 'tholMap') {
         world.biomeLayer = L.layerGroup([
           new L.GridLayer.BiomeLayer(world.generation),

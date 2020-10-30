@@ -478,8 +478,10 @@ type alias Generation =
   , biomeTotalWeight: Float
   , biomeCumuWeights: List Float
   , numSpecialBiomes: Int
-  , biomeBandHeight: Int
-  , biomeBandMap: List Int
+  , specialBiomeBandThickness: Int
+  , specialBiomeBandOrder: List Int
+  , specialBiomeBandYCenter: List Int
+  , specialBiomeBandDefault: Int
   , objects: Dict Int Spawn
   , biomes: BiomeSet
   , gridPlacements: List Spawn
@@ -628,6 +630,22 @@ oholCodeChanges =
       , secondPlaceBiomeObjects = NoSecondPlace
       } |> topographic specialBiomeWeights
     }
+  , { name = "Band Age"
+    , start = humanTime "2020-10-29T18:54:08Z"
+    , biomeLayer = Nothing
+    , generation =
+      { defaultGeneration
+      | biomeMap = specialBiomeMap
+      , biomeRandSeedA = Nothing
+      , randSeed = Nothing
+      , numSpecialBiomes = 3
+      , specialBiomeBandOrder = specialBiomeBandOrder
+      , specialBiomeBandYCenter = specialBiomeBandYCenter
+      , specialBiomeBandDefault = 3
+      , specialBiomeBandThickness = 200
+      , secondPlaceBiomeObjects = NoSecondPlace
+      } |> topographic specialBiomeWeights
+    }
   ]
   |> fixupStartTime
 
@@ -643,9 +661,11 @@ futureCodeChanges =
       , biomeRandSeedB = Just 941
       , randSeed = Nothing
       , numSpecialBiomes = 3
+      , specialBiomeBandOrder = specialBiomeBandOrder
+      , specialBiomeBandYCenter = specialBiomeBandYCenter
+      , specialBiomeBandDefault = 3
+      , specialBiomeBandThickness = 200
       , secondPlaceBiomeObjects = NoSecondPlace
-      , biomeBandMap = bandBiomeMap
-      , biomeBandHeight = 200
       } |> topographic specialBiomeWeights
     }
   ]
@@ -756,8 +776,10 @@ defaultGeneration =
   , biomeTotalWeight = 0
   , biomeCumuWeights = []
   , numSpecialBiomes = 0
-  , biomeBandHeight = 0
-  , biomeBandMap = []
+  , specialBiomeBandThickness = 0
+  , specialBiomeBandOrder = []
+  , specialBiomeBandYCenter = []
+  , specialBiomeBandDefault = 3
   , objects = Dict.empty
   , biomes = Dict.empty
   , gridPlacements = []
@@ -821,13 +843,6 @@ topographicBiomeWeights =
   , 0.25
   ]
 
-bandBiomeMap =
-  [ 4
-  , 3
-  , 6
-  , 5
-  ]
-
 topographic : List Float -> Generation -> Generation
 topographic weights gen =
   { gen
@@ -861,6 +876,20 @@ specialBiomeWeights =
   , 0.11
   , 0.11
   , 0.13
+  ]
+
+specialBiomeBandOrder =
+  [ 4
+  , 3
+  , 6
+  , 5
+  ]
+
+specialBiomeBandYCenter =
+  [ 300
+  , 100
+  , -100
+  , -300
   ]
 
 thol1BiomeMap =
