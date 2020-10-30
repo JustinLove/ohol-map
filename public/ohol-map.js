@@ -963,13 +963,18 @@
   var tholWaterColor = hsvToRgb(210/360, 0.52, 0.80)
 
   var bandWidth = Math.pow(2, 31)
-  var bandHeight = 200
-  var bandsOverlay = L.layerGroup([
-    L.rectangle([[bandHeight,-bandWidth], [bandHeight*2,bandWidth]], {color: rgbToString(arcticColor)}),
-    L.rectangle([[0,-bandWidth], [bandHeight,bandWidth]], {color: rgbToString(badlandsColor)}),
-    L.rectangle([[-bandHeight,-bandWidth], [0,bandWidth]], {color: rgbToString(jungleColor)}),
-    L.rectangle([[-bandHeight*2,-bandWidth], [-bandHeight,bandWidth]], {color: rgbToString(desertColor)}),
+  var bandThickness = 200
+  var band200 = L.layerGroup([
+    L.rectangle([[bandThickness-0.5,-bandWidth], [bandThickness*2+0.5,bandWidth]], {color: rgbToString(arcticColor)}),
+    L.rectangle([[-0.5,-bandWidth], [bandThickness-0.5,bandWidth]], {color: rgbToString(badlandsColor)}),
+    L.rectangle([[-bandThickness-0.5,-bandWidth], [-0.5,bandWidth]], {color: rgbToString(jungleColor)}),
+    L.rectangle([[-bandThickness*2-0.5,-bandWidth], [-bandThickness-0.5,bandWidth]], {color: rgbToString(desertColor)}),
   ])
+  var bandGone = L.layerGroup([])
+  var bandsOverlay = L.layerGroup([ band200 ])
+  var bandHistory = [
+    { ms: Date.parse("2020-10-29 13:54:08-05:00"), layer: band200 }
+  ]
 
   overlays['Bands'] = bandsOverlay
 
@@ -3047,9 +3052,9 @@
     oholBase.addTo(map)
     //base['Topographic Test'].addTo(map)
     overlays['Rift'].addTo(map)
+    //overlays['Bands'].addTo(map)
     //overlays['Checker'].addTo(map)
     //overlays['graticule'].addTo(map)
-    //overlays['Bands'].addTo(map)
     //base['Fractal'].addTo(map)
     //base['Biome'].addTo(map)
     //map.addControl(animToggle)
