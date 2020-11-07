@@ -3194,6 +3194,12 @@
           case 'pointLocation':
             setPointLocation(message.location)
             break;
+          case 'changeTheme':
+            switch (message.theme) {
+              case 'light': graticule.setLineColor('#111'); break
+              case 'dark': graticule.setLineColor('#eee'); break
+            }
+            break;
           case 'showOnlyCurrentMonuments':
             L.Util.setOptions(monumentOverlay, {showOnlyCurrentMonuments: message.status})
             monumentsByTime(monumentOverlay, mapTime, 'showOnlyCurrentMonuments')

@@ -21,6 +21,11 @@ L.SimpleGraticule = L.LayerGroup.extend({
         clickable: false //legacy support
     },
 
+    setLineColor: function(color) {
+      this.lineStyle.color = color;
+      if (this._map) this.redraw();
+    },
+
     initialize: function(options) {
         L.LayerGroup.prototype.initialize.call(this);
         L.Util.setOptions(this, options);

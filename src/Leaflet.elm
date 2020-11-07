@@ -17,6 +17,7 @@ port module Leaflet exposing
   , baseLayer
   , pointColor
   , pointLocation
+  , changeTheme
   , showOnlyCurrentMonuments
   , fadeTallObjects
   , showNaturalObjectsAboveZoom
@@ -171,6 +172,14 @@ pointLocation location =
         BirthLocation -> "birth"
         DeathLocation -> "death"
       )
+    ]
+    |> leafletCommand
+
+changeTheme : String -> Cmd msg
+changeTheme theme =
+  Encode.object
+    [ ("kind", Encode.string "changeTheme")
+    , ("theme", Encode.string theme)
     ]
     |> leafletCommand
 

@@ -1,5 +1,5 @@
 - dark mode
-  - graticle
+  - x graticle
   - old age
   - search point color
   - persistent

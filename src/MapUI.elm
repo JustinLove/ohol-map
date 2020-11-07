@@ -69,6 +69,7 @@ init config location key =
         Nothing -> Time.now |> Task.perform CurrentTimeNotice
       , fetchServers model.cachedApiUrl
       , fetchObjects
+      , changeTheme model.theme
       , Leaflet.animOverlay model.dataAnimated
       , Leaflet.worldList (Data.rebuildWorlds Data.oholCodeChanges [] [] [])
       ]
@@ -125,7 +126,7 @@ update msg model =
       else
         ( model, Time.here |> Task.perform CurrentZone )
     UI (View.ChangeTheme theme) ->
-      ( { model | theme = theme }, Cmd.none )
+      ( { model | theme = theme }, changeTheme theme)
     UI (View.ToggleAnimated animated) ->
       ( { model
         | dataAnimated = animated
@@ -845,6 +846,12 @@ setServerUpdate serverId model =
         )
   else
     (model, Cmd.none)
+
+changeTheme : Theme -> Cmd Msg
+changeTheme theme =
+  case theme of
+    Light -> Leaflet.changeTheme "light"
+    Dark -> Leaflet.changeTheme "dark"
 
 replaceUrl : (Model, Cmd Msg) -> (Model, Cmd Msg)
 replaceUrl =
