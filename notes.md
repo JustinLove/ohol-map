@@ -1,7 +1,7 @@
 - dark mode
   - x graticle
   - old age
-  - search point color
+  - x search point color
   - persistent
   - slider handles?
 - family name legend selection

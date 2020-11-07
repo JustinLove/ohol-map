@@ -2273,7 +2273,7 @@
       var llse = crs.pointToLatLng(pse, coords.z)
       //console.log(coords, llnw, llse)
 
-      var color = options.color || 'lineageColor'
+      var color = options.color || 'darkColor'
       var location = options.location || 'birth'
       var fadeTime = 60*60
       options.data.forEach(function(point) {
@@ -2322,6 +2322,10 @@
 
           if (time && color == 'ageColor') {
             ctx.fillStyle = ctx.strokeStyle = colorage(age)
+          } else if (color == 'darkColor') {
+            ctx.fillStyle = ctx.strokeStyle = '#000'
+          } else if (color == 'lightColor') {
+            ctx.fillStyle = ctx.strokeStyle = '#fff'
           } else {
             ctx.fillStyle = ctx.strokeStyle = point[color]
           }
@@ -3196,8 +3200,14 @@
             break;
           case 'changeTheme':
             switch (message.theme) {
-              case 'light': graticule.setLineColor('#111'); break
-              case 'dark': graticule.setLineColor('#eee'); break
+              case 'light':
+                graticule.setLineColor('#111')
+                L.Util.setOptions(resultPoints, {color: 'darkColor'})
+                break
+              case 'dark':
+                graticule.setLineColor('#eee')
+                L.Util.setOptions(resultPoints, {color: 'lightColor'})
+                break
             }
             break;
           case 'showOnlyCurrentMonuments':

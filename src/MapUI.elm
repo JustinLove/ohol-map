@@ -70,6 +70,7 @@ init config location key =
       , fetchServers model.cachedApiUrl
       , fetchObjects
       , changeTheme model.theme
+      , Leaflet.pointColor model.pointColor
       , Leaflet.animOverlay model.dataAnimated
       , Leaflet.worldList (Data.rebuildWorlds Data.oholCodeChanges [] [] [])
       ]
