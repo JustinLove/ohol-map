@@ -1106,10 +1106,10 @@ lightTheme =
 darkTheme : Palette
 darkTheme =
   { foreground = rgb 0.8 0.8 0.8
-  , background = rgb 0.2 0.2 0.2
+  , background = rgb 0.1 0.1 0.1
   , highlight = rgb 0.4 0.4 0.4
   , divider = rgb 0.4 0.4 0.4
-  , control = rgb 0.12 0.12 0.12
+  , control = rgb 0.2 0.2 0.2
   , input = rgb 0.0 0.0 0.0
   , selected = rgb 0.23 0.6 0.98
   , deemphasis = rgb 0.6 0.6 0.6

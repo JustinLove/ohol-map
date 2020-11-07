@@ -135,7 +135,7 @@ svg.icon {
 }
 
 .dark .leaflet-container {
-  background-color: #222;
+  background-color: #333;
 }
 
 .dark .leaflet-bar a,
@@ -213,3 +213,7 @@ svg.icon {
 .dark .icon-github { color: #777; }
 .dark .icon-twitter { color: #55acee; }
 
+.dark .leaflet-grid-label .gridlabel-vert,
+.dark .leaflet-grid-label .gridlabel-horiz {
+    text-shadow: -2px 0 #000000, 0 2px #000000, 2px 0 #000000, 0 -2px #000000;
+}

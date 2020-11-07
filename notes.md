@@ -1,9 +1,9 @@
 - dark mode
-  - persistent
-  - search point color
-  - slider handles
-  - old age
   - graticle
+  - old age
+  - search point color
+  - persistent
+  - slider handles?
 - family name legend selection
 - clientside object search
 - server time selections dont set animation range
