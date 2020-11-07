@@ -1,6 +1,6 @@
 - dark mode
   - x graticle
-  - old age
+  - x old age
   - x search point color
   - persistent
   - slider handles?

@@ -2220,13 +2220,15 @@
     return "hsl(" + hue + ", 100%, 50%)"
   }
 
-  var colorcause = function(cause) {
+  var colorcause = function(cause, theme) {
     if (cause && cause.match('killer')) {
       return "#ff0000";
     }
     switch(cause) {
       case 'hunger': return "hsl(60, 50%, 40%)"
-      case 'oldAge': return "hsl(0, 0%, 20%)"
+      case 'oldAge':
+        if (theme == 'dark') return "hsl(0, 0%, 80%)"
+        else return "hsl(0, 0%, 20%)"
       case 'disconnect': return "hsla(180, 100%, 40%)"
       case 'unknown': return "hsl(290, 100%, 50%)"
       default: return "hsla(90, 100%, 50%, 0)"
@@ -2238,6 +2240,9 @@
       pane: 'overlayPane',
       alternateAnim: null,
       alternateStatic: null,
+      color: 'defaultColor',
+      location: 'birth',
+      theme: 'dark',
     },
     createTile: function (coords) {
       var tile = document.createElement('canvas');
@@ -2273,8 +2278,9 @@
       var llse = crs.pointToLatLng(pse, coords.z)
       //console.log(coords, llnw, llse)
 
-      var color = options.color || 'darkColor'
-      var location = options.location || 'birth'
+      var color = options.color
+      if (color == 'causeOfDeathColor') color = color + options.theme
+      var location = options.location
       var fadeTime = 60*60
       options.data.forEach(function(point) {
         //console.log(point)
@@ -2322,10 +2328,12 @@
 
           if (time && color == 'ageColor') {
             ctx.fillStyle = ctx.strokeStyle = colorage(age)
-          } else if (color == 'darkColor') {
-            ctx.fillStyle = ctx.strokeStyle = '#000'
-          } else if (color == 'lightColor') {
-            ctx.fillStyle = ctx.strokeStyle = '#fff'
+          } else if (color == 'defaultColor') {
+            if (options.theme == 'dark') {
+              ctx.fillStyle = ctx.strokeStyle = '#fff'
+            } else {
+              ctx.fillStyle = ctx.strokeStyle = '#000'
+            }
           } else {
             ctx.fillStyle = ctx.strokeStyle = point[color]
           }
@@ -2453,7 +2461,8 @@
       }
       point.birthTimeColor = colorlinear(point.birth_time, min, max)
       point.chainColor = colorlinear(point.chain, minChain, maxChain)
-      point.causeOfDeathColor = colorcause(point.cause)
+      point.causeOfDeathColordark = colorcause(point.cause, 'dark')
+      point.causeOfDeathColorlight = colorcause(point.cause, 'light')
       point.ageColor = colorage(point.age)
     })
     L.Util.setOptions(animOverlay, {
@@ -2486,6 +2495,24 @@
         min: min,
         max: max,
       })
+    }
+  }
+
+  var setTheme = function(theme) {
+    L.Util.setOptions(resultPoints, { theme: theme })
+    L.Util.setOptions(animOverlay, { theme: theme })
+    animOverlay.redraw()
+    L.Util.setOptions(pointOverlay, { theme: theme })
+    pointOverlay.redraw()
+    L.Util.setOptions(legendControl, { theme: theme })
+    legendControl.redraw()
+    switch (theme) {
+      case 'light':
+        graticule.setLineColor('#111')
+        break
+      case 'dark':
+        graticule.setLineColor('#eee')
+        break
     }
   }
 
@@ -2769,6 +2796,7 @@
   L.Control.Legend = L.Control.extend({
     options: {
       color: 'lineageColor',
+      theme: 'dark',
       dataAnimated: false,
       time: mapTime,
     },
@@ -2789,17 +2817,19 @@
       var container = this._container
       if (!container) return
       if (!this._map || !this._map.hasLayer(dataOverlay)) return
-      if (this.options.color != 'lineageColor' && this._color == this.options.color) return
-      this._color = this.options.color
+      var options = this.options
+      if (options.color != 'lineageColor' && this._color == options.color && this._theme == options.theme) return
+      this._color = options.color
+      this._theme = options.theme
       while (container.firstChild) {
         container.removeChild(container.firstChild);
       }
-      switch (this.options.color) {
+      switch (options.color) {
         case 'lineageColor':
           this.updateLineages()
           var maxHeight = this._map.getSize().y - 256
           var height = 0
-          var lineages = Object.values(this.options.lineages || {})
+          var lineages = Object.values(options.lineages || {})
             .sort(function(a, b) {
             return b.chain - a.chain
             })
@@ -2822,21 +2852,21 @@
           break;
         case 'birthTimeColor':
           var swatch = L.DomUtil.create('div', 'swatch', container)
-          swatch.style = 'background-color: ' + colorlinear(this.options.min, this.options.min, this.options.max)
+          swatch.style = 'background-color: ' + colorlinear(options.min, options.min, options.max)
           swatch.innerHTML = 'older';
 
           swatch = L.DomUtil.create('div', 'swatch', container)
-          swatch.style = 'background-color: ' + colorlinear(this.options.max, this.options.min, this.options.max) + '; color: black;'
+          swatch.style = 'background-color: ' + colorlinear(options.max, options.min, options.max) + '; color: black;'
           swatch.innerHTML = 'newer';
           break;
         case 'chainColor':
           var swatch = L.DomUtil.create('div', 'swatch', container)
-          swatch.style = 'background-color: ' + colorlinear(this.options.minChain, this.options.minChain, this.options.maxChain)
-          swatch.innerHTML = this.options.minChain;
+          swatch.style = 'background-color: ' + colorlinear(options.minChain, options.minChain, options.maxChain)
+          swatch.innerHTML = options.minChain;
 
           swatch = L.DomUtil.create('div', 'swatch', container)
-          swatch.style = 'background-color: ' + colorlinear(this.options.maxChain, this.options.minChain, this.options.maxChain) + '; color: black;'
-          swatch.innerHTML = this.options.maxChain;
+          swatch.style = 'background-color: ' + colorlinear(options.maxChain, options.minChain, options.maxChain) + '; color: black;'
+          swatch.innerHTML = options.maxChain;
           break;
         case 'causeOfDeathColor':
           [
@@ -2847,7 +2877,7 @@
             'unknown',
           ].forEach(function(cause) {
             var swatch = L.DomUtil.create('div', 'swatch', container)
-            swatch.style = 'background-color: ' + colorcause(cause)
+            swatch.style = 'background-color: ' + colorcause(cause, options.theme)
             swatch.innerHTML = cause;
           })
           break;
@@ -3199,16 +3229,7 @@
             setPointLocation(message.location)
             break;
           case 'changeTheme':
-            switch (message.theme) {
-              case 'light':
-                graticule.setLineColor('#111')
-                L.Util.setOptions(resultPoints, {color: 'darkColor'})
-                break
-              case 'dark':
-                graticule.setLineColor('#eee')
-                L.Util.setOptions(resultPoints, {color: 'lightColor'})
-                break
-            }
+            setTheme(message.theme)
             break;
           case 'showOnlyCurrentMonuments':
             L.Util.setOptions(monumentOverlay, {showOnlyCurrentMonuments: message.status})
