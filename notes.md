@@ -3,8 +3,7 @@
   - x old age
   - x search point color
   - persistent
-  - slider handles?
-- family name legend selection
+- x family name legend selection
 - clientside object search
 - server time selections dont set animation range
 - default position with no active monuments - precalculation

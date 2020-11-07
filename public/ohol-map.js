@@ -2845,7 +2845,7 @@
             swatch.style = 'background-color: ' + colorlineage(life.lineage)
             if (life.name) {
               var words = life.name.split(' ')
-              swatch.innerHTML = (words[1] || words[0])
+              swatch.innerHTML = (words[1] || 'unnamed')
             }
             height += 22
           }
