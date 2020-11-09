@@ -79,8 +79,10 @@ type alias Span =
   }
 
 type alias Objects =
-  { ids: Value
-  , bounds: Value
+  { idsValue: Value
+  , ids: List Int
+  , names: List String
+  , boundsValue: Value
   , spawnChanges: List VersionChange
   }
 

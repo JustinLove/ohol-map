@@ -89,8 +89,18 @@ objects : Decoder Objects
 objects =
   succeed Objects
     |> map2 (|>) (field "ids" value)
+    |> map2 (|>) (field "ids" (list objectId))
+    |> map2 (|>) (field "names" (list string))
     |> map2 (|>) (field "bounds" value)
     |> map2 (|>) (field "spawnChanges" (list version))
+
+objectId : Decoder Int
+objectId =
+  string
+    |> andThen (\s -> case String.toInt s of
+      Just i -> succeed i
+      Nothing -> fail "object id is not parsable as an integer"
+    )
 
 version : Decoder VersionChange
 version =

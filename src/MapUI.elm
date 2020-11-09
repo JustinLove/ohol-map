@@ -491,13 +491,20 @@ update msg model =
         , Cmd.none
       )
     ObjectsReceived (Ok objects) ->
-      let versions = Data.completeVersions objects.spawnChanges in
+      let
+        versions = Data.completeVersions objects.spawnChanges
+        objectMap = makeObjectMap objects.ids objects.names
+      in
       ( { model
         | versions = Data versions
         , servers = model.servers
-          |> Dict.map (\_ server -> {server | versions = Data versions})
+          |> Dict.map (\_ server ->
+            { server
+            | versions = Data versions
+            , objects = objectMap
+            })
         }
-      , Leaflet.objectBounds objects.ids objects.bounds
+      , Leaflet.objectBounds objects.idsValue objects.boundsValue
       )
         |> rebuildWorlds
     ObjectsReceived (Err error) ->
@@ -741,6 +748,10 @@ requireSelectedLives model =
     _ ->
       (model, Cmd.none)
 
+makeObjectMap : List ObjectId -> List String -> Dict ObjectId String
+makeObjectMap ids names =
+  List.map2 Tuple.pair ids names
+    |> Dict.fromList
 
 yesterday : Model -> (Model, Cmd Msg)
 yesterday model =
@@ -1200,6 +1211,7 @@ myServer versions server =
   , spans = NotRequested
   , versions = versions
   , worlds = Data.rebuildWorlds Data.oholCodeChanges [] [] []
+  , objects = Dict.empty
   , monuments = NotRequested
   }
 
@@ -1214,6 +1226,7 @@ future versions currentTime =
   , spans = NotAvailable
   , versions = versions
   , worlds = Data.rebuildWorlds Data.futureCodeChanges [] [] []
+  , objects = Dict.empty
   , monuments = NotAvailable
   }
 
@@ -1228,6 +1241,7 @@ crucible versions currentTime =
   , spans = NotAvailable
   , versions = versions
   , worlds = Data.rebuildWorlds Data.crucibleCodeChanges [] [] []
+  , objects = Dict.empty
   , monuments = NotAvailable
   }
 
@@ -1242,6 +1256,7 @@ twoHoursOneLife versions currentTime =
   , spans = NotAvailable
   , versions = versions
   , worlds = Data.rebuildWorlds Data.tholCodeChanges [] [] []
+  , objects = Dict.empty
   , monuments = NotAvailable
   }
 

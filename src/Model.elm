@@ -7,6 +7,7 @@ module Model exposing
   , Model
   , Monument
   , Notice(..)
+  , ObjectId
   , Player(..)
   , Server
   , Span
@@ -37,6 +38,8 @@ type alias Monument = Data.Monument
 type alias Span = Data.Span
 type alias Version = Data.Version
 type alias World = Data.World
+
+type alias ObjectId = Int
 
 type Center
   = DefaultCenter
@@ -169,6 +172,7 @@ type alias Server =
   , spans : RemoteData (List Span)
   , versions : RemoteData (List Version)
   , worlds : List World
+  , objects : Dict ObjectId String
   , monuments : RemoteData (List Monument)
   }
 
