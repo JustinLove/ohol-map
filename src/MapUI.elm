@@ -78,6 +78,7 @@ init config location key =
       , Leaflet.pointColor model.pointColor
       , Leaflet.animOverlay model.dataAnimated
       , Leaflet.worldList (Data.rebuildWorlds Data.oholCodeChanges [] [] [])
+      , Leaflet.highlightObjects [135, 150]
       ]
     )
 

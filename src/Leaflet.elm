@@ -13,6 +13,7 @@ port module Leaflet exposing
   , displayResults
   , focus
   , searchOverlay
+  , highlightObjects
   , animOverlay
   , baseLayer
   , pointColor
@@ -129,6 +130,14 @@ searchOverlay status =
   Encode.object
     [ ("kind", Encode.string "searchOverlay")
     , ("status", Encode.bool status)
+    ]
+    |> leafletCommand
+
+highlightObjects : List Int -> Cmd msg
+highlightObjects ids =
+  Encode.object
+    [ ("kind", Encode.string "highlightObjects")
+    , ("ids", Encode.list Encode.int ids)
     ]
     |> leafletCommand
 

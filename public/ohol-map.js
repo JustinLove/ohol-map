@@ -1174,6 +1174,7 @@
       var cellSize = Math.pow(2, coords.z - (24 - this.options.supersample))
       var fadeTallObjects = this.options.fadeTallObjects
       var offset = this.options.offset
+      var highlightObjects = this.options.highlightObjects
       //console.log(cellSize, tile._keyplace)
 
       var ctx = tile.getContext('2d', {alpha: true});
@@ -1205,12 +1206,17 @@
         } else {
           var color = hsvToRgb(placement.id * 3769 % 359 / 360, 1, 1)
           ctx.fillStyle = 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')'
-
           var iw = objectBounds[placement.id][2]/CELL_D - ox
           var ih = objectBounds[placement.id][1]/CELL_D + oy
           ctx.globalAlpha = 0.5
           ctx.fillRect(placement.x + ox, placement.y + oy, iw, ih)
-          //ctx.fillRect(placement.x*cellSize, placement.y*cellSize, cellSize, cellSize)
+        }
+
+        if (highlightObjects.indexOf(placement.id) != -1) {
+          var color = hsvToRgb(placement.id * 3769 % 359 / 360, 1, 1)
+          ctx.fillStyle = 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')'
+          ctx.globalAlpha = 0.5
+          ctx.fillRect(placement.x - 0.5 , placement.y - 0.5, 1, 1)
         }
       })
       ctx.restore()
@@ -1879,7 +1885,7 @@
 
           .filter(function(placement) {
 
-            var isValid = !isNaN(placement.id) && placement.id < 5000
+            var isValid = !isNaN(placement.id) && placement.id < 50000
             if (!isValid) return false
             var inFrame =
               (-paddingX <= placement.x && placement.x < right) &&
@@ -1940,7 +1946,7 @@
           return place
         }).filter(function(placement) {
 
-          var isValid = !isNaN(placement.id) && placement.id < 5000
+          var isValid = !isNaN(placement.id) && placement.id < 50000
           if (!isValid) return false
           var inFrame =
             (-paddingX <= placement.x && placement.x < right) &&
@@ -3205,6 +3211,9 @@
             } else {
               searchOverlay.remove()
             }
+            break
+          case 'highlightObjects':
+            setObjectLayerOptions({highlightObjects: message.ids})
             break
           case 'animOverlay':
             dataAnimated = message.status
