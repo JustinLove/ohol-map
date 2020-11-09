@@ -4,4 +4,5 @@ import Theme
 
 type alias Persist =
   { theme : Theme.Theme
+  , showNaturalObjectsAboveZoom : Int
   }

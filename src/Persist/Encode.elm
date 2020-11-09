@@ -9,6 +9,7 @@ persist : Persist -> Value
 persist p =
   object
     [ ("theme", theme p.theme)
+    , ("showNaturalObjectsAboveZoom", int p.showNaturalObjectsAboveZoom)
     ]
 
 theme : Theme -> Value

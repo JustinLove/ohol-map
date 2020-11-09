@@ -89,6 +89,7 @@ update msg model =
           Just state ->
             { model
             | theme = state.theme
+            , showNaturalObjectsAboveZoom = state.showNaturalObjectsAboveZoom
             }
           Nothing ->
             model
@@ -205,6 +206,7 @@ update msg model =
         }
       , Leaflet.showNaturalObjectsAboveZoom zoom
       )
+        |> addCommand saveState
     UI (View.SelectPointColor color) ->
       ( { model
         | pointColor = color
@@ -616,12 +618,18 @@ saveState : Model -> Cmd Msg
 saveState model =
   Persist
     model.theme
+    model.showNaturalObjectsAboveZoom
       |> Persist.Encode.persist
       |> LocalStorage.saveJson
 
 resolveLoaded : Model -> (Model, Cmd Msg)
 resolveLoaded model =
-  (model, changeTheme model.theme)
+  ( model
+  , Cmd.batch
+    [ changeTheme model.theme
+    , Leaflet.showNaturalObjectsAboveZoom model.showNaturalObjectsAboveZoom
+    ]
+  )
 
 rebuildWorlds : (Model, Cmd Msg) -> (Model, Cmd Msg)
 rebuildWorlds =
