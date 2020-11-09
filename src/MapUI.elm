@@ -1,11 +1,16 @@
 module MapUI exposing (..)
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
+import LocalStorage
 import Model exposing (..)
 import OHOLData as Data
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
+import Persist exposing (Persist)
+import Persist.Encode
+import Persist.Decode
 import RemoteData exposing (RemoteData(..))
+import Theme exposing (Theme)
 import View exposing (timeNoticeDuration)
 
 import Browser
@@ -25,7 +30,8 @@ import Url.Parser
 import Url.Parser.Query
 
 type Msg
-  = UI View.Msg
+  = Loaded (Maybe Persist)
+  | UI View.Msg
   | Event (Result Json.Decode.Error Leaflet.Event)
   | MatchingLives (Result Http.Error (List Data.Life))
   | LineageLives Int (Result Http.Error Json.Decode.Value)
@@ -69,7 +75,6 @@ init config location key =
         Nothing -> Time.now |> Task.perform CurrentTimeNotice
       , fetchServers model.cachedApiUrl
       , fetchObjects
-      , changeTheme model.theme
       , Leaflet.pointColor model.pointColor
       , Leaflet.animOverlay model.dataAnimated
       , Leaflet.worldList (Data.rebuildWorlds Data.oholCodeChanges [] [] [])
@@ -79,6 +84,16 @@ init config location key =
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
+    Loaded mstate ->
+      ( case mstate of
+          Just state ->
+            { model
+            | theme = state.theme
+            }
+          Nothing ->
+            model
+      )
+        |> resolveLoaded
     UI (View.None) -> (model, Cmd.none)
     UI (View.Search term) ->
       ( { model
@@ -127,7 +142,10 @@ update msg model =
       else
         ( model, Time.here |> Task.perform CurrentZone )
     UI (View.ChangeTheme theme) ->
-      ( { model | theme = theme }, changeTheme theme)
+      ( { model | theme = theme }
+      , changeTheme theme
+      )
+       |> addCommand saveState
     UI (View.ToggleAnimated animated) ->
       ( { model
         | dataAnimated = animated
@@ -594,6 +612,17 @@ update msg model =
     Navigate (Browser.External url) ->
       (model, Navigation.load url)
 
+saveState : Model -> Cmd Msg
+saveState model =
+  Persist
+    model.theme
+      |> Persist.Encode.persist
+      |> LocalStorage.saveJson
+
+resolveLoaded : Model -> (Model, Cmd Msg)
+resolveLoaded model =
+  (model, changeTheme model.theme)
+
 rebuildWorlds : (Model, Cmd Msg) -> (Model, Cmd Msg)
 rebuildWorlds =
   addCommand rebuildWorldsCommand
@@ -850,9 +879,9 @@ setServerUpdate serverId model =
 
 changeTheme : Theme -> Cmd Msg
 changeTheme theme =
-  case theme of
-    Light -> Leaflet.changeTheme "light"
-    Dark -> Leaflet.changeTheme "dark"
+  theme
+    |> Theme.toString
+    |> Leaflet.changeTheme
 
 replaceUrl : (Model, Cmd Msg) -> (Model, Cmd Msg)
 replaceUrl =
@@ -1009,6 +1038,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
   Sub.batch
     [ Leaflet.event Event
+    , LocalStorage.loadedJson Persist.Decode.persist Loaded
     , case model.notice of
         TimeNotice _ _ ->
           Browser.Events.onAnimationFrame CurrentTime

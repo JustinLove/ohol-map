@@ -4,7 +4,6 @@ module Model exposing
   , Life
   , Mode(..)
   , Center(..)
-  , Theme(..)
   , Model
   , Monument
   , Notice(..)
@@ -24,6 +23,7 @@ module Model exposing
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
 import OHOLData as Data
 import RemoteData exposing (RemoteData(..))
+import Theme exposing (Theme)
 
 import Browser.Navigation as Navigation
 import Dict exposing(Dict)
@@ -41,10 +41,6 @@ type alias World = Data.World
 type Center
   = DefaultCenter
   | SetCenter Point
-
-type Theme
-  = Light
-  | Dark
 
 type alias Model =
   { location : Url
@@ -95,7 +91,7 @@ initialModel : Config -> Url -> Navigation.Key -> Model
 initialModel config location key =
   { location = location
   , navigationKey = key
-  , theme = Dark
+  , theme = Theme.Dark
   , zone = Time.utc
   , time = Time.millisToPosix 0
   , notice = NoNotice

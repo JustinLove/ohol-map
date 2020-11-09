@@ -3098,6 +3098,7 @@
     sidebarToggle.addTo(map)
     //map.setView([0,0], 24)
 
+    // --------------- Leaflet --------------------
     if (app.ports.leafletEvent) {
       map.on('moveend', function(ev) {
         var center = ev.target.getCenter()
@@ -3257,6 +3258,16 @@
   }
 
   inhabit('map')
+
+  // --------------- LocalStorage --------------------
+  var key = 'ohol-map'
+
+  app.ports.localStorageSave.subscribe(function(value) {
+    localStorage.setItem(key, value)
+  })
+
+  var loaded = localStorage.getItem(key)
+  app.ports.localStorageLoaded.send(loaded)
 
   /*
   var testSource = new CustomRandomSource(124567)

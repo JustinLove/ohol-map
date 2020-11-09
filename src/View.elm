@@ -8,6 +8,7 @@ module View exposing
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
 import Model exposing (..)
 import RemoteData exposing (RemoteData(..))
+import Theme exposing (Theme)
 
 import Browser
 import Dict exposing (Dict)
@@ -912,8 +913,8 @@ cosmetics model =
         , selected = Just model.theme
         , label = Input.labelAbove [] (text "Theme")
         , options =
-          [ Input.option Dark (text "Dark")
-          , Input.option Light (text "Light")
+          [ Input.option Theme.Dark (text "Dark")
+          , Input.option Theme.Light (text "Light")
           ]
         }
       , Input.checkbox [ padding 10, spacing 2 ]
@@ -1067,18 +1068,16 @@ targetValue decoder tagger =
 
 themeClass : Theme -> Attribute Msg
 themeClass theme =
-  (case theme of
-    Light -> "light"
-    Dark -> "dark"
-  )
-  |> Html.Attributes.class
-  |> htmlAttribute
+  theme
+    |> Theme.toString
+    |> Html.Attributes.class
+    |> htmlAttribute
 
 themePalette : Theme -> Palette
 themePalette theme =
   case theme of
-    Light -> lightTheme
-    Dark -> darkTheme
+    Theme.Light -> lightTheme
+    Theme.Dark -> darkTheme
 
 type alias Palette =
   { foreground: Color
