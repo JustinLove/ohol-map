@@ -1,6 +1,6 @@
 - clientside object search
-  - tile repositories filting by size
-  - probably need different layer type to have appropriate makers at different zooms
+  - tile repositories filtering by size
+  - probably need different layer type to have appropriate markers at different zooms
   - perhaps make tooSmall a id -> bool function for object filterings
 - server time selections dont set animation range
 - default position with no active monuments - precalculation

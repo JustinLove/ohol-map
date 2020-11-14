@@ -1174,7 +1174,6 @@
       var cellSize = Math.pow(2, coords.z - (24 - this.options.supersample))
       var fadeTallObjects = this.options.fadeTallObjects
       var offset = this.options.offset
-      var highlightObjects = this.options.highlightObjects
       //console.log(cellSize, tile._keyplace)
 
       var ctx = tile.getContext('2d', {alpha: true});
@@ -1210,13 +1209,6 @@
           var ih = objectBounds[placement.id][1]/CELL_D + oy
           ctx.globalAlpha = 0.5
           ctx.fillRect(placement.x + ox, placement.y + oy, iw, ih)
-        }
-
-        if (highlightObjects.indexOf(placement.id) != -1) {
-          var color = hsvToRgb(placement.id * 3769 % 359 / 360, 1, 1)
-          ctx.fillStyle = 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')'
-          ctx.globalAlpha = 0.5
-          ctx.fillRect(placement.x - 0.5 , placement.y - 0.5, 1, 1)
         }
       })
       ctx.restore()
@@ -1461,6 +1453,9 @@
         var keyPlacementLayer = createArcKeyPlacementLayer(span.dataTime, world.generation)
         keyPlacementLayer.name = "key placement"
         span.keyPlacementLayer = keyPlacementLayer
+        var objectPointLayer = createArcObjectPointOverlay(span.dataTime, world.generation)
+        objectPointLayer.name = "object point"
+        span.objectPointLayer = objectPointLayer
         var maplogLayer = createArcMaplogLayer(span.msStart, span.dataTime, span.base, world.generation)
         maplogLayer.name = "maplog"
         span.maplogLayer = maplogLayer
@@ -2148,6 +2143,15 @@
     ])
   }
 
+  var createArcObjectPointOverlay = function(end, gen) {
+    return new L.layerGroup([
+      baseAttributionLayer,
+      new L.GridLayer.ObjectPointOverlay(keyPlacementKey, Object.assign({
+        dataTime: end.toString(),
+      }, gen, objectLayerOptions))
+    ])
+  }
+
   var maplogCache = new TileDataCache(oholMapConfig.maplog, {
     dataminzoom: 24,
     datamaxzoom: 27,
@@ -2176,6 +2180,12 @@
       world.spans.forEach(function(span) {
         if (span.keyPlacementLayer) {
           span.keyPlacementLayer.eachLayer(function(layer) {
+            L.Util.setOptions(layer, options)
+            layer.redraw && layer.redraw()
+          })
+        }
+        if (span.ObjectPointOverlay) {
+          span.ObjectPointOverlay.eachLayer(function(layer) {
             L.Util.setOptions(layer, options)
             layer.redraw && layer.redraw()
           })
@@ -2241,7 +2251,7 @@
     }
   }
 
-  L.GridLayer.PointOverlay = L.GridLayer.extend({
+  L.GridLayer.LifePointOverlay = L.GridLayer.extend({
     options: {
       pane: 'overlayPane',
       alternateAnim: null,
@@ -2419,26 +2429,26 @@
     },
   })
 
-  var pointOverlay = new L.GridLayer.PointOverlay({
-    className: 'interactive point-overlay',
+  var lifePointOverlay = new L.GridLayer.LifePointOverlay({
+    className: 'interactive life-point-overlay',
   })
-  pointOverlay.name = 'point overlay'
+  lifePointOverlay.name = 'life point overlay'
 
-  var animOverlay = new L.GridLayer.PointOverlay({
-    className: 'interactive anim-overlay',
+  var lifeAnimOverlay = new L.GridLayer.LifePointOverlay({
+    className: 'interactive life-anim-overlay',
     time: 0,
-    alternateStatic: pointOverlay,
+    alternateStatic: lifePointOverlay,
   })
-  animOverlay.name = 'anim overlay'
-  L.Util.setOptions(pointOverlay, {alternateAnim: animOverlay})
+  lifeAnimOverlay.name = 'life anim overlay'
+  L.Util.setOptions(lifePointOverlay, {alternateAnim: lifeAnimOverlay})
 
   if (dataAnimated) {
-    animOverlay.addTo(dataOverlay)
+    lifeAnimOverlay.addTo(dataOverlay)
   } else {
-    pointOverlay.addTo(dataOverlay)
+    lifePointOverlay.addTo(dataOverlay)
   }
 
-  var resultPoints = new L.GridLayer.PointOverlay().addTo(searchOverlay)
+  var resultPoints = new L.GridLayer.LifePointOverlay().addTo(searchOverlay)
 
   var setDataLayers = function(data) {
     var min = null;
@@ -2471,18 +2481,18 @@
       point.causeOfDeathColorlight = colorcause(point.cause, 'light')
       point.ageColor = colorage(point.age)
     })
-    L.Util.setOptions(animOverlay, {
+    L.Util.setOptions(lifeAnimOverlay, {
       data: data,
       min: min,
       max: max,
     })
-    animOverlay.redraw()
-    L.Util.setOptions(pointOverlay, {
+    lifeAnimOverlay.redraw()
+    L.Util.setOptions(lifePointOverlay, {
       data: data,
       min: min,
       max: max,
     })
-    pointOverlay.redraw()
+    lifePointOverlay.redraw()
     L.Util.setOptions(dataOverlay, {
       min: min,
       max: max,
@@ -2506,10 +2516,10 @@
 
   var setTheme = function(theme) {
     L.Util.setOptions(resultPoints, { theme: theme })
-    L.Util.setOptions(animOverlay, { theme: theme })
-    animOverlay.redraw()
-    L.Util.setOptions(pointOverlay, { theme: theme })
-    pointOverlay.redraw()
+    L.Util.setOptions(lifeAnimOverlay, { theme: theme })
+    lifeAnimOverlay.redraw()
+    L.Util.setOptions(lifePointOverlay, { theme: theme })
+    lifePointOverlay.redraw()
     L.Util.setOptions(legendControl, { theme: theme })
     legendControl.redraw()
     switch (theme) {
@@ -2521,6 +2531,84 @@
         break
     }
   }
+
+  L.GridLayer.ObjectPointOverlay = L.GridLayer.extend({
+    options: Object.assign({
+      pane: 'overlayPane',
+      alternateAnim: null,
+      alternateStatic: null,
+      theme: 'dark',
+      minZoom: 24,
+      maxZoom: 31,
+      className: 'object-point-overlay',
+    }, objectGenerationOptions),
+    initialize: function(cache, options) {
+      this._cache = cache;
+      options = L.Util.setOptions(this, options);
+    },
+    createTile: function (coords, done) {
+      var layer = this
+      var options = layer.options
+      var tile = document.createElement('canvas');
+      var tileSize = layer.getTileSize();
+      tile.setAttribute('width', tileSize.x);
+      tile.setAttribute('height', tileSize.y);
+      //console.log(coords)
+
+      //console.log('data tile ' + JSON.stringify(coords), options.dataTime, mapServer)
+      layer._cache.getTile(coords, {time: options.dataTime, server: mapServer}, options).then(function(keyplace) {
+        tile._keyplace = keyplace
+
+        //console.timeEnd('data processing ' + JSON.stringify(coords))
+        layer.drawTile(tile, coords, done)
+      })
+
+      return tile
+    },
+    drawTile(tile, coords, done) {
+      var layer = this
+      var options = layer.options
+      var highlightObjects = this.options.highlightObjects
+      if (!tile._keyplace) {
+        if (done) done(null, tile)
+        return tile
+      }
+      var tileSize = layer.getTileSize();
+      var cellSize = Math.pow(2, coords.z - 24)
+
+      var ctx = tile.getContext('2d');
+      ctx.clearRect(0, 0, tile.width, tile.height)
+
+
+      ctx.save()
+      ctx.scale(cellSize, cellSize)
+      ctx.translate(0.5, 0.5)
+      var r = 3/cellSize;
+      tile._keyplace.forEach(function(placement) {
+        //console.log(placement)
+
+        ctx.globalAlpha = 0.5
+
+        var color = hsvToRgb(placement.id * 3769 % 359 / 360, 1, 1)
+        ctx.fillStyle = 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')'
+
+        ctx.beginPath();
+        ctx.arc(placement.x, placement.y, r, 0, 2*Math.PI, false);
+        ctx.fill();
+      })
+      ctx.restore()
+
+      if (done) done(null, tile)
+    },
+    xxupdateTiles: function(ms) {
+      L.Util.setOptions(this, {time: ms})
+      var time = ms/1000
+      for (var key in this._tiles) {
+        var tile = this._tiles[key]
+        this.drawTile(tile.el, tile.coords, time)
+      }
+    },
+  })
 
   var moveIfOutOfView = function(data, map) {
     if (data.length < 1) return
@@ -2579,6 +2667,7 @@
         targetWorld.biomeLayer,
         !targetSpan && targetWorld.objectLayer,
         !dataAnimated && targetSpan && targetSpan.keyPlacementLayer,
+        !dataAnimated && targetSpan && targetSpan.objectPointLayer,
         dataAnimated && targetSpan && targetSpan.maplogLayer,
       ].filter(function(x) {return !!x})
     }
@@ -2638,7 +2727,7 @@
       if (map) baseLayerByTime(map, ms, reason)
       if (monumentOverlay) monumentsByTime(monumentOverlay, ms, reason)
       riftLayerByTime(ms, map && map.getZoom())
-      animOverlay.updateTiles(ms)
+      lifeAnimOverlay.updateTiles(ms)
       arcUpdateTiles(ms)
       L.Util.setOptions(legendControl, {time: ms})
       legendControl.redraw()
@@ -2662,14 +2751,14 @@
   }
 
   var setPointColor = function(color) {
-    L.Util.setOptions(animOverlay, {
+    L.Util.setOptions(lifeAnimOverlay, {
       color: color,
     })
-    animOverlay.redraw()
-    L.Util.setOptions(pointOverlay, {
+    lifeAnimOverlay.redraw()
+    L.Util.setOptions(lifePointOverlay, {
       color: color,
     })
-    pointOverlay.redraw()
+    lifePointOverlay.redraw()
     L.Util.setOptions(legendControl, {
       color: color,
     })
@@ -2677,25 +2766,25 @@
   }
 
   var setPointLocation = function(location) {
-    L.Util.setOptions(animOverlay, {
+    L.Util.setOptions(lifeAnimOverlay, {
       location: location,
     })
-    animOverlay.redraw()
-    L.Util.setOptions(pointOverlay, {
+    lifeAnimOverlay.redraw()
+    L.Util.setOptions(lifePointOverlay, {
       location: location,
     })
-    pointOverlay.redraw()
+    lifePointOverlay.redraw()
   }
 
-  animOverlay.on('add', function(ev) {
+  lifeAnimOverlay.on('add', function(ev) {
     ev.target.addInteractiveTarget(ev.target._container)
   })
-  animOverlay.on('click', animOverlay.selectPoints)
+  lifeAnimOverlay.on('click', lifeAnimOverlay.selectPoints)
 
-  pointOverlay.on('add', function(ev) {
+  lifePointOverlay.on('add', function(ev) {
     ev.target.addInteractiveTarget(ev.target._container)
   })
-  pointOverlay.on('click', pointOverlay.selectPoints)
+  lifePointOverlay.on('click', lifePointOverlay.selectPoints)
 
   resultPoints.on('add', function(ev) {
     ev.target.setZIndex(450)
