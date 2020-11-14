@@ -1860,17 +1860,13 @@
               var wy = startY - y
               var v = getMapObjectRaw(wx, wy, generation)
               if (v == 0) continue
-              var size = objectSize[v]
-              var tooSmall = !size || size <= minSize
-              if (!tooSmall) {
-                natural.push({
-                  t: t,
-                  x: x,
-                  y: y,
-                  id: v,
-                  floor: false,
-                })
-              }
+              natural.push({
+                t: t,
+                x: x,
+                y: y,
+                id: v,
+                floor: false,
+              })
             }
           }
         }
@@ -1886,9 +1882,6 @@
               (-paddingX <= placement.x && placement.x < right) &&
               (-paddingUp <= placement.y && placement.y < bottom)
             if (!inFrame) return false
-            var size = objectSize[placement.id]
-            var tooSmall = !size || size <= minSize
-            if (tooSmall) return false
             return true
           })
           .sort(sortTypeAndDrawOrder)
@@ -1976,10 +1969,12 @@
       tile.setAttribute('height', tileSize.y*superscale);
       //console.log(coords)
 
+      var minSize = 1.5 * Math.pow(2, 31 - coords.z)
+
       //console.log(datacoords)
       //console.log('data tile ' + JSON.stringify(coords))
       layer._cache.getTile(coords, {time: options.dataTime, server: mapServer}, options).then(function(keyplace) {
-        tile._keyplace = keyplace
+        tile._keyplace = keyplace.filter(placementsLargerThan(minSize))
 
         //console.timeEnd('data processing ' + JSON.stringify(coords))
         //console.time('load images' + JSON.stringify(coords))
@@ -2549,15 +2544,23 @@
     createTile: function (coords, done) {
       var layer = this
       var options = layer.options
+      var highlightObjects = options.highlightObjects
       var tile = document.createElement('canvas');
+      if (!highlightObjects) {
+        if (done) done(null, tile)
+        return
+      }
       var tileSize = layer.getTileSize();
       tile.setAttribute('width', tileSize.x);
       tile.setAttribute('height', tileSize.y);
       //console.log(coords)
 
+
       //console.log('data tile ' + JSON.stringify(coords), options.dataTime, mapServer)
       layer._cache.getTile(coords, {time: options.dataTime, server: mapServer}, options).then(function(keyplace) {
-        tile._keyplace = keyplace
+        tile._keyplace = keyplace.filter(function(placement) {
+          return highlightObjects.indexOf(placement.id) != -1
+        })
 
         //console.timeEnd('data processing ' + JSON.stringify(coords))
         layer.drawTile(tile, coords, done)
@@ -2568,7 +2571,6 @@
     drawTile(tile, coords, done) {
       var layer = this
       var options = layer.options
-      var highlightObjects = this.options.highlightObjects
       if (!tile._keyplace) {
         if (done) done(null, tile)
         return tile
@@ -2583,7 +2585,7 @@
       ctx.save()
       ctx.scale(cellSize, cellSize)
       ctx.translate(0.5, 0.5)
-      var r = 3/cellSize;
+      var r = 5/Math.pow(cellSize, 0.6)
       tile._keyplace.forEach(function(placement) {
         //console.log(placement)
 
@@ -2592,9 +2594,14 @@
         var color = hsvToRgb(placement.id * 3769 % 359 / 360, 1, 1)
         ctx.fillStyle = 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')'
 
+        ctx.save()
         ctx.beginPath();
-        ctx.arc(placement.x, placement.y, r, 0, 2*Math.PI, false);
+        ctx.moveTo(placement.x - r, placement.y + 0)
+        ctx.lineTo(placement.x - 0, placement.y + r)
+        ctx.lineTo(placement.x + r, placement.y + 0)
+        ctx.lineTo(placement.x + 0, placement.y - r)
         ctx.fill();
+        ctx.restore()
       })
       ctx.restore()
 
