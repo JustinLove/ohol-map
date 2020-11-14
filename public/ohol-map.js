@@ -2876,10 +2876,16 @@
     return new L.Control.MapButton(opts);
   }
 
-  var sidebarToggle = L.control.mapButton({
-    title: 'Data',
+  var lifeSidebarToggle = L.control.mapButton({
+    title: 'Life Data',
     icon: 'filter',
-    message: 'sidebarToggle',
+    message: 'lifeSidebarToggle',
+    position: 'bottomright'
+  })
+  var objectSidebarToggle = L.control.mapButton({
+    title: 'Object Data',
+    icon: 'filter',
+    message: 'objectSidebarToggle',
     position: 'bottomright'
   })
   var animToggleAnimated = L.control.mapButton({
@@ -3197,7 +3203,8 @@
 
     layersControl.addTo(map)
     L.control.scale({imperial: false}).addTo(map)
-    sidebarToggle.addTo(map)
+    lifeSidebarToggle.addTo(map)
+    objectSidebarToggle.addTo(map)
     //map.setView([0,0], 24)
 
     // --------------- Leaflet --------------------

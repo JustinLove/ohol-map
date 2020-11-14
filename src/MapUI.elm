@@ -237,9 +237,13 @@ update msg model =
       ( model
       , fetchLineage model.apiUrl life
       )
-    UI (View.SelectMode mode) ->
-      ( { model | sidebarMode = mode }
+    UI (View.SelectLifeMode mode) ->
+      ( { model | lifeSidebarMode = mode }
       , Leaflet.searchOverlay (mode == LifeSearch)
+      )
+    UI (View.SelectObjectMode mode) ->
+      ( { model | objectSidebarMode = mode }
+      , Cmd.none
       )
     UI (View.SelectServer serverId) ->
       ( model, Cmd.none )
@@ -340,8 +344,8 @@ update msg model =
     Event (Ok (Leaflet.SelectPoints lives)) ->
       ( { model
         | lives = lives |> List.map myLife |> Data
-        , sidebarOpen = True
-        , sidebarMode = LifeSearch
+        , sidebar = LifeSidebar
+        , lifeSidebarMode = LifeSearch
         , searchTerm = ""
         }
       , Cmd.batch
@@ -368,10 +372,22 @@ update msg model =
             Cmd.none
         ]
       )
-    Event (Ok (Leaflet.SidebarToggle)) ->
-      ( { model | sidebarOpen = not model.sidebarOpen }
+    Event (Ok (Leaflet.LifeSidebarToggle)) ->
+      ( { model | sidebar = case model.sidebar of
+          ClosedSidebar -> LifeSidebar
+          LifeSidebar -> ClosedSidebar
+          ObjectSidebar -> LifeSidebar
+        }
       , Leaflet.searchOverlay
-        (model.sidebarOpen == False && model.sidebarMode == LifeSearch)
+        (model.sidebar == LifeSidebar && model.lifeSidebarMode == LifeSearch)
+      )
+    Event (Ok (Leaflet.ObjectSidebarToggle)) ->
+      ( { model | sidebar = case model.sidebar of
+          ClosedSidebar -> ObjectSidebar
+          LifeSidebar -> ObjectSidebar
+          ObjectSidebar -> ClosedSidebar
+        }
+      , Cmd.none
       )
     Event (Ok (Leaflet.AnimToggle)) ->
       ( { model

@@ -2,7 +2,9 @@ module Model exposing
   ( Arc
   , Config
   , Life
-  , Mode(..)
+  , Sidebar(..)
+  , LifeMode(..)
+  , ObjectMode(..)
   , Center(..)
   , Model
   , Monument
@@ -58,8 +60,9 @@ type alias Model =
   , lineageUrl: String
   , seedsUrl: String
   , spansUrl: String
-  , sidebarOpen : Bool
-  , sidebarMode : Mode
+  , sidebar : Sidebar
+  , lifeSidebarMode : LifeMode
+  , objectSidebarMode : ObjectMode
   , searchTerm : String
   , timeMode : TimeMode
   , coarseStartTime : Posix
@@ -104,8 +107,9 @@ initialModel config location key =
   , lineageUrl = config.lineageUrl
   , seedsUrl = config.seedsUrl
   , spansUrl = config.spansUrl
-  , sidebarOpen = False
-  , sidebarMode = LifeSearch
+  , sidebar = ClosedSidebar
+  , lifeSidebarMode = DataFilter
+  , objectSidebarMode = ObjectSearch
   , searchTerm = ""
   , timeMode = ServerRange
   , coarseStartTime = Time.millisToPosix 0
@@ -176,10 +180,20 @@ type alias Server =
   , monuments : RemoteData (List Monument)
   }
 
-type Mode
+type Sidebar
+  = ClosedSidebar
+  | LifeSidebar
+  | ObjectSidebar
+
+type LifeMode
   = LifeSearch
   | DataFilter
-  | Cosmetics
+  | LifeCosmetics
+
+type ObjectMode
+  = ObjectSearch
+  | MapSelection
+  | ObjectCosmetics
 
 type TimeMode
   = ServerRange

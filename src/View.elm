@@ -56,7 +56,8 @@ type Msg
   | SelectPointLocation PointLocation
   | SelectMatchingLife Life
   | SelectLineage Life
-  | SelectMode Mode
+  | SelectLifeMode LifeMode
+  | SelectObjectMode ObjectMode
   | SelectServer Int
   | SelectArc Int
   | SelectArcCoarse Int
@@ -99,10 +100,10 @@ view model =
           ]
         )
       , ( "sidebar"
-        , if model.sidebarOpen then
-            sidebar model
-          else
-            none
+        , case model.sidebar of
+            LifeSidebar -> lifeSidebar model
+            ObjectSidebar -> objectSidebar model
+            ClosedSidebar -> none
         )
       ]
 
@@ -194,23 +195,38 @@ timeline model =
     _ ->
       none
 
-sidebar : Model -> Element Msg
-sidebar model =
+lifeSidebar : Model -> Element Msg
+lifeSidebar model =
   column
     [ width (fill |> maximum 330)
     , height fill
     , alignTop
     , htmlAttribute (Html.Attributes.id "sidebar")
     ]
-    [ modeSelect model
-    , case model.sidebarMode of
+    [ lifeModeSelect model
+    , case model.lifeSidebarMode of
         LifeSearch -> lifeSearch model
         DataFilter -> dataFilter model
-        Cosmetics -> cosmetics model
+        LifeCosmetics -> lifeCosmetics model
     ]
 
-modeSelect : Model -> Element Msg
-modeSelect model =
+objectSidebar : Model -> Element Msg
+objectSidebar model =
+  column
+    [ width (fill |> maximum 330)
+    , height fill
+    , alignTop
+    , htmlAttribute (Html.Attributes.id "sidebar")
+    ]
+    [ objectModeSelect model
+    , case model.objectSidebarMode of
+        ObjectSearch -> lifeSearch model
+        MapSelection -> mapSelection model
+        ObjectCosmetics -> objectCosmetics model
+    ]
+
+lifeModeSelect : Model -> Element Msg
+lifeModeSelect model =
   let
     palette = (themePalette model.theme)
   in
@@ -224,15 +240,35 @@ modeSelect model =
       , top = 0
       }
     ]
-    [ tabHeader "search" "Search" LifeSearch model.sidebarMode palette
-    , tabHeader "filter" "Data" DataFilter model.sidebarMode palette
-    , tabHeader "paint-format" "Format" Cosmetics model.sidebarMode palette
+    [ tabHeader "search" "Search" SelectLifeMode LifeSearch model.lifeSidebarMode palette
+    , tabHeader "filter" "Data" SelectLifeMode DataFilter model.lifeSidebarMode palette
+    , tabHeader "paint-format" "Format" SelectLifeMode LifeCosmetics model.lifeSidebarMode palette
     ]
 
-tabHeader : String -> String -> Mode -> Mode -> Palette -> Element Msg
-tabHeader ico name mode current palette =
+objectModeSelect : Model -> Element Msg
+objectModeSelect model =
+  let
+    palette = (themePalette model.theme)
+  in
+  row
+    [ width fill
+    , Border.color palette.divider
+    , Border.widthEach
+      { bottom = 1
+      , left = 0
+      , right = 0
+      , top = 0
+      }
+    ]
+    [ tabHeader "search" "Search" SelectObjectMode ObjectSearch model.objectSidebarMode palette
+    , tabHeader "filter" "Map" SelectObjectMode MapSelection model.objectSidebarMode palette
+    , tabHeader "paint-format" "Format" SelectObjectMode ObjectCosmetics model.objectSidebarMode palette
+    ]
+
+tabHeader : String -> String -> (mode -> Msg) -> mode -> mode -> Palette -> Element Msg
+tabHeader ico name tagger mode current palette =
   Input.button [ width fill ]
-    { onPress = Just (SelectMode mode)
+    { onPress = Just (tagger mode)
     , label = 
       el
         [ width fill
@@ -455,6 +491,18 @@ dataFilter model =
       , dataOptions model
       , serverSelect model.servers model.selectedServer (themePalette model.theme)
       , presets model
+      ]
+
+mapSelection : Model -> Element Msg
+mapSelection model =
+  el [ width fill, height fill, scrollbarY] <|
+    column
+      [ width (fill |> maximum 300)
+      , height fill
+      , spacing 10
+      ]
+      [ dateRangeSelect model
+      , serverSelect model.servers model.selectedServer (themePalette model.theme)
       ]
 
 dataAction model =
@@ -867,8 +915,8 @@ presets model =
       ]
     ]
 
-cosmetics : Model -> Element Msg
-cosmetics model =
+lifeCosmetics : Model -> Element Msg
+lifeCosmetics model =
   let
     controlColor = (themePalette model.theme).control
   in
@@ -897,24 +945,6 @@ cosmetics model =
         , options =
           [ Input.option BirthLocation (text "Birth")
           , Input.option DeathLocation (text "Death")
-          ]
-        }
-      , Input.radioRow [ padding 10, spacing 20 ]
-        { onChange = ToggleUTC
-        , selected = Just (model.zone == Time.utc)
-        , label = Input.labelAbove [] (text "Time Zone")
-        , options =
-          [ Input.option False (text "Local")
-          , Input.option True (text "UTC")
-          ]
-        }
-      , Input.radioRow [ padding 10, spacing 20 ]
-        { onChange = ChangeTheme
-        , selected = Just model.theme
-        , label = Input.labelAbove [] (text "Theme")
-        , options =
-          [ Input.option Theme.Dark (text "Dark")
-          , Input.option Theme.Light (text "Light")
           ]
         }
       , Input.checkbox [ padding 10, spacing 2 ]
@@ -951,7 +981,23 @@ cosmetics model =
             }
         else
           none
-      , Input.checkbox [ padding 10, spacing 2 ]
+      , timeZoneControl model.zone
+      , themeControl model.theme
+      ]
+
+
+objectCosmetics : Model -> Element Msg
+objectCosmetics model =
+  let
+    controlColor = (themePalette model.theme).control
+  in
+  el [ width fill, height fill, scrollbarY] <|
+    column
+      [ width (fill |> maximum 300)
+      , height fill
+      , spacing 10
+      ]
+      [ Input.checkbox [ padding 10, spacing 2 ]
         { onChange = ToggleShowOnlyCurrentMonuments
         , checked = model.showOnlyCurrentMonuments
         , label = Input.labelRight [ padding 6 ] (text "Show Only Current Monuments")
@@ -974,7 +1020,33 @@ cosmetics model =
         , thumb = Input.defaultThumb
         , step = Just 1
         }
+      , timeZoneControl model.zone
+      , themeControl model.theme
       ]
+
+timeZoneControl : Time.Zone -> Element Msg
+timeZoneControl zone =
+  Input.radioRow [ padding 10, spacing 20 ]
+    { onChange = ToggleUTC
+    , selected = Just (zone == Time.utc)
+    , label = Input.labelAbove [] (text "Time Zone")
+    , options =
+      [ Input.option False (text "Local")
+      , Input.option True (text "UTC")
+      ]
+    }
+
+themeControl : Theme -> Element Msg
+themeControl theme =
+ Input.radioRow [ padding 10, spacing 20 ]
+  { onChange = ChangeTheme
+  , selected = Just theme
+  , label = Input.labelAbove [] (text "Theme")
+  , options =
+    [ Input.option Theme.Dark (text "Dark")
+    , Input.option Theme.Light (text "Light")
+    ]
+  }
 
 gameTimeText : Int -> String
 gameTimeText totalSeconds =

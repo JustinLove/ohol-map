@@ -1,7 +1,8 @@
 - clientside object search
-  - tile repositories filtering by size
-  - probably need different layer type to have appropriate markers at different zooms
-  - perhaps make tooSmall a id -> bool function for object filterings
+  - splitting object sidebar
+  - need to define new object search panel
+  - pick icons
+  - currently active sidebar button feedback
 - server time selections dont set animation range
 - default position with no active monuments - precalculation
 - server search indexes
