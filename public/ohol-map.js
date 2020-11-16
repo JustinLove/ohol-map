@@ -2870,9 +2870,7 @@
         var container = this._container = L.DomUtil.create('div', className)
 
         var link = L.DomUtil.create('a', className + '-toggle', container);
-        link.href = '#';
-        link.title = this.options.title
-        link.innerHTML = '<svg class="icon icon-' + this.options.icon + '"><use xlink:href="symbol-defs.svg#icon-' + this.options.icon + '"></use></svg>'
+        this.redraw(this.options.icon)
 
         L.DomEvent.on(link, 'click', this.toggle, this);
 
@@ -2883,6 +2881,17 @@
           kind: this.options.message,
         })
         L.DomEvent.preventDefault(e)
+        this.redraw('cancel-circle')
+      },
+      setChecked: function(checked){
+        if (checked) this.redraw('cancel-circle')
+        else this.redraw(this.options.icon)
+      },
+      redraw: function(icon) {
+        var link = this._container.firstChild
+        link.href = '#';
+        link.title = this.options.title
+        link.innerHTML = '<svg class="icon icon-' + icon + '"><use xlink:href="symbol-defs.svg#icon-' + icon + '"></use></svg>'
       },
   });
 
@@ -2902,13 +2911,7 @@
     message: 'objectSidebarToggle',
     position: 'bottomright'
   })
-  var animToggleAnimated = L.control.mapButton({
-    title: 'Time',
-    icon: 'cancel-circle',
-    message: 'animToggle',
-    position: 'bottomleft'
-  })
-  var animToggleStatic = L.control.mapButton({
+  var animToggle = L.control.mapButton({
     title: 'Time',
     icon: 'time',
     message: 'animToggle',
@@ -3141,14 +3144,13 @@
       }
     })
     if (animated > 0) {
-      addControl(map, animToggleAnimated)
-      removeControl(map, animToggleStatic)
+      addControl(map, animToggle)
+      animToggle.setChecked(true)
     } else if (stat > 0) {
-      addControl(map, animToggleStatic)
-      removeControl(map, animToggleAnimated)
+      addControl(map, animToggle)
+      animToggle.setChecked(false)
     } else {
-      removeControl(map, animToggleStatic)
-      removeControl(map, animToggleAnimated)
+      removeControl(map, animToggle)
     }
   }
 
