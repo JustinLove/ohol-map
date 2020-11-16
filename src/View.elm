@@ -265,7 +265,7 @@ objectModeSelect model =
       }
     ]
     [ tabHeader "search" "Search" SelectObjectMode ObjectSearch model.objectSidebarMode palette
-    , tabHeader "filter" "Map" SelectObjectMode MapSelection model.objectSidebarMode palette
+    , tabHeader "target" "Map" SelectObjectMode MapSelection model.objectSidebarMode palette
     , tabHeader "paint-format" "Format" SelectObjectMode ObjectCosmetics model.objectSidebarMode palette
     ]
 

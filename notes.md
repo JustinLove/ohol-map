@@ -1,7 +1,7 @@
 - clientside object search
   - x splitting object sidebar
   - x need to define new object search panel
-  - pick icons
+  - x pick icons
   - currently active sidebar button feedback
   - item color feedback
   - x disable when zoomed too far out

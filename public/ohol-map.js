@@ -2898,7 +2898,7 @@
   })
   var objectSidebarToggle = L.control.mapButton({
     title: 'Object Data',
-    icon: 'filter',
+    icon: 'target',
     message: 'objectSidebarToggle',
     position: 'bottomright'
   })
