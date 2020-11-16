@@ -297,14 +297,31 @@ lifeSearch model =
 
 objectSearch : Model -> Element Msg
 objectSearch model =
+  let
+    palette = (themePalette model.theme)
+    valid = objectSearchValid model
+    (color, objects) = if valid then
+        (palette.foreground, model.matchingObjects)
+      else
+        (palette.deemphasis, [])
+  in
   column
     [ width fill
     , height fill
     , htmlAttribute <| Html.Attributes.style "height" "100%"
+    , Font.color color
     ]
-    [ objectSearchBox (themePalette model.theme) model.objectSearchTerm
-    , showObjectResult model model.matchingObjects
+    [ objectSearchBox palette model.objectSearchTerm
+    , showObjectResult model objects
     ]
+
+objectSearchValid : Model -> Bool
+objectSearchValid model =
+  (not model.dataAnimated)
+  &&
+  case model.center of
+    DefaultCenter -> False
+    SetCenter {z} -> z >= 24
 
 lifeSearchBox : Palette -> String -> Element Msg
 lifeSearchBox palette term =
@@ -1307,7 +1324,7 @@ darkTheme =
   , control = rgb 0.2 0.2 0.2
   , input = rgb 0.0 0.0 0.0
   , selected = rgb 0.23 0.6 0.98
-  , deemphasis = rgb 0.6 0.6 0.6
+  , deemphasis = rgb 0.4 0.4 0.4
   }
 
 scaled height = modular (max ((toFloat height)/30) 15) 1.25 >> round
