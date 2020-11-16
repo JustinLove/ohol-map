@@ -15,6 +15,7 @@ port module Leaflet exposing
   , searchOverlay
   , highlightObjects
   , animOverlay
+  , sidebar
   , baseLayer
   , pointColor
   , pointLocation
@@ -146,6 +147,14 @@ animOverlay status =
   Encode.object
     [ ("kind", Encode.string "animOverlay")
     , ("status", Encode.bool status)
+    ]
+    |> leafletCommand
+
+sidebar : String -> Cmd msg
+sidebar status =
+  Encode.object
+    [ ("kind", Encode.string "sidebar")
+    , ("sidebar", Encode.string status)
     ]
     |> leafletCommand
 

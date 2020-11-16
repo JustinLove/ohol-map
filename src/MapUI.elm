@@ -80,6 +80,7 @@ init config location key =
       , Leaflet.animOverlay model.dataAnimated
       , Leaflet.worldList (Data.rebuildWorlds Data.oholCodeChanges [] [] [])
       , Leaflet.highlightObjects (Set.toList model.highlightObjects)
+      , sidebarCommand model
       ]
     )
 
@@ -282,12 +283,14 @@ update msg model =
       )
     UI (View.SelectLifeMode mode) ->
       ( { model | lifeSidebarMode = mode }
-      , Leaflet.searchOverlay (mode == LifeSearch)
+      , Cmd.none
       )
+        |> addCommand sidebarCommand
     UI (View.SelectObjectMode mode) ->
       ( { model | objectSidebarMode = mode }
       , Cmd.none
       )
+        |> addCommand sidebarCommand
     UI (View.SelectServer serverId) ->
       ( model, Cmd.none )
         |> setServer serverId
@@ -396,6 +399,7 @@ update msg model =
         , Leaflet.searchOverlay True
         ]
       )
+        |> addCommand sidebarCommand
     Event (Ok (Leaflet.DataRange min max)) ->
       let
         mapTime = model.mapTime
@@ -421,9 +425,9 @@ update msg model =
           LifeSidebar -> ClosedSidebar
           ObjectSidebar -> LifeSidebar
         }
-      , Leaflet.searchOverlay
-        (model.sidebar == LifeSidebar && model.lifeSidebarMode == LifeSearch)
+      , Cmd.none
       )
+        |> addCommand sidebarCommand
     Event (Ok (Leaflet.ObjectSidebarToggle)) ->
       ( { model | sidebar = case model.sidebar of
           ClosedSidebar -> ObjectSidebar
@@ -432,6 +436,7 @@ update msg model =
         }
       , Cmd.none
       )
+        |> addCommand sidebarCommand
     Event (Ok (Leaflet.AnimToggle)) ->
       ( { model
         | dataAnimated = not model.dataAnimated
@@ -701,6 +706,25 @@ resolveLoaded model =
     , Leaflet.showNaturalObjectsAboveZoom model.showNaturalObjectsAboveZoom
     ]
   )
+
+sidebarCommand : Model -> Cmd Msg
+sidebarCommand model =
+  let
+    sidebar = case model.sidebar of
+      ClosedSidebar -> "closed"
+      LifeSidebar -> "life"
+      ObjectSidebar -> "object"
+  in
+    Cmd.batch
+      [ Leaflet.sidebar sidebar
+      , Leaflet.searchOverlay
+        (model.sidebar == LifeSidebar && model.lifeSidebarMode == LifeSearch)
+      , Leaflet.highlightObjects <|
+        if model.sidebar == ObjectSidebar && model.objectSidebarMode == ObjectSearch then
+          Set.toList model.highlightObjects
+        else
+          []
+      ]
 
 rebuildWorlds : (Model, Cmd Msg) -> (Model, Cmd Msg)
 rebuildWorlds =

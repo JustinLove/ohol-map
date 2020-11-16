@@ -2881,7 +2881,6 @@
           kind: this.options.message,
         })
         L.DomEvent.preventDefault(e)
-        this.redraw('cancel-circle')
       },
       setChecked: function(checked){
         if (checked) this.redraw('cancel-circle')
@@ -3154,6 +3153,11 @@
     }
   }
 
+  var toggleSidebarControls = function(map, status) {
+    lifeSidebarToggle.setChecked(status == "life")
+    objectSidebarToggle.setChecked(status == "object")
+  }
+
   var inhabit = function inhabit(id) {
     var map = L.map(id, {
       crs: crs,
@@ -3341,6 +3345,9 @@
             L.Util.setOptions(legendControl, {dataAnimated: message.status})
             legendControl.redraw()
             toggleAnimationControls(map)
+            break
+          case 'sidebar':
+            toggleSidebarControls(map, message.sidebar)
             break
           case 'baseLayer':
             for (var name in base) {

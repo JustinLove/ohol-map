@@ -2,9 +2,13 @@
   - x splitting object sidebar
   - x need to define new object search panel
   - x pick icons
-  - currently active sidebar button feedback
-  - item color feedback
+  - x currently active sidebar button feedback
   - x disable when zoomed too far out
+  - animation mode
+  - pure object layer?
+  - item color feedback
+  - multiple search terms?
+  - layer toggle for object search?
 - tile not found in anim view?
 - different scale visibility in animated
 - server time selections dont set animation range
