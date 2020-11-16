@@ -4,6 +4,7 @@
   - pick icons
   - currently active sidebar button feedback
   - item color feedback
+  - disable when zoomed too far out
 - server time selections dont set animation range
 - default position with no active monuments - precalculation
 - server search indexes

@@ -347,7 +347,16 @@ showLifeResult model remote =
 showObjectResult : Model -> List ObjectId -> Element Msg
 showObjectResult model objects =
   if List.isEmpty objects then
-    none
+    column [ centerX, centerY, Font.size (scaled 500 1) ]
+      [ el [ centerX, Font.size (scaled 500 2)] <|
+        text "Restrictions"
+      , el [ centerX ] <|
+        text "Loaded in current view"
+      , el [ centerX ] <|
+        text "(Zoom >= 24)"
+      , el [ centerX ] <|
+        text "Static snaphots only"
+      ]
   else
     showMatchingObjects model objects
 
