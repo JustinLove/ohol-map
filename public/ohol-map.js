@@ -2179,8 +2179,8 @@
             layer.redraw && layer.redraw()
           })
         }
-        if (span.ObjectPointOverlay) {
-          span.ObjectPointOverlay.eachLayer(function(layer) {
+        if (span.objectPointLayer) {
+          span.objectPointLayer.eachLayer(function(layer) {
             L.Util.setOptions(layer, options)
             layer.redraw && layer.redraw()
           })
@@ -2197,6 +2197,20 @@
         L.Util.setOptions(layer, options)
         layer.redraw && layer.redraw()
       }
+    })
+  }
+
+  var setObjectHighlightOptions = function(options) {
+    Object.assign(objectLayerOptions, options)
+    worlds.forEach(function(world) {
+      world.spans.forEach(function(span) {
+        if (span.objectPointLayer) {
+          span.objectPointLayer.eachLayer(function(layer) {
+            L.Util.setOptions(layer, options)
+            layer.redraw && layer.redraw()
+          })
+        }
+      })
     })
   }
 
@@ -2548,7 +2562,7 @@
       var tile = document.createElement('canvas');
       if (!highlightObjects) {
         if (done) done(null, tile)
-        return
+        return tile
       }
       var tileSize = layer.getTileSize();
       tile.setAttribute('width', tileSize.x);
@@ -3316,7 +3330,7 @@
             }
             break
           case 'highlightObjects':
-            setObjectLayerOptions({highlightObjects: message.ids})
+            setObjectHighlightOptions({highlightObjects: message.ids})
             break
           case 'animOverlay':
             dataAnimated = message.status

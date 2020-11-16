@@ -21,6 +21,7 @@ import Http
 import Json.Decode
 import Dict exposing(Dict)
 import Process
+import Set exposing (Set)
 import Task
 import Time exposing (Posix)
 import Tuple
@@ -78,7 +79,7 @@ init config location key =
       , Leaflet.pointColor model.pointColor
       , Leaflet.animOverlay model.dataAnimated
       , Leaflet.worldList (Data.rebuildWorlds Data.oholCodeChanges [] [] [])
-      , Leaflet.highlightObjects [135, 150]
+      , Leaflet.highlightObjects (Set.toList model.highlightObjects)
       ]
     )
 
@@ -97,18 +98,36 @@ update msg model =
       )
         |> resolveLoaded
     UI (View.None) -> (model, Cmd.none)
-    UI (View.Search term) ->
+    UI (View.PerformLifeSearch term) ->
       ( { model
-        | searchTerm = term
+        | lifeSearchTerm = term
         , lives = Loading
         }
       , fetchMatchingLives model.apiUrl term
       )
-    UI (View.Typing term) ->
+    UI (View.LifeTyping term) ->
       ( { model
-        | searchTerm = term
+        | lifeSearchTerm = term
         }
       , Cmd.none
+      )
+    UI (View.ObjectTyping term) ->
+      let
+        lower = String.toLower term
+        ids = model.selectedServer
+          |> Maybe.andThen (\x -> if term == "" then Nothing else Just x)
+          |> Maybe.andThen (\id -> Dict.get id model.servers)
+          |> Maybe.map .objectIndex
+          |> Maybe.withDefault []
+          |> List.foldr (\(id, name) a -> if String.contains lower name then id :: a else a) []
+          |> List.take 20
+      in
+      ( { model
+        | objectSearchTerm = term
+        , matchingObjects = ids
+        , highlightObjects = Set.fromList ids
+        }
+      , Leaflet.highlightObjects ids
       )
     UI (View.SelectTimeMode mode) ->
       ( { model | timeMode = mode }
@@ -233,6 +252,30 @@ update msg model =
         ]
       )
        |> setServer life.serverId
+    UI (View.SelectMatchingObject id selected) ->
+      let
+        highlightObjects = if selected then
+           Set.insert id model.highlightObjects
+         else
+           Set.remove id model.highlightObjects
+      in
+      ( { model
+        | highlightObjects = highlightObjects
+        }
+      , Leaflet.highlightObjects (Set.toList highlightObjects)
+      )
+    UI (View.SelectAllObjects selected) ->
+      let
+        highlightObjects = if selected then
+           Set.fromList model.matchingObjects
+         else
+           Set.empty
+      in
+      ( { model
+        | highlightObjects = highlightObjects
+        }
+      , Leaflet.highlightObjects (Set.toList highlightObjects)
+      )
     UI (View.SelectLineage life) ->
       ( model
       , fetchLineage model.apiUrl life
@@ -346,7 +389,7 @@ update msg model =
         | lives = lives |> List.map myLife |> Data
         , sidebar = LifeSidebar
         , lifeSidebarMode = LifeSearch
-        , searchTerm = ""
+        , lifeSearchTerm = ""
         }
       , Cmd.batch
         [ Leaflet.displayResults lives
@@ -432,10 +475,10 @@ update msg model =
     ServerList (Ok serverList) ->
       let
         servers = serverList
-          |> List.map (myServer model.versions)
-          |> (++) [crucible NotAvailable model.time]
-          |> (++) [twoHoursOneLife NotAvailable model.time]
-          |> (++) [future NotAvailable model.time]
+          |> List.map (myServer model.versions model.objects model.objectIndex)
+          |> (++) [crucible NotAvailable NotAvailable NotAvailable model.time]
+          |> (++) [twoHoursOneLife NotAvailable NotAvailable NotAvailable model.time]
+          |> (++) [future model.versions model.objects model.objectIndex model.time]
         current = case model.selectedServer of
           Just sid ->
             servers
@@ -511,14 +554,18 @@ update msg model =
       let
         versions = Data.completeVersions objects.spawnChanges
         objectMap = makeObjectMap objects.ids objects.names
+        objectIndex = makeObjectIndex objects.ids objects.names
       in
       ( { model
         | versions = Data versions
+        , objects = Data objectMap
+        , objectIndex = Data objectIndex
         , servers = model.servers
           |> Dict.map (\_ server ->
             { server
             | versions = Data versions
             , objects = objectMap
+            , objectIndex = objectIndex
             })
         }
       , Leaflet.objectBounds objects.idsValue objects.boundsValue
@@ -769,6 +816,11 @@ makeObjectMap : List ObjectId -> List String -> Dict ObjectId String
 makeObjectMap ids names =
   List.map2 Tuple.pair ids names
     |> Dict.fromList
+
+makeObjectIndex : List ObjectId -> List String -> List (ObjectId, String)
+makeObjectIndex ids names =
+  List.map2 Tuple.pair ids (List.map String.toLower names)
+    |> List.sortBy (Tuple.second>>String.length)
 
 yesterday : Model -> (Model, Cmd Msg)
 yesterday model =
@@ -1217,8 +1269,8 @@ serverLife life =
   , deathY = life.deathY
   }
 
-myServer : RemoteData (List Version) -> Data.Server -> Server
-myServer versions server =
+myServer : RemoteData (List Version) -> RemoteData (Dict ObjectId String) -> RemoteData (List (ObjectId, String)) -> Data.Server -> Server
+myServer versions objects objectIndex server =
   { id = server.id
   , serverName = server.serverName
   , minTime = server.minTime
@@ -1228,12 +1280,13 @@ myServer versions server =
   , spans = NotRequested
   , versions = versions
   , worlds = Data.rebuildWorlds Data.oholCodeChanges [] [] []
-  , objects = Dict.empty
+  , objects = RemoteData.withDefault Dict.empty objects
+  , objectIndex = RemoteData.withDefault [] objectIndex
   , monuments = NotRequested
   }
 
-future : RemoteData (List Version) -> Posix -> Server
-future versions currentTime =
+future : RemoteData (List Version) -> RemoteData (Dict ObjectId String) -> RemoteData (List (ObjectId, String)) -> Posix -> Server
+future versions objects objectIndex currentTime =
   { id = 20
   , serverName = "Band"
   , minTime = List.head Data.futureCodeChanges |> Maybe.map .start |> Maybe.withDefault (Time.millisToPosix 0)
@@ -1243,12 +1296,13 @@ future versions currentTime =
   , spans = NotAvailable
   , versions = versions
   , worlds = Data.rebuildWorlds Data.futureCodeChanges [] [] []
-  , objects = Dict.empty
+  , objects = RemoteData.withDefault Dict.empty objects
+  , objectIndex = RemoteData.withDefault [] objectIndex
   , monuments = NotAvailable
   }
 
-crucible : RemoteData (List Version) -> Posix -> Server
-crucible versions currentTime =
+crucible : RemoteData (List Version) -> RemoteData (Dict ObjectId String) -> RemoteData (List (ObjectId, String)) -> Posix -> Server
+crucible versions objects objectIndex currentTime =
   { id = 18
   , serverName = "server1.oho.life"
   , minTime = List.head Data.crucibleCodeChanges |> Maybe.map .start |> Maybe.withDefault (Time.millisToPosix 0)
@@ -1258,12 +1312,13 @@ crucible versions currentTime =
   , spans = NotAvailable
   , versions = versions
   , worlds = Data.rebuildWorlds Data.crucibleCodeChanges [] [] []
-  , objects = Dict.empty
+  , objects = RemoteData.withDefault Dict.empty objects
+  , objectIndex = RemoteData.withDefault [] objectIndex
   , monuments = NotAvailable
   }
 
-twoHoursOneLife : RemoteData (List Version) -> Posix -> Server
-twoHoursOneLife versions currentTime =
+twoHoursOneLife : RemoteData (List Version) -> RemoteData (Dict ObjectId String) -> RemoteData (List (ObjectId, String)) -> Posix -> Server
+twoHoursOneLife versions objects objectIndex currentTime =
   { id = 19
   , serverName = "play.twohoursonelife.com"
   , minTime = List.head Data.tholCodeChanges |> Maybe.map .start |> Maybe.withDefault (Time.millisToPosix 0)
@@ -1273,7 +1328,8 @@ twoHoursOneLife versions currentTime =
   , spans = NotAvailable
   , versions = versions
   , worlds = Data.rebuildWorlds Data.tholCodeChanges [] [] []
-  , objects = Dict.empty
+  , objects = RemoteData.withDefault Dict.empty objects
+  , objectIndex = RemoteData.withDefault [] objectIndex
   , monuments = NotAvailable
   }
 

@@ -21,6 +21,7 @@ module Model exposing
   , currentServer
   , initialModel
   , defaultCenter
+  , areAllObjectChecked
   )
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
@@ -31,6 +32,7 @@ import Theme exposing (Theme)
 import Browser.Navigation as Navigation
 import Dict exposing(Dict)
 import Http
+import Set exposing (Set)
 import Time exposing (Posix)
 import Url exposing (Url)
 import Url.Builder as Url
@@ -63,7 +65,8 @@ type alias Model =
   , sidebar : Sidebar
   , lifeSidebarMode : LifeMode
   , objectSidebarMode : ObjectMode
-  , searchTerm : String
+  , lifeSearchTerm : String
+  , objectSearchTerm : String
   , timeMode : TimeMode
   , coarseStartTime : Posix
   , startTime : Posix
@@ -88,9 +91,13 @@ type alias Model =
   , serverList : RemoteData (List Data.Server)
   , servers : Dict Int Server
   , versions : RemoteData (List Version)
+  , objects : RemoteData (Dict ObjectId String)
+  , objectIndex : RemoteData (List (ObjectId, String))
   , dataLayer : RemoteData Int
   , lives : RemoteData (List Life)
   , focus : Maybe Life
+  , matchingObjects : List ObjectId
+  , highlightObjects : Set ObjectId
   }
 
 initialModel : Config -> Url -> Navigation.Key -> Model
@@ -108,9 +115,10 @@ initialModel config location key =
   , seedsUrl = config.seedsUrl
   , spansUrl = config.spansUrl
   , sidebar = ClosedSidebar
-  , lifeSidebarMode = DataFilter
+  , lifeSidebarMode = LifeSearch
   , objectSidebarMode = ObjectSearch
-  , searchTerm = ""
+  , lifeSearchTerm = ""
+  , objectSearchTerm = ""
   , timeMode = ServerRange
   , coarseStartTime = Time.millisToPosix 0
   , startTime = Time.millisToPosix 0
@@ -135,9 +143,13 @@ initialModel config location key =
   , serverList = NotRequested
   , servers = Dict.empty
   , versions = NotRequested
+  , objects = NotRequested
+  , objectIndex = NotRequested
   , dataLayer = NotRequested
   , lives = NotRequested
   , focus = Nothing
+  , matchingObjects = []
+  , highlightObjects = Set.fromList []
   }
 
 type alias Config =
@@ -177,6 +189,7 @@ type alias Server =
   , versions : RemoteData (List Version)
   , worlds : List World
   , objects : Dict ObjectId String
+  , objectIndex : List (ObjectId, String)
   , monuments : RemoteData (List Monument)
   }
 
@@ -251,4 +264,8 @@ centerUrl location mt yd ms center =
       |> String.dropLeft 1
       |> Just
   } |> Url.toString
+
+areAllObjectChecked : Model -> Bool
+areAllObjectChecked model =
+  (List.length model.matchingObjects) == (Set.size model.highlightObjects)
 

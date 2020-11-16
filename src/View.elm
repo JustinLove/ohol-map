@@ -25,6 +25,7 @@ import Html.Events exposing (on, stopPropagationOn)
 import Html.Keyed
 import Http
 import Json.Decode
+import Set exposing (Set)
 import Svg exposing (svg, use)
 import Svg.Attributes exposing (xlinkHref)
 import Time exposing (Posix)
@@ -33,8 +34,9 @@ import Url.Builder as Url
 
 type Msg
   = None
-  | Search String
-  | Typing String
+  | PerformLifeSearch String
+  | LifeTyping String
+  | ObjectTyping String
   | SelectTimeMode TimeMode
   | CoarseStartTime Posix
   | StartTime Posix
@@ -55,6 +57,8 @@ type Msg
   | SelectPointColor PointColor
   | SelectPointLocation PointLocation
   | SelectMatchingLife Life
+  | SelectMatchingObject ObjectId Bool
+  | SelectAllObjects Bool
   | SelectLineage Life
   | SelectLifeMode LifeMode
   | SelectObjectMode ObjectMode
@@ -220,7 +224,7 @@ objectSidebar model =
     ]
     [ objectModeSelect model
     , case model.objectSidebarMode of
-        ObjectSearch -> lifeSearch model
+        ObjectSearch -> objectSearch model
         MapSelection -> mapSelection model
         ObjectCosmetics -> objectCosmetics model
     ]
@@ -287,24 +291,47 @@ lifeSearch model =
     , height fill
     , htmlAttribute <| Html.Attributes.style "height" "100%"
     ]
-    [ searchBox (themePalette model.theme) model.searchTerm model.lives
-    , showResult model model.lives
+    [ lifeSearchBox (themePalette model.theme) model.lifeSearchTerm
+    , showLifeResult model model.lives
     ]
 
-searchBox : Palette -> String -> RemoteData a -> Element Msg
-searchBox palette term request =
+objectSearch : Model -> Element Msg
+objectSearch model =
+  column
+    [ width fill
+    , height fill
+    , htmlAttribute <| Html.Attributes.style "height" "100%"
+    ]
+    [ objectSearchBox (themePalette model.theme) model.objectSearchTerm
+    , showObjectResult model model.matchingObjects
+    ]
+
+lifeSearchBox : Palette -> String -> Element Msg
+lifeSearchBox palette term =
   Input.text
     [ padding 2
     , Background.color palette.input
-    , htmlAttribute <| on "change" <| targetValue Json.Decode.string Search
+    , htmlAttribute <| on "change" <| targetValue Json.Decode.string PerformLifeSearch
     ] <|
-    { onChange = Typing
+    { onChange = LifeTyping
     , text = term
     , placeholder = Nothing
     , label = Input.labelAbove [] <| text "Character Name or Hash"
     }
 
-showResult model remote =
+objectSearchBox : Palette -> String -> Element Msg
+objectSearchBox palette term =
+  Input.text
+    [ padding 2
+    , Background.color palette.input
+    ] <|
+    { onChange = ObjectTyping
+    , text = term
+    , placeholder = Nothing
+    , label = Input.labelAbove [] <| text "Object Name"
+    }
+
+showLifeResult model remote =
   case remote of
     NotRequested ->
       none
@@ -317,12 +344,26 @@ showResult model remote =
     Failed error ->
       showError error
 
+showObjectResult : Model -> List ObjectId -> Element Msg
+showObjectResult model objects =
+  if List.isEmpty objects then
+    none
+  else
+    showMatchingObjects model objects
 
 showMatchingLives model lives =
   column [ spacing 10, width fill, scrollbarY ]
     (lives
       |> List.map (showMatchingLife model)
       |> (::) lifeListHeader
+    )
+
+showMatchingObjects : Model -> List ObjectId -> Element Msg
+showMatchingObjects model objects =
+  column [ spacing 0, width fill, scrollbarY ]
+    (objects
+      |> List.map (showMatchingObject model)
+      |> (::) (objectListHeader (areAllObjectChecked model))
     )
 
 lifeListHeader =
@@ -334,6 +375,16 @@ lifeListHeader =
     [ lifeDetailHeader
     , el [ width (px 30) ] (el [ centerX ] (text "Lin"))
     , el [ width (px 30) ] (el [ centerX ] (text "Tree"))
+    ]
+
+objectListHeader : Bool -> Element Msg
+objectListHeader checked =
+  row
+    [ width fill
+    , Font.size 10
+    , Font.underline
+    ]
+    [ objectDetailHeader checked
     ]
 
 showMatchingLife model life =
@@ -357,6 +408,25 @@ showMatchingLife model life =
       }
     ]
 
+showMatchingObject : Model -> ObjectId -> Element Msg
+showMatchingObject model id =
+  let (title, attrs) = objectNameParts model id in
+  column
+    [ padding 6 ]
+    [ Input.checkbox [ spacing 8 ]
+      { onChange = SelectMatchingObject id
+      , checked = Set.member id model.highlightObjects
+      , label = Input.labelRight [ padding 0 ] (title |> text)
+      , icon = Input.defaultCheckbox
+      }
+    , attrs
+      |> text
+      |> el
+        [ Font.size 16
+        , paddingEach { left = 24, top = 0, bottom = 0, right = 0 }
+        ]
+    ]
+
 lifeDetailHeader =
   column [ padding 4 ]
     [ row
@@ -370,6 +440,24 @@ lifeDetailHeader =
         (text "Born")
       , el [ width (px 30) ]
         (text "Gen")
+      ]
+    ]
+
+
+objectDetailHeader : Bool -> Element Msg
+objectDetailHeader checked =
+  column [ padding 6 ]
+    [ row
+      [ Font.size 16
+      , spacing 10
+      , width fill
+      ]
+      [ Input.checkbox [ spacing 2 ]
+        { onChange = SelectAllObjects
+        , checked = checked
+        , label = Input.labelRight [ padding 6 ] (text "Name")
+        , icon = Input.defaultCheckbox
+        }
       ]
     ]
 
@@ -401,6 +489,33 @@ showMatchingLifeDetail model life =
         )
       ]
     ]
+
+showMatchingObjectDetail : Model -> ObjectId -> Element Msg
+showMatchingObjectDetail model id =
+  let (title, attrs) = objectNameParts model id in
+  column
+    [ padding 4 ]
+    [ title
+      |> text
+    , attrs
+      |> text
+      |> el [ Font.size 16  ]
+    ]
+
+objectNameParts : Model -> ObjectId -> (String, String)
+objectNameParts model objectId =
+  case objectName model objectId |> String.split "#" of
+    title :: attrs :: _ -> (String.trim title, String.trim attrs)
+    title :: _ -> (String.trim title, "")
+    _ -> ("unknown", "")
+
+objectName : Model -> ObjectId -> String
+objectName model objectId =
+  model.selectedServer
+    |> Maybe.andThen (\id -> Dict.get id model.servers)
+    |> Maybe.map .objects
+    |> Maybe.andThen (Dict.get objectId)
+    |> Maybe.withDefault "unknown"
 
 date : Time.Zone -> Posix -> String
 date zone time =
