@@ -2310,6 +2310,7 @@
         time = time || options.time/1000
       }
       var tileSize = layer.getTileSize();
+      var cellSize = Math.pow(2, coords.z - 24)
 
       var ctx = tile.getContext('2d');
       ctx.clearRect(0, 0, tile.width, tile.height)
@@ -2327,11 +2328,12 @@
       if (color == 'causeOfDeathColor') color = color + options.theme
       var location = options.location
       var fadeTime = 60*60
+      var r = 3 + Math.pow(cellSize, 0.6)
       options.data.forEach(function(point) {
         //console.log(point)
 
         var t = 1
-        var r = 1;
+        var ring = 1;
         var x = point.birth_x;
         var y = point.birth_y;
         if (location == 'death') {
@@ -2350,7 +2352,7 @@
             t = (time - point.birth_time) / (death_time - point.birth_time)
             var a = Math.pow(1 - t, 0.4)
             ctx.globalAlpha = a
-            r = Math.pow(10 * t, -6 * t)
+            ring = Math.pow(10 * t, -6 * t)
           } else {
             t = 1
             ctx.globalAlpha = 0.5
@@ -2385,22 +2387,22 @@
 
           if (point.gender == 'M') {
             ctx.beginPath();
-            ctx.fillRect(p.x - 3, p.y - 3, 6, 6)
+            ctx.fillRect(p.x - r, p.y - r, r*2, r*2)
             ctx.fill();
           } else if (14 <= age && age <= 40) {
             ctx.beginPath();
-            ctx.arc(p.x, p.y, 3, 0, 2*Math.PI, false);
-            ctx.lineWidth = 3;
+            ctx.arc(p.x, p.y, r*0.7, 0, 2*Math.PI, false);
+            ctx.lineWidth = r*0.7;
             ctx.stroke();
           } else {
             ctx.beginPath();
-            ctx.arc(p.x, p.y, 3, 0, 2*Math.PI, false);
+            ctx.arc(p.x, p.y, r, 0, 2*Math.PI, false);
             ctx.fill();
           }
 
           if (point.chain == 1) {
             ctx.beginPath();
-            ctx.arc(p.x, p.y, 3 + 7 * r, 0, 2*Math.PI, false);
+            ctx.arc(p.x, p.y, r + 7 * ring, 0, 2*Math.PI, false);
             if (time) {
               ctx.lineWidth = 1;
             } else {
