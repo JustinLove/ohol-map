@@ -9,6 +9,7 @@
   - pure object layer?
   - multiple search terms?
   - layer toggle for object search?
+  - use diamond icon
 - tile not found in anim view?
 - different scale visibility in animated
 - server time selections dont set animation range
