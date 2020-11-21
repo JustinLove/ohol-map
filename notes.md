@@ -11,7 +11,6 @@
   - multiple search terms?
   - use diamond icon
 - tile not found in anim view?
-- different scale visibility in animated
 - server time selections dont set animation range
 - default position with no active monuments - precalculation
 - server search indexes

@@ -2012,6 +2012,7 @@
 
   var placementsLargerThan = function(minSize) {
     return function(placement) {
+      if (placement.floor) return true
       var size = objectSize[placement.id]
       var tooSmall = !size || size <= minSize
       if (tooSmall) return false
