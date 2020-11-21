@@ -71,6 +71,7 @@ type alias Model =
   , coarseStartTime : Posix
   , startTime : Posix
   , mapTime : Maybe Posix
+  , urlTime : Maybe Posix
   , hoursPeriod : Int
   , coarseArc : Maybe Arc
   , currentArc : Maybe Arc
@@ -123,6 +124,7 @@ initialModel config location key =
   , coarseStartTime = Time.millisToPosix 0
   , startTime = Time.millisToPosix 0
   , mapTime = Nothing
+  , urlTime = Nothing
   , hoursPeriod = 48
   , coarseArc = Nothing
   , currentArc = Nothing

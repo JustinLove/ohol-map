@@ -49,6 +49,7 @@ type Msg
   | CurrentTimeNotice Posix
   | CurrentTime Posix
   | Playback Posix
+  | UpdateUrl Posix
   | CurrentZone Time.Zone
   | CurrentUrl Url
   | Navigate Browser.UrlRequest
@@ -191,7 +192,6 @@ update msg model =
       ( {model|mapTime = Just time}
       , Leaflet.currentTime time
       )
-       |> replaceUrl
     UI (View.Play) ->
       ( { model
         | player = Starting
@@ -369,7 +369,7 @@ update msg model =
       ( {model|center = SetCenter point}
       , Cmd.none
       )
-        |> replaceUrl
+        |> replaceUrl "MoveEnd"
     Event (Ok (Leaflet.OverlayAdd "Life Data" _)) ->
       requireLives model
     Event (Ok (Leaflet.OverlayRemove "Life Data")) ->
@@ -678,7 +678,8 @@ update msg model =
                   }
                 , Leaflet.currentTime msCappedTime
                 )
-                  |> replaceUrl
+    UpdateUrl _ ->
+      ({model | urlTime = model.mapTime}, replaceUrlCommand model)
     CurrentZone zone ->
       ({model | zone = zone}, Cmd.none)
     CurrentUrl location ->
@@ -780,7 +781,7 @@ checkDefaultCenterUpdate monuments model =
       ( { model | center = SetCenter recent }
       , Leaflet.setView recent
       )
-       |> replaceUrl
+        |> replaceUrl "checkDefaultCenter"
     else
       (model, Cmd.none)
   else
@@ -883,7 +884,6 @@ setTime time model =
         , Time.now |> Task.perform (ShowTimeNotice time)
         ]
     )
-     |> replaceUrl
   else
     (model, Cmd.none)
 
@@ -973,7 +973,7 @@ setServerUpdate serverId model =
           ]
         )
           |> rebuildWorlds
-          |> replaceUrl
+          |> replaceUrl "setServerUpdate"
       Nothing ->
         ( { model
           | selectedServer = Just serverId
@@ -990,8 +990,9 @@ changeTheme theme =
     |> Theme.toString
     |> Leaflet.changeTheme
 
-replaceUrl : (Model, Cmd Msg) -> (Model, Cmd Msg)
-replaceUrl =
+replaceUrl : String -> (Model, Cmd Msg) -> (Model, Cmd Msg)
+replaceUrl reason =
+  --let _ = Debug.log reason "" in
   addCommand replaceUrlCommand
 
 replaceUrlCommand : Model -> Cmd Msg
@@ -1158,6 +1159,11 @@ subscriptions model =
           Time.every (1000 / (toFloat model.framesPerSecond)) Playback
         Playing _ ->
           Time.every (1000 / (toFloat model.framesPerSecond)) Playback
+    -- Attempt to prevent "Too many calls to Location or History APIs within a short timeframe."
+    , if model.urlTime /= model.mapTime then
+        Time.every 100 UpdateUrl
+      else
+        Sub.none
     ]
 
 fetchServers : String -> Cmd Msg
