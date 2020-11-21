@@ -4,9 +4,9 @@
   - x pick icons
   - x currently active sidebar button feedback
   - x disable when zoomed too far out
+  - x item color feedback
   - animation mode
   - pure object layer?
-  - item color feedback
   - multiple search terms?
   - layer toggle for object search?
 - tile not found in anim view?

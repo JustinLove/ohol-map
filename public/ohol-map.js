@@ -1203,8 +1203,7 @@
           var ih = img._ih
           ctx.drawImage(img, placement.x + ox + offset, placement.y + oy + offset, iw, ih)
         } else {
-          var color = hsvToRgb(placement.id * 3769 % 359 / 360, 1, 1)
-          ctx.fillStyle = 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')'
+          ctx.fillStyle = colorobject(placement.id)
           var iw = objectBounds[placement.id][2]/CELL_D - ox
           var ih = objectBounds[placement.id][1]/CELL_D + oy
           ctx.globalAlpha = 0.5
@@ -1270,7 +1269,7 @@
           var wx = startX + x*stride
           var wy = startY - (y*stride)
           var v = getMapObjectRaw(wx, wy, this.options)
-          var color = hsvToRgb(v * 3769 % 359 / 360, 1, 1)
+          var color = hsvToRgb(v * 3079 % 359 / 360, 1, 1)
           d[i+0] = color[0]
           d[i+1] = color[1]
           d[i+2] = color[2]
@@ -2214,6 +2213,11 @@
     })
   }
 
+  var colorobject = function(id) {
+    var hue = id * 3079 % 359
+    return "hsl(" + hue + ", 100%, 50%)"
+  }
+
   var colormap = function(id) {
     return '#' + (((id * 49157) % 12582917).toString(16))
   }
@@ -2605,8 +2609,7 @@
 
         ctx.globalAlpha = 0.5
 
-        var color = hsvToRgb(placement.id * 3769 % 359 / 360, 1, 1)
-        ctx.fillStyle = 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')'
+        ctx.fillStyle = colorobject(placement.id)
 
         ctx.save()
         ctx.beginPath();

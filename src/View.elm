@@ -25,6 +25,7 @@ import Html.Events exposing (on, stopPropagationOn)
 import Html.Keyed
 import Http
 import Json.Decode
+import SolidColor
 import Set exposing (Set)
 import Svg exposing (svg, use)
 import Svg.Attributes exposing (xlinkHref)
@@ -437,20 +438,17 @@ showMatchingLife model life =
 showMatchingObject : Model -> ObjectId -> Element Msg
 showMatchingObject model id =
   let (title, attrs) = objectNameParts model id in
-  column
-    [ padding 6 ]
+  column [ padding 6 ]
     [ Input.checkbox [ spacing 8 ]
       { onChange = SelectMatchingObject id
       , checked = Set.member id model.highlightObjects
       , label = Input.labelRight [ padding 0 ] (title |> text)
       , icon = Input.defaultCheckbox
       }
-    , attrs
-      |> text
-      |> el
-        [ Font.size 16
-        , paddingEach { left = 24, top = 0, bottom = 0, right = 0 }
-        ]
+    , row [ Font.size 16, spacing 4 ]
+      [ el [ Font.color (objectColor id) ] (icon "target")
+      , attrs |> text
+      ]
     ]
 
 lifeDetailHeader =
@@ -1310,7 +1308,7 @@ lightTheme =
   , highlight = rgb 0.8 0.8 0.8
   , divider = rgb 0.7 0.7 0.7
   , control = rgb 0.90 0.90 0.90
-  , input = rgb 1.0 1.0 1.01
+  , input = rgb 1.0 1.0 1.0
   , selected = rgb 0.23 0.6 0.98
   , deemphasis = rgb 0.4 0.4 0.4
   }
@@ -1326,5 +1324,12 @@ darkTheme =
   , selected = rgb 0.23 0.6 0.98
   , deemphasis = rgb 0.4 0.4 0.4
   }
+
+objectColor : ObjectId -> Element.Color
+objectColor id =
+  (id * 3079 |> remainderBy 359 |> toFloat, 100, 50)
+    |> SolidColor.fromHSL
+    |> SolidColor.toRGB
+    |> (\(rf, gf, bf) -> rgb (rf/255) (gf/255) (bf/255))
 
 scaled height = modular (max ((toFloat height)/30) 15) 1.25 >> round
