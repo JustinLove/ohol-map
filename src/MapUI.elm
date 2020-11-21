@@ -719,11 +719,6 @@ sidebarCommand model =
       [ Leaflet.sidebar sidebar
       , Leaflet.searchOverlay
         (model.sidebar == LifeSidebar && model.lifeSidebarMode == LifeSearch)
-      , Leaflet.highlightObjects <|
-        if model.sidebar == ObjectSidebar && model.objectSidebarMode == ObjectSearch then
-          Set.toList model.highlightObjects
-        else
-          []
       ]
 
 rebuildWorlds : (Model, Cmd Msg) -> (Model, Cmd Msg)

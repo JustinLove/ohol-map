@@ -145,6 +145,21 @@
     })
   })
 
+  var objectOverlay = L.layerGroup([], {className: 'object-overlay'})
+  objectOverlay.name = 'object overlay'
+  objectOverlay.on('add', function(ev) {
+    var map = ev.target._map
+    setTimeout(function() {
+      baseLayerByTime(map, mapTime, 'object overlay')
+    })
+  })
+  objectOverlay.on('remove', function(ev) {
+    var map = ev.target._map
+    setTimeout(function() {
+      baseLayerByTime(map, mapTime, 'object overlay')
+    })
+  })
+
   var baseFade = L.layerGroup([], {className: 'base-fade'})
   baseFade.name = 'base fade'
   baseFade.on('add', function(ev) {
@@ -172,6 +187,7 @@
     "Rift": riftOverlay,
     "Bands": null,
     "Life Data": dataOverlay,
+    "Object Search": objectOverlay,
     "Fade": baseFade,
     "Monuments": monumentOverlay,
   }
@@ -2676,6 +2692,7 @@
     })
     var changes = 0
     var layers = []
+    var objectOverlayOn = map.hasLayer(objectOverlay)
     if (targetWorld) {
       if (objectBounds.length > 0) {
         chooseRandPlacements(targetWorld)
@@ -2691,7 +2708,7 @@
         targetWorld.biomeLayer,
         !targetSpan && targetWorld.objectLayer,
         !dataAnimated && targetSpan && targetSpan.keyPlacementLayer,
-        !dataAnimated && targetSpan && targetSpan.objectPointLayer,
+        objectOverlayOn && !dataAnimated && targetSpan && targetSpan.objectPointLayer,
         dataAnimated && targetSpan && targetSpan.maplogLayer,
       ].filter(function(x) {return !!x})
     }
@@ -3340,6 +3357,9 @@
             break
           case 'highlightObjects':
             setObjectHighlightOptions({highlightObjects: message.ids})
+            if (message.ids.length > 0 && !map.hasLayer(objectOverlay)) {
+              map.addLayer(objectOverlay)
+            }
             break
           case 'animOverlay':
             dataAnimated = message.status
