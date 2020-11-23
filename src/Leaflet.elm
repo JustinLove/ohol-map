@@ -232,8 +232,7 @@ type Event
   | OverlayRemove String
   | SelectPoints (List Data.Life)
   | DataRange Posix Posix
-  | LifeSidebarToggle
-  | ObjectSidebarToggle
+  | SidebarToggle
   | AnimToggle
 
 event : (Result Decode.Error Event -> msg) -> Sub msg
@@ -264,10 +263,8 @@ eventDecoder =
           Decode.map2 DataRange
             (Decode.field "min" Decode.timeStamp)
             (Decode.field "max" Decode.timeStamp)
-        "lifeSidebarToggle" ->
-          Decode.succeed LifeSidebarToggle
-        "objectSidebarToggle" ->
-          Decode.succeed ObjectSidebarToggle
+        "sidebarToggle" ->
+          Decode.succeed SidebarToggle
         "animToggle" ->
           Decode.succeed AnimToggle
         _ ->

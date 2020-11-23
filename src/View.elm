@@ -62,8 +62,8 @@ type Msg
   | SelectAllObjects Bool
   | SelectMaximumObjects (Maybe Int)
   | SelectLineage Life
-  | SelectLifeMode LifeMode
-  | SelectObjectMode ObjectMode
+  | SelectSidebarMode SidebarMode
+  | SelectSearchMode SearchMode
   | SelectServer Int
   | SelectArc Int
   | SelectArcCoarse Int
@@ -107,8 +107,7 @@ view model =
         )
       , ( "sidebar"
         , case model.sidebar of
-            LifeSidebar -> lifeSidebar model
-            ObjectSidebar -> objectSidebar model
+            OpenSidebar -> sidebar model
             ClosedSidebar -> none
         )
       ]
@@ -201,38 +200,23 @@ timeline model =
     _ ->
       none
 
-lifeSidebar : Model -> Element Msg
-lifeSidebar model =
+sidebar : Model -> Element Msg
+sidebar model =
   column
     [ width (fill |> maximum 330)
     , height fill
     , alignTop
     , htmlAttribute (Html.Attributes.id "sidebar")
     ]
-    [ lifeModeSelect model
-    , case model.lifeSidebarMode of
-        LifeSearch -> lifeSearch model
+    [ sidebarModeSelect model
+    , case model.sidebarMode of
+        Search -> searchPanel model
         DataFilter -> dataFilter model
-        LifeCosmetics -> lifeCosmetics model
+        Cosmetics -> cosmetics model
     ]
 
-objectSidebar : Model -> Element Msg
-objectSidebar model =
-  column
-    [ width (fill |> maximum 330)
-    , height fill
-    , alignTop
-    , htmlAttribute (Html.Attributes.id "sidebar")
-    ]
-    [ objectModeSelect model
-    , case model.objectSidebarMode of
-        ObjectSearch -> objectSearch model
-        MapSelection -> mapSelection model
-        ObjectCosmetics -> objectCosmetics model
-    ]
-
-lifeModeSelect : Model -> Element Msg
-lifeModeSelect model =
+sidebarModeSelect : Model -> Element Msg
+sidebarModeSelect model =
   let
     palette = (themePalette model.theme)
   in
@@ -246,13 +230,13 @@ lifeModeSelect model =
       , top = 0
       }
     ]
-    [ tabHeader "search" "Search" SelectLifeMode LifeSearch model.lifeSidebarMode palette
-    , tabHeader "filter" "Data" SelectLifeMode DataFilter model.lifeSidebarMode palette
-    , tabHeader "paint-format" "Format" SelectLifeMode LifeCosmetics model.lifeSidebarMode palette
+    [ tabHeader "search" "Search" SelectSidebarMode Search model.sidebarMode palette
+    , tabHeader "filter" "Data" SelectSidebarMode DataFilter model.sidebarMode palette
+    , tabHeader "paint-format" "Format" SelectSidebarMode Cosmetics model.sidebarMode palette
     ]
 
-objectModeSelect : Model -> Element Msg
-objectModeSelect model =
+searchModeSelect : Model -> Element Msg
+searchModeSelect model =
   let
     palette = (themePalette model.theme)
   in
@@ -266,9 +250,8 @@ objectModeSelect model =
       , top = 0
       }
     ]
-    [ tabHeader "search" "Search" SelectObjectMode ObjectSearch model.objectSidebarMode palette
-    , tabHeader "target" "Map" SelectObjectMode MapSelection model.objectSidebarMode palette
-    , tabHeader "paint-format" "Format" SelectObjectMode ObjectCosmetics model.objectSidebarMode palette
+    [ tabHeader "users" "Lives" SelectSearchMode SearchLives model.searchMode palette
+    , tabHeader "locate" "Objects" SelectSearchMode SearchObjects model.searchMode palette
     ]
 
 tabHeader : String -> String -> (mode -> Msg) -> mode -> mode -> Palette -> Element Msg
@@ -285,6 +268,19 @@ tabHeader ico name tagger mode current palette =
           , text name
           ]
     }
+
+searchPanel : Model -> Element Msg
+searchPanel model =
+  column
+    [ width fill
+    , height fill
+    , htmlAttribute <| Html.Attributes.style "height" "100%"
+    ]
+    [ searchModeSelect model
+    , case model.searchMode of
+      SearchLives -> lifeSearch model
+      SearchObjects -> objectSearch model
+    ]
 
 lifeSearch : Model -> Element Msg
 lifeSearch model =
@@ -655,18 +651,6 @@ dataFilter model =
       , dataOptions model
       , serverSelect model.servers model.selectedServer (themePalette model.theme)
       , presets model
-      ]
-
-mapSelection : Model -> Element Msg
-mapSelection model =
-  el [ width fill, height fill, scrollbarY] <|
-    column
-      [ width (fill |> maximum 300)
-      , height fill
-      , spacing 10
-      ]
-      [ dateRangeSelect model
-      , serverSelect model.servers model.selectedServer (themePalette model.theme)
       ]
 
 dataAction model =
@@ -1079,8 +1063,8 @@ presets model =
       ]
     ]
 
-lifeCosmetics : Model -> Element Msg
-lifeCosmetics model =
+cosmetics : Model -> Element Msg
+cosmetics model =
   let
     controlColor = (themePalette model.theme).control
   in
@@ -1110,6 +1094,29 @@ lifeCosmetics model =
           [ Input.option BirthLocation (text "Birth")
           , Input.option DeathLocation (text "Death")
           ]
+        }
+      , Input.checkbox [ padding 10, spacing 2 ]
+        { onChange = ToggleShowOnlyCurrentMonuments
+        , checked = model.showOnlyCurrentMonuments
+        , label = Input.labelRight [ padding 6 ] (text "Show Only Current Monuments")
+        , icon = Input.defaultCheckbox
+        }
+      , Input.checkbox [ padding 10, spacing 2 ]
+        { onChange = ToggleFadeTallObjects
+        , checked = model.fadeTallObjects
+        , label = Input.labelRight [ padding 6 ] (text "Fade Tall Objects")
+        , icon = Input.defaultCheckbox
+        }
+      , Input.slider
+        [ Background.color controlColor ]
+        { onChange = round >> SelectNaturalObjectZoom
+        , label = Input.labelAbove [] <|
+          text ("Natural Objects Above Zoom: " ++ (model.showNaturalObjectsAboveZoom |> String.fromInt))
+        , min = 24
+        , max = 32
+        , value = model.showNaturalObjectsAboveZoom |> toFloat
+        , thumb = Input.defaultThumb
+        , step = Just 1
         }
       , Input.checkbox [ padding 10, spacing 2 ]
         { onChange = ToggleAnimated
@@ -1149,44 +1156,6 @@ lifeCosmetics model =
       , themeControl model.theme
       ]
 
-
-objectCosmetics : Model -> Element Msg
-objectCosmetics model =
-  let
-    controlColor = (themePalette model.theme).control
-  in
-  el [ width fill, height fill, scrollbarY] <|
-    column
-      [ width (fill |> maximum 300)
-      , height fill
-      , spacing 10
-      ]
-      [ Input.checkbox [ padding 10, spacing 2 ]
-        { onChange = ToggleShowOnlyCurrentMonuments
-        , checked = model.showOnlyCurrentMonuments
-        , label = Input.labelRight [ padding 6 ] (text "Show Only Current Monuments")
-        , icon = Input.defaultCheckbox
-        }
-      , Input.checkbox [ padding 10, spacing 2 ]
-        { onChange = ToggleFadeTallObjects
-        , checked = model.fadeTallObjects
-        , label = Input.labelRight [ padding 6 ] (text "Fade Tall Objects")
-        , icon = Input.defaultCheckbox
-        }
-      , Input.slider
-        [ Background.color controlColor ]
-        { onChange = round >> SelectNaturalObjectZoom
-        , label = Input.labelAbove [] <|
-          text ("Natural Objects Above Zoom: " ++ (model.showNaturalObjectsAboveZoom |> String.fromInt))
-        , min = 24
-        , max = 32
-        , value = model.showNaturalObjectsAboveZoom |> toFloat
-        , thumb = Input.defaultThumb
-        , step = Just 1
-        }
-      , timeZoneControl model.zone
-      , themeControl model.theme
-      ]
 
 timeZoneControl : Time.Zone -> Element Msg
 timeZoneControl zone =

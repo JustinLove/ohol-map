@@ -269,13 +269,13 @@ update msg model =
       ( model
       , fetchLineage model.apiUrl life
       )
-    UI (View.SelectLifeMode mode) ->
-      ( { model | lifeSidebarMode = mode }
+    UI (View.SelectSidebarMode mode) ->
+      ( { model | sidebarMode = mode }
       , Cmd.none
       )
         |> addCommand sidebarCommand
-    UI (View.SelectObjectMode mode) ->
-      ( { model | objectSidebarMode = mode }
+    UI (View.SelectSearchMode mode) ->
+      ( { model | searchMode = mode }
       , Cmd.none
       )
         |> addCommand sidebarCommand
@@ -378,8 +378,8 @@ update msg model =
     Event (Ok (Leaflet.SelectPoints lives)) ->
       ( { model
         | lives = lives |> List.map myLife |> Data
-        , sidebar = LifeSidebar
-        , lifeSidebarMode = LifeSearch
+        , sidebar = OpenSidebar
+        , sidebarMode = Search
         , lifeSearchTerm = ""
         }
       , Cmd.batch
@@ -407,20 +407,10 @@ update msg model =
             Cmd.none
         ]
       )
-    Event (Ok (Leaflet.LifeSidebarToggle)) ->
+    Event (Ok (Leaflet.SidebarToggle)) ->
       ( { model | sidebar = case model.sidebar of
-          ClosedSidebar -> LifeSidebar
-          LifeSidebar -> ClosedSidebar
-          ObjectSidebar -> LifeSidebar
-        }
-      , Cmd.none
-      )
-        |> addCommand sidebarCommand
-    Event (Ok (Leaflet.ObjectSidebarToggle)) ->
-      ( { model | sidebar = case model.sidebar of
-          ClosedSidebar -> ObjectSidebar
-          LifeSidebar -> ObjectSidebar
-          ObjectSidebar -> ClosedSidebar
+          ClosedSidebar -> OpenSidebar
+          OpenSidebar -> ClosedSidebar
         }
       , Cmd.none
       )
@@ -701,13 +691,12 @@ sidebarCommand model =
   let
     sidebar = case model.sidebar of
       ClosedSidebar -> "closed"
-      LifeSidebar -> "life"
-      ObjectSidebar -> "object"
+      OpenSidebar -> "life"
   in
     Cmd.batch
       [ Leaflet.sidebar sidebar
       , Leaflet.searchOverlay
-        (model.sidebar == LifeSidebar && model.lifeSidebarMode == LifeSearch)
+        (model.sidebar == OpenSidebar && model.sidebarMode == Search)
       ]
 
 rebuildWorlds : (Model, Cmd Msg) -> (Model, Cmd Msg)

@@ -3,8 +3,8 @@ module Model exposing
   , Config
   , Life
   , Sidebar(..)
-  , LifeMode(..)
-  , ObjectMode(..)
+  , SidebarMode(..)
+  , SearchMode(..)
   , Center(..)
   , Model
   , Monument
@@ -63,8 +63,8 @@ type alias Model =
   , seedsUrl: String
   , spansUrl: String
   , sidebar : Sidebar
-  , lifeSidebarMode : LifeMode
-  , objectSidebarMode : ObjectMode
+  , sidebarMode : SidebarMode
+  , searchMode : SearchMode
   , lifeSearchTerm : String
   , objectSearchTerm : String
   , timeMode : TimeMode
@@ -118,8 +118,8 @@ initialModel config location key =
   , seedsUrl = config.seedsUrl
   , spansUrl = config.spansUrl
   , sidebar = ClosedSidebar
-  , lifeSidebarMode = LifeSearch
-  , objectSidebarMode = ObjectSearch
+  , sidebarMode = DataFilter
+  , searchMode = SearchLives
   , lifeSearchTerm = ""
   , objectSearchTerm = ""
   , timeMode = ServerRange
@@ -201,18 +201,16 @@ type alias Server =
 
 type Sidebar
   = ClosedSidebar
-  | LifeSidebar
-  | ObjectSidebar
+  | OpenSidebar
 
-type LifeMode
-  = LifeSearch
+type SidebarMode
+  = Search
   | DataFilter
-  | LifeCosmetics
+  | Cosmetics
 
-type ObjectMode
-  = ObjectSearch
-  | MapSelection
-  | ObjectCosmetics
+type SearchMode
+  = SearchLives
+  | SearchObjects
 
 type TimeMode
   = ServerRange

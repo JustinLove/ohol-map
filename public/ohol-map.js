@@ -3046,16 +3046,10 @@
     return new L.Control.MapButton(opts);
   }
 
-  var lifeSidebarToggle = L.control.mapButton({
-    title: 'Life Data',
+  var sidebarToggle = L.control.mapButton({
+    title: 'Data',
     icon: 'filter',
-    message: 'lifeSidebarToggle',
-    position: 'bottomright'
-  })
-  var objectSidebarToggle = L.control.mapButton({
-    title: 'Object Data',
-    icon: 'target',
-    message: 'objectSidebarToggle',
+    message: 'sidebarToggle',
     position: 'bottomright'
   })
   var animToggle = L.control.mapButton({
@@ -3302,8 +3296,7 @@
   }
 
   var toggleSidebarControls = function(map, status) {
-    lifeSidebarToggle.setChecked(status == "life")
-    objectSidebarToggle.setChecked(status == "object")
+    sidebarToggle.setChecked(status == "life")
   }
 
   var inhabit = function inhabit(id) {
@@ -3371,8 +3364,7 @@
 
     layersControl.addTo(map)
     L.control.scale({imperial: false}).addTo(map)
-    lifeSidebarToggle.addTo(map)
-    objectSidebarToggle.addTo(map)
+    sidebarToggle.addTo(map)
     //map.setView([0,0], 24)
 
     // --------------- Leaflet --------------------
