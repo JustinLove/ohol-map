@@ -318,8 +318,6 @@ objectSearch model =
 
 objectSearchValid : Model -> Bool
 objectSearchValid model =
-  (not model.dataAnimated)
-  &&
   case model.center of
     DefaultCenter -> False
     SetCenter {z} -> z >= 24
@@ -371,9 +369,11 @@ showObjectResult model objects =
       , el [ centerX ] <|
         text "Loaded in current view"
       , el [ centerX ] <|
-        text "(Zoom >= 24)"
+        text "zoom >= 24"
       , el [ centerX ] <|
-        text "Static snaphots only"
+        text "Animated: small objects may"
+      , el [ centerX ] <|
+        text "not be included at zoom < 27"
       ]
   else
     showMatchingObjects model objects

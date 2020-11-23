@@ -6,10 +6,10 @@
   - x disable when zoomed too far out
   - x item color feedback
   - x layer toggle for object search?
-  - animation mode
+  - x animation mode
   - pure object layer?
   - multiple search terms?
-  - use diamond icon
+  - x use diamond icon
 - tile not found in anim view?
 - server time selections dont set animation range
 - default position with no active monuments - precalculation

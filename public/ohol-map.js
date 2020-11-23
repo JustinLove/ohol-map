@@ -1468,14 +1468,19 @@
         var keyPlacementLayer = createArcKeyPlacementLayer(span.dataTime, world.generation)
         keyPlacementLayer.name = "key placement"
         span.keyPlacementLayer = keyPlacementLayer
-        var objectPointLayer = createArcObjectPointOverlay(span.dataTime, world.generation)
-        objectPointLayer.name = "object point"
-        span.objectPointLayer = objectPointLayer
+        var keyPlacementPoint = createArcKeyPlacementPointOverlay(span.dataTime, world.generation)
+        keyPlacementPoint.name = "object point static"
+        span.keyPlacementPoint = keyPlacementPoint
         var maplogLayer = createArcMaplogLayer(span.msStart, span.dataTime, span.base, world.generation)
         maplogLayer.name = "maplog"
         span.maplogLayer = maplogLayer
         L.Util.setOptions(keyPlacementLayer, {alternateAnim: maplogLayer})
         L.Util.setOptions(maplogLayer, {alternateStatic: keyPlacementLayer})
+        var maplogPoint = createArcMaplogPointOverlay(span.msStart, span.dataTime, span.base, world.generation)
+        maplogPoint.name = "object point anim"
+        span.maplogPoint = maplogPoint
+        L.Util.setOptions(keyPlacementPoint, {alternateAnim: maplogPoint})
+        L.Util.setOptions(maplogPoint, {alternateStatic: keyPlacementPoint})
       })
     }
     if (world.generation.biomeRandSeedA) {
@@ -2038,6 +2043,34 @@
     }
   }
 
+  var tileAt = function(tile, time) {
+    var maplog = tile._maplog
+    if (!maplog) return;
+    var lastTime = tile._time || 0
+    tile._time = time
+    var objects = tile._objects = tile._objects || {}
+    var floors = tile._floors = tile._floors || {}
+    if (time < lastTime) {
+      lastTime = 0
+      objects = tile._objects = {}
+      floors = tile._floors = {}
+    }
+    maplog.forEach(function(placement) {
+      if (lastTime < placement.t && placement.t < time) {
+        if (placement.floor) {
+          floors[placement.key] = placement
+        } else {
+          objects[placement.key] = placement
+        }
+      }
+    })
+    var floorPlacements = Object.values(floors)
+      .sort(sortDrawOrder)
+    var objectPlacements = Object.values(objects)
+      .sort(sortDrawOrder)
+    return floorPlacements.concat(objectPlacements)
+  }
+
   L.GridLayer.MaplogSprite = L.GridLayer.SpriteLayer.extend({
     options: Object.assign({
       time: 0,
@@ -2074,33 +2107,9 @@
       return tile
     },
     tileAt: function(tile, time) {
-      var maplog = tile._maplog
-      if (!maplog) return;
-      var lastTime = tile._time || 0
-      tile._time = time
-      var objects = tile._objects = tile._objects || {}
-      var floors = tile._floors = tile._floors || {}
       var minSize = 1.5 * Math.pow(2, 31 - tile.coords.z)
-      if (time < lastTime) {
-        lastTime = 0
-        objects = tile._objects = {}
-        floors = tile._floors = {}
-      }
-      maplog.forEach(function(placement) {
-        if (lastTime < placement.t && placement.t < time) {
-          if (placement.floor) {
-            floors[placement.key] = placement
-          } else {
-            objects[placement.key] = placement
-          }
-        }
-      })
-      var floorPlacements = Object.values(floors)
-        .sort(sortDrawOrder)
-      var objectPlacements = Object.values(objects)
+      tile._keyplace = tileAt(tile, time)
         .filter(placementsLargerThan(minSize))
-        .sort(sortDrawOrder)
-      tile._keyplace = floorPlacements.concat(objectPlacements)
       var layer = this
       if (layer.loadImages(tile._keyplace, function() {
         layer.drawTile(tile, tile.coords)
@@ -2115,7 +2124,6 @@
         var tile = this._tiles[key]
         if (tile.el._maplog) {
           this.tileAt(tile.el, ms)
-          this.drawTile(tile.el, tile.coords)
         }
       }
     },
@@ -2154,10 +2162,10 @@
     ])
   }
 
-  var createArcObjectPointOverlay = function(end, gen) {
+  var createArcKeyPlacementPointOverlay = function(end, gen) {
     return new L.layerGroup([
       baseAttributionLayer,
-      new L.GridLayer.ObjectPointOverlay(keyPlacementKey, Object.assign({
+      new L.GridLayer.KeyPlacementPoint(keyPlacementKey, Object.assign({
         dataTime: end.toString(),
       }, gen, objectLayerOptions))
     ])
@@ -2185,6 +2193,21 @@
     ])
   }
 
+  var createArcMaplogPointOverlay = function(msStart, sEnd, sBase, gen) {
+    var ms = sEnd*1000
+    if (msStart < mapTime && mapTime < sEnd*1000) {
+      ms = mapTime
+    }
+    return new L.layerGroup([
+      baseAttributionLayer,
+      new L.GridLayer.MaplogPoint(maplogLog, Object.assign({
+        dataTime: sEnd.toString(),
+        base: sBase.toString(),
+        time: ms,
+      }, gen, objectLayerOptions))
+    ])
+  }
+
   var setObjectLayerOptions = function(options) {
     Object.assign(objectLayerOptions, options)
     worlds.forEach(function(world) {
@@ -2195,14 +2218,20 @@
             layer.redraw && layer.redraw()
           })
         }
-        if (span.objectPointLayer) {
-          span.objectPointLayer.eachLayer(function(layer) {
+        if (span.keyPlacementPoint) {
+          span.keyPlacementPoint.eachLayer(function(layer) {
             L.Util.setOptions(layer, options)
             layer.redraw && layer.redraw()
           })
         }
         if (span.maplogLayer) {
           span.maplogLayer.eachLayer(function(layer) {
+            L.Util.setOptions(layer, options)
+            layer.redraw && layer.redraw()
+          })
+        }
+        if (span.maplogPoint) {
+          span.maplogPoint.eachLayer(function(layer) {
             L.Util.setOptions(layer, options)
             layer.redraw && layer.redraw()
           })
@@ -2220,8 +2249,14 @@
     Object.assign(objectLayerOptions, options)
     worlds.forEach(function(world) {
       world.spans.forEach(function(span) {
-        if (span.objectPointLayer) {
-          span.objectPointLayer.eachLayer(function(layer) {
+        if (span.keyPlacementPoint) {
+          span.keyPlacementPoint.eachLayer(function(layer) {
+            L.Util.setOptions(layer, options)
+            layer.redraw && layer.redraw()
+          })
+        }
+        if (span.maplogPoint) {
+          span.maplogPoint.eachLayer(function(layer) {
             L.Util.setOptions(layer, options)
             layer.redraw && layer.redraw()
           })
@@ -2565,18 +2600,10 @@
   }
 
   L.GridLayer.ObjectPointOverlay = L.GridLayer.extend({
-    options: Object.assign({
+    options: {
       pane: 'overlayPane',
-      alternateAnim: null,
-      alternateStatic: null,
-      theme: 'dark',
       minZoom: 24,
       maxZoom: 31,
-      className: 'object-point-overlay',
-    }, objectGenerationOptions),
-    initialize: function(cache, options) {
-      this._cache = cache;
-      options = L.Util.setOptions(this, options);
     },
     createTile: function (coords, done) {
       var layer = this
@@ -2643,12 +2670,109 @@
 
       if (done) done(null, tile)
     },
-    xxupdateTiles: function(ms) {
+  })
+
+  L.GridLayer.KeyPlacementPoint = L.GridLayer.ObjectPointOverlay.extend({
+    options: Object.assign({
+      className: 'object-point-overlay-static',
+    }, objectGenerationOptions),
+    initialize: function(cache, options) {
+      this._cache = cache;
+      options = L.Util.setOptions(this, options);
+    },
+    createTile: function (coords, done) {
+      var layer = this
+      var options = layer.options
+      var highlightObjects = options.highlightObjects
+      var tile = document.createElement('canvas');
+      if (!highlightObjects) {
+        if (done) done(null, tile)
+        return tile
+      }
+      var tileSize = layer.getTileSize();
+      tile.setAttribute('width', tileSize.x);
+      tile.setAttribute('height', tileSize.y);
+      //console.log(coords)
+
+
+      //console.log('data tile ' + JSON.stringify(coords), options.dataTime, mapServer)
+      layer._cache.getTile(coords, {time: options.dataTime, server: mapServer}, options).then(function(keyplace) {
+        tile._keyplace = keyplace.filter(function(placement) {
+          return highlightObjects.indexOf(placement.id) != -1
+        })
+
+        //console.timeEnd('data processing ' + JSON.stringify(coords))
+        layer.drawTile(tile, coords, done)
+      })
+
+      return tile
+    },
+  })
+
+  L.GridLayer.MaplogPoint = L.GridLayer.ObjectPointOverlay.extend({
+    options: Object.assign({
+      time: 0,
+      className: 'object-point-overlay-anim',
+    }, objectGenerationOptions),
+    initialize: function(cache, options) {
+      this._cache = cache;
+      options = L.Util.setOptions(this, options);
+    },
+    createTile: function (coords, done) {
+      var layer = this
+      var options = layer.options
+      var highlightObjects = options.highlightObjects
+      var tile = document.createElement('canvas');
+      if (!highlightObjects) {
+        if (done) done(null, tile)
+        return tile
+      }
+      var tileSize = layer.getTileSize();
+      tile.setAttribute('width', tileSize.x);
+      tile.setAttribute('height', tileSize.y);
+      //console.log(coords)
+
+      layer._cache.getTile(coords, {time: options.dataTime, server: mapServer}, {time: options.base, server: mapServer}, options).then(function(maplog) {
+
+        tile._maplog = maplog
+
+        var time = layer.options.time
+        tile.coords = coords
+        layer.tileAt(tile, time)
+        done()
+      })
+
+      return tile
+    },
+    tileAt: function(tile, time) {
+      var highlightObjects = this.options.highlightObjects
+      if (!highlightObjects) {
+        console.log('anim - no objects')
+        return
+      }
+      var minSize = 1.5 * Math.pow(2, 31 - tile.coords.z)
+      var z = tile.coords.z
+      tile._keyplace = tileAt(tile, time)
+        .filter(function(placement) {
+          if (placement.floor) return true
+          if (z >= 27) return true
+          var size = objectSize[placement.id]
+          var tooSmall = !size || size <= minSize
+          if (tooSmall) return false
+          return true
+        })
+        .filter(function(placement) {
+          return highlightObjects.indexOf(placement.id) != -1
+        })
+      this.drawTile(tile, tile.coords)
+    },
+    updateTiles: function(ms) {
       L.Util.setOptions(this, {time: ms})
-      var time = ms/1000
       for (var key in this._tiles) {
         var tile = this._tiles[key]
-        this.drawTile(tile.el, tile.coords, time)
+        if (tile.el._maplog) {
+          this.tileAt(tile.el, ms)
+        }
       }
     },
   })
@@ -2711,8 +2835,9 @@
         targetWorld.biomeLayer,
         !targetSpan && targetWorld.objectLayer,
         !dataAnimated && targetSpan && targetSpan.keyPlacementLayer,
-        objectOverlayOn && !dataAnimated && targetSpan && targetSpan.objectPointLayer,
+        objectOverlayOn && !dataAnimated && targetSpan && targetSpan.keyPlacementPoint,
         dataAnimated && targetSpan && targetSpan.maplogLayer,
+        objectOverlayOn && dataAnimated && targetSpan && targetSpan.maplogPoint,
       ].filter(function(x) {return !!x})
     }
     oholBase.eachLayer(function(layer) {
