@@ -60,6 +60,7 @@ type Msg
   | SelectMatchingLife Life
   | SelectMatchingObject ObjectId Bool
   | SelectAllObjects Bool
+  | SelectMaximumObjects (Maybe Int)
   | SelectLineage Life
   | SelectLifeMode LifeMode
   | SelectObjectMode ObjectMode
@@ -390,7 +391,7 @@ showMatchingObjects model objects =
   column [ spacing 0, width fill, scrollbarY ]
     (objects
       |> List.map (showMatchingObject model)
-      |> (::) (objectListHeader (areAllObjectChecked model))
+      |> (::) (objectListHeader model)
     )
 
 lifeListHeader =
@@ -404,14 +405,13 @@ lifeListHeader =
     , el [ width (px 30) ] (el [ centerX ] (text "Tree"))
     ]
 
-objectListHeader : Bool -> Element Msg
-objectListHeader checked =
+objectListHeader : Model -> Element Msg
+objectListHeader model =
   row
     [ width fill
     , Font.size 10
-    , Font.underline
     ]
-    [ objectDetailHeader checked
+    [ objectDetailHeader model
     ]
 
 showMatchingLife model life =
@@ -468,20 +468,45 @@ lifeDetailHeader =
     ]
 
 
-objectDetailHeader : Bool -> Element Msg
-objectDetailHeader checked =
-  column [ padding 6 ]
+objectDetailHeader : Model -> Element Msg
+objectDetailHeader model =
+  column [ padding 6, width fill ]
     [ row
       [ Font.size 16
       , spacing 10
       , width fill
       ]
-      [ Input.checkbox [ spacing 2 ]
-        { onChange = SelectAllObjects
-        , checked = checked
-        , label = Input.labelRight [ padding 6 ] (text "Name")
-        , icon = Input.defaultCheckbox
-        }
+      [ row [ spacing 10, alignLeft ]
+        [ Input.checkbox [ spacing 2 ]
+          { onChange = SelectAllObjects
+          , checked = (areAllObjectChecked model)
+          , label = Input.labelHidden "toggle all"
+          , icon = Input.defaultCheckbox
+          }
+        , el [ Font.underline, alignLeft ] <| text "Name"
+        ]
+      , row [ alignRight, spacing 2 ]
+        [ model.matchingObjects
+          |> List.length
+          |> String.fromInt
+          |> text
+        , text "/"
+        , model.maxiumMatchingObjects
+          |> Maybe.map String.fromInt
+          |> Maybe.withDefault "all"
+          |> text
+        , text " "
+        , Input.checkbox [ spacing 2 ]
+          { onChange = (\checked -> SelectMaximumObjects
+              (if checked then Nothing else Just 20)
+            )
+          , checked = case model.maxiumMatchingObjects of
+              Just _ -> False
+              Nothing -> True
+          , label = Input.labelRight [] (text "Show all")
+          , icon = Input.defaultCheckbox
+          }
+        ]
       ]
     ]
 

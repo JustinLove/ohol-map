@@ -97,6 +97,8 @@ type alias Model =
   , dataLayer : RemoteData Int
   , lives : RemoteData (List Life)
   , focus : Maybe Life
+  , maxiumMatchingObjects: Maybe Int
+  , totalMatchingObjects: Int
   , matchingObjects : List ObjectId
   , highlightObjects : Set ObjectId
   }
@@ -150,6 +152,8 @@ initialModel config location key =
   , dataLayer = NotRequested
   , lives = NotRequested
   , focus = Nothing
+  , maxiumMatchingObjects = Just 20
+  , totalMatchingObjects = 0
   , matchingObjects = []
   , highlightObjects = Set.fromList []
   }

@@ -114,23 +114,8 @@ update msg model =
       , Cmd.none
       )
     UI (View.ObjectTyping term) ->
-      let
-        lower = String.toLower term
-        ids = model.selectedServer
-          |> Maybe.andThen (\x -> if term == "" then Nothing else Just x)
-          |> Maybe.andThen (\id -> Dict.get id model.servers)
-          |> Maybe.map .objectIndex
-          |> Maybe.withDefault []
-          |> List.foldr (\(id, name) a -> if String.contains lower name then id :: a else a) []
-          |> List.take 20
-      in
-      ( { model
-        | objectSearchTerm = term
-        , matchingObjects = ids
-        , highlightObjects = Set.fromList ids
-        }
-      , Leaflet.highlightObjects ids
-      )
+      { model | objectSearchTerm = term }
+        |> updateObjectSearch
     UI (View.SelectTimeMode mode) ->
       ( { model | timeMode = mode }
       , Cmd.none
@@ -277,6 +262,9 @@ update msg model =
         }
       , Leaflet.highlightObjects (Set.toList highlightObjects)
       )
+    UI (View.SelectMaximumObjects maximum) ->
+      { model | maxiumMatchingObjects = maximum }
+        |> updateObjectSearch
     UI (View.SelectLineage life) ->
       ( model
       , fetchLineage model.apiUrl life
@@ -841,6 +829,28 @@ makeObjectIndex : List ObjectId -> List String -> List (ObjectId, String)
 makeObjectIndex ids names =
   List.map2 Tuple.pair ids (List.map String.toLower names)
     |> List.sortBy (Tuple.second>>String.length)
+
+updateObjectSearch : Model -> (Model, Cmd Msg)
+updateObjectSearch model =
+  let
+    lower = String.toLower model.objectSearchTerm
+    total = model.selectedServer
+      |> Maybe.andThen (\x -> if lower == "" then Nothing else Just x)
+      |> Maybe.andThen (\id -> Dict.get id model.servers)
+      |> Maybe.map .objectIndex
+      |> Maybe.withDefault []
+      |> List.foldr (\(id, name) a -> if String.contains lower name then id :: a else a) []
+    ids = case model.maxiumMatchingObjects of
+      Just n -> List.take n total
+      Nothing -> total
+  in
+  ( { model
+    | totalMatchingObjects = List.length total
+    , matchingObjects = ids
+    , highlightObjects = Set.fromList ids
+    }
+  , Leaflet.highlightObjects ids
+  )
 
 yesterday : Model -> (Model, Cmd Msg)
 yesterday model =
