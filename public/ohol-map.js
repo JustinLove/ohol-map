@@ -1139,7 +1139,7 @@
     loadImages(placements, done) {
       var layer = this
       placements.forEach(function(placement) {
-        if (!objectImages[placement.id]) {
+        if (placement.id != 0 && !objectImages[placement.id]) {
           if (barrierObjects.indexOf(placement.id) != -1) {
             var canvas = document.createElement('canvas')
             objectImages[placement.id] = canvas
@@ -1175,7 +1175,7 @@
       var checkLoaded = function() {
         for (var i = 0;i < placements.length;i++) {
           var placement = placements[i]
-          if (!objectImages[placement.id].complete) {
+          if (placement.id != 0 && !objectImages[placement.id].complete) {
             setTimeout(checkLoaded,100)
             return false
           }
