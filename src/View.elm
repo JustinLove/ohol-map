@@ -446,7 +446,7 @@ showMatchingObject model id =
       , icon = Input.defaultCheckbox
       }
     , row [ Font.size 16, spacing 4 ]
-      [ el [ Font.color (objectColor id) ] (icon "target")
+      [ el [ Font.color (objectColor id) ] (icon "locate")
       , attrs |> text
       ]
     ]
