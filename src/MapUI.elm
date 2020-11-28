@@ -80,7 +80,7 @@ init config location key =
       , Leaflet.pointColor model.pointColor
       , Leaflet.animOverlay model.dataAnimated
       , Leaflet.worldList (Data.rebuildWorlds Data.oholCodeChanges [] [] [])
-      , Leaflet.highlightObjects (Set.toList model.highlightObjects)
+      , highlightObjectsCommand model
       , sidebarCommand model
       ]
     )
@@ -238,33 +238,48 @@ update msg model =
         ]
       )
        |> setServer life.serverId
-    UI (View.SelectMatchingObject id selected) ->
+    UI (View.SelectMatchingObject id checked) ->
       let
-        highlightObjects = if selected then
-           Set.insert id model.highlightObjects
+        selectedMatchingObjects = if checked then
+           Set.insert id model.selectedMatchingObjects
          else
-           Set.remove id model.highlightObjects
+           Set.remove id model.selectedMatchingObjects
       in
-      ( { model
-        | highlightObjects = highlightObjects
-        }
-      , Leaflet.highlightObjects (Set.toList highlightObjects)
-      )
-    UI (View.SelectAllObjects selected) ->
+      { model
+      | selectedMatchingObjects = selectedMatchingObjects
+      }
+        |> andHighlightObjects
+    UI (View.SelectAllObjects checked) ->
       let
-        highlightObjects = if selected then
+        selectedMatchingObjects = if checked then
            Set.fromList model.matchingObjects
          else
            Set.empty
       in
-      ( { model
-        | highlightObjects = highlightObjects
-        }
-      , Leaflet.highlightObjects (Set.toList highlightObjects)
-      )
+      { model
+      | selectedMatchingObjects = selectedMatchingObjects
+      }
+        |> andHighlightObjects
     UI (View.SelectMaximumObjects maximum) ->
       { model | maxiumMatchingObjects = maximum }
         |> updateObjectSearch
+    UI (View.LockObjects) ->
+      { model | lockedObjects = Set.union model.selectedMatchingObjects model.lockedObjects }
+        |> andHighlightObjects
+    UI (View.ClearLocked) ->
+      { model | lockedObjects = Set.fromList [] }
+        |> andHighlightObjects
+    UI (View.ToggleLockObject id checked) ->
+      let
+        lockedObjects = if checked then
+           Set.insert id model.lockedObjects
+         else
+           Set.remove id model.lockedObjects
+      in
+      { model
+      | lockedObjects = lockedObjects
+      }
+        |> andHighlightObjects
     UI (View.SelectLineage life) ->
       ( model
       , fetchLineage model.apiUrl life
@@ -279,6 +294,10 @@ update msg model =
       , Cmd.none
       )
         |> addCommand sidebarCommand
+    UI (View.SelectObjectListMode mode) ->
+      ( { model | objectListMode = mode }
+      , Cmd.none
+      )
     UI (View.SelectServer serverId) ->
       ( model, Cmd.none )
         |> setServer serverId
@@ -833,13 +852,12 @@ updateObjectSearch model =
       Just n -> List.take n total
       Nothing -> total
   in
-  ( { model
-    | totalMatchingObjects = List.length total
-    , matchingObjects = ids
-    , highlightObjects = Set.fromList ids
-    }
-  , Leaflet.highlightObjects ids
-  )
+  { model
+  | totalMatchingObjects = List.length total
+  , matchingObjects = ids
+  , selectedMatchingObjects = Set.fromList ids
+  }
+    |> andHighlightObjects
 
 yesterday : Model -> (Model, Cmd Msg)
 yesterday model =
@@ -988,6 +1006,17 @@ changeTheme theme =
   theme
     |> Theme.toString
     |> Leaflet.changeTheme
+
+andHighlightObjects : Model -> (Model, Cmd Msg)
+andHighlightObjects =
+  andCommand highlightObjectsCommand
+
+highlightObjectsCommand : Model -> Cmd Msg
+highlightObjectsCommand model =
+  model
+    |> highlightObjects
+    |> Set.toList
+    |> Leaflet.highlightObjects
 
 replaceUrl : String -> (Model, Cmd Msg) -> (Model, Cmd Msg)
 replaceUrl reason =
@@ -1502,6 +1531,10 @@ dropWhile test list =
       else
         list
     [] -> []
+
+andCommand : (model -> Cmd msg) -> model -> (model, Cmd msg)
+andCommand f model =
+  ( model, f model )
 
 addCommand : (model -> Cmd msg) -> (model, Cmd msg) -> (model, Cmd msg)
 addCommand f (model, cmd) =

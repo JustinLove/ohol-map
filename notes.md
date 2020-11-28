@@ -1,10 +1,11 @@
 ## server work
-- animated small objects
 - default position with no active monuments - precalculation
 - server search indexes
 - grouped heat map
 
 ## Features
+- lefthand graticle covered by legend
+- presets
 - time window range graph
 - in-app help
 - town cluster labels
@@ -18,13 +19,14 @@
 - interpolate to death time and location
 - interpolate to child birth locations
 - paging
-- multiple search terms?
 
 ## services
 - versions per service
 - object data
 
 ## code quality
+- animated small objects
+  - Visible objects are from static base layer - needs to be handled on client
 - refactoring
 - better setting of default server
 - leaflet handlers - click events?

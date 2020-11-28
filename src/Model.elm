@@ -5,6 +5,7 @@ module Model exposing
   , Sidebar(..)
   , SidebarMode(..)
   , SearchMode(..)
+  , ObjectListMode(..)
   , Center(..)
   , Model
   , Monument
@@ -21,6 +22,7 @@ module Model exposing
   , currentServer
   , initialModel
   , defaultCenter
+  , highlightObjects
   , areAllObjectChecked
   )
 
@@ -67,6 +69,7 @@ type alias Model =
   , searchMode : SearchMode
   , lifeSearchTerm : String
   , objectSearchTerm : String
+  , objectListMode : ObjectListMode
   , timeMode : TimeMode
   , coarseStartTime : Posix
   , startTime : Posix
@@ -100,7 +103,8 @@ type alias Model =
   , maxiumMatchingObjects: Maybe Int
   , totalMatchingObjects: Int
   , matchingObjects : List ObjectId
-  , highlightObjects : Set ObjectId
+  , selectedMatchingObjects : Set ObjectId
+  , lockedObjects : Set ObjectId
   }
 
 initialModel : Config -> Url -> Navigation.Key -> Model
@@ -122,6 +126,7 @@ initialModel config location key =
   , searchMode = SearchLives
   , lifeSearchTerm = ""
   , objectSearchTerm = ""
+  , objectListMode = MatchingObjects
   , timeMode = ServerRange
   , coarseStartTime = Time.millisToPosix 0
   , startTime = Time.millisToPosix 0
@@ -155,7 +160,8 @@ initialModel config location key =
   , maxiumMatchingObjects = Just 20
   , totalMatchingObjects = 0
   , matchingObjects = []
-  , highlightObjects = Set.fromList []
+  , selectedMatchingObjects = Set.fromList []
+  , lockedObjects = Set.fromList []
   }
 
 type alias Config =
@@ -211,6 +217,10 @@ type SidebarMode
 type SearchMode
   = SearchLives
   | SearchObjects
+
+type ObjectListMode
+  = MatchingObjects
+  | LockedObjects
 
 type TimeMode
   = ServerRange
@@ -269,7 +279,11 @@ centerUrl location mt yd ms center =
       |> Just
   } |> Url.toString
 
+highlightObjects : Model -> Set ObjectId
+highlightObjects model =
+  Set.union model.selectedMatchingObjects model.lockedObjects
+
 areAllObjectChecked : Model -> Bool
 areAllObjectChecked model =
-  (List.length model.matchingObjects) == (Set.size model.highlightObjects)
+  (List.length model.matchingObjects) == (Set.size model.selectedMatchingObjects)
 

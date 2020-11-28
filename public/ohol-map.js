@@ -2753,6 +2753,7 @@
       var minSize = 1.5 * Math.pow(2, 31 - tile.coords.z)
       var z = tile.coords.z
       tile._keyplace = tileAt(tile, time)
+        // base layer has objects of all sizes, but we can only be answerable for ones visible at our scale
         .filter(function(placement) {
           if (placement.floor) return true
           if (z >= 27) return true

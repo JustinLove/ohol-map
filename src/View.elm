@@ -19,6 +19,7 @@ import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
+import Element.Region as Region
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events exposing (on, stopPropagationOn)
@@ -61,9 +62,13 @@ type Msg
   | SelectMatchingObject ObjectId Bool
   | SelectAllObjects Bool
   | SelectMaximumObjects (Maybe Int)
+  | LockObjects
+  | ClearLocked
+  | ToggleLockObject ObjectId Bool
   | SelectLineage Life
   | SelectSidebarMode SidebarMode
   | SelectSearchMode SearchMode
+  | SelectObjectListMode ObjectListMode
   | SelectServer Int
   | SelectArc Int
   | SelectArcCoarse Int
@@ -84,16 +89,18 @@ view model =
     , Font.color (themePalette model.theme).foreground
     , Background.color (themePalette model.theme).background
     , themeClass model.theme
+    , htmlAttribute (Html.Attributes.id "layout")
     ] <|
     Keyed.row [ width fill, height fill ]
       [ ( "main"
-        , Keyed.column []
+        , Keyed.column [ width fill, height fill ]
           [ ( "map"
             , el
               [ width fill
               , height fill
               , Font.size 12
               , inFront (timeOverlay model)
+              , htmlAttribute (Html.Attributes.id "map-container")
               ]
               (html <| Html.div [ Html.Attributes.id "map" ] [])
             )
@@ -254,6 +261,29 @@ searchModeSelect model =
     , tabHeader "locate" "Objects" SelectSearchMode SearchObjects model.searchMode palette
     ]
 
+objectListSelect : Model -> Element Msg
+objectListSelect model =
+  let
+    palette = (themePalette model.theme)
+    locked = model.lockedObjects
+      |> Set.size
+      |> String.fromInt
+      |> (\n -> n ++ " Locked")
+  in
+  row
+    [ width fill
+    , Border.color palette.divider
+    , Border.widthEach
+      { bottom = 0
+      , left = 0
+      , right = 0
+      , top = 1
+      }
+    ]
+    [ tabHeader "search" "Search" SelectObjectListMode MatchingObjects model.objectListMode palette
+    , tabHeader "lock" locked SelectObjectListMode LockedObjects model.objectListMode palette
+    ]
+
 tabHeader : String -> String -> (mode -> Msg) -> mode -> mode -> Palette -> Element Msg
 tabHeader ico name tagger mode current palette =
   Input.button [ width fill ]
@@ -274,7 +304,6 @@ searchPanel model =
   column
     [ width fill
     , height fill
-    , htmlAttribute <| Html.Attributes.style "height" "100%"
     ]
     [ searchModeSelect model
     , case model.searchMode of
@@ -287,7 +316,6 @@ lifeSearch model =
   column
     [ width fill
     , height fill
-    , htmlAttribute <| Html.Attributes.style "height" "100%"
     ]
     [ lifeSearchBox (themePalette model.theme) model.lifeSearchTerm
     , showLifeResult model model.lives
@@ -298,16 +326,35 @@ objectSearch model =
   let
     palette = (themePalette model.theme)
     valid = objectSearchValid model
-    (color, objects) = if valid then
-        (palette.foreground, model.matchingObjects)
+    color = if valid then
+        palette.foreground
       else
-        (palette.deemphasis, [])
+        palette.deemphasis
   in
   column
     [ width fill
     , height fill
-    , htmlAttribute <| Html.Attributes.style "height" "100%"
     , Font.color color
+    ]
+    [ case model.objectListMode of
+        MatchingObjects -> objectFinder model
+        LockedObjects -> showLockedObjects model (Set.toList model.lockedObjects)
+    , el [ alignBottom, width fill ] <| objectListSelect model
+    ]
+
+objectFinder : Model -> Element Msg
+objectFinder model =
+  let
+    palette = (themePalette model.theme)
+    valid = objectSearchValid model
+    objects = if valid then
+        model.matchingObjects
+      else
+        []
+  in
+  column
+    [ width fill
+    , height fill
     ]
     [ objectSearchBox palette model.objectSearchTerm
     , showObjectResult model objects
@@ -324,7 +371,7 @@ lifeSearchBox palette term =
   Input.text
     [ padding 2
     , Background.color palette.input
-    , htmlAttribute <| on "change" <| targetValue Json.Decode.string PerformLifeSearch
+    , onChange PerformLifeSearch
     ] <|
     { onChange = LifeTyping
     , text = term
@@ -334,15 +381,32 @@ lifeSearchBox palette term =
 
 objectSearchBox : Palette -> String -> Element Msg
 objectSearchBox palette term =
-  Input.text
-    [ padding 2
-    , Background.color palette.input
-    ] <|
-    { onChange = ObjectTyping
-    , text = term
-    , placeholder = Nothing
-    , label = Input.labelAbove [] <| text "Object Name"
-    }
+  row [ spacing 2, width fill ]
+    [ Input.text
+      [ padding 2
+      , width fill
+      , Background.color palette.input
+      , onEnter LockObjects
+      ] <|
+      { onChange = ObjectTyping
+      , text = term
+      , placeholder = Nothing
+      , label = Input.labelAbove [] <| text "Object Name"
+      }
+    , column []
+      [ text ""
+      , Input.button
+          [ padding 2
+          , Border.color palette.divider
+          , Border.width 1
+          , Border.rounded 6
+          , Background.color palette.control
+          ]
+          { onPress = Just LockObjects
+          , label = el [ centerX ] <| text "Lock"
+          }
+      ]
+    ]
 
 showLifeResult model remote =
   case remote of
@@ -376,7 +440,7 @@ showObjectResult model objects =
     showMatchingObjects model objects
 
 showMatchingLives model lives =
-  column [ spacing 10, width fill, scrollbarY ]
+  column [ spacing 10, width fill, height fill, scrollbarY ]
     (lives
       |> List.map (showMatchingLife model)
       |> (::) lifeListHeader
@@ -384,10 +448,18 @@ showMatchingLives model lives =
 
 showMatchingObjects : Model -> List ObjectId -> Element Msg
 showMatchingObjects model objects =
-  column [ spacing 0, width fill, scrollbarY ]
+  column [ spacing 0, width fill, height fill, scrollbarY ]
     (objects
       |> List.map (showMatchingObject model)
       |> (::) (objectListHeader model)
+    )
+
+showLockedObjects : Model -> List ObjectId -> Element Msg
+showLockedObjects model objects =
+  column [ spacing 0, width fill, height fill, scrollbarY ]
+    (objects
+      |> List.map (showLockedObject model)
+      |> (::) (lockedObjectListHeader model)
     )
 
 lifeListHeader =
@@ -404,10 +476,77 @@ lifeListHeader =
 objectListHeader : Model -> Element Msg
 objectListHeader model =
   row
-    [ width fill
-    , Font.size 10
+    [ Font.size 16
+    , padding 6
+    , spacing 10
+    , width fill
     ]
-    [ objectDetailHeader model
+    [ row [ spacing 10, alignLeft ]
+      [ Input.checkbox [ spacing 2 ]
+        { onChange = SelectAllObjects
+        , checked = (areAllObjectChecked model)
+        , label = Input.labelHidden "toggle all"
+        , icon = Input.defaultCheckbox
+        }
+      , row [ Font.underline ]
+        [ el [ width (px 18) ] none
+        , text "Name"
+        ]
+      ]
+    , row [ alignRight, spacing 2 ]
+      [ model.matchingObjects
+        |> List.length
+        |> String.fromInt
+        |> text
+      , text "/"
+      , model.maxiumMatchingObjects
+        |> Maybe.map String.fromInt
+        |> Maybe.withDefault "all"
+        |> text
+      , text " "
+      , Input.checkbox [ spacing 2 ]
+        { onChange = (\checked -> SelectMaximumObjects
+            (if checked then Nothing else Just 20)
+          )
+        , checked = case model.maxiumMatchingObjects of
+            Just _ -> False
+            Nothing -> True
+        , label = Input.labelRight [] (text "Show all")
+        , icon = Input.defaultCheckbox
+        }
+      ]
+    ]
+
+lockedObjectListHeader : Model -> Element Msg
+lockedObjectListHeader model =
+  let
+    palette = (themePalette model.theme)
+  in
+  row
+    [ Font.size 16
+    , padding 6
+    , spacing 10
+    , width fill
+    ]
+    [ row [ spacing 10, alignLeft ]
+      [ el [ width (px 32) ] none
+      , el [ Font.underline, alignLeft ] <| text "Name"
+      ]
+    , row [ spacing 10, alignRight ]
+        [ Input.button
+            [ padding 2
+            , Border.color palette.divider
+            , Border.width 1
+            , Border.rounded 6
+            , Background.color palette.control
+            ]
+            { onPress = Just ClearLocked
+            , label = row [ centerX, spacing 4 ]
+              [ el [ Font.size 14 ] <| icon "cancel-circle"
+              , text "Clear All"
+              ]
+            }
+        ]
     ]
 
 showMatchingLife model life =
@@ -437,14 +576,49 @@ showMatchingObject model id =
   column [ padding 6 ]
     [ Input.checkbox [ spacing 8 ]
       { onChange = SelectMatchingObject id
-      , checked = Set.member id model.highlightObjects
-      , label = Input.labelRight [ padding 0 ] (title |> text)
+      , checked = Set.member id model.selectedMatchingObjects
+      , label = Input.labelRight [ ] <| objectWithSwatch id title
       , icon = Input.defaultCheckbox
       }
     , row [ Font.size 16, spacing 4 ]
-      [ el [ Font.color (objectColor id) ] (icon "locate")
+      [ Input.checkbox [ spacing 8 ]
+        { onChange = ToggleLockObject id
+        , checked = Set.member id model.lockedObjects
+        , label = Input.labelHidden "lock/unlock"
+        , icon = (\checked ->
+          if checked then
+            icon "lock"
+          else
+            icon "unlocked"
+          )
+        }
+      , el [ width (px 16) ] none
       , attrs |> text
       ]
+    ]
+
+showLockedObject : Model -> ObjectId -> Element Msg
+showLockedObject model id =
+  let (title, attrs) = objectNameParts model id in
+  column [ padding 6 ]
+    [ row [ spacing 8]
+      [ Input.button [ Font.size 14, Region.description "remove from locked" ]
+        { onPress = Just (ToggleLockObject id False)
+        , label = icon "cancel-circle"
+        }
+      , objectWithSwatch id title
+      ]
+    , row [ Font.size 16, spacing 4 ]
+      [ el [ width (px 38) ] none
+      , attrs |> text
+      ]
+    ]
+
+objectWithSwatch : Int -> String -> Element Msg
+objectWithSwatch id title =
+  row []
+    [ el [ Font.color (objectColor id) ] (icon "locate")
+    , title |> text
     ]
 
 lifeDetailHeader =
@@ -463,48 +637,6 @@ lifeDetailHeader =
       ]
     ]
 
-
-objectDetailHeader : Model -> Element Msg
-objectDetailHeader model =
-  column [ padding 6, width fill ]
-    [ row
-      [ Font.size 16
-      , spacing 10
-      , width fill
-      ]
-      [ row [ spacing 10, alignLeft ]
-        [ Input.checkbox [ spacing 2 ]
-          { onChange = SelectAllObjects
-          , checked = (areAllObjectChecked model)
-          , label = Input.labelHidden "toggle all"
-          , icon = Input.defaultCheckbox
-          }
-        , el [ Font.underline, alignLeft ] <| text "Name"
-        ]
-      , row [ alignRight, spacing 2 ]
-        [ model.matchingObjects
-          |> List.length
-          |> String.fromInt
-          |> text
-        , text "/"
-        , model.maxiumMatchingObjects
-          |> Maybe.map String.fromInt
-          |> Maybe.withDefault "all"
-          |> text
-        , text " "
-        , Input.checkbox [ spacing 2 ]
-          { onChange = (\checked -> SelectMaximumObjects
-              (if checked then Nothing else Just 20)
-            )
-          , checked = case model.maxiumMatchingObjects of
-              Just _ -> False
-              Nothing -> True
-          , label = Input.labelRight [] (text "Show all")
-          , icon = Input.defaultCheckbox
-          }
-        ]
-      ]
-    ]
 
 showMatchingLifeDetail model life =
   column [ padding 4 ]
@@ -667,32 +799,32 @@ dataAction model =
 
 dataButtonEnabled : Palette -> Element Msg
 dataButtonEnabled palette =
-    Input.button
-      [ width fill
-      , padding 5
-      , Border.color palette.divider
-      , Border.width 1
-      , Border.rounded 6
-      , Background.color palette.control
-      ]
-      { onPress = Just SelectShow
-      , label = el [ centerX ] <| text "Show"
-      }
+  Input.button
+    [ width fill
+    , padding 5
+    , Border.color palette.divider
+    , Border.width 1
+    , Border.rounded 6
+    , Background.color palette.control
+    ]
+    { onPress = Just SelectShow
+    , label = el [ centerX ] <| text "Show"
+    }
 
 dataButtonDisabled : Palette -> Element Msg
 dataButtonDisabled palette =
-    Input.button
-      [ width fill
-      , padding 5
-      , Border.color palette.divider
-      , Border.width 1
-      , Border.rounded 6
-      , Background.color palette.background
-      , Font.color palette.divider
-      ]
-      { onPress = Nothing
-      , label = el [ centerX ] <| text "Show"
-      }
+  Input.button
+    [ width fill
+    , padding 5
+    , Border.color palette.divider
+    , Border.width 1
+    , Border.rounded 6
+    , Background.color palette.background
+    , Font.color palette.divider
+    ]
+    { onPress = Nothing
+    , label = el [ centerX ] <| text "Show"
+    }
 
 startTimeSelect : Model -> Element Msg
 startTimeSelect model =
@@ -1266,10 +1398,29 @@ icon name =
     [ use [ xlinkHref ("symbol-defs.svg#icon-"++name) ] [] ]
   |> html
 
-targetValue : Json.Decode.Decoder a -> (a -> Msg) -> Json.Decode.Decoder Msg
+onChange : (String -> msg) -> Attribute msg
+onChange tagger =
+  targetValue Json.Decode.string tagger
+    |> on "change"
+    |> htmlAttribute
+
+targetValue : Json.Decode.Decoder a -> (a -> msg) -> Json.Decode.Decoder msg
 targetValue decoder tagger =
   Json.Decode.map tagger
     (Json.Decode.at ["target", "value" ] decoder)
+
+onEnter : msg -> Attribute msg
+onEnter msg =
+  Json.Decode.field "key" Json.Decode.string
+    |> Json.Decode.andThen
+      (\key ->
+        if key == "Enter" then
+          Json.Decode.succeed msg
+        else
+          Json.Decode.fail "Not the enter key"
+      )
+    |> on "keyup"
+    |> htmlAttribute
 
 themeClass : Theme -> Attribute Msg
 themeClass theme =
@@ -1316,7 +1467,7 @@ darkTheme =
   , control = rgb 0.2 0.2 0.2
   , input = rgb 0.0 0.0 0.0
   , selected = rgb 0.23 0.6 0.98
-  , deemphasis = rgb 0.4 0.4 0.4
+  , deemphasis = rgb 0.3 0.3 0.3
   }
 
 objectColor : ObjectId -> Element.Color
