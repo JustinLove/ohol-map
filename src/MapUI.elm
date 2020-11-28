@@ -44,6 +44,7 @@ type Msg
   | DataLayer Int (Result Http.Error Json.Decode.Value)
   | NoDataLayer
   | FetchUpTo Posix
+  | FetchBetween Posix Posix
   | PlayRelativeTo Int Posix
   | ShowTimeNotice Posix Posix
   | CurrentTimeNotice Posix
@@ -78,6 +79,7 @@ init config location key =
       , fetchServers model.cachedApiUrl
       , fetchObjects
       , Leaflet.pointColor model.pointColor
+      , Leaflet.pointLocation model.pointLocation
       , Leaflet.animOverlay model.dataAnimated
       , Leaflet.worldList (Data.rebuildWorlds Data.oholCodeChanges [] [] [])
       , highlightObjectsCommand model
@@ -510,6 +512,7 @@ update msg model =
         , Cmd.none
         )
           |> setServer id
+          |> checkServerLoaded
     ServerList (Err error) ->
       let _ = Debug.log "fetch servers failed" error in
       ({model | serverList = Failed error, servers = Dict.empty}, Cmd.none)
@@ -527,6 +530,7 @@ update msg model =
         )
         |> rebuildWorlds
         |> updateMonuments serverId
+        |> checkServerLoaded
     ArcList serverId (Err error) ->
       let _ = Debug.log "fetch arcs failed" error in
       ( { model
@@ -549,6 +553,7 @@ update msg model =
         )
         |> maybeSetTime mlastTime
         |> rebuildWorlds
+        |> checkServerLoaded
     SpanList serverId (Err error) ->
       let _ = Debug.log "fetch spans failed" error in
       ( { model
@@ -588,6 +593,7 @@ update msg model =
       )
         |> updateMonuments serverId
         |> checkDefaultCenter monuments
+        |> checkServerLoaded
     MonumentList serverId (Err error) ->
       let _ = Debug.log "fetch monuments failed" error in
       (model, Cmd.none)
@@ -618,6 +624,14 @@ update msg model =
           (model.selectedServer |> Maybe.withDefault 17)
           (relativeStartTime model.hoursPeriod time)
           time
+          model.evesOnly
+      )
+    FetchBetween start now ->
+      ( { model | hoursPeriod = 1 }
+      , fetchDataLayer model.apiUrl
+          (model.selectedServer |> Maybe.withDefault 17)
+          start
+          now
           model.evesOnly
       )
     PlayRelativeTo hoursBefore time ->
@@ -879,6 +893,31 @@ yesterday model =
     ]
   )
 
+dailyReview : Model -> (Model, Cmd Msg)
+dailyReview model =
+  ( { model
+    | dataLayer = Loading
+    , timeMode = FromNow
+    , pointColor = CauseOfDeathColor
+    , pointLocation = DeathLocation
+    }
+  , Cmd.batch
+    [ Leaflet.pointColor CauseOfDeathColor
+    , Leaflet.pointLocation DeathLocation
+    , fetchDailyReview model
+    ]
+  )
+
+fetchDailyReview : Model -> Cmd Msg
+fetchDailyReview model =
+  model
+    |> currentServer
+    |> Maybe.map (.spans >> RemoteData.withDefault [])
+    |> Maybe.andThen (List.reverse >> List.head)
+    |> Maybe.map .start
+    |> Maybe.map (\start -> Time.now |> Task.perform (FetchBetween start))
+    |> Maybe.withDefault Cmd.none
+
 setTime : Posix -> Model -> (Model, Cmd Msg)
 setTime time model =
   if model.mapTime /= Just time then
@@ -957,6 +996,29 @@ isYesterday model =
     && model.framesPerSecond == 1
     && model.dataAnimated
 
+setDailyReview : Model -> (Model, Cmd Msg)
+setDailyReview model =
+  if isDailyReview model then
+    (model, Cmd.none)
+  else
+    dailyReview model
+
+isDailyReview : Model -> Bool
+isDailyReview model =
+  model.dataLayer /= NotRequested
+    && model.timeMode == FromNow
+    && model.pointLocation == DeathLocation
+    && model.pointColor == CauseOfDeathColor
+
+detectPreset : Model -> Preset
+detectPreset model =
+  if isYesterday model then
+    Yesterday
+  else if isDailyReview model then
+    DailyReview
+  else
+    NoPreset
+
 setServer : Int -> (Model, Cmd Msg) -> (Model, Cmd Msg)
 setServer serverId =
   addUpdate (setServerUpdate serverId)
@@ -1005,6 +1067,20 @@ setServerUpdate serverId model =
   else
     (model, Cmd.none)
 
+checkServerLoaded : (Model, Cmd Msg) -> (Model, Cmd Msg)
+checkServerLoaded (model, msg) =
+  case currentServer model of
+    Just server ->
+      if not (serverLoading server) then
+        case model.pendingPreset of
+          Yesterday -> (model, msg) |> addUpdate setYesterday 
+          DailyReview -> (model, msg) |> addUpdate setDailyReview
+          NoPreset -> (model, msg)
+      else
+        (model, msg)
+    Nothing ->
+      (model, msg)
+
 changeTheme : Theme -> Cmd Msg
 changeTheme theme =
   theme
@@ -1030,27 +1106,28 @@ replaceUrl reason =
 replaceUrlCommand : Model -> Cmd Msg
 replaceUrlCommand model =
   Navigation.replaceUrl model.navigationKey <|
-    centerUrl model.location model.mapTime (isYesterday model) model.selectedServer model.center
+    centerUrl model.location model.mapTime (detectPreset model) model.selectedServer model.center
 
 combineRoute = addUpdate
 
 changeRouteTo : Url -> Model -> (Model, Cmd Msg)
 changeRouteTo location model =
   ({model | location = location}, Cmd.none)
-    |> combineRoute (yesterdayRoute location)
+    |> combineRoute (presetRoute location)
     |> combineRoute (timeRoute location)
     |> combineRoute (coordinateRoute location)
     |> combineRoute (serverRoute location)
+    |> checkServerLoaded
 
-yesterdayRoute : Url -> Model -> (Model, Cmd Msg)
-yesterdayRoute location model =
+presetRoute : Url -> Model -> (Model, Cmd Msg)
+presetRoute location model =
   let
     mpreset = extractHashString "preset" location
   in
-    if mpreset == Just "yesterday" then
-      setYesterday model
-    else
-      (model, Cmd.none)
+    case mpreset of
+      Just "yesterday" -> ({model | pendingPreset = Yesterday }, Cmd.none)
+      Just "daily-review" -> ({model | pendingPreset = DailyReview }, Cmd.none)
+      _ -> (model, Cmd.none)
 
 timeRoute : Url -> Model -> (Model, Cmd Msg)
 timeRoute location model =

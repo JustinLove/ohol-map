@@ -1193,8 +1193,14 @@ presets model =
     [ text "Presets"
     , wrappedRow [ padding 10 ]
       [ link [ Font.color (themePalette model.theme).selected ]
-          { url = centerUrl model.location model.mapTime True model.selectedServer model.center
+          { url = centerUrl model.location model.mapTime Yesterday model.selectedServer model.center
           , label = text "Ambient Yesterday"
+          }
+      ]
+    , wrappedRow [ padding 10 ]
+      [ link [ Font.color (themePalette model.theme).selected ]
+          { url = centerUrl model.location model.mapTime DailyReview model.selectedServer model.center
+          , label = text "Daily Review"
           }
       ]
     ]

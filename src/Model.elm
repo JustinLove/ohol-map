@@ -12,6 +12,7 @@ module Model exposing
   , Notice(..)
   , ObjectId
   , Player(..)
+  , Preset(..)
   , Server
   , Span
   , TimeMode(..)
@@ -20,6 +21,7 @@ module Model exposing
   , centerUrl
   , currentArcs
   , currentServer
+  , serverLoading
   , initialModel
   , defaultCenter
   , highlightObjects
@@ -59,6 +61,7 @@ type alias Model =
   , time : Posix
   , notice : Notice
   , center : Center
+  , pendingPreset : Preset
   , cachedApiUrl : String
   , apiUrl : String
   , lineageUrl: String
@@ -117,6 +120,7 @@ initialModel config location key =
   , time = Time.millisToPosix 0
   , notice = NoNotice
   , center = DefaultCenter
+  , pendingPreset = NoPreset
   , cachedApiUrl = config.cachedApiUrl
   , apiUrl = config.apiUrl
   , lineageUrl = config.lineageUrl
@@ -238,10 +242,22 @@ type Player
   | Starting
   | Playing Posix
 
+type Preset
+  = NoPreset
+  | Yesterday
+  | DailyReview
+
 currentServer : Model -> Maybe Server
 currentServer model =
   model.selectedServer
     |> Maybe.andThen (\id -> Dict.get id model.servers)
+
+serverLoading : Server -> Bool
+serverLoading server =
+  server.arcs == Loading
+  || server.spans == Loading
+  || server.monuments == Loading
+  || server.versions == Loading
 
 currentArcs : Model -> RemoteData (List Arc)
 currentArcs model =
@@ -256,8 +272,8 @@ centerCoord f center =
     DefaultCenter -> Nothing
     SetCenter cen -> Just (f cen)
 
-centerUrl : Url -> Maybe Posix -> Bool -> Maybe Int -> Center -> String
-centerUrl location mt yd ms center =
+centerUrl : Url -> Maybe Posix -> Preset -> Maybe Int -> Center -> String
+centerUrl location mt preset ms center =
   { location
   | fragment =
     [ centerCoord (.x >> Url.int "x") center
@@ -270,10 +286,10 @@ centerUrl location mt yd ms center =
       >> (\t -> t // 1000)
       >> Url.int "t"
       )
-    , if yd then
-        Just <| Url.string "preset" "yesterday"
-      else
-        Nothing
+    , case preset of
+        NoPreset -> Nothing
+        Yesterday -> Just <| Url.string "preset" "yesterday"
+        DailyReview -> Just <| Url.string "preset" "daily-review"
     ]
       |> List.filterMap identity
       |> Url.toQuery
