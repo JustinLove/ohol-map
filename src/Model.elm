@@ -81,6 +81,7 @@ type alias Model =
   , evesOnly : Bool
   , dataAnimated : Bool
   , lifeDataVisible : Bool
+  , graticuleVisible : Bool
   , showOnlyCurrentMonuments : Bool
   , gameSecondsPerSecond : Int
   , framesPerSecond : Int
@@ -138,6 +139,7 @@ initialModel config location key =
   , evesOnly = False
   , dataAnimated = False
   , lifeDataVisible = False
+  , graticuleVisible = False
   , showOnlyCurrentMonuments = True
   , gameSecondsPerSecond = 600
   , framesPerSecond = 10

@@ -381,6 +381,10 @@ update msg model =
       requireLives model
     Event (Ok (Leaflet.OverlayRemove "Life Data")) ->
       ({model | lifeDataVisible = False}, Cmd.none)
+    Event (Ok (Leaflet.OverlayAdd "graticule" _)) ->
+      ({model | graticuleVisible = True}, Cmd.none)
+    Event (Ok (Leaflet.OverlayRemove "graticule")) ->
+      ({model | graticuleVisible = False}, Cmd.none)
     Event (Ok (Leaflet.OverlayAdd name (Just serverId))) ->
       case Dict.get serverId model.servers of
         Just server ->

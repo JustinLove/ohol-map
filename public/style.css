@@ -61,6 +61,10 @@ body {
   transition: opacity 10s;
 }
 
+.graticule .leaflet-left .leaflet-control {
+  margin-left: 20px;
+}
+
 .leaflet-control-point-legend,
 .leaflet-control-color-scale {
   padding: 4px;

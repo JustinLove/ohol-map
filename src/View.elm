@@ -101,6 +101,10 @@ view model =
               , Font.size 12
               , inFront (timeOverlay model)
               , htmlAttribute (Html.Attributes.id "map-container")
+              , if model.graticuleVisible then
+                  htmlAttribute (Html.Attributes.class "graticule")
+                else
+                  htmlAttribute (Html.Attributes.class "")
               ]
               (html <| Html.div [ Html.Attributes.id "map" ] [])
             )

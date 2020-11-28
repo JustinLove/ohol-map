@@ -4,7 +4,6 @@
 - grouped heat map
 
 ## Features
-- lefthand graticle covered by legend
 - presets
 - time window range graph
 - in-app help
