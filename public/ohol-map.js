@@ -1500,6 +1500,9 @@
         span.maplogPoint = maplogPoint
         L.Util.setOptions(keyPlacementPoint, {alternateAnim: maplogPoint})
         L.Util.setOptions(maplogPoint, {alternateStatic: keyPlacementPoint})
+        var actmap = createArcActivityMapLayer(span.dataTime)
+        actmap.name = "activity map"
+        span.actmap = actmap
       })
     }
     if (world.generation.biomeRandSeedA) {
@@ -2227,6 +2230,20 @@
     ])
   }
 
+  var createArcActivityMapLayer = function(end) {
+    return L.tileLayer(oholMapConfig.actmap, {
+      pane: 'overlayPane',
+      server: 17,
+      time: end,
+      className: 'crisp activity-map-layer',
+      opacity: 0.5,
+      minZoom: 2,
+      maxZoom: 31,
+      maxNativeZoom: 23,
+      attribution: attribution,
+    })
+  }
+
   var setObjectLayerOptions = function(options) {
     Object.assign(objectLayerOptions, options)
     worlds.forEach(function(world) {
@@ -2857,6 +2874,7 @@
         !dataAnimated && targetSpan && targetSpan.keyPlacementLayer,
         objectOverlayOn && !dataAnimated && targetSpan && targetSpan.keyPlacementPoint,
         dataAnimated && targetSpan && targetSpan.maplogLayer,
+        targetSpan && targetSpan.actmap,
         objectOverlayOn && dataAnimated && targetSpan && targetSpan.maplogPoint,
       ].filter(function(x) {return !!x})
     }

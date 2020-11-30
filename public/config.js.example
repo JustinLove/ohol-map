@@ -6,6 +6,7 @@ var oholMapConfig = {
   keyPlacements: 'pl/{server}/{time}/kp/{z}/{x}/{y}.txt',
   keyIndex: 'pl/{server}/{time}/kp/{z}/index.txt',
   maplog: 'pl/{server}/{time}/ml/{z}/{x}/{y}.txt',
+  actmap: 'pl/{server}/{time}/am/{z}/{x}/{y}.png',
   lineageUrl: 'https://wondible.com/ohol-family-trees/',
   cachedApiUrl: 'http://localhost:5000/',
   apiUrl: 'http://localhost:5000/',

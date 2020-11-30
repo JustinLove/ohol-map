@@ -1,9 +1,10 @@
 ## server work
+- grouped heat map
 - default position with no active monuments - precalculation
 - server search indexes
-- grouped heat map
 
 ## Features
+- disable base biome layer
 - time window range graph
 - in-app help
 - town cluster labels
