@@ -2238,8 +2238,8 @@
       className: 'crisp activity-map-layer',
       opacity: 0.5,
       minZoom: 2,
-      maxZoom: 31,
-      maxNativeZoom: 23,
+      maxZoom: 24,
+      maxNativeZoom: 24,
       attribution: attribution,
     })
   }
