@@ -72,6 +72,7 @@
   var mapTime = Date.now()
   var mapServer = 17
   var dataAnimated = false
+  var biomeLayerVisible = true
 
   var attribution = '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible ' +
     '<a href="https://twitter.com/wondible" title="@wondible"><svg class="icon icon-twitter"><use xlink:href="symbol-defs.svg#icon-twitter"></use></svg></a>' +
@@ -176,6 +177,23 @@
     L.DomUtil.removeClass(map.getPane('tilePane'), 'blur')
   })
 
+  var biomeLayerToggle = L.layerGroup([], {className: 'biome-layer-toggle'})
+  biomeLayerToggle.name = 'biome layer toggle'
+  biomeLayerToggle.on('add', function(ev) {
+    var map = ev.target._map
+    if (!biomeLayerVisible) {
+      biomeLayerVisible = true
+      baseLayerByTime(map, mapTime, "biome layer toggle")
+    }
+  })
+  biomeLayerToggle.on('remove', function(ev) {
+    var map = ev.target._map
+    if (biomeLayerVisible) {
+      biomeLayerVisible = false
+      baseLayerByTime(map, mapTime, "biome layer toggle")
+    }
+  })
+
   var monumentOverlay = L.layerGroup([], {
     className: 'monument-overlay',
     showOnlyCurrentMonuments: true,
@@ -190,6 +208,7 @@
     "Object Search": objectOverlay,
     "Fade": baseFade,
     "Monuments": monumentOverlay,
+    "Biomes": biomeLayerToggle,
   }
 
   var searchOverlay = L.layerGroup([], {className: 'search-overlay'})
@@ -2833,7 +2852,7 @@
         updatePlacementLayer(specialOverlay, targetWorld.generation.placements)
       }
       layers = [
-        targetWorld.biomeLayer,
+        biomeLayerVisible && targetWorld.biomeLayer,
         !targetSpan && targetWorld.objectLayer,
         !dataAnimated && targetSpan && targetSpan.keyPlacementLayer,
         objectOverlayOn && !dataAnimated && targetSpan && targetSpan.keyPlacementPoint,
@@ -3354,6 +3373,7 @@
     var t = Date.now()
     setMapTime(map, t, 'inhabit')
     oholBase.addTo(map)
+    overlays['Biomes'].addTo(map)
     //base['Topographic Test'].addTo(map)
     overlays['Rift'].addTo(map)
     //overlays['Bands'].addTo(map)
