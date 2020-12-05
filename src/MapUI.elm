@@ -57,7 +57,7 @@ type Msg
 
 main = Browser.application
   { init = init
-  , update = update
+  , update = updatePreset
   , subscriptions = subscriptions
   , view = View.document UI
   , onUrlRequest = Navigate
@@ -86,6 +86,14 @@ init config location key =
       , sidebarCommand model
       ]
     )
+
+updatePreset : Msg -> Model -> (Model, Cmd Msg)
+updatePreset msg model =
+  let (m2, c2) = update msg model in
+  if (detectPreset model /= detectPreset m2) then
+    replaceUrl "preset change" (m2, c2)
+  else
+    (m2, c2)
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -1073,8 +1081,12 @@ checkServerLoaded (model, msg) =
     Just server ->
       if not (serverLoading server) then
         case model.pendingPreset of
-          Yesterday -> (model, msg) |> addUpdate setYesterday 
-          DailyReview -> (model, msg) |> addUpdate setDailyReview
+          Yesterday ->
+            ({model|pendingPreset = NoPreset}, msg)
+              |> addUpdate setYesterday
+          DailyReview ->
+            ({model|pendingPreset = NoPreset}, msg)
+              |> addUpdate setDailyReview
           NoPreset -> (model, msg)
       else
         (model, msg)
