@@ -13,6 +13,8 @@
     showNaturalObjectsAboveZoom: 26,
   }
 
+  var actmapSampleSize = 2;
+
   var barrierRadius = null
   var riftOptions = {
     fill: false,
@@ -2231,6 +2233,7 @@
   }
 
   var createArcActivityMapLayer = function(end) {
+    var zoomOffset = Math.max(0, Math.min(22, actmapSampleSize - 1))
     return L.tileLayer(oholMapConfig.actmap, {
       pane: 'overlayPane',
       server: 17,
@@ -2238,8 +2241,11 @@
       className: 'crisp activity-map-layer',
       opacity: 0.5,
       minZoom: 2,
-      maxZoom: 24,
-      maxNativeZoom: 24,
+      maxZoom: 31,
+      minNativeZoom: 2+zoomOffset,
+      maxNativeZoom: Math.min(31, 24+zoomOffset),
+      zoomOffset: -zoomOffset,
+      tileSize: Math.pow(2, 8+zoomOffset),
       attribution: attribution,
     })
   }
@@ -2296,6 +2302,26 @@
             L.Util.setOptions(layer, options)
             layer.redraw && layer.redraw()
           })
+        }
+      })
+    })
+  }
+
+  var setActivityMapSampleSize = function(sampleSize) {
+    var zoomOffset = Math.max(0, Math.min(22, sampleSize - 1))
+    actmapSampleSize = sampleSize
+    worlds.forEach(function(world) {
+      world.spans.forEach(function(span) {
+        if (span.actmap) {
+          var layer = span.actmap
+          L.Util.setOptions(layer, {
+            minNativeZoom: 2+zoomOffset,
+            maxNativeZoom: Math.min(31, 24+zoomOffset),
+            zoomOffset: -zoomOffset,
+            tileSize: Math.pow(2, 8+zoomOffset),
+          })
+          layer._resetView && layer._resetView()
+          layer.redraw && layer.redraw()
         }
       })
     })
@@ -3559,6 +3585,9 @@
           case 'showNaturalObjectsAboveZoom':
             setObjectLayerOptions({showNaturalObjectsAboveZoom: message.zoom})
             riftLayerByTime(mapTime, map.getZoom())
+            break
+          case 'activityMapSampleSize':
+            setActivityMapSampleSize(message.sampleSize)
             break
           default:
             console.log('unknown message', message)

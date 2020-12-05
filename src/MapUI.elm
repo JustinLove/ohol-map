@@ -223,6 +223,13 @@ update msg model =
       , Leaflet.showNaturalObjectsAboveZoom zoom
       )
         |> addCommand saveState
+    UI (View.SelectActivityMapSampleSize sampleSize) ->
+      ( { model
+        | activityMapSampleSize = sampleSize
+        }
+      , Leaflet.activityMapSampleSize sampleSize
+      )
+        --|> addCommand saveState
     UI (View.SelectPointColor color) ->
       ( { model
         | pointColor = color

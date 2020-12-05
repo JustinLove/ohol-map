@@ -56,6 +56,7 @@ type Msg
   | ToggleFadeTallObjects Bool
   | ToggleShowOnlyCurrentMonuments Bool
   | SelectNaturalObjectZoom Int
+  | SelectActivityMapSampleSize Int
   | SelectPointColor PointColor
   | SelectPointLocation PointLocation
   | SelectMatchingLife Life
@@ -1257,6 +1258,17 @@ cosmetics model =
         , min = 24
         , max = 32
         , value = model.showNaturalObjectsAboveZoom |> toFloat
+        , thumb = Input.defaultThumb
+        , step = Just 1
+        }
+      , Input.slider
+        [ Background.color controlColor ]
+        { onChange = round >> SelectActivityMapSampleSize
+        , label = Input.labelAbove [] <|
+            text ("Activity Map Sample Size: " ++ (2^(model.activityMapSampleSize-1) |> String.fromInt) ++ ":1")
+        , min = 1
+        , max = 9
+        , value = model.activityMapSampleSize |> toFloat
         , thumb = Input.defaultThumb
         , step = Just 1
         }
