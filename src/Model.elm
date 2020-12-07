@@ -182,7 +182,7 @@ type alias Config =
   , spansUrl: String
   }
 
-defaultCenter = (Point 0 0 25)
+defaultCenter = (Point 0 0 23)
 
 type alias Life =
   { birthTime : Posix
