@@ -2320,7 +2320,7 @@
             zoomOffset: -zoomOffset,
             tileSize: Math.pow(2, 8+zoomOffset),
           })
-          layer._resetView && layer._resetView()
+          layer._map && layer._resetView && layer._resetView()
           layer.redraw && layer.redraw()
         }
       })
