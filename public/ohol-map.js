@@ -1604,6 +1604,7 @@
       var datacoords = cache.dataCoords(coords)
       //console.log(datacoords)
       var url = cache.getDataTileUrl(datacoords, data)
+      //console.log(url)
       if (cache._index[url]) {
         var record = cache._index[url]
         cache._list.splice(cache._list.indexOf(record),1)
@@ -2175,6 +2176,11 @@
     })
   }
 
+  var actIndexCache = new TileIndexCache(oholMapConfig.actIndex, {
+    dataminzoom: 2,
+    datamaxzoom: 24,
+  })
+
   var keyIndexCache = new TileIndexCache(oholMapConfig.keyIndex, {
     dataminzoom: 24,
     datamaxzoom: 24,
@@ -2242,9 +2248,64 @@
     ])
   }
 
+  L.TileLayer.SparseTileLayer = L.TileLayer.extend({
+    initialize: function(url, cache, options) {
+      this._cache = cache
+      L.TileLayer.prototype.initialize.call(this, url, options)
+    },
+    dataZoom: function(coords) {
+      return Math.max(this.options.minZoom, Math.min(this.options.maxZoom, this._getZoomForUrl()))
+    },
+    dataCoords: function(coords) {
+      var dataZoom = this.dataZoom(coords)
+      var cellSize = Math.pow(2, this._getZoomForUrl() - dataZoom)
+      return {
+        x: Math.floor(coords.x/cellSize),
+        y: Math.floor(coords.y/cellSize),
+        z: dataZoom,
+      }
+    },
+    //modified from leaflet TileLayer
+    createTile: function (coords, done) {
+      var layer = this
+      var options = layer.options
+      var tile = document.createElement('img');
+
+      L.DomEvent.on(tile, 'load', L.Util.bind(this._tileOnLoad, this, done, tile));
+      L.DomEvent.on(tile, 'error', L.Util.bind(this._tileOnError, this, done, tile));
+
+      if (this.options.crossOrigin || this.options.crossOrigin === '') {
+        tile.crossOrigin = this.options.crossOrigin === true ? '' : this.options.crossOrigin;
+      }
+
+      /*
+        Alt tag is set to empty string to keep screen readers from reading URL and for compliance reasons
+        http://www.w3.org/TR/WCAG20-TECHS/H67
+        */
+      tile.alt = '';
+
+      /*
+        Set role="presentation" to force screen readers to ignore this
+        https://www.w3.org/TR/wai-aria/roles#textalternativecomputation
+        */
+      tile.setAttribute('role', 'presentation');
+
+      var datacoords = layer.dataCoords(coords)
+      this._cache.loadTile(datacoords, {time: options.time, server: mapServer}).then(function(tileTime) {
+        //console.log(coords, datacoords, time)
+        if (tileTime[[datacoords.x, datacoords.y].join(' ')]) {
+          tile.src = layer.getTileUrl(coords);
+        } else {
+          tile.src = L.Util.emptyImageUrl
+        }
+      });
+      return tile;
+    },
+  })
+
   var createArcActivityMapLayer = function(end) {
     var options = actmapLayerOptions(actmapSampleSize)
-    return L.tileLayer(oholMapConfig.actmap, Object.assign({
+    return new L.TileLayer.SparseTileLayer(oholMapConfig.actmap, actIndexCache, Object.assign({
       pane: 'overlayPane',
       server: 17,
       time: end,

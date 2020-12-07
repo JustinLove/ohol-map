@@ -1,6 +1,5 @@
 ## server work
 - grouped heat map
-  - actmap index files
   - save settings?
 - default position with no active monuments - precalculation
 - server search indexes
