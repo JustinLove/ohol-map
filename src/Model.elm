@@ -93,6 +93,7 @@ type alias Model =
   , fadeTallObjects : Bool
   , showNaturalObjectsAboveZoom : Int
   , activityMapSampleSize : Int
+  , showActivityMapBelowZoom : Int
   , pointColor : PointColor
   , pointLocation : PointLocation
   , selectedServer : Maybe Int
@@ -153,6 +154,7 @@ initialModel config location key =
   , fadeTallObjects = False
   , showNaturalObjectsAboveZoom = 26
   , activityMapSampleSize = 2
+  , showActivityMapBelowZoom = 24
   , pointColor = LineageColor
   , pointLocation = BirthLocation
   , selectedServer = Nothing

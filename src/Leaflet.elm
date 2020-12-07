@@ -24,6 +24,7 @@ port module Leaflet exposing
   , fadeTallObjects
   , showNaturalObjectsAboveZoom
   , activityMapSampleSize
+  , showActivityMapBelowZoom
   , event)
 
 import OHOLData as Data
@@ -234,6 +235,13 @@ activityMapSampleSize sampleSize =
     ]
     |> leafletCommand
 
+showActivityMapBelowZoom : Int -> Cmd msg
+showActivityMapBelowZoom zoom =
+  Encode.object
+    [ ("kind", Encode.string "showActivityMapBelowZoom")
+    , ("zoom", Encode.int zoom)
+    ]
+    |> leafletCommand
 
 type Event
   = MoveEnd Point

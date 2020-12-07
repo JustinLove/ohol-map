@@ -229,7 +229,12 @@ update msg model =
         }
       , Leaflet.activityMapSampleSize sampleSize
       )
-        --|> addCommand saveState
+    UI (View.SelectActivityMapZoom zoom) ->
+      ( { model
+        | showActivityMapBelowZoom = zoom
+        }
+      , Leaflet.showActivityMapBelowZoom zoom
+      )
     UI (View.SelectPointColor color) ->
       ( { model
         | pointColor = color

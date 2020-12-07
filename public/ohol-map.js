@@ -14,6 +14,16 @@
   }
 
   var actmapSampleSize = 2;
+  var actmapMaxZoom = 24;
+  var actmapLayerOptions = function(sampleSize) {
+    var zoomOffset = Math.max(0, Math.min(22, sampleSize - 1))
+    return {
+      minNativeZoom: 2+zoomOffset,
+      maxNativeZoom: Math.min(31, 24+zoomOffset),
+      zoomOffset: -zoomOffset,
+      tileSize: Math.pow(2, 8+zoomOffset),
+    }
+  }
 
   var barrierRadius = null
   var riftOptions = {
@@ -2233,21 +2243,17 @@
   }
 
   var createArcActivityMapLayer = function(end) {
-    var zoomOffset = Math.max(0, Math.min(22, actmapSampleSize - 1))
-    return L.tileLayer(oholMapConfig.actmap, {
+    var options = actmapLayerOptions(actmapSampleSize)
+    return L.tileLayer(oholMapConfig.actmap, Object.assign({
       pane: 'overlayPane',
       server: 17,
       time: end,
       className: 'crisp activity-map-layer',
       opacity: 0.5,
       minZoom: 2,
-      maxZoom: 31,
-      minNativeZoom: 2+zoomOffset,
-      maxNativeZoom: Math.min(31, 24+zoomOffset),
-      zoomOffset: -zoomOffset,
-      tileSize: Math.pow(2, 8+zoomOffset),
+      maxZoom: actmapMaxZoom,
       attribution: attribution,
-    })
+    }, options))
   }
 
   var setObjectLayerOptions = function(options) {
@@ -2307,19 +2313,12 @@
     })
   }
 
-  var setActivityMapSampleSize = function(sampleSize) {
-    var zoomOffset = Math.max(0, Math.min(22, sampleSize - 1))
-    actmapSampleSize = sampleSize
+  var setActivityMapOptions = function(options) {
     worlds.forEach(function(world) {
       world.spans.forEach(function(span) {
         if (span.actmap) {
           var layer = span.actmap
-          L.Util.setOptions(layer, {
-            minNativeZoom: 2+zoomOffset,
-            maxNativeZoom: Math.min(31, 24+zoomOffset),
-            zoomOffset: -zoomOffset,
-            tileSize: Math.pow(2, 8+zoomOffset),
-          })
+          L.Util.setOptions(layer, options)
           layer._map && layer._resetView && layer._resetView()
           layer.redraw && layer.redraw()
         }
@@ -3587,7 +3586,11 @@
             riftLayerByTime(mapTime, map.getZoom())
             break
           case 'activityMapSampleSize':
-            setActivityMapSampleSize(message.sampleSize)
+            actmapSampleSize = message.sampleSize
+            setActivityMapOptions(actmapLayerOptions(actmapSampleSize))
+            break
+          case 'showActivityMapBelowZoom':
+            setActivityMapOptions({maxZoom: message.zoom})
             break
           default:
             console.log('unknown message', message)
