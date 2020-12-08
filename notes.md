@@ -5,7 +5,7 @@
 - server search indexes
 
 ## Features
-- disable base biome layer
+- Format subheadings
 - time window range graph
 - in-app help
 - town cluster labels
