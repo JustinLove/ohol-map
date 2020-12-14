@@ -3,7 +3,6 @@
 - server search indexes
 
 ## Features
-- Format subheadings
 - time window range graph
 - in-app help
 - town cluster labels
