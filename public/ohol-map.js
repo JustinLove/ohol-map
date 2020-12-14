@@ -2291,10 +2291,11 @@
       tile.setAttribute('role', 'presentation');
 
       var datacoords = layer.dataCoords(coords)
+      var tileUrl = layer.getTileUrl(coords); // uses current layer zoom, disregards coords.z
       this._cache.loadTile(datacoords, {time: options.time, server: mapServer}).then(function(tileTime) {
         //console.log(coords, datacoords, time)
         if (tileTime[[datacoords.x, datacoords.y].join(' ')]) {
-          tile.src = layer.getTileUrl(coords);
+          tile.src = tileUrl
         } else {
           tile.src = L.Util.emptyImageUrl
         }
@@ -3651,7 +3652,8 @@
             setActivityMapOptions(actmapLayerOptions(actmapSampleSize))
             break
           case 'showActivityMapBelowZoom':
-            setActivityMapOptions({maxZoom: message.zoom})
+            actmapMaxZoom = message.zoom;
+            setActivityMapOptions({maxZoom: actmapMaxZoom})
             break
           default:
             console.log('unknown message', message)

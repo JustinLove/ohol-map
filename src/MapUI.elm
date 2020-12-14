@@ -82,6 +82,8 @@ init config location key =
       , Leaflet.pointLocation model.pointLocation
       , Leaflet.animOverlay model.dataAnimated
       , Leaflet.worldList (Data.rebuildWorlds Data.oholCodeChanges [] [] [])
+      , Leaflet.showNaturalObjectsAboveZoom model.showNaturalObjectsAboveZoom
+      , Leaflet.showActivityMapBelowZoom model.showActivityMapBelowZoom
       , highlightObjectsCommand model
       , sidebarCommand model
       ]

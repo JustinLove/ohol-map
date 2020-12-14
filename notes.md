@@ -1,10 +1,11 @@
 ## server work
-- grouped heat map
-  - save settings?
 - default position with no active monuments - precalculation
 - server search indexes
 
 ## Features
+- dark mode life colors
+- toggle actmap
+- fade actmap
 - Format subheadings
 - time window range graph
 - in-app help
