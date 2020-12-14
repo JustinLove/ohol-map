@@ -57,6 +57,7 @@ type Msg
   | ToggleShowMonuments Bool
   | ToggleShowOnlyCurrentMonuments Bool
   | SelectNaturalObjectZoom Int
+  | ToggleShowActivityMap Bool
   | SelectActivityMapSampleSize Int
   | SelectActivityMapZoom Int
   | ToggleShowLifeData Bool
@@ -1243,29 +1244,7 @@ cosmetics model =
         , thumb = Input.defaultThumb
         , step = Just 1
         }
-      , heading "Activity Map"
-      , Input.slider
-        [ Background.color controlColor ]
-        { onChange = round >> SelectActivityMapSampleSize
-        , label = Input.labelAbove [] <|
-            text ("Activity Map Sample Size: " ++ (2^(model.activityMapSampleSize-1) |> String.fromInt) ++ ":1")
-        , min = 1
-        , max = 9
-        , value = model.activityMapSampleSize |> toFloat
-        , thumb = Input.defaultThumb
-        , step = Just 1
-        }
-      , Input.slider
-        [ Background.color controlColor ]
-        { onChange = round >> SelectActivityMapZoom
-        , label = Input.labelAbove [] <|
-          text ("Activity Map Below Zoom: " ++ (model.showActivityMapBelowZoom |> String.fromInt))
-        , min = 23
-        , max = 31
-        , value = model.showActivityMapBelowZoom |> toFloat
-        , thumb = Input.defaultThumb
-        , step = Just 1
-        }
+      , activityMapOptions palette model
       , animationOptions palette model
       , heading "Application"
       , timeZoneControl model.zone
@@ -1300,6 +1279,38 @@ lifeOptions palette model =
         [ Input.option BirthLocation (text "Birth")
         , Input.option DeathLocation (text "Death")
         ]
+      }
+    ]
+
+activityMapOptions : Palette -> Model -> Element Msg
+activityMapOptions palette model =
+  subsectionControl
+    { tagger = ToggleShowActivityMap
+    , checked = model.activityMapVisible
+    , label = "Activity Map"
+    , palette = palette
+    }
+    [ Input.slider
+      [ Background.color palette.control ]
+      { onChange = round >> SelectActivityMapSampleSize
+      , label = Input.labelAbove [] <|
+          text ("Activity Map Sample Size: " ++ (2^(model.activityMapSampleSize-1) |> String.fromInt) ++ ":1")
+      , min = 1
+      , max = 9
+      , value = model.activityMapSampleSize |> toFloat
+      , thumb = Input.defaultThumb
+      , step = Just 1
+      }
+    , Input.slider
+      [ Background.color palette.control ]
+      { onChange = round >> SelectActivityMapZoom
+      , label = Input.labelAbove [] <|
+        text ("Activity Map Below Zoom: " ++ (model.showActivityMapBelowZoom |> String.fromInt))
+      , min = 23
+      , max = 31
+      , value = model.showActivityMapBelowZoom |> toFloat
+      , thumb = Input.defaultThumb
+      , step = Just 1
       }
     ]
 

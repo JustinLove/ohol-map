@@ -93,6 +93,7 @@ type alias Model =
   , player : Player
   , fadeTallObjects : Bool
   , showNaturalObjectsAboveZoom : Int
+  , activityMapVisible : Bool
   , activityMapSampleSize : Int
   , showActivityMapBelowZoom : Int
   , pointColor : PointColor
@@ -155,6 +156,7 @@ initialModel config location key =
   , player = Stopped
   , fadeTallObjects = False
   , showNaturalObjectsAboveZoom = 26
+  , activityMapVisible = True
   , activityMapSampleSize = 2
   , showActivityMapBelowZoom = 24
   , pointColor = LineageColor

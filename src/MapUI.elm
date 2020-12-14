@@ -231,6 +231,12 @@ update msg model =
       , Leaflet.showNaturalObjectsAboveZoom zoom
       )
         |> addCommand saveState
+    UI (View.ToggleShowActivityMap show) ->
+      ( { model
+        | activityMapVisible = show
+        }
+      , Leaflet.overlayVisible "Activity Map" show
+      )
     UI (View.SelectActivityMapSampleSize sampleSize) ->
       ( { model
         | activityMapSampleSize = sampleSize
@@ -425,6 +431,10 @@ update msg model =
       ({model | monumentsVisible = True}, Cmd.none)
     Event (Ok (Leaflet.OverlayRemove "Monuments")) ->
       ({model | monumentsVisible = False}, Cmd.none)
+    Event (Ok (Leaflet.OverlayAdd "Activity Map" _)) ->
+      ({model | activityMapVisible = True}, Cmd.none)
+    Event (Ok (Leaflet.OverlayRemove "Activity Map")) ->
+      ({model | activityMapVisible = False}, Cmd.none)
     Event (Ok (Leaflet.OverlayAdd name (Just serverId))) ->
       case Dict.get serverId model.servers of
         Just server ->

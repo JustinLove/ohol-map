@@ -161,6 +161,9 @@
   var objectOverlay = L.layerGroup([], {className: 'object-overlay'})
   objectOverlay.name = 'object overlay'
 
+  var activityOverlay = L.layerGroup([], {className: 'activity-overlay'})
+  activityOverlay.name = 'activity overlay'
+
   var baseFade = L.layerGroup([], {className: 'base-fade'})
   baseFade.name = 'base fade'
   baseFade.on('add', function(ev) {
@@ -208,6 +211,7 @@
     "Object Search": objectOverlay,
     "Fade": baseFade,
     "Monuments": monumentOverlay,
+    "Activity Map": activityOverlay,
     "Biomes": biomeLayerToggle,
   }
 
@@ -2935,7 +2939,7 @@
     var changes = 0
     var layers = []
     var objectOverlayLayers = []
-    var objectOverlayOn = map.hasLayer(objectOverlay)
+    var activityOverlayLayers = []
     if (targetWorld) {
       if (objectBounds.length > 0) {
         chooseRandPlacements(targetWorld)
@@ -2947,18 +2951,21 @@
       if (targetWorld.generation.placements) {
         updatePlacementLayer(specialOverlay, targetWorld.generation.placements)
       }
+
       layers = [
         biomeLayerVisible && targetWorld.biomeLayer,
         !targetSpan && targetWorld.objectLayer,
         !dataAnimated && targetSpan && targetSpan.keyPlacementLayer,
-        objectOverlayOn && !dataAnimated && targetSpan && targetSpan.keyPlacementPoint,
         dataAnimated && targetSpan && targetSpan.maplogLayer,
-        targetSpan && targetSpan.actmap,
-        objectOverlayOn && dataAnimated && targetSpan && targetSpan.maplogPoint,
       ].filter(function(x) {return !!x})
+
       objectOverlayLayers = [
         !dataAnimated && targetSpan && targetSpan.keyPlacementPoint,
         dataAnimated && targetSpan && targetSpan.maplogPoint,
+      ].filter(function(x) {return !!x})
+
+      activityOverlayLayers = [
+        targetSpan && targetSpan.actmap,
       ].filter(function(x) {return !!x})
     }
     oholBase.eachLayer(function(layer) {
@@ -2987,6 +2994,18 @@
         //console.log('add', layer.name)
         objectOverlay.addLayer(layer)
         changes++
+      }
+    })
+    activityOverlay.eachLayer(function(layer) {
+      if (activityOverlayLayers.indexOf(layer) == -1) {
+        //console.log('remove', layer && layer.name)
+        activityOverlay.removeLayer(layer)
+      }
+    })
+    activityOverlayLayers.forEach(function(layer) {
+      if (!activityOverlay.hasLayer(layer)) {
+        //console.log('add', layer.name)
+        activityOverlay.addLayer(layer)
       }
     })
     if (changes > 0) {
@@ -3489,6 +3508,7 @@
     var t = Date.now()
     setMapTime(map, t, 'inhabit')
     oholBase.addTo(map)
+    overlays['Activity Map'].addTo(map)
     overlays['Biomes'].addTo(map)
     //base['Topographic Test'].addTo(map)
     overlays['Rift'].addTo(map)
