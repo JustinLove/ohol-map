@@ -3638,6 +3638,14 @@
               }
             }
             break;
+          case 'dataLayerVisible':
+            if (message.status && !map.hasLayer(dataOverlay)) {
+              map.addLayer(dataOverlay)
+            }
+            if (!message.status && map.hasLayer(dataOverlay)) {
+              map.removeLayer(dataOverlay)
+            }
+            break;
           case 'pointColor':
             setPointColor(message.color)
             break;

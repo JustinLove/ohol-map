@@ -17,6 +17,7 @@ port module Leaflet exposing
   , animOverlay
   , sidebar
   , baseLayer
+  , dataLayerVisible
   , pointColor
   , pointLocation
   , changeTheme
@@ -165,6 +166,14 @@ baseLayer layer =
   Encode.object
     [ ("kind", Encode.string "baseLayer")
     , ("layer", Encode.string layer)
+    ]
+    |> leafletCommand
+
+dataLayerVisible : Bool -> Cmd msg
+dataLayerVisible status =
+  Encode.object
+    [ ("kind", Encode.string "dataLayerVisible")
+    , ("status", Encode.bool status)
     ]
     |> leafletCommand
 

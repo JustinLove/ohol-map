@@ -58,6 +58,7 @@ type Msg
   | SelectNaturalObjectZoom Int
   | SelectActivityMapSampleSize Int
   | SelectActivityMapZoom Int
+  | ToggleShowLifeData Bool
   | SelectPointColor PointColor
   | SelectPointLocation PointLocation
   | SelectMatchingLife Life
@@ -1221,28 +1222,34 @@ cosmetics model =
       , height fill
       , spacing 10
       ]
-      [ heading "Lives"
-      , Input.radio [ padding 10, spacing 2 ]
-        { onChange = SelectPointColor
-        , selected = Just model.pointColor
-        , label = Input.labelAbove [] (text "Color")
-        , options =
-          [ Input.option LineageColor (text "Lineage")
-          , Input.option BirthTimeColor (text "Birth Time")
-          , Input.option ChainColor (text "Generation")
-          , Input.option CauseOfDeathColor (text "Cause of Death")
-          , Input.option AgeColor (text "Age")
-          ]
+      [ subsectionControl
+        { tagger = ToggleShowLifeData
+        , checked = model.lifeDataVisible
+        , label = "Lives"
+        , palette = palette
         }
-      , Input.radio [ padding 10, spacing 2 ]
-        { onChange = SelectPointLocation
-        , selected = Just model.pointLocation
-        , label = Input.labelAbove [] (text "Location")
-        , options =
-          [ Input.option BirthLocation (text "Birth")
-          , Input.option DeathLocation (text "Death")
-          ]
-        }
+        [ Input.radio [ padding 10, spacing 2 ]
+          { onChange = SelectPointColor
+          , selected = Just model.pointColor
+          , label = Input.labelAbove [] (text "Color")
+          , options =
+            [ Input.option LineageColor (text "Lineage")
+            , Input.option BirthTimeColor (text "Birth Time")
+            , Input.option ChainColor (text "Generation")
+            , Input.option CauseOfDeathColor (text "Cause of Death")
+            , Input.option AgeColor (text "Age")
+            ]
+          }
+        , Input.radio [ padding 10, spacing 2 ]
+          { onChange = SelectPointLocation
+          , selected = Just model.pointLocation
+          , label = Input.labelAbove [] (text "Location")
+          , options =
+            [ Input.option BirthLocation (text "Birth")
+            , Input.option DeathLocation (text "Death")
+            ]
+          }
+        ]
       , heading "Monuments"
       , Input.checkbox [ padding 10, spacing 2 ]
         { onChange = ToggleShowOnlyCurrentMonuments

@@ -237,6 +237,12 @@ update msg model =
         }
       , Leaflet.showActivityMapBelowZoom zoom
       )
+    UI (View.ToggleShowLifeData show) ->
+      if show then
+        requireLives { model | lifeDataVisible = show }
+      else
+        ({model | lifeDataVisible = show}
+        , Leaflet.dataLayerVisible False)
     UI (View.SelectPointColor color) ->
       ( { model
         | pointColor = color
@@ -852,7 +858,7 @@ requireRecentLives model =
       , fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.withDefault 17)
       )
     _ ->
-      (model, Cmd.none)
+      (model, Leaflet.dataLayerVisible True)
 
 requireSelectedLives : Model -> (Model, Cmd Msg)
 requireSelectedLives model =
@@ -866,7 +872,7 @@ requireSelectedLives model =
       , fetchDataForTime model
       )
     _ ->
-      (model, Cmd.none)
+      (model, Leaflet.dataLayerVisible True)
 
 makeObjectMap : List ObjectId -> List String -> Dict ObjectId String
 makeObjectMap ids names =
