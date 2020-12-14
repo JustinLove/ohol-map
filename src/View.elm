@@ -1215,8 +1215,6 @@ cosmetics : Model -> Element Msg
 cosmetics model =
   let
     palette = themePalette model.theme
-    controlColor = palette.control
-    heading title = inverseHeading palette (text title)
   in
   el [ width fill, height fill, scrollbarY] <|
     column
@@ -1226,29 +1224,10 @@ cosmetics model =
       ]
       [ lifeOptions palette model
       , monumentOptions palette model
-      , heading "Objects"
-      , Input.checkbox [ padding 10, spacing 2 ]
-        { onChange = ToggleFadeTallObjects
-        , checked = model.fadeTallObjects
-        , label = Input.labelRight [ padding 6 ] (text "Fade Tall Objects")
-        , icon = Input.defaultCheckbox
-        }
-      , Input.slider
-        [ Background.color controlColor ]
-        { onChange = round >> SelectNaturalObjectZoom
-        , label = Input.labelAbove [] <|
-          text ("Natural Objects Above Zoom: " ++ (model.showNaturalObjectsAboveZoom |> String.fromInt))
-        , min = 24
-        , max = 32
-        , value = model.showNaturalObjectsAboveZoom |> toFloat
-        , thumb = Input.defaultThumb
-        , step = Just 1
-        }
+      , objectOptions palette model
       , activityMapOptions palette model
       , animationOptions palette model
-      , heading "Application"
-      , timeZoneControl model.zone
-      , themeControl model.theme
+      , applicationOptions palette model
       ]
 
 lifeOptions : Palette -> Model -> Element Msg
@@ -1279,6 +1258,29 @@ lifeOptions palette model =
         [ Input.option BirthLocation (text "Birth")
         , Input.option DeathLocation (text "Death")
         ]
+      }
+    ]
+
+objectOptions : Palette -> Model -> Element Msg
+objectOptions palette model =
+  column [ width fill, spacing 10 ]
+    [ inverseHeading palette (text "Objects")
+    , Input.checkbox [ padding 10, spacing 2 ]
+      { onChange = ToggleFadeTallObjects
+      , checked = model.fadeTallObjects
+      , label = Input.labelRight [ padding 6 ] (text "Fade Tall Objects")
+      , icon = Input.defaultCheckbox
+      }
+    , Input.slider
+      [ Background.color palette.control ]
+      { onChange = round >> SelectNaturalObjectZoom
+      , label = Input.labelAbove [] <|
+        text ("Natural Objects Above Zoom: " ++ (model.showNaturalObjectsAboveZoom |> String.fromInt))
+      , min = 24
+      , max = 32
+      , value = model.showNaturalObjectsAboveZoom |> toFloat
+      , thumb = Input.defaultThumb
+      , step = Just 1
       }
     ]
 
@@ -1362,22 +1364,13 @@ monumentOptions palette model =
       }
     ]
 
-subsectionControl :
-  { tagger : Bool -> msg
-  , checked : Bool
-  , label : String
-  , palette : Palette
-  } -> List (Element msg) -> Element msg
-subsectionControl {tagger, checked, label, palette} contents =
+applicationOptions : Palette -> Model -> Element Msg
+applicationOptions palette model =
   column [ width fill, spacing 10 ]
-    ((inverseHeading palette <| Input.checkbox [ spacing 8 ]
-      { onChange = tagger
-      , checked = checked
-      , label = Input.labelRight [] (text label)
-      , icon = Input.defaultCheckbox
-      })
-    :: if checked then contents else []
-    )
+    [ inverseHeading palette (text "Application")
+    , timeZoneControl model.zone
+    , themeControl model.theme
+    ]
 
 timeZoneControl : Time.Zone -> Element Msg
 timeZoneControl zone =
@@ -1402,6 +1395,24 @@ themeControl theme =
     , Input.option Theme.Light (text "Light")
     ]
   }
+
+
+subsectionControl :
+  { tagger : Bool -> msg
+  , checked : Bool
+  , label : String
+  , palette : Palette
+  } -> List (Element msg) -> Element msg
+subsectionControl {tagger, checked, label, palette} contents =
+  column [ width fill, spacing 10 ]
+    ((inverseHeading palette <| Input.checkbox [ spacing 8 ]
+      { onChange = tagger
+      , checked = checked
+      , label = Input.labelRight [] (text label)
+      , icon = Input.defaultCheckbox
+      })
+    :: if checked then contents else []
+    )
 
 gameTimeText : Int -> String
 gameTimeText totalSeconds =
