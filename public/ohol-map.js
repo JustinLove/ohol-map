@@ -3629,21 +3629,15 @@
           case 'sidebar':
             toggleSidebarControls(map, message.sidebar)
             break
-          case 'baseLayer':
-            for (var name in base) {
+          case 'overlayVisible':
+            for (var name in overlays) {
               if (name == message.layer) {
-                map.addLayer(base[name])
-              } else {
-                map.removeLayer(base[name])
+                if (message.status) {
+                  if (!map.hasLayer(overlays[name])) map.addLayer(overlays[name])
+                } else {
+                  if (map.hasLayer(overlays[name])) map.removeLayer(overlays[name])
+                }
               }
-            }
-            break;
-          case 'dataLayerVisible':
-            if (message.status && !map.hasLayer(dataOverlay)) {
-              map.addLayer(dataOverlay)
-            }
-            if (!message.status && map.hasLayer(dataOverlay)) {
-              map.removeLayer(dataOverlay)
             }
             break;
           case 'pointColor':

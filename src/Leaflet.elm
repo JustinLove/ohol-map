@@ -16,7 +16,7 @@ port module Leaflet exposing
   , highlightObjects
   , animOverlay
   , sidebar
-  , baseLayer
+  , overlayVisible
   , dataLayerVisible
   , pointColor
   , pointLocation
@@ -161,21 +161,18 @@ sidebar status =
     ]
     |> leafletCommand
 
-baseLayer : String -> Cmd msg
-baseLayer layer =
+overlayVisible : String -> Bool -> Cmd msg
+overlayVisible layer status =
   Encode.object
-    [ ("kind", Encode.string "baseLayer")
+    [ ("kind", Encode.string "overlayVisible")
     , ("layer", Encode.string layer)
+    , ("status", Encode.bool status)
     ]
     |> leafletCommand
 
 dataLayerVisible : Bool -> Cmd msg
 dataLayerVisible status =
-  Encode.object
-    [ ("kind", Encode.string "dataLayerVisible")
-    , ("status", Encode.bool status)
-    ]
-    |> leafletCommand
+  overlayVisible "Life Data" status
 
 pointColor : PointColor -> Cmd msg
 pointColor color =
