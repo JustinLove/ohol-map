@@ -1222,34 +1222,7 @@ cosmetics model =
       , height fill
       , spacing 10
       ]
-      [ subsectionControl
-        { tagger = ToggleShowLifeData
-        , checked = model.lifeDataVisible
-        , label = "Lives"
-        , palette = palette
-        }
-        [ Input.radio [ padding 10, spacing 2 ]
-          { onChange = SelectPointColor
-          , selected = Just model.pointColor
-          , label = Input.labelAbove [] (text "Color")
-          , options =
-            [ Input.option LineageColor (text "Lineage")
-            , Input.option BirthTimeColor (text "Birth Time")
-            , Input.option ChainColor (text "Generation")
-            , Input.option CauseOfDeathColor (text "Cause of Death")
-            , Input.option AgeColor (text "Age")
-            ]
-          }
-        , Input.radio [ padding 10, spacing 2 ]
-          { onChange = SelectPointLocation
-          , selected = Just model.pointLocation
-          , label = Input.labelAbove [] (text "Location")
-          , options =
-            [ Input.option BirthLocation (text "Birth")
-            , Input.option DeathLocation (text "Death")
-            ]
-          }
-        ]
+      [ lifeOptions palette model
       , heading "Monuments"
       , Input.checkbox [ padding 10, spacing 2 ]
         { onChange = ToggleShowOnlyCurrentMonuments
@@ -1298,39 +1271,74 @@ cosmetics model =
         , thumb = Input.defaultThumb
         , step = Just 1
         }
-      , subsectionControl
-        { tagger = ToggleAnimated
-        , checked = model.dataAnimated
-        , label = "Animated"
-        , palette = palette
-        }
-        [ logSlider
-            [ Background.color controlColor ]
-            { onChange = round >> GameSecondsPerSecond
-            , label = Input.labelAbove [] <|
-              text (gameTimeText model.gameSecondsPerSecond)
-            , min = 1
-            , max = 60*60*10
-            , value = model.gameSecondsPerSecond |> toFloat
-            , thumb = Input.defaultThumb
-            , step = Nothing
-            }
-        , logSlider
-            [ Background.color controlColor ]
-            { onChange = round >> FramesPerSecond
-            , label = Input.labelAbove [] <|
-              text ((model.framesPerSecond |> String.fromInt) ++ " Frames/Second")
-            , min = 1
-            , max = 60
-            , value = model.framesPerSecond |> toFloat
-            , thumb = Input.defaultThumb
-            , step = Nothing
-            }
-        ]
+      , animationOptions palette model
       , heading "Application"
       , timeZoneControl model.zone
       , themeControl model.theme
       ]
+
+lifeOptions : Palette -> Model -> Element Msg
+lifeOptions palette model =
+  subsectionControl
+    { tagger = ToggleShowLifeData
+    , checked = model.lifeDataVisible
+    , label = "Lives"
+    , palette = palette
+    }
+    [ Input.radio [ padding 10, spacing 2 ]
+      { onChange = SelectPointColor
+      , selected = Just model.pointColor
+      , label = Input.labelAbove [] (text "Color")
+      , options =
+        [ Input.option LineageColor (text "Lineage")
+        , Input.option BirthTimeColor (text "Birth Time")
+        , Input.option ChainColor (text "Generation")
+        , Input.option CauseOfDeathColor (text "Cause of Death")
+        , Input.option AgeColor (text "Age")
+        ]
+      }
+    , Input.radio [ padding 10, spacing 2 ]
+      { onChange = SelectPointLocation
+      , selected = Just model.pointLocation
+      , label = Input.labelAbove [] (text "Location")
+      , options =
+        [ Input.option BirthLocation (text "Birth")
+        , Input.option DeathLocation (text "Death")
+        ]
+      }
+    ]
+
+animationOptions : Palette -> Model -> Element Msg
+animationOptions palette model =
+  subsectionControl
+    { tagger = ToggleAnimated
+    , checked = model.dataAnimated
+    , label = "Animated"
+    , palette = palette
+    }
+    [ logSlider
+        [ Background.color palette.control ]
+        { onChange = round >> GameSecondsPerSecond
+        , label = Input.labelAbove [] <|
+          text (gameTimeText model.gameSecondsPerSecond)
+        , min = 1
+        , max = 60*60*10
+        , value = model.gameSecondsPerSecond |> toFloat
+        , thumb = Input.defaultThumb
+        , step = Nothing
+        }
+    , logSlider
+        [ Background.color palette.control ]
+        { onChange = round >> FramesPerSecond
+        , label = Input.labelAbove [] <|
+          text ((model.framesPerSecond |> String.fromInt) ++ " Frames/Second")
+        , min = 1
+        , max = 60
+        , value = model.framesPerSecond |> toFloat
+        , thumb = Input.defaultThumb
+        , step = Nothing
+        }
+    ]
 
 subsectionControl :
   { tagger : Bool -> msg
