@@ -89,6 +89,7 @@ view model =
   layout
     [ width fill, height fill
     , Font.color (themePalette model.theme).foreground
+    , Font.size (scaled 2)
     , Background.color (themePalette model.theme).background
     , themeClass model.theme
     , htmlAttribute (Html.Attributes.id "layout")
@@ -430,8 +431,8 @@ showLifeResult model remote =
 showObjectResult : Model -> List ObjectId -> Element Msg
 showObjectResult model objects =
   if List.isEmpty objects then
-    column [ centerX, centerY, Font.size (scaled 500 1) ]
-      [ el [ centerX, Font.size (scaled 500 2)] <|
+    column [ centerX, centerY, Font.size (scaled 1) ]
+      [ el [ centerX, Font.size (scaled 2)] <|
         text "Restrictions"
       , el [ centerX ] <|
         text "Loaded in current view"
@@ -1210,7 +1211,9 @@ presets model =
 cosmetics : Model -> Element Msg
 cosmetics model =
   let
-    controlColor = (themePalette model.theme).control
+    palette = themePalette model.theme
+    controlColor = palette.control
+    heading title = inverseHeading palette (text title)
   in
   el [ width fill, height fill, scrollbarY] <|
     column
@@ -1218,7 +1221,8 @@ cosmetics model =
       , height fill
       , spacing 10
       ]
-      [ Input.radio [ padding 10, spacing 2 ]
+      [ heading "Lives"
+      , Input.radio [ padding 10, spacing 2 ]
         { onChange = SelectPointColor
         , selected = Just model.pointColor
         , label = Input.labelAbove [] (text "Color")
@@ -1239,12 +1243,14 @@ cosmetics model =
           , Input.option DeathLocation (text "Death")
           ]
         }
+      , heading "Monuments"
       , Input.checkbox [ padding 10, spacing 2 ]
         { onChange = ToggleShowOnlyCurrentMonuments
         , checked = model.showOnlyCurrentMonuments
         , label = Input.labelRight [ padding 6 ] (text "Show Only Current Monuments")
         , icon = Input.defaultCheckbox
         }
+      , heading "Objects"
       , Input.checkbox [ padding 10, spacing 2 ]
         { onChange = ToggleFadeTallObjects
         , checked = model.fadeTallObjects
@@ -1262,6 +1268,7 @@ cosmetics model =
         , thumb = Input.defaultThumb
         , step = Just 1
         }
+      , heading "Activity Map"
       , Input.slider
         [ Background.color controlColor ]
         { onChange = round >> SelectActivityMapSampleSize
@@ -1284,14 +1291,13 @@ cosmetics model =
         , thumb = Input.defaultThumb
         , step = Just 1
         }
-      , Input.checkbox [ padding 10, spacing 2 ]
-        { onChange = ToggleAnimated
+      , subsectionControl
+        { tagger = ToggleAnimated
         , checked = model.dataAnimated
-        , label = Input.labelRight [ padding 6 ] (text "Animated")
-        , icon = Input.defaultCheckbox
+        , label = "Animated"
+        , palette = palette
         }
-      , if model.dataAnimated then
-          logSlider
+        [ logSlider
             [ Background.color controlColor ]
             { onChange = round >> GameSecondsPerSecond
             , label = Input.labelAbove [] <|
@@ -1302,10 +1308,7 @@ cosmetics model =
             , thumb = Input.defaultThumb
             , step = Nothing
             }
-        else
-          none
-      , if model.dataAnimated then
-          logSlider
+        , logSlider
             [ Background.color controlColor ]
             { onChange = round >> FramesPerSecond
             , label = Input.labelAbove [] <|
@@ -1316,12 +1319,28 @@ cosmetics model =
             , thumb = Input.defaultThumb
             , step = Nothing
             }
-        else
-          none
+        ]
+      , heading "Application"
       , timeZoneControl model.zone
       , themeControl model.theme
       ]
 
+subsectionControl :
+  { tagger : Bool -> msg
+  , checked : Bool
+  , label : String
+  , palette : Palette
+  } -> List (Element msg) -> Element msg
+subsectionControl {tagger, checked, label, palette} contents =
+  column [ width fill, spacing 10 ]
+    ((inverseHeading palette <| Input.checkbox [ spacing 8 ]
+      { onChange = tagger
+      , checked = checked
+      , label = Input.labelRight [] (text label)
+      , icon = Input.defaultCheckbox
+      })
+    :: if checked then contents else []
+    )
 
 timeZoneControl : Time.Zone -> Element Msg
 timeZoneControl zone =
@@ -1390,47 +1409,61 @@ showError error =
   el [ centerX, centerY ] <|
     case error of
       Http.BadUrl url ->
-        twoPartMessage 500
+        twoPartMessage
           "Bad Url"
           "This *really* shouldn't happen."
       Http.Timeout ->
-        twoPartMessage 500
+        twoPartMessage
           "Timeout"
           "Wondible is cheap and you are getting this for free."
       Http.NetworkError ->
-        twoPartMessage 500
+        twoPartMessage
           "Network Error"
           "Either you or the server went offline"
       Http.BadStatus code ->
         case code of
           404 ->
-            twoPartMessage 500
+            twoPartMessage
               (code |> String.fromInt)
               "No Data"
           _ ->
-            twoPartMessage 500
+            twoPartMessage
               (code |> String.fromInt)
               "Server is being naughty again."
       Http.BadBody body ->
-        twoPartMessage 500
+        twoPartMessage
           "Bad Body"
           body
 
-twoPartMessage : Int -> String -> String -> Element Msg
-twoPartMessage height header body =
+twoPartMessage : String -> String -> Element Msg
+twoPartMessage header body =
   column []
-    [ el [ centerX, Font.size (scaled height 2)] <|
+    [ el [ centerX, Font.size (scaled 2)] <|
       text header
-    , el [ centerX, Font.size (scaled height 1)] <|
+    , el [ centerX, Font.size (scaled 1)] <|
       text body
     ]
-
 
 icon : String -> Element msg
 icon name =
   svg [ Svg.Attributes.class ("icon icon-"++name) ]
     [ use [ xlinkHref ("symbol-defs.svg#icon-"++name) ] [] ]
   |> html
+
+inverseHeading : Palette -> Element msg -> Element msg
+inverseHeading palette title =
+  column [ width fill ]
+    [ el [ height (px 8) ] none
+    , el
+        [ Font.size (scaled 3)
+        , Region.heading 3
+        , Font.color palette.background
+        , Background.color palette.foreground
+        , width fill
+        , paddingXY 10 2
+        ]
+        title
+    ]
 
 onChange : (String -> msg) -> Attribute msg
 onChange tagger =
@@ -1511,4 +1544,4 @@ objectColor id =
     |> SolidColor.toRGB
     |> (\(rf, gf, bf) -> rgb (rf/255) (gf/255) (bf/255))
 
-scaled height = modular (max ((toFloat height)/30) 15) 1.25 >> round
+scaled = modular 16 1.25 >> round
