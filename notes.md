@@ -3,7 +3,6 @@
 - server search indexes
 
 ## Features
-- dark mode life colors
 - Format subheadings
 - time window range graph
 - in-app help

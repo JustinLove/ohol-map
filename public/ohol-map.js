@@ -2385,11 +2385,11 @@
     return '#' + (((id * 49157) % 12582917).toString(16))
   }
 
-  var colorlineage = function(id) {
+  var colorlineage = function(id, theme) {
     id = id || 0
     var hue = (id * 49157) % 359
     var sat = (id * 24593) % 67 + 33
-    var light = (id * 12289) % 53 + 20
+    var light = (id * 12289) % 53 + (theme == 'dark' ? 47 : 20)
     var greenish = Math.abs(hue - 120)
     if (greenish < 60) {
       light = Math.min(light, greenish * 30 / 60 + 20)
@@ -2472,6 +2472,7 @@
       //console.log(coords, llnw, llse)
 
       var color = options.color
+      if (color == 'lineageColor') color = color + options.theme
       if (color == 'causeOfDeathColor') color = color + options.theme
       var location = options.location
       var fadeTime = 60*60
@@ -2629,6 +2630,7 @@
   var resultPoints = new L.GridLayer.LifePointOverlay().addTo(searchOverlay)
 
   var setDataLayers = function(data) {
+    var theme = legendControl.options.theme
     var min = null;
     var max = null;
     var minChain = null;
@@ -2649,7 +2651,8 @@
       }
     })
     data.forEach(function(point) {
-      point.lineageColor = colorlineage(point.lineage)
+      point.lineageColordark = colorlineage(point.lineage, 'dark')
+      point.lineageColorlight = colorlineage(point.lineage, 'light')
       if (point.hash) {
         point.hashColor = colorhash(point.hash)
       }
@@ -3239,8 +3242,9 @@
               swatch.innerHTML = "...."
               break
             }
-
-            swatch.style = 'background-color: ' + colorlineage(life.lineage)
+            var foreground = 'color: ' + (options.theme == 'light' ? 'white' : 'black')
+            var background = 'background-color: ' + colorlineage(life.lineage, options.theme)
+            swatch.style = foreground + ';' + background
             if (life.name) {
               var words = life.name.split(' ')
               swatch.innerHTML = (words[1] || 'unnamed')
