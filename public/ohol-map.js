@@ -2307,7 +2307,7 @@
   var createArcActivityMapLayer = function(end) {
     var options = actmapLayerOptions(actmapSampleSize)
     return new L.TileLayer.SparseTileLayer(oholMapConfig.actmap, actIndexCache, Object.assign({
-      pane: 'overlayPane',
+      pane: 'tilePane',
       server: 17,
       time: end,
       className: 'crisp activity-map-layer',
