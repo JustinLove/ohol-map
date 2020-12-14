@@ -206,6 +206,12 @@ update msg model =
         }
       , Cmd.none
       )
+    UI (View.ToggleShowMonuments show) ->
+      ( { model
+        | monumentsVisible = show
+        }
+      , Leaflet.overlayVisible "Monuments" show
+      )
     UI (View.ToggleShowOnlyCurrentMonuments show) ->
       ( { model
         | showOnlyCurrentMonuments = show
@@ -415,6 +421,10 @@ update msg model =
       ({model | graticuleVisible = True}, Cmd.none)
     Event (Ok (Leaflet.OverlayRemove "graticule")) ->
       ({model | graticuleVisible = False}, Cmd.none)
+    Event (Ok (Leaflet.OverlayAdd "Monuments" _)) ->
+      ({model | monumentsVisible = True}, Cmd.none)
+    Event (Ok (Leaflet.OverlayRemove "Monuments")) ->
+      ({model | monumentsVisible = False}, Cmd.none)
     Event (Ok (Leaflet.OverlayAdd name (Just serverId))) ->
       case Dict.get serverId model.servers of
         Just server ->

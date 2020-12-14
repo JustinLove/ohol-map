@@ -85,6 +85,7 @@ type alias Model =
   , dataAnimated : Bool
   , lifeDataVisible : Bool
   , graticuleVisible : Bool
+  , monumentsVisible : Bool
   , showOnlyCurrentMonuments : Bool
   , gameSecondsPerSecond : Int
   , framesPerSecond : Int
@@ -146,6 +147,7 @@ initialModel config location key =
   , dataAnimated = False
   , lifeDataVisible = False
   , graticuleVisible = False
+  , monumentsVisible = True
   , showOnlyCurrentMonuments = True
   , gameSecondsPerSecond = 600
   , framesPerSecond = 10

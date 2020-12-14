@@ -54,6 +54,7 @@ type Msg
   | Play
   | Pause
   | ToggleFadeTallObjects Bool
+  | ToggleShowMonuments Bool
   | ToggleShowOnlyCurrentMonuments Bool
   | SelectNaturalObjectZoom Int
   | SelectActivityMapSampleSize Int
@@ -1223,13 +1224,7 @@ cosmetics model =
       , spacing 10
       ]
       [ lifeOptions palette model
-      , heading "Monuments"
-      , Input.checkbox [ padding 10, spacing 2 ]
-        { onChange = ToggleShowOnlyCurrentMonuments
-        , checked = model.showOnlyCurrentMonuments
-        , label = Input.labelRight [ padding 6 ] (text "Show Only Current Monuments")
-        , icon = Input.defaultCheckbox
-        }
+      , monumentOptions palette model
       , heading "Objects"
       , Input.checkbox [ padding 10, spacing 2 ]
         { onChange = ToggleFadeTallObjects
@@ -1338,6 +1333,22 @@ animationOptions palette model =
         , thumb = Input.defaultThumb
         , step = Nothing
         }
+    ]
+
+monumentOptions : Palette -> Model -> Element Msg
+monumentOptions palette model =
+  subsectionControl
+    { tagger = ToggleShowMonuments
+    , checked = model.monumentsVisible
+    , label = "Monuments"
+    , palette = palette
+    }
+    [ Input.checkbox [ padding 10, spacing 2 ]
+      { onChange = ToggleShowOnlyCurrentMonuments
+      , checked = model.showOnlyCurrentMonuments
+      , label = Input.labelRight [ padding 6 ] (text "Show Only Current Monuments")
+      , icon = Input.defaultCheckbox
+      }
     ]
 
 subsectionControl :
