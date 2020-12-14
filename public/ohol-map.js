@@ -160,18 +160,6 @@
 
   var objectOverlay = L.layerGroup([], {className: 'object-overlay'})
   objectOverlay.name = 'object overlay'
-  objectOverlay.on('add', function(ev) {
-    var map = ev.target._map
-    setTimeout(function() {
-      baseLayerByTime(map, mapTime, 'object overlay')
-    })
-  })
-  objectOverlay.on('remove', function(ev) {
-    var map = ev.target._map
-    setTimeout(function() {
-      baseLayerByTime(map, mapTime, 'object overlay')
-    })
-  })
 
   var baseFade = L.layerGroup([], {className: 'base-fade'})
   baseFade.name = 'base fade'
@@ -2943,6 +2931,7 @@
     })
     var changes = 0
     var layers = []
+    var objectOverlayLayers = []
     var objectOverlayOn = map.hasLayer(objectOverlay)
     if (targetWorld) {
       if (objectBounds.length > 0) {
@@ -2964,6 +2953,10 @@
         targetSpan && targetSpan.actmap,
         objectOverlayOn && dataAnimated && targetSpan && targetSpan.maplogPoint,
       ].filter(function(x) {return !!x})
+      objectOverlayLayers = [
+        !dataAnimated && targetSpan && targetSpan.keyPlacementPoint,
+        dataAnimated && targetSpan && targetSpan.maplogPoint,
+      ].filter(function(x) {return !!x})
     }
     oholBase.eachLayer(function(layer) {
       if (layers.indexOf(layer) == -1) {
@@ -2976,6 +2969,20 @@
       if (!oholBase.hasLayer(layer)) {
         //console.log('add', layer.name)
         oholBase.addLayer(layer)
+        changes++
+      }
+    })
+    objectOverlay.eachLayer(function(layer) {
+      if (objectOverlayLayers.indexOf(layer) == -1) {
+        //console.log('remove', layer && layer.name)
+        objectOverlay.removeLayer(layer)
+        changes++
+      }
+    })
+    objectOverlayLayers.forEach(function(layer) {
+      if (!objectOverlay.hasLayer(layer)) {
+        //console.log('add', layer.name)
+        objectOverlay.addLayer(layer)
         changes++
       }
     })

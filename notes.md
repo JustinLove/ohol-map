@@ -4,7 +4,6 @@
 
 ## Features
 - dark mode life colors
-- toggle actmap
 - Format subheadings
 - time window range graph
 - in-app help
