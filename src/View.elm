@@ -1274,7 +1274,11 @@ objectOptions palette model =
       [ Background.color palette.control ]
       { onChange = round >> SelectNaturalObjectZoom
       , label = Input.labelAbove [] <|
-        text ("Natural Objects Above Zoom: " ++ (model.showNaturalObjectsAboveZoom |> String.fromInt))
+        row []
+          [ text ("Natural Objects > Zoom ")
+          , icon "lock"
+          , text (": " ++ (model.showNaturalObjectsAboveZoom |> String.fromInt))
+          ]
       , min = 24
       , max = 32
       , value = model.showNaturalObjectsAboveZoom |> toFloat
@@ -1295,7 +1299,7 @@ activityMapOptions palette model =
       [ Background.color palette.control ]
       { onChange = round >> SelectActivityMapSampleSize
       , label = Input.labelAbove [] <|
-          text ("Activity Map Sample Size: " ++ (2^(model.activityMapSampleSize-1) |> String.fromInt) ++ ":1")
+          text ("Sample Size: " ++ (2^(model.activityMapSampleSize-1) |> String.fromInt) ++ ":1")
       , min = 1
       , max = 9
       , value = model.activityMapSampleSize |> toFloat
@@ -1306,7 +1310,11 @@ activityMapOptions palette model =
       [ Background.color palette.control ]
       { onChange = round >> SelectActivityMapZoom
       , label = Input.labelAbove [] <|
-        text ("Activity Map Below Zoom: " ++ (model.showActivityMapBelowZoom |> String.fromInt))
+        row []
+          [ text ("Show < Zoom ")
+          , icon "lock"
+          , text (": " ++ (model.showActivityMapBelowZoom |> String.fromInt))
+          ]
       , min = 23
       , max = 31
       , value = model.showActivityMapBelowZoom |> toFloat
@@ -1388,7 +1396,7 @@ themeControl theme =
  Input.radioRow [ padding 10, spacing 20 ]
   { onChange = ChangeTheme
   , selected = Just theme
-  , label = Input.labelAbove [] (text "Theme")
+  , label = Input.labelAbove [] (row [] [text "Theme ", icon "lock"])
   , options =
     [ Input.option Theme.Dark (text "Dark")
     , Input.option Theme.Light (text "Light")
