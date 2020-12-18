@@ -2289,7 +2289,7 @@
         if (tileTime[[datacoords.x, datacoords.y].join(' ')]) {
           tile.src = tileUrl
         } else {
-          tile.src = L.Util.emptyImageUrl
+          done("sparse tile miss", tile)
         }
       });
       return tile;
