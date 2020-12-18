@@ -1276,7 +1276,7 @@ objectOptions palette model =
       , label = Input.labelAbove [] <|
         row []
           [ text ("Natural Objects > Zoom ")
-          , icon "lock"
+          , savedSetting
           , text (": " ++ (model.showNaturalObjectsAboveZoom |> String.fromInt))
           ]
       , min = 24
@@ -1312,7 +1312,7 @@ activityMapOptions palette model =
       , label = Input.labelAbove [] <|
         row []
           [ text ("Show < Zoom ")
-          , icon "lock"
+          , savedSetting
           , text (": " ++ (model.showActivityMapBelowZoom |> String.fromInt))
           ]
       , min = 23
@@ -1396,7 +1396,7 @@ themeControl theme =
  Input.radioRow [ padding 10, spacing 20 ]
   { onChange = ChangeTheme
   , selected = Just theme
-  , label = Input.labelAbove [] (row [] [text "Theme ", icon "lock"])
+  , label = Input.labelAbove [] (row [] [text "Theme ", savedSetting])
   , options =
     [ Input.option Theme.Dark (text "Dark")
     , Input.option Theme.Light (text "Light")
@@ -1504,6 +1504,10 @@ icon name =
   svg [ Svg.Attributes.class ("icon icon-"++name) ]
     [ use [ xlinkHref ("symbol-defs.svg#icon-"++name) ] [] ]
   |> html
+
+savedSetting : Element msg
+savedSetting =
+  el [htmlAttribute (Html.Attributes.title "This option is saved in your browser")] (icon "lock")
 
 inverseHeading : Palette -> Element msg -> Element msg
 inverseHeading palette title =
