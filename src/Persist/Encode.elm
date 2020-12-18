@@ -10,6 +10,7 @@ persist p =
   object
     [ ("theme", theme p.theme)
     , ("showNaturalObjectsAboveZoom", int p.showNaturalObjectsAboveZoom)
+    , ("showActivityMapBelowZoom", int p.showActivityMapBelowZoom)
     ]
 
 theme : Theme -> Value

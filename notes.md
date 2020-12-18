@@ -3,7 +3,6 @@
 - server search indexes
 
 ## Features
-- save activy map zoom
 - time window range graph
 - in-app help
 - town cluster labels

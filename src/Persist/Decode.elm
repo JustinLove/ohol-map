@@ -7,11 +7,16 @@ import Json.Decode exposing (..)
 
 persist : Decoder Persist
 persist =
-  map2 Persist
+  map3 Persist
     (field "theme" theme)
     (oneOf
       [ (field "showNaturalObjectsAboveZoom" int)
       , (succeed 26)
+      ]
+    )
+    (oneOf
+      [ (field "showActivityMapBelowZoom" int)
+      , (succeed 24)
       ]
     )
 

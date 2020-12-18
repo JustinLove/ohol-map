@@ -106,6 +106,7 @@ update msg model =
             { model
             | theme = state.theme
             , showNaturalObjectsAboveZoom = state.showNaturalObjectsAboveZoom
+            , showActivityMapBelowZoom = state.showActivityMapBelowZoom
             }
           Nothing ->
             model
@@ -249,6 +250,7 @@ update msg model =
         }
       , Leaflet.showActivityMapBelowZoom zoom
       )
+        |> addCommand saveState
     UI (View.ToggleShowLifeData show) ->
       if show then
         requireLives { model | lifeDataVisible = show }
@@ -759,6 +761,7 @@ saveState model =
   Persist
     model.theme
     model.showNaturalObjectsAboveZoom
+    model.showActivityMapBelowZoom
       |> Persist.Encode.persist
       |> LocalStorage.saveJson
 
@@ -768,6 +771,7 @@ resolveLoaded model =
   , Cmd.batch
     [ changeTheme model.theme
     , Leaflet.showNaturalObjectsAboveZoom model.showNaturalObjectsAboveZoom
+    , Leaflet.showActivityMapBelowZoom model.showActivityMapBelowZoom
     ]
   )
 
