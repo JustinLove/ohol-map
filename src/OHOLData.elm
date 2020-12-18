@@ -648,6 +648,22 @@ oholCodeChanges =
       , secondPlaceBiomeObjects = NoSecondPlace
       } |> topographic specialBiomeWeights
     }
+  , { name = "Band +20 Age"
+    , start = humanTime "2020-12-18T18:54:08Z"
+    , biomeLayer = Nothing
+    , generation =
+      { defaultGeneration
+      | biomeMap = specialBiomeMap
+      , biomeRandSeedA = Nothing
+      , randSeed = Nothing
+      , numSpecialBiomes = 3
+      , specialBiomeBandOrder = specialBiomeBandOrder
+      , specialBiomeBandYCenter = specialBiomeBandYCenter20
+      , specialBiomeBandDefault = 3
+      , specialBiomeBandThickness = 200
+      , secondPlaceBiomeObjects = NoSecondPlace
+      } |> topographic specialBiomeWeights
+    }
   ]
   |> fixupStartTime
 
@@ -664,7 +680,7 @@ futureCodeChanges =
       , randSeed = Nothing
       , numSpecialBiomes = 3
       , specialBiomeBandOrder = specialBiomeBandOrder
-      , specialBiomeBandYCenter = specialBiomeBandYCenter
+      , specialBiomeBandYCenter = specialBiomeBandYCenter20
       , specialBiomeBandDefault = 3
       , specialBiomeBandThickness = 200
       , secondPlaceBiomeObjects = NoSecondPlace
@@ -892,6 +908,13 @@ specialBiomeBandYCenter =
   , 100
   , -100
   , -300
+  ]
+
+specialBiomeBandYCenter20 =
+  [ 320
+  , 120
+  , -80
+  , -280
   ]
 
 thol1BiomeMap =

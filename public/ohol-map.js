@@ -1009,10 +1009,17 @@
     L.rectangle([[-bandThickness-0.5,-bandWidth], [-0.5,bandWidth]], {color: rgbToString(jungleColor)}),
     L.rectangle([[-bandThickness*2-0.5,-bandWidth], [-bandThickness-0.5,bandWidth]], {color: rgbToString(desertColor)}),
   ])
+  var band200plus20 = L.layerGroup([
+    L.rectangle([[bandThickness-0.5+20,-bandWidth], [bandThickness*2+0.5+20,bandWidth]], {color: rgbToString(arcticColor)}),
+    L.rectangle([[-0.5+20,-bandWidth], [bandThickness-0.5+20,bandWidth]], {color: rgbToString(badlandsColor)}),
+    L.rectangle([[-bandThickness-0.5+20,-bandWidth], [-0.5+20,bandWidth]], {color: rgbToString(jungleColor)}),
+    L.rectangle([[-bandThickness*2-0.5+20,-bandWidth], [-bandThickness-0.5+20,bandWidth]], {color: rgbToString(desertColor)}),
+  ])
   var bandGone = L.layerGroup([])
-  var bandsOverlay = L.layerGroup([ band200 ])
+  var bandsOverlay = L.layerGroup([ bandGone ])
   var bandHistory = [
-    { ms: Date.parse("2020-10-29 13:54:08-05:00"), layer: band200 }
+    { ms: Date.parse("2020-10-29 13:54:08-05:00"), layer: band200 },
+    { ms: Date.parse("2020-12-18 13:54:08-05:00"), layer: band200plus20 },
   ]
 
   overlays['Bands'] = bandsOverlay
@@ -3040,6 +3047,27 @@
     })
   }
 
+  var bandLayerByTime = function(ms) {
+    var targetLayer = null
+    for (var i = bandHistory.length - 1;i >= 0;i--) {
+      if (ms > bandHistory[i].ms) {
+        targetLayer = bandHistory[i].layer
+        break
+      }
+    }
+    bandHistory.forEach(function(bh) {
+      if (bandsOverlay.hasLayer(bh.layer)) {
+        if (bh.layer != targetLayer) {
+          bandsOverlay.removeLayer(bh.layer)
+        }
+      } else {
+        if (bh.layer == targetLayer) {
+          bandsOverlay.addLayer(bh.layer)
+        }
+      }
+    })
+  }
+
   var mapUpdateTask = null
   var setMapTime = function(map, ms, reason) {
     mapTime = ms
@@ -3050,6 +3078,7 @@
       if (map) baseLayerByTime(map, ms, reason)
       if (monumentOverlay) monumentsByTime(monumentOverlay, ms, reason)
       riftLayerByTime(ms, map && map.getZoom())
+      bandLayerByTime(ms)
       lifeAnimOverlay.updateTiles(ms)
       arcUpdateTiles(ms)
       L.Util.setOptions(legendControl, {time: ms})
