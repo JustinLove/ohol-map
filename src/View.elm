@@ -504,8 +504,7 @@ objectListHeader model =
         ]
       ]
     , row [ alignRight, spacing 2 ]
-      [ model.matchingObjects
-        |> List.length
+      [ model.totalMatchingObjects
         |> String.fromInt
         |> text
       , text "/"

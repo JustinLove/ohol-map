@@ -3,7 +3,6 @@
 - server search indexes
 
 ## Features
-- count of objects in search is off
 - save activy map zoom
 - time window range graph
 - in-app help
