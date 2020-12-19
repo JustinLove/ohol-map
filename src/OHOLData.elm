@@ -649,7 +649,7 @@ oholCodeChanges =
       } |> topographic specialBiomeWeights
     }
   , { name = "Band +20 Age"
-    , start = humanTime "2020-12-18T18:54:08Z"
+    , start = humanTime "2020-12-19T18:54:08Z"
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -914,7 +914,7 @@ specialBiomeBandYCenter20 =
   [ 320
   , 120
   , -80
-  , -280
+  , -282
   ]
 
 thol1BiomeMap =

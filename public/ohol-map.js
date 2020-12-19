@@ -1001,25 +1001,39 @@
   var jungleColor = hsvToRgb(90/360, 0.87, 0.48)
   var tholWaterColor = hsvToRgb(210/360, 0.52, 0.80)
 
+  var Infinity = 1/0
+  var bandRectangles = function(bands) {
+    var top = Infinity
+    var bottom = Infinity
+    return L.layerGroup(bands.map(function(band) {
+      top = Math.min(bottom, band.center+(bandThickness/2)+0.5)
+      bottom = band.center-(bandThickness/2)-0.5
+      return L.rectangle([
+        [top,-bandWidth],
+        [bottom,bandWidth]
+      ], {color: rgbToString(band.color)})
+    }))
+  }
+
   var bandWidth = Math.pow(2, 31)
   var bandThickness = 200
-  var band200 = L.layerGroup([
-    L.rectangle([[bandThickness-0.5,-bandWidth], [bandThickness*2+0.5,bandWidth]], {color: rgbToString(arcticColor)}),
-    L.rectangle([[-0.5,-bandWidth], [bandThickness-0.5,bandWidth]], {color: rgbToString(badlandsColor)}),
-    L.rectangle([[-bandThickness-0.5,-bandWidth], [-0.5,bandWidth]], {color: rgbToString(jungleColor)}),
-    L.rectangle([[-bandThickness*2-0.5,-bandWidth], [-bandThickness-0.5,bandWidth]], {color: rgbToString(desertColor)}),
+  var band200 = bandRectangles([
+    {center: 300, color: arcticColor},
+    {center: 100, color: badlandsColor},
+    {center: -100, color: jungleColor},
+    {center: -300, color: desertColor},
   ])
-  var band200plus20 = L.layerGroup([
-    L.rectangle([[bandThickness-0.5+20,-bandWidth], [bandThickness*2+0.5+20,bandWidth]], {color: rgbToString(arcticColor)}),
-    L.rectangle([[-0.5+20,-bandWidth], [bandThickness-0.5+20,bandWidth]], {color: rgbToString(badlandsColor)}),
-    L.rectangle([[-bandThickness-0.5+20,-bandWidth], [-0.5+20,bandWidth]], {color: rgbToString(jungleColor)}),
-    L.rectangle([[-bandThickness*2-0.5+20,-bandWidth], [-bandThickness-0.5+20,bandWidth]], {color: rgbToString(desertColor)}),
+  var band200plus20 = bandRectangles([
+    {center: 320, color: arcticColor},
+    {center: 120, color: badlandsColor},
+    {center: -80, color: jungleColor},
+    {center: -282, color: desertColor},
   ])
   var bandGone = L.layerGroup([])
   var bandsOverlay = L.layerGroup([ bandGone ])
   var bandHistory = [
     { ms: Date.parse("2020-10-29 13:54:08-05:00"), layer: band200 },
-    { ms: Date.parse("2020-12-18 13:54:08-05:00"), layer: band200plus20 },
+    { ms: Date.parse("2020-12-19 13:54:08-05:00"), layer: band200plus20 },
   ]
 
   overlays['Bands'] = bandsOverlay
