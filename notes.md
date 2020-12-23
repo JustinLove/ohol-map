@@ -3,7 +3,6 @@
 - server search indexes
 
 ## Features
-- base layer draw order when toggling
 - time window range graph
 - in-app help
 - town cluster labels
