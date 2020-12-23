@@ -14,6 +14,18 @@ body {
   height: 100%;
 }
 
+.leaflet-baseimage-pane {
+  z-index: 210;
+}
+
+.leaflet-object-pane {
+  z-index: 220;
+}
+
+.leaflet-activity-pane {
+  z-index: 230;
+}
+
 .interactive .leaflet-tile-container {
   pointer-events: auto;
 }

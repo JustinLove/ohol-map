@@ -9,6 +9,7 @@
   var worlds = []
 
   var objectLayerOptions = {
+    pane: 'objectPane',
     fadeTallObjects: false,
     showNaturalObjectsAboveZoom: 26,
   }
@@ -169,15 +170,27 @@
   baseFade.on('add', function(ev) {
     var map = ev.target._map
     L.DomUtil.setOpacity(map.getPane('tilePane'), 0.3)
+    L.DomUtil.setOpacity(map.getPane('baseimagePane'), 0.3)
+    L.DomUtil.setOpacity(map.getPane('objectPane'), 0.3)
+    L.DomUtil.setOpacity(map.getPane('activityPane'), 0.3)
     // moving the map at 28+ (varies with blur radius?) causes the current tile to blank out with blur
     if (map.getZoom() < 28) {
       L.DomUtil.addClass(map.getPane('tilePane'), 'blur')
+      L.DomUtil.addClass(map.getPane('baseimagePane'), 'blur')
+      L.DomUtil.addClass(map.getPane('objectPane'), 'blur')
+      L.DomUtil.addClass(map.getPane('activityPane'), 'blur')
     }
   })
   baseFade.on('remove', function(ev) {
     var map = ev.target._map
     L.DomUtil.setOpacity(map.getPane('tilePane'), 1.0)
+    L.DomUtil.setOpacity(map.getPane('baseimagePane'), 1.0)
+    L.DomUtil.setOpacity(map.getPane('objectPane'), 1.0)
+    L.DomUtil.setOpacity(map.getPane('activityPane'), 1.0)
     L.DomUtil.removeClass(map.getPane('tilePane'), 'blur')
+    L.DomUtil.removeClass(map.getPane('baseimagePane'), 'blur')
+    L.DomUtil.removeClass(map.getPane('objectPane'), 'blur')
+    L.DomUtil.removeClass(map.getPane('activityPane'), 'blur')
   })
 
   var biomeLayerToggle = L.layerGroup([], {className: 'biome-layer-toggle'})
@@ -1444,7 +1457,7 @@
   var server3Map = L.imageOverlay('overlays/server3.png',
     [[-1170.5, -695.5], [-401.5, 1252.5 - 695]], {
       className: 'crisp',
-      pane: 'tilePane',
+      pane: 'baseimagePane',
       attribution: '<a href="https://onehouronelife.com/forums/viewtopic.php?id=236">rosden</a>',
     })
 
@@ -2320,7 +2333,7 @@
   var createArcActivityMapLayer = function(end) {
     var options = actmapLayerOptions(actmapSampleSize)
     return new L.TileLayer.SparseTileLayer(oholMapConfig.actmap, actIndexCache, Object.assign({
-      pane: 'tilePane',
+      pane: 'activityPane',
       server: 17,
       time: end,
       className: 'crisp activity-map-layer',
@@ -3504,13 +3517,22 @@
       minZoom: 2,
       maxZoom: 31,
     })
+    map.createPane('baseimagePane');
+    map.createPane('objectPane');
+    map.createPane('activityPane');
 
     map.on('zoomend', function(ev) {
       // moving the map at 28+ (varies with blur radius?) causes the current tile to blank out with blur
       if (map.getZoom() > 27) {
         L.DomUtil.removeClass(map.getPane('tilePane'), 'blur')
+        L.DomUtil.removeClass(map.getPane('baseimagePane'), 'blur')
+        L.DomUtil.removeClass(map.getPane('objectPane'), 'blur')
+        L.DomUtil.removeClass(map.getPane('activityPane'), 'blur')
       } else if (map.hasLayer(baseFade)) {
         L.DomUtil.addClass(map.getPane('tilePane'), 'blur')
+        L.DomUtil.addClass(map.getPane('baseimagePane'), 'blur')
+        L.DomUtil.addClass(map.getPane('objectPane'), 'blur')
+        L.DomUtil.addClass(map.getPane('activityPane'), 'blur')
       }
 
       riftLayerByTime(mapTime, map.getZoom())
