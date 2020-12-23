@@ -1033,7 +1033,7 @@
   var bandsOverlay = L.layerGroup([ bandGone ])
   var bandHistory = [
     { ms: Date.parse("2020-10-29 13:54:08-05:00"), layer: band200 },
-    { ms: Date.parse("2020-12-19 14:54:08-06:00"), layer: band200plus20 },
+    { ms: Date.parse("2020-12-19 14:59:55-06:00"), layer: band200plus20 },
   ]
 
   overlays['Bands'] = bandsOverlay
