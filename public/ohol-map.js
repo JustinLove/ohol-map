@@ -173,13 +173,10 @@
     L.DomUtil.setOpacity(map.getPane('baseimagePane'), 0.3)
     L.DomUtil.setOpacity(map.getPane('objectPane'), 0.3)
     L.DomUtil.setOpacity(map.getPane('activityPane'), 0.3)
-    // moving the map at 28+ (varies with blur radius?) causes the current tile to blank out with blur
-    if (map.getZoom() < 28) {
-      L.DomUtil.addClass(map.getPane('tilePane'), 'blur')
-      L.DomUtil.addClass(map.getPane('baseimagePane'), 'blur')
-      L.DomUtil.addClass(map.getPane('objectPane'), 'blur')
-      L.DomUtil.addClass(map.getPane('activityPane'), 'blur')
-    }
+    L.DomUtil.addClass(map.getPane('tilePane'), 'blur')
+    L.DomUtil.addClass(map.getPane('baseimagePane'), 'blur')
+    L.DomUtil.addClass(map.getPane('objectPane'), 'blur')
+    L.DomUtil.addClass(map.getPane('activityPane'), 'blur')
   })
   baseFade.on('remove', function(ev) {
     var map = ev.target._map
@@ -3522,19 +3519,6 @@
     map.createPane('activityPane');
 
     map.on('zoomend', function(ev) {
-      // moving the map at 28+ (varies with blur radius?) causes the current tile to blank out with blur
-      if (map.getZoom() > 27) {
-        L.DomUtil.removeClass(map.getPane('tilePane'), 'blur')
-        L.DomUtil.removeClass(map.getPane('baseimagePane'), 'blur')
-        L.DomUtil.removeClass(map.getPane('objectPane'), 'blur')
-        L.DomUtil.removeClass(map.getPane('activityPane'), 'blur')
-      } else if (map.hasLayer(baseFade)) {
-        L.DomUtil.addClass(map.getPane('tilePane'), 'blur')
-        L.DomUtil.addClass(map.getPane('baseimagePane'), 'blur')
-        L.DomUtil.addClass(map.getPane('objectPane'), 'blur')
-        L.DomUtil.addClass(map.getPane('activityPane'), 'blur')
-      }
-
       riftLayerByTime(mapTime, map.getZoom())
     })
     map.on('baselayerchange', function(ev) {
