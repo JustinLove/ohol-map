@@ -374,7 +374,8 @@ objectSearchValid : Model -> Bool
 objectSearchValid model =
   case model.center of
     DefaultCenter -> False
-    SetCenter {z} -> z >= 24
+    --SetCenter {z} -> z >= 24
+    SetCenter _ -> True
 
 lifeSearchBox : Palette -> String -> Element Msg
 lifeSearchBox palette term =

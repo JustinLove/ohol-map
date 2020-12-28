@@ -130,9 +130,9 @@ initialModel config location key =
   , lineageUrl = config.lineageUrl
   , seedsUrl = config.seedsUrl
   , spansUrl = config.spansUrl
-  , sidebar = ClosedSidebar
-  , sidebarMode = DataFilter
-  , searchMode = SearchLives
+  , sidebar = OpenSidebar
+  , sidebarMode = Search
+  , searchMode = SearchObjects
   , lifeSearchTerm = ""
   , objectSearchTerm = ""
   , objectListMode = MatchingObjects
@@ -184,6 +184,8 @@ type alias Config =
   , lineageUrl: String
   , seedsUrl: String
   , spansUrl: String
+  , keySearchIndex: String
+  , logSearchIndex: String
   }
 
 defaultCenter = (Point 0 0 23)

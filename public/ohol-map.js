@@ -85,7 +85,7 @@
   var mapTime = Date.now()
   var mapServer = 17
   var dataAnimated = false
-  var biomeLayerVisible = true
+  var biomeLayerVisible = false
 
   var attribution = '<a href="https://onehouronelife.com">Jason Rohrer</a> wondible ' +
     '<a href="https://twitter.com/wondible" title="@wondible"><svg class="icon icon-twitter"><use xlink:href="symbol-defs.svg#icon-twitter"></use></svg></a>' +
@@ -320,7 +320,7 @@
     },
   })
 
-  //overlays['Checker'] = new L.GridLayer.CheckerLayer()
+  overlays['Checker'] = new L.GridLayer.CheckerLayer()
 
 
   // fractal generation copying https://github.com/jasonrohrer/OneLife/blob/master/commonSource/fractalNoise.cpp
@@ -1525,6 +1525,9 @@
         var keyPlacementPoint = createArcKeyPlacementPointOverlay(span.dataTime, world.generation)
         keyPlacementPoint.name = "object point static"
         span.keyPlacementPoint = keyPlacementPoint
+        var keySearchPoint = createArcKeySearchPointOverlay(span.dataTime, world.generation)
+        keySearchPoint.name = "object search static"
+        span.keySearchPoint = keySearchPoint
         var maplogLayer = createArcMaplogLayer(span.msStart, span.dataTime, span.base, world.generation)
         maplogLayer.name = "maplog"
         span.maplogLayer = maplogLayer
@@ -1623,7 +1626,7 @@
     },
     loadTile: function(coords, data) {
       var cache = this
-      if (data.time == '0') return Promise.resolve('')
+      if (data.time == '0') return cache.transformTile(Promise.resolve(''), coords)
       var datacoords = cache.dataCoords(coords)
       //console.log(datacoords)
       var url = cache.getDataTileUrl(datacoords, data)
@@ -1634,13 +1637,14 @@
         cache._list.push(record)
         return record.promise
       } else {
+        //console.log(url)
         var record = {
           url: url,
           promise: fetch(url).then(function(response) {
             if (response.status % 100 == 4) {
-              return cache.transformTile(Promise.resolve(''))
+              return cache.transformTile(Promise.resolve(''), coords)
             }
-            return cache.transformTile(response.text())
+            return cache.transformTile(response.text(), coords)
           }),
         }
         cache._list.push(record)
@@ -1650,14 +1654,22 @@
         return record.promise
       }
     },
-    transformTile: function(promise) {
+    transformTile: function(promise, debugInfo) {
       return promise
     },
   })
 
   var TileIndexCache = TileDataCache.extend({
-    transformTile: function(promise) {
+    transformTile: function(promise, debugInfo) {
       return promise.then(parseTileIndex)
+    },
+  })
+
+  var TileKeyValueXYCache = TileDataCache.extend({
+    transformTile: function(promise, debugInfo) {
+      return promise.then(function(text) {
+        return decodeKeyValueYX(text, debugInfo)
+      })
     },
   })
 
@@ -1702,11 +1714,66 @@
           //console.log(datacoords, time, data.time)
           return cache._dataCache.loadTile(coords, data)
         } else {
-          return ""
+          return []
         }
       })
     },
   })
+
+  var SearchIndexCache = TileDataCache.extend({
+    transformTile: function(promise) {
+      return promise.then(parseSearchIndex)
+    },
+  })
+
+  var parseSearchIndex = function(indexText) {
+    //console.log(indexText)
+    var objectCount = []
+    var lines = indexText.split("\n")
+    for (var i in lines) {
+      var line = lines[i]
+      if (line[0] == '-') {
+        //console.log(objectCount)
+        return objectCount;
+      } else {
+        var parts = line.split(' ')
+        if (parts.length != 2) return
+        objectCount[parseInt(parts[0], 10)] = parseInt(parts[1], 10)
+      }
+    }
+    return objectCount;
+  }
+
+  var IndexedSearchDataCache = L.Class.extend({
+    options: {
+    },
+    initialize: function(indexCache, dataCache, options) {
+      this._indexCache = indexCache;
+      this._dataCache = dataCache;
+      options = L.Util.setOptions(this, options);
+    },
+    expire: function() {
+      this._indexCache.expire()
+      this._dataCache.expire()
+    },
+    loadTile: function(coords, data) {
+      var cache = this
+      return cache._indexCache.loadTile(coords, data).then(function(objectCounts){
+        return Promise.all(data.highlightObjects.map(function(id) {
+          if (objectCounts[id]) {
+            data.id = id
+            return cache._dataCache.loadTile(coords, data)
+          } else {
+            return []
+          }
+        })).then(function(results) {
+          //console.log(results)
+          return results.flat()
+        });
+      })
+    },
+  })
+
 
   var firstDecode = function(s) {
     var first = s.charCodeAt(0)
@@ -1869,7 +1936,7 @@
     },
     getTile: function(coords, data, generation) {
       //console.time('data tile ' + JSON.stringify(coords))
-      return this._cache.loadTile(coords, data).then(function(text) {
+      return this._cache.loadTile(coords, data).then(function(rawPlacements) {
         //console.timeEnd('data tile ' + JSON.stringify(coords))
         var occupied = {}
 
@@ -1891,11 +1958,15 @@
         //console.log('end', endX, endY)
 
         //console.time('data processing ' + JSON.stringify(coords))
-        var placements = decodeKeyValueYX(text, coords).map(function(place) {
-          place.t = t
-          place.x = place.x - startX
-          place.y = -(place.y - startY)
-          place.key = [place.x, place.y].join(' ')
+        var placements = rawPlacements.map(function(raw) {
+          var place = {
+            x: raw.x - startX,
+            y: -(raw.y - startY),
+            id: raw.id,
+            floor: raw.floor,
+            t: t,
+            key: [raw.x, raw.y].join(' '),
+          }
           occupied[place.key] = true
           return place
         })
@@ -1952,6 +2023,68 @@
         var keyplace =
           [].concat(natural, special, placements)
 
+          .filter(function(placement) {
+
+            var isValid = !isNaN(placement.id) && placement.id < 50000
+            if (!isValid) return false
+            var inFrame =
+              (-paddingX <= placement.x && placement.x < right) &&
+              (-paddingUp <= placement.y && placement.y < bottom)
+            if (!inFrame) return false
+            return true
+          })
+          .sort(sortTypeAndDrawOrder)
+
+        return keyplace
+      })
+    },
+  })
+
+  var TileSearch = L.Class.extend({
+    options: {
+    },
+    initialize: function(cache, options) {
+      this._cache = cache;
+      options = L.Util.setOptions(this, options);
+    },
+    getTile: function(coords, data, options) {
+      //console.time('data tile ' + JSON.stringify(coords))
+      return this._cache.loadTile(coords, data).then(function(rawPlacements) {
+        //console.timeEnd('data tile ' + JSON.stringify(coords))
+        var tileSize = options.tileSize;
+        var pnw = L.point(coords.x * tileSize, coords.y * tileSize)
+        var pse = L.point(pnw.x + tileSize, pnw.y + tileSize)
+        //console.log('pnw', coords, pnw)
+        var llnw = crs.pointToLatLng(pnw, coords.z)
+        var llse = crs.pointToLatLng(pse, coords.z)
+        //console.log('llnw', coords, llnw)
+
+        var startX = llnw.lng + 0.5
+        var startY = llnw.lat - 0.5
+        var endX = llse.lng + 0.5
+        var endY = llse.lat - 0.5
+        //console.log('start', startX, startY)
+        //console.log('end', endX, endY)
+
+        //console.time('data processing ' + JSON.stringify(coords))
+        var placements = rawPlacements.map(function(raw) {
+          var place = {
+            x: raw.x - startX,
+            y: -(raw.y - startY),
+            id: raw.id,
+            floor: raw.floor,
+          }
+          return place
+        })
+
+        var paddingX = 2;
+        var paddingUp = 2;
+        var paddingDown = 4;
+
+        var right = (endX - startX) + paddingX
+        var bottom = (startY - endY) + paddingDown
+
+        var keyplace = placements
           .filter(function(placement) {
 
             var isValid = !isNaN(placement.id) && placement.id < 50000
@@ -2208,7 +2341,7 @@
     dataminzoom: 24,
     datamaxzoom: 24,
   })
-  var keyDataCache = new TileDataCache(oholMapConfig.keyPlacements, {
+  var keyDataCache = new TileKeyValueXYCache(oholMapConfig.keyPlacements, {
     dataminzoom: 24,
     datamaxzoom: 24,
   })
@@ -2229,6 +2362,22 @@
     return new L.layerGroup([
       baseAttributionLayer,
       new L.GridLayer.KeyPlacementPoint(keyPlacementKey, Object.assign({
+        dataTime: end.toString(),
+      }, gen, objectLayerOptions))
+    ])
+  }
+
+  var keySearchIndexCache = new SearchIndexCache(oholMapConfig.keySearchIndex, {})
+
+  var keySearchDataCache = new TileKeyValueXYCache(oholMapConfig.keySearch, {})
+  var keySearchCache = new IndexedSearchDataCache(keySearchIndexCache, keySearchDataCache, {})
+
+  var keySearchKey = new TileSearch(keySearchCache, {})
+
+  var createArcKeySearchPointOverlay = function(end, gen) {
+    return new L.layerGroup([
+      baseAttributionLayer,
+      new L.GridLayer.KeySearchPoint(keySearchKey, Object.assign({
         dataTime: end.toString(),
       }, gen, objectLayerOptions))
     ])
@@ -2357,6 +2506,12 @@
             layer.redraw && layer.redraw()
           })
         }
+        if (span.keySearchPoint) {
+          span.keySearchPoint.eachLayer(function(layer) {
+            L.Util.setOptions(layer, options)
+            layer.redraw && layer.redraw()
+          })
+        }
         if (span.maplogLayer) {
           span.maplogLayer.eachLayer(function(layer) {
             L.Util.setOptions(layer, options)
@@ -2384,6 +2539,12 @@
       world.spans.forEach(function(span) {
         if (span.keyPlacementPoint) {
           span.keyPlacementPoint.eachLayer(function(layer) {
+            L.Util.setOptions(layer, options)
+            layer.redraw && layer.redraw()
+          })
+        }
+        if (span.keySearchPoint) {
+          span.keySearchPoint.eachLayer(function(layer) {
             L.Util.setOptions(layer, options)
             layer.redraw && layer.redraw()
           })
@@ -2754,33 +2915,6 @@
       minZoom: 24,
       maxZoom: 31,
     },
-    createTile: function (coords, done) {
-      var layer = this
-      var options = layer.options
-      var highlightObjects = options.highlightObjects
-      var tile = document.createElement('canvas');
-      if (!highlightObjects) {
-        if (done) done(null, tile)
-        return tile
-      }
-      var tileSize = layer.getTileSize();
-      tile.setAttribute('width', tileSize.x);
-      tile.setAttribute('height', tileSize.y);
-      //console.log(coords)
-
-
-      //console.log('data tile ' + JSON.stringify(coords), options.dataTime, mapServer)
-      layer._cache.getTile(coords, {time: options.dataTime, server: mapServer}, options).then(function(keyplace) {
-        tile._keyplace = keyplace.filter(function(placement) {
-          return highlightObjects.indexOf(placement.id) != -1
-        })
-
-        //console.timeEnd('data processing ' + JSON.stringify(coords))
-        layer.drawTile(tile, coords, done)
-      })
-
-      return tile
-    },
     drawTile(tile, coords, done) {
       var layer = this
       var options = layer.options
@@ -2927,6 +3061,47 @@
     },
   })
 
+  L.GridLayer.KeySearchPoint = L.GridLayer.ObjectPointOverlay.extend({
+    options: Object.assign({
+      className: 'object-index-overlay-static',
+      minZoom: 2,
+      maxZoom: 23,
+    }, objectGenerationOptions),
+    initialize: function(cache, options) {
+      this._cache = cache;
+      options = L.Util.setOptions(this, options);
+    },
+    createTile: function (coords, done) {
+      var layer = this
+      var options = layer.options
+      var highlightObjects = options.highlightObjects
+      var tile = document.createElement('canvas');
+      if (!highlightObjects) {
+        if (done) done(null, tile)
+        return tile
+      }
+      var tileSize = layer.getTileSize();
+      tile.setAttribute('width', tileSize.x);
+      tile.setAttribute('height', tileSize.y);
+      //console.log(coords)
+
+
+      //console.log('data tile ' + JSON.stringify(coords), options.dataTime, mapServer)
+      layer._cache.getTile(coords, {time: options.dataTime, server: mapServer, highlightObjects: highlightObjects}, options).then(function(keyplace) {
+        //console.log(keyplace)
+        tile._keyplace = keyplace.filter(function(placement) {
+          return highlightObjects.indexOf(placement.id) != -1
+        })
+        //console.log(tile._keyplace)
+
+        //console.timeEnd('data processing ' + JSON.stringify(coords))
+        layer.drawTile(tile, coords, done)
+      })
+
+      return tile
+    },
+  })
+
   var moveIfOutOfView = function(data, map) {
     if (data.length < 1) return
     var bounds = map.getBounds()
@@ -2992,6 +3167,7 @@
 
       objectOverlayLayers = [
         !dataAnimated && targetSpan && targetSpan.keyPlacementPoint,
+        !dataAnimated && targetSpan && targetSpan.keySearchPoint,
         dataAnimated && targetSpan && targetSpan.maplogPoint,
       ].filter(function(x) {return !!x})
 
@@ -3558,7 +3734,7 @@
     setMapTime(map, t, 'inhabit')
     oholBase.addTo(map)
     overlays['Activity Map'].addTo(map)
-    overlays['Biomes'].addTo(map)
+    //overlays['Biomes'].addTo(map)
     //base['Topographic Test'].addTo(map)
     overlays['Rift'].addTo(map)
     //overlays['Bands'].addTo(map)

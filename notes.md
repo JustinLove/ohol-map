@@ -1,6 +1,15 @@
 ## server work
 - default position with no active monuments - precalculation
 - server search indexes
+  - object point display size at far zoom
+  - frontend load index, display counts and available
+  - should load during interactive search?
+  - select only one a time?
+    - jump to instances?
+  - load timed logs, how to display
+  - default map position?
+  - special layers for key objects (towers in progress, apocalyse)?
+  - shared code with TileKey and TileSearch
 
 ## Features
 - time window range graph
@@ -24,6 +33,7 @@
 ## code quality
 - animated small objects
   - Visible objects are from static base layer - needs to be handled on client
+- layer and cache object naming schemes
 - refactoring
 - better setting of default server
 - leaflet handlers - click events?
@@ -31,6 +41,7 @@
 
 
 ## rendering optimization
+- TileKey cache
 - find bottleneck - network or render?
 - load time garbage collection
 - use changing object layers to avoid visual flashing?
