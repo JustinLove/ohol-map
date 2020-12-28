@@ -785,7 +785,7 @@ sidebarCommand model =
     Cmd.batch
       [ Leaflet.sidebar sidebar
       , Leaflet.searchOverlay
-        (model.sidebar == OpenSidebar && model.sidebarMode == Search)
+        (model.sidebar == OpenSidebar && model.sidebarMode == Search && model.searchMode == SearchLives)
       ]
 
 rebuildWorlds : (Model, Cmd Msg) -> (Model, Cmd Msg)
