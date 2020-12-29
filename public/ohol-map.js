@@ -1522,22 +1522,30 @@
         var keyPlacementLayer = createArcKeyPlacementLayer(span.dataTime, world.generation)
         keyPlacementLayer.name = "key placement"
         span.keyPlacementLayer = keyPlacementLayer
-        var keyPlacementPoint = createArcKeyPlacementPointOverlay(span.dataTime, world.generation)
-        keyPlacementPoint.name = "object point static"
-        span.keyPlacementPoint = keyPlacementPoint
-        var keySearchPoint = createArcKeySearchPointOverlay(span.dataTime, world.generation)
-        keySearchPoint.name = "object search static"
-        span.keySearchPoint = keySearchPoint
         var maplogLayer = createArcMaplogLayer(span.msStart, span.dataTime, span.base, world.generation)
         maplogLayer.name = "maplog"
         span.maplogLayer = maplogLayer
         L.Util.setOptions(keyPlacementLayer, {alternateAnim: maplogLayer})
         L.Util.setOptions(maplogLayer, {alternateStatic: keyPlacementLayer})
+
+        var keyPlacementPoint = createArcKeyPlacementPointOverlay(span.dataTime, world.generation)
+        keyPlacementPoint.name = "object point static"
+        span.keyPlacementPoint = keyPlacementPoint
         var maplogPoint = createArcMaplogPointOverlay(span.msStart, span.dataTime, span.base, world.generation)
         maplogPoint.name = "object point anim"
         span.maplogPoint = maplogPoint
         L.Util.setOptions(keyPlacementPoint, {alternateAnim: maplogPoint})
         L.Util.setOptions(maplogPoint, {alternateStatic: keyPlacementPoint})
+
+        var keySearchPoint = createArcKeySearchPointOverlay(span.dataTime, world.generation)
+        keySearchPoint.name = "object search static"
+        span.keySearchPoint = keySearchPoint
+        var maplogSearchPoint = createArcMaplogSearchPointOverlay(span.msStart, span.dataTime, world.generation)
+        maplogSearchPoint.name = "object search anim"
+        span.maplogSearchPoint = maplogSearchPoint
+        L.Util.setOptions(keySearchPoint, {alternateAnim: maplogSearchPoint})
+        L.Util.setOptions(maplogSearchPoint, {alternateStatic: keySearchPoint})
+
         var actmap = createArcActivityMapLayer(span.dataTime)
         actmap.name = "activity map"
         span.actmap = actmap
@@ -1673,7 +1681,7 @@
     },
   })
 
-  var TileLogValueXYTCache = TileDataCache.extend({
+  var TileLogValueYXTCache = TileDataCache.extend({
     transformTile: function(promise, debugInfo) {
       return promise.then(function(text) {
         return decodeLogValueYXT(text, debugInfo)
@@ -2102,7 +2110,6 @@
 
         var keyplace = placements
           .filter(tileBounds.inFrame)
-          .sort(sortTypeAndDrawOrder)
 
         return keyplace
       })
@@ -2146,6 +2153,44 @@
           return a.t - b.t
         })
         return [].concat(keyplace, placements)
+      })
+    },
+  })
+
+  var LogSearch = L.Class.extend({
+    options: {
+    },
+    initialize: function(cache, options) {
+      this._cache = cache;
+      options = L.Util.setOptions(this, options);
+    },
+    getTile: function(coords, data, options) {
+      //console.time('data tile ' + JSON.stringify(coords))
+      return this._cache.loadTile(coords, data).then(function(rawPlacements) {
+        //console.timeEnd('data tile ' + JSON.stringify(coords))
+        var tileBounds = calculateTileBounds(coords, options.tileSize)
+        var worldStartX = tileBounds.worldStartX
+        var worldStartY = tileBounds.worldStartY
+
+        //console.time('data processing ' + JSON.stringify(coords))
+        var placements = rawPlacements.map(function(raw) {
+          var place = {
+            x: raw.x - worldStartX,
+            y: -(raw.y - worldStartY),
+            t: raw.t,
+            id: raw.id,
+            floor: raw.floor,
+          }
+          return place
+        })
+
+        var keyplace = placements
+          .filter(tileBounds.inFrame)
+          .sort(function(a, b) {
+            return a.t - b.t
+          })
+
+        return keyplace
       })
     },
   })
@@ -2373,7 +2418,7 @@
     ])
   }
 
-  var maplogCache = new TileLogValueXYTCache(oholMapConfig.maplog, {
+  var maplogCache = new TileLogValueYXTCache(oholMapConfig.maplog, {
     dataminzoom: 24,
     datamaxzoom: 27,
   })
@@ -2405,6 +2450,27 @@
       new L.GridLayer.MaplogPoint(maplogLog, Object.assign({
         dataTime: sEnd.toString(),
         base: sBase.toString(),
+        time: ms,
+      }, gen, objectLayerOptions))
+    ])
+  }
+
+  var maplogSearchIndexCache = new SearchIndexCache(oholMapConfig.logSearchIndex, {})
+
+  var maplogSearchDataCache = new TileLogValueYXTCache(oholMapConfig.logSearch, {})
+  var maplogSearchCache = new IndexedSearchDataCache(maplogSearchIndexCache, maplogSearchDataCache, {})
+
+  var maplogSearch = new LogSearch(maplogSearchCache, {})
+
+  var createArcMaplogSearchPointOverlay = function(msStart, sEnd, gen) {
+    var ms = sEnd*1000
+    if (msStart < mapTime && mapTime < sEnd*1000) {
+      ms = mapTime
+    }
+    return new L.layerGroup([
+      baseAttributionLayer,
+      new L.GridLayer.KeySearchPoint(maplogSearch, Object.assign({
+        dataTime: sEnd.toString(),
         time: ms,
       }, gen, objectLayerOptions))
     ])
@@ -2514,6 +2580,12 @@
             layer.redraw && layer.redraw()
           })
         }
+        if (span.maplogSearchPoint) {
+          span.maplogSearchPoint.eachLayer(function(layer) {
+            L.Util.setOptions(layer, options)
+            layer.redraw && layer.redraw()
+          })
+        }
       })
       if (world.objectLayer) {
         var layer = world.objectLayer
@@ -2541,6 +2613,12 @@
         }
         if (span.maplogPoint) {
           span.maplogPoint.eachLayer(function(layer) {
+            L.Util.setOptions(layer, options)
+            layer.redraw && layer.redraw()
+          })
+        }
+        if (span.maplogSearchPoint) {
+          span.maplogSearchPoint.eachLayer(function(layer) {
             L.Util.setOptions(layer, options)
             layer.redraw && layer.redraw()
           })
@@ -3159,6 +3237,7 @@
         !dataAnimated && targetSpan && targetSpan.keyPlacementPoint,
         !dataAnimated && targetSpan && targetSpan.keySearchPoint,
         dataAnimated && targetSpan && targetSpan.maplogPoint,
+        dataAnimated && targetSpan && targetSpan.maplogSearchPoint,
       ].filter(function(x) {return !!x})
 
       activityOverlayLayers = [
@@ -3856,6 +3935,7 @@
           case 'animOverlay':
             dataAnimated = message.status
             toggleAnimated(dataOverlay, message.status)
+            toggleAnimated(objectOverlay, message.status)
             toggleAnimated(oholBase, message.status)
             L.Util.setOptions(legendControl, {dataAnimated: message.status})
             legendControl.redraw()

@@ -1,7 +1,6 @@
 ## server work
 - default position with no active monuments - precalculation
 - server search indexes
-  - shared code with TileKey and TileSearch
   - load timed logs, how to display
   - frontend load index, display counts and available
   - should load during interactive search?
