@@ -1673,6 +1673,14 @@
     },
   })
 
+  var TileLogValueXYTCache = TileDataCache.extend({
+    transformTile: function(promise, debugInfo) {
+      return promise.then(function(text) {
+        return decodeLogValueYXT(text, debugInfo)
+      })
+    },
+  })
+
   var parseTileIndex = function(indexText) {
     //console.log(indexText)
     var tileTime = {}
@@ -1927,6 +1935,51 @@
     return output
   }
 
+  var calculateTileBounds = function(coords, tileSize) {
+    var pnw = L.point(coords.x * tileSize, coords.y * tileSize)
+    var pse = L.point(pnw.x + tileSize, pnw.y + tileSize)
+    //console.log('pnw', coords, pnw)
+    var llnw = crs.pointToLatLng(pnw, coords.z)
+    var llse = crs.pointToLatLng(pse, coords.z)
+    //console.log('llnw', coords, llnw)
+
+    var worldStartX = llnw.lng + 0.5
+    var worldStartY = llnw.lat - 0.5
+    var worldEndX = llse.lng + 0.5
+    var worldEndY = llse.lat - 0.5
+    //console.log('start', worldStartX, worldStartY)
+    //console.log('end', worldEndX, worldEndY)
+
+    var paddingX = 2;
+    var paddingUp = 2;
+    var paddingDown = 4;
+
+    var tileStartX = -paddingX
+    var tileStartY = -paddingUp
+    var tileEndX = (worldEndX - worldStartX) + paddingX
+    var tileEndY = (worldStartY - worldEndY) + paddingDown
+
+    return {
+      worldStartX: worldStartX,
+      worldStartY: worldStartY,
+      worldEndX: worldEndX,
+      worldEndY: worldEndY,
+      tileStartX: tileStartX,
+      tileStartY: tileStartY,
+      tileEndX: tileEndX,
+      tileEndY: tileEndY,
+      inFrame: function(placement) {
+        var isValid = !isNaN(placement.id) && placement.id < 50000
+        if (!isValid) return false
+        var inFrame =
+          (tileStartX <= placement.x && placement.x < tileEndX) &&
+          (tileStartY <= placement.y && placement.y < tileEndY)
+        if (!inFrame) return false
+        return true
+      }
+    }
+  }
+
   var TileKey = L.Class.extend({
     options: {
     },
@@ -1942,26 +1995,18 @@
 
         var t = parseInt(data.time, 10)*1000
 
-        var tileSize = generation.tileSize;
-        var pnw = L.point(coords.x * tileSize, coords.y * tileSize)
-        var pse = L.point(pnw.x + tileSize, pnw.y + tileSize)
-        //console.log('pnw', coords, pnw)
-        var llnw = crs.pointToLatLng(pnw, coords.z)
-        var llse = crs.pointToLatLng(pse, coords.z)
-        //console.log('llnw', coords, llnw)
 
-        var startX = llnw.lng + 0.5
-        var startY = llnw.lat - 0.5
-        var endX = llse.lng + 0.5
-        var endY = llse.lat - 0.5
-        //console.log('start', startX, startY)
-        //console.log('end', endX, endY)
+        var tileBounds = calculateTileBounds(coords, generation.tileSize)
+        var worldStartX = tileBounds.worldStartX
+        var worldStartY = tileBounds.worldStartY
+        var worldEndX = tileBounds.worldEndX
+        var worldEndY = tileBounds.worldEndY
 
         //console.time('data processing ' + JSON.stringify(coords))
         var placements = rawPlacements.map(function(raw) {
           var place = {
-            x: raw.x - startX,
-            y: -(raw.y - startY),
+            x: raw.x - worldStartX,
+            y: -(raw.y - worldStartY),
             id: raw.id,
             floor: raw.floor,
             t: t,
@@ -1974,13 +2019,13 @@
         var special = []
         generation.placements.filter(function(place) {
           return (place.msStart/1000 < generation.dataTime
-                  && startX <= place.x && place.x <= endX
-                  && endY <= place.y && place.y <= startY)
+                  && worldStartX <= place.x && place.x <= worldEndX
+                  && worldEndY <= place.y && place.y <= worldStartY)
         }).forEach(function(place) {
           var out = {
             t: t,
-            x: place.x - startX,
-            y: -(place.y - startY),
+            x: place.x - worldStartX,
+            y: -(place.y - worldStartY),
             id: place.id,
             floor: false,
           }
@@ -1991,22 +2036,20 @@
           }
         })
 
-        var paddingX = 2;
-        var paddingUp = 2;
-        var paddingDown = 4;
-
-        var right = (endX - startX) + paddingX
-        var bottom = (startY - endY) + paddingDown
+        var tileStartX = tileBounds.tileStartX
+        var tileStartY = tileBounds.tileStartY
+        var tileEndX = tileBounds.tileEndX
+        var tileEndY = tileBounds.tileEndY
         var minSize = 1.5 * Math.pow(2, 31 - coords.z)
         var natural = []
         if (coords.z >= generation.showNaturalObjectsAboveZoom && generation.biomeRandSeedA) {
-          for (var y = -paddingUp;y < bottom;y++) {
-            for (var x = -paddingX;x < right;x++) {
+          for (var y = tileStartY;y < tileEndY;y++) {
+            for (var x = tileStartX;x < tileEndX;x++) {
               if (occupied[[x, y].join(' ')]) {
                 continue
               }
-              var wx = startX + x
-              var wy = startY - y
+              var wx = worldStartX + x
+              var wy = worldStartY - y
               var v = getMapObjectRaw(wx, wy, generation)
               if (v == 0) continue
               natural.push({
@@ -2023,16 +2066,7 @@
         var keyplace =
           [].concat(natural, special, placements)
 
-          .filter(function(placement) {
-
-            var isValid = !isNaN(placement.id) && placement.id < 50000
-            if (!isValid) return false
-            var inFrame =
-              (-paddingX <= placement.x && placement.x < right) &&
-              (-paddingUp <= placement.y && placement.y < bottom)
-            if (!inFrame) return false
-            return true
-          })
+          .filter(tileBounds.inFrame)
           .sort(sortTypeAndDrawOrder)
 
         return keyplace
@@ -2051,50 +2085,23 @@
       //console.time('data tile ' + JSON.stringify(coords))
       return this._cache.loadTile(coords, data).then(function(rawPlacements) {
         //console.timeEnd('data tile ' + JSON.stringify(coords))
-        var tileSize = options.tileSize;
-        var pnw = L.point(coords.x * tileSize, coords.y * tileSize)
-        var pse = L.point(pnw.x + tileSize, pnw.y + tileSize)
-        //console.log('pnw', coords, pnw)
-        var llnw = crs.pointToLatLng(pnw, coords.z)
-        var llse = crs.pointToLatLng(pse, coords.z)
-        //console.log('llnw', coords, llnw)
-
-        var startX = llnw.lng + 0.5
-        var startY = llnw.lat - 0.5
-        var endX = llse.lng + 0.5
-        var endY = llse.lat - 0.5
-        //console.log('start', startX, startY)
-        //console.log('end', endX, endY)
+        var tileBounds = calculateTileBounds(coords, options.tileSize)
+        var worldStartX = tileBounds.worldStartX
+        var worldStartY = tileBounds.worldStartY
 
         //console.time('data processing ' + JSON.stringify(coords))
         var placements = rawPlacements.map(function(raw) {
           var place = {
-            x: raw.x - startX,
-            y: -(raw.y - startY),
+            x: raw.x - worldStartX,
+            y: -(raw.y - worldStartY),
             id: raw.id,
             floor: raw.floor,
           }
           return place
         })
 
-        var paddingX = 2;
-        var paddingUp = 2;
-        var paddingDown = 4;
-
-        var right = (endX - startX) + paddingX
-        var bottom = (startY - endY) + paddingDown
-
         var keyplace = placements
-          .filter(function(placement) {
-
-            var isValid = !isNaN(placement.id) && placement.id < 50000
-            if (!isValid) return false
-            var inFrame =
-              (-paddingX <= placement.x && placement.x < right) &&
-              (-paddingUp <= placement.y && placement.y < bottom)
-            if (!inFrame) return false
-            return true
-          })
+          .filter(tileBounds.inFrame)
           .sort(sortTypeAndDrawOrder)
 
         return keyplace
@@ -2116,43 +2123,26 @@
         this._cache.loadTile(coords, logData),
         this._key.getTile(coords, baseData, generation),
       ]).then(function(results) {
-        var text = results[0]
+        var rawPlacements = results[0]
         var keyplace = results[1]
-        if (text == '') return keyplace
-        var tileSize = generation.tileSize;
-        var pnw = L.point(coords.x * tileSize, coords.y * tileSize)
-        var pse = L.point(pnw.x + tileSize, pnw.y + tileSize)
-        //console.log('pnw', coords, pnw)
-        var llnw = crs.pointToLatLng(pnw, coords.z)
-        var llse = crs.pointToLatLng(pse, coords.z)
-        //console.log('llnw', coords, llnw)
+        if (rawPlacements.length == 0) return keyplace
 
-        var startX = llnw.lng + 0.5
-        var startY = llnw.lat - 0.5
-        var endX = llse.lng + 0.5
-        var endY = llse.lat - 0.5
+        var tileBounds = calculateTileBounds(coords, generation.tileSize)
+        var worldStartX = tileBounds.worldStartX
+        var worldStartY = tileBounds.worldStartY
 
-        var paddingX = 2;
-        var paddingUp = 2;
-        var paddingDown = 4;
-        var right = (endX - startX) + paddingX
-        var bottom = (startY - endY) + paddingDown
-
-        var placements = decodeLogValueYXT(text, coords).map(function(place) {
-          place.x = place.x - startX
-          place.y = -(place.y - startY)
-          place.key = [place.x, place.y].join(' ')
+        var placements = rawPlacements.map(function(raw) {
+          var place = {
+            x: raw.x - worldStartX,
+            y: -(raw.y - worldStartY),
+            id: raw.id,
+            floor: raw.floor,
+            t: raw.t,
+            key: [raw.x, raw.y].join(' '),
+          }
           return place
-        }).filter(function(placement) {
-
-          var isValid = !isNaN(placement.id) && placement.id < 50000
-          if (!isValid) return false
-          var inFrame =
-            (-paddingX <= placement.x && placement.x < right) &&
-            (-paddingUp <= placement.y && placement.y < bottom)
-          if (!inFrame) return false
-          return true
-        }).sort(function(a, b) {
+        }).filter(tileBounds.inFrame)
+        .sort(function(a, b) {
           return a.t - b.t
         })
         return [].concat(keyplace, placements)
@@ -2383,7 +2373,7 @@
     ])
   }
 
-  var maplogCache = new TileDataCache(oholMapConfig.maplog, {
+  var maplogCache = new TileLogValueXYTCache(oholMapConfig.maplog, {
     dataminzoom: 24,
     datamaxzoom: 27,
   })
@@ -2932,7 +2922,7 @@
       ctx.save()
       ctx.scale(cellSize, cellSize)
       ctx.translate(0.5, 0.5)
-      var r = 5/Math.pow(cellSize, 0.6)
+      var r = 5/Math.pow(cellSize, 0.8)
       tile._keyplace.forEach(function(placement) {
         //console.log(placement)
 
