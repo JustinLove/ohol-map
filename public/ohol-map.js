@@ -1775,6 +1775,7 @@
     loadTile: function(coords, data) {
       var cache = this
       return cache._indexCache.loadTile(coords, data).then(function(objectCounts){
+        if (!objectCounts) return []
         return Promise.all(data.highlightObjects.map(function(id) {
           if (objectCounts[id]) {
             data.id = id
@@ -2365,6 +2366,15 @@
         })
       }
     })
+    objectOverlay.eachLayer(function(sub) {
+      if (sub.eachLayer) {
+        sub.eachLayer(function(layer) {
+          if (layer.updateTiles) {
+            layer.updateTiles(ms)
+          }
+        })
+      }
+    })
   }
 
   var actIndexCache = new TileIndexCache(oholMapConfig.actIndex, {
@@ -2414,6 +2424,7 @@
       baseAttributionLayer,
       new L.GridLayer.KeySearchPoint(keySearchKey, Object.assign({
         dataTime: end.toString(),
+        animate: false,
       }, gen, objectLayerOptions))
     ])
   }
@@ -2472,6 +2483,7 @@
       new L.GridLayer.KeySearchPoint(maplogSearch, Object.assign({
         dataTime: sEnd.toString(),
         time: ms,
+        animate: true,
       }, gen, objectLayerOptions))
     ])
   }
@@ -2982,14 +2994,18 @@
       pane: 'overlayPane',
       minZoom: 24,
       maxZoom: 31,
+      animate: false,
     },
-    drawTile(tile, coords, done) {
+    drawTile(tile, coords, time) {
       var layer = this
       var options = layer.options
       if (!tile._keyplace) {
-        if (done) done(null, tile)
         return tile
       }
+      if ('time' in options) {
+        time = time || options.time
+      }
+      if (!options.animate) time = undefined
       var tileSize = layer.getTileSize();
       var cellSize = Math.pow(2, coords.z - 24)
 
@@ -3000,11 +3016,25 @@
       ctx.save()
       ctx.scale(cellSize, cellSize)
       ctx.translate(0.5, 0.5)
+      var fadeTime = 60*60*1000
       var r = 5/Math.pow(cellSize, 0.8)
       tile._keyplace.forEach(function(placement) {
         //console.log(placement)
 
-        ctx.globalAlpha = 0.5
+        var in_time = placement.t
+        if (time && in_time) {
+          var out_time = in_time + fadeTime
+          if (time < in_time || out_time < time) {
+            //console.log('out of range', in_time, time, out_time)
+            return
+          }
+
+          var t = (time - in_time) / (out_time - in_time)
+          var a = Math.pow(1 - t, 4)
+          ctx.globalAlpha = a
+        } else {
+          ctx.globalAlpha = 0.5
+        }
 
         ctx.fillStyle = colorobject(placement.id)
 
@@ -3018,14 +3048,20 @@
         ctx.restore()
       })
       ctx.restore()
-
-      if (done) done(null, tile)
+    },
+    updateTiles: function(ms) {
+      L.Util.setOptions(this, {time: ms})
+      for (var key in this._tiles) {
+        var tile = this._tiles[key]
+        this.drawTile(tile.el, tile.coords, ms)
+      }
     },
   })
 
   L.GridLayer.KeyPlacementPoint = L.GridLayer.ObjectPointOverlay.extend({
     options: Object.assign({
       className: 'object-point-overlay-static',
+      animate: false,
     }, objectGenerationOptions),
     initialize: function(cache, options) {
       this._cache = cache;
@@ -3053,7 +3089,8 @@
         })
 
         //console.timeEnd('data processing ' + JSON.stringify(coords))
-        layer.drawTile(tile, coords, done)
+        layer.drawTile(tile, coords)
+        done(null, tile)
       })
 
       return tile
@@ -3064,6 +3101,7 @@
     options: Object.assign({
       time: 0,
       className: 'object-point-overlay-anim',
+      animate: false,
     }, objectGenerationOptions),
     initialize: function(cache, options) {
       this._cache = cache;
@@ -3163,7 +3201,8 @@
         //console.log(tile._keyplace)
 
         //console.timeEnd('data processing ' + JSON.stringify(coords))
-        layer.drawTile(tile, coords, done)
+        layer.drawTile(tile, coords)
+        done(null, tile)
       })
 
       return tile

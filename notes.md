@@ -2,6 +2,7 @@
 - default position with no active monuments - precalculation
 - server search indexes
   - load timed logs, how to display
+    - assembling spans?
   - frontend load index, display counts and available
   - should load during interactive search?
   - select only one a time?
@@ -10,6 +11,7 @@
   - special layers for key objects (towers in progress, apocalyse)?
 
 ## Features
+- animation range when going to url timestamp
 - time window range graph
 - in-app help
 - town cluster labels
