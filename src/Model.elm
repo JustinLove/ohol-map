@@ -15,11 +15,13 @@ module Model exposing
   , Preset(..)
   , Server
   , Span
+  , SpanData
   , TimeMode(..)
   , Version
   , World
   , centerUrl
   , currentArcs
+  , currentSpans
   , currentServer
   , serverLoading
   , initialModel
@@ -108,6 +110,7 @@ type alias Model =
   , dataLayer : RemoteData Int
   , lives : RemoteData (List Life)
   , focus : Maybe Life
+  , spanData : Maybe SpanData
   , maxiumMatchingObjects: Maybe Int
   , totalMatchingObjects: Int
   , matchingObjects : List ObjectId
@@ -156,7 +159,7 @@ initialModel config location key =
   , player = Stopped
   , fadeTallObjects = False
   , showNaturalObjectsAboveZoom = 26
-  , activityMapVisible = True
+  , activityMapVisible = False
   , activityMapSampleSize = 2
   , showActivityMapBelowZoom = 24
   , pointColor = LineageColor
@@ -171,11 +174,12 @@ initialModel config location key =
   , dataLayer = NotRequested
   , lives = NotRequested
   , focus = Nothing
+  , spanData = Nothing
   , maxiumMatchingObjects = Just 20
   , totalMatchingObjects = 0
-  , matchingObjects = []
-  , selectedMatchingObjects = Set.fromList []
-  , lockedObjects = Set.fromList []
+  , matchingObjects = [4654]
+  , selectedMatchingObjects = Set.fromList [4654]
+  , lockedObjects = Set.fromList [4654]
   }
 
 type alias Config =
@@ -220,6 +224,8 @@ type alias Server =
   , objectIndex : List (ObjectId, String)
   , monuments : RemoteData (List Monument)
   }
+
+type alias SpanData = Span
 
 type Sidebar
   = ClosedSidebar
@@ -274,6 +280,13 @@ currentArcs model =
   model
     |> currentServer
     |> Maybe.map .arcs
+    |> Maybe.withDefault NotRequested
+
+currentSpans : Model -> RemoteData (List Span)
+currentSpans model =
+  model
+    |> currentServer
+    |> Maybe.map .spans
     |> Maybe.withDefault NotRequested
 
 centerCoord : (Point -> a) -> Center -> Maybe a

@@ -11,6 +11,7 @@
   - special layers for key objects (towers in progress, apocalyse)?
 
 ## Features
+- not selecting arc index because arcs in list have been updated with a datatime, records do not match
 - animation range when going to url timestamp
 - time window range graph
 - in-app help

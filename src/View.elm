@@ -486,44 +486,56 @@ lifeListHeader =
 
 objectListHeader : Model -> Element Msg
 objectListHeader model =
-  row
+  column
     [ Font.size 16
     , padding 6
-    , spacing 10
     , width fill
     ]
-    [ row [ spacing 10, alignLeft ]
-      [ Input.checkbox [ spacing 2 ]
-        { onChange = SelectAllObjects
-        , checked = (areAllObjectChecked model)
-        , label = Input.labelHidden "toggle all"
-        , icon = Input.defaultCheckbox
-        }
-      , row [ Font.underline ]
-        [ el [ width (px 18) ] none
-        , text "Name"
-        ]
+    [ row [ alignRight ]
+      [ ( model.spanData
+          |> Maybe.map .end
+          |> Maybe.map (date model.zone)
+          |> Maybe.withDefault ""
+          |> text
+        )
       ]
-    , row [ alignRight, spacing 2 ]
-      [ model.totalMatchingObjects
-        |> String.fromInt
-        |> text
-      , text "/"
-      , model.maxiumMatchingObjects
-        |> Maybe.map String.fromInt
-        |> Maybe.withDefault "all"
-        |> text
-      , text " "
-      , Input.checkbox [ spacing 2 ]
-        { onChange = (\checked -> SelectMaximumObjects
-            (if checked then Nothing else Just 20)
-          )
-        , checked = case model.maxiumMatchingObjects of
-            Just _ -> False
-            Nothing -> True
-        , label = Input.labelRight [] (text "Show all")
-        , icon = Input.defaultCheckbox
-        }
+    , row
+      [ spacing 10
+      , width fill
+      ]
+      [ row [ spacing 10, alignLeft ]
+        [ Input.checkbox [ spacing 2 ]
+          { onChange = SelectAllObjects
+          , checked = (areAllObjectChecked model)
+          , label = Input.labelHidden "toggle all"
+          , icon = Input.defaultCheckbox
+          }
+        , row [ Font.underline ]
+          [ el [ width (px 18) ] none
+          , text "Name"
+          ]
+        ]
+      , row [ alignRight, spacing 2 ]
+        [ model.totalMatchingObjects
+          |> String.fromInt
+          |> text
+        , text "/"
+        , model.maxiumMatchingObjects
+          |> Maybe.map String.fromInt
+          |> Maybe.withDefault "all"
+          |> text
+        , text " "
+        , Input.checkbox [ spacing 2 ]
+          { onChange = (\checked -> SelectMaximumObjects
+              (if checked then Nothing else Just 20)
+            )
+          , checked = case model.maxiumMatchingObjects of
+              Just _ -> False
+              Nothing -> True
+          , label = Input.labelRight [] (text "Show all")
+          , icon = Input.defaultCheckbox
+          }
+        ]
       ]
     ]
 

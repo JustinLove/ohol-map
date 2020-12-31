@@ -363,9 +363,11 @@ update msg model =
               |> Maybe.withDefault (arc.end
                 |> Maybe.withDefault model.time
                 )
+            mspan = spanForTime end (currentSpans model)
           in
           { model
           | currentArc = marc
+          , spanData = mspan
           , coarseStartTime = start
           , startTime = start
           , timeRange = Just (arcToRange model.time arc)
@@ -374,6 +376,7 @@ update msg model =
         Nothing ->
           ( { model
             | currentArc = marc
+            , spanData = Nothing
             , coarseArc = marc
             , timeRange = Nothing
             }
@@ -396,10 +399,12 @@ update msg model =
               |> Maybe.withDefault (arc.end
                 |> Maybe.withDefault model.time
                 )
+            mspan = spanForTime end (currentSpans model)
           in
           { model
           | currentArc = marc
-          , coarseArc = marc
+          , coarseArc = Debug.log "selectarccoarse" marc
+          , spanData = mspan
           , coarseStartTime = start
           , startTime = start
           , timeRange = Just (arcToRange model.time arc)
@@ -409,6 +414,7 @@ update msg model =
           ( { model
             | currentArc = marc
             , coarseArc = marc
+            , spanData = Nothing
             , timeRange = Nothing
             }
           , Cmd.none
@@ -570,12 +576,18 @@ update msg model =
     ArcList serverId (Ok arcs) ->
       let
         lastArc = arcs |> List.reverse |> List.head
+        marc = model.mapTime
+          |> Maybe.andThen (\time -> arcForTime time (Data arcs))
+          |> (\ma -> case ma of
+            Just _ -> ma
+            Nothing -> lastArc
+          )
       in
         ( { model
           | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | arcs = Data arcs} |> rebuildArcs))
-          , currentArc = lastArc
-          , coarseArc = lastArc
-          , timeRange = lastArc |> Maybe.map (arcToRange model.time)
+          , currentArc = marc
+          , coarseArc = marc
+          , timeRange = marc |> Maybe.map (arcToRange model.time)
           }
         , Cmd.none
         )
@@ -594,11 +606,18 @@ update msg model =
     SpanList serverId (Ok spans) ->
       let
         lastSpan = spans |> List.reverse |> List.head
+        mspan = model.mapTime
+          |> Maybe.andThen (\time -> spanForTime time (Data spans))
+          |> (\ms -> case ms of
+            Just _ -> ms
+            Nothing -> lastSpan
+          )
         mlastTime = lastSpan |> Maybe.map .end
       in
         ( { model
           | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | spans = Data spans} |> rebuildArcs))
-          , timeRange = lastSpan |> Maybe.map spanToRange
+          , timeRange = mspan |> Maybe.map spanToRange
+          , spanData = mspan
           }
         , Cmd.none
         )
@@ -976,6 +995,7 @@ setTime time model =
   if model.mapTime /= Just time then
     let
       marc = arcForTime time (currentArcs model)
+      mspan = spanForTime time (currentSpans model)
       timeRange =
         if model.lifeDataVisible then
           model.timeRange
@@ -989,6 +1009,7 @@ setTime time model =
     ( { model
       | mapTime = Just time
       , currentArc = marc
+      , spanData = mspan
       , timeRange = timeRange
       , dataAnimated = model.dataAnimated && animatable
       }
@@ -1006,6 +1027,15 @@ arcForTime time marcs =
     Data arcs ->
       arcs
         |> List.filter (\arc -> isInRange (arcToRange time arc) time)
+        |> List.head
+    _ -> Nothing
+
+spanForTime : Posix -> RemoteData (List Span) -> Maybe Span
+spanForTime time mspans =
+  case mspans of
+    Data spans ->
+      spans
+        |> List.filter (\span -> isInRange (spanToRange span) time)
         |> List.head
     _ -> Nothing
 
@@ -1259,13 +1289,15 @@ timeSelectionForTime model =
         Data arcs ->
           let
             newArc = arcForTime time (Data arcs)
+            mspan = spanForTime time (currentSpans model)
           in
             case newArc of
               Just arc ->
                 { model
                 | timeMode = ArcRange
                 , currentArc = newArc
-                , coarseArc = newArc
+                , spanData = mspan
+                , coarseArc = Debug.log "timeselection" newArc
                 , timeRange = Just (arcToRange model.time arc)
                 }
               Nothing ->
