@@ -47,7 +47,7 @@ type alias Span = Data.Span
 type alias Version = Data.Version
 type alias World = Data.World
 
-type alias ObjectId = Int
+type alias ObjectId = Data.ObjectId
 
 type Center
   = DefaultCenter

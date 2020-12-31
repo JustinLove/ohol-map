@@ -81,6 +81,7 @@ init config location key =
       , Leaflet.pointColor model.pointColor
       , Leaflet.pointLocation model.pointLocation
       , Leaflet.animOverlay model.dataAnimated
+      , Leaflet.overlayVisible "Activity Map" model.activityMapVisible
       , Leaflet.worldList (Data.rebuildWorlds Data.oholCodeChanges [] [] [])
       , Leaflet.showNaturalObjectsAboveZoom model.showNaturalObjectsAboveZoom
       , Leaflet.showActivityMapBelowZoom model.showActivityMapBelowZoom

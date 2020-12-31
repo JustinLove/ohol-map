@@ -1,7 +1,9 @@
 module OHOLData exposing
-  ( Life
+  ( ObjectId
+  , Life
   , Server
   , Monument
+  , ObjectSearchIndex
   , Arc
   , Span
   , Objects
@@ -33,6 +35,8 @@ import Json.Decode exposing (Value)
 import Set exposing (Set)
 import Time exposing (Posix)
 
+type alias ObjectId = Int
+
 type alias Life =
   { birthX : Int
   , birthY : Int
@@ -62,6 +66,8 @@ type alias Monument =
   , date : Posix
   , end : Maybe Posix
   }
+
+type alias ObjectSearchIndex = Dict ObjectId (Int, Bool)
 
 type alias Arc =
   { serverId : Int
