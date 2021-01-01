@@ -594,16 +594,22 @@ showMatchingLife model life =
 
 showMatchingObject : Model -> ObjectId -> Element Msg
 showMatchingObject model id =
-  let (title, attrs) = objectNameParts model id in
-  column [ padding 6 ]
-    [ Input.checkbox [ spacing 8 ]
-      { onChange = SelectMatchingObject id
-      , checked = Set.member id model.selectedMatchingObjects
-      , label = Input.labelRight [ ] <| objectWithSwatch id title
-      , icon = Input.defaultCheckbox
-      }
-    , row [ Font.size 16, spacing 4 ]
+  let
+    (title, attrs) = objectNameParts model id
+    (count, indexed) = objectStats model id
+  in
+  column [ padding 6, width fill ]
+    [ row [width fill]
       [ Input.checkbox [ spacing 8 ]
+        { onChange = SelectMatchingObject id
+        , checked = Set.member id model.selectedMatchingObjects
+        , label = Input.labelRight [ ] <| objectWithSwatch id title
+        , icon = Input.defaultCheckbox
+        }
+      , count |> String.fromInt |> text |> el [ alignRight, if indexed then Font.regular else Font.strike ]
+      ]
+    , row [ Font.size 16, spacing 4, width fill ]
+      [ Input.checkbox [ spacing 8, width shrink ]
         { onChange = ToggleLockObject id
         , checked = Set.member id model.lockedObjects
         , label = Input.labelHidden "lock/unlock"
@@ -689,18 +695,6 @@ showMatchingLifeDetail model life =
       ]
     ]
 
-showMatchingObjectDetail : Model -> ObjectId -> Element Msg
-showMatchingObjectDetail model id =
-  let (title, attrs) = objectNameParts model id in
-  column
-    [ padding 4 ]
-    [ title
-      |> text
-    , attrs
-      |> text
-      |> el [ Font.size 16  ]
-    ]
-
 objectNameParts : Model -> ObjectId -> (String, String)
 objectNameParts model objectId =
   case objectName model objectId |> String.split "#" of
@@ -715,6 +709,14 @@ objectName model objectId =
     |> Maybe.map .objects
     |> Maybe.andThen (Dict.get objectId)
     |> Maybe.withDefault "unknown"
+
+objectStats : Model -> ObjectId -> (Int, Bool)
+objectStats model objectId =
+  model.spanData
+    |> Maybe.map .objectSearchIndex
+    |> Maybe.map (RemoteData.withDefault Dict.empty)
+    |> Maybe.andThen (Dict.get objectId)
+    |> Maybe.withDefault (0, False)
 
 date : Time.Zone -> Posix -> String
 date zone time =

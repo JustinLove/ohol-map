@@ -3,7 +3,7 @@
 - server search indexes
   - load timed logs, how to display
     - assembling spans?
-  - frontend load index, display counts and available
+  - counts for maplog data?
   - should load during interactive search?
   - select only one a time?
     - jump to instances?
