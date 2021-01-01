@@ -6,6 +6,7 @@ import Model exposing (..)
 import OHOLData as Data
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
+import OHOLData.Parse as Parse
 import Persist exposing (Persist)
 import Persist.Encode
 import Persist.Decode
@@ -20,6 +21,7 @@ import Browser.Navigation as Navigation
 import Http
 import Json.Decode
 import Dict exposing(Dict)
+import Parser.Advanced as Parser
 import Process
 import Set exposing (Set)
 import Task
@@ -39,6 +41,7 @@ type Msg
   | ServerList (Result Http.Error (List Data.Server))
   | ArcList Int (Result Http.Error (List Data.Arc))
   | SpanList Int (Result Http.Error (List Data.Span))
+  | ObjectSearchIndexReceived Int Posix (Result Http.Error String)
   | ObjectsReceived (Result Http.Error Data.Objects)
   | MonumentList Int (Result Http.Error (List Data.Monument))
   | DataLayer Int (Result Http.Error Json.Decode.Value)
@@ -367,7 +370,7 @@ update msg model =
           in
           { model
           | currentArc = marc
-          , spanData = mspan
+          , spanData = mspan |> Maybe.map asSpanData
           , coarseStartTime = start
           , startTime = start
           , timeRange = Just (arcToRange model.time arc)
@@ -404,7 +407,7 @@ update msg model =
           { model
           | currentArc = marc
           , coarseArc = Debug.log "selectarccoarse" marc
-          , spanData = mspan
+          , spanData = mspan |> Maybe.map asSpanData
           , coarseStartTime = start
           , startTime = start
           , timeRange = Just (arcToRange model.time arc)
@@ -617,7 +620,7 @@ update msg model =
         ( { model
           | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | spans = Data spans} |> rebuildArcs))
           , timeRange = mspan |> Maybe.map spanToRange
-          , spanData = mspan
+          , spanData = mspan |> Maybe.map asSpanData
           }
         , Cmd.none
         )
@@ -628,6 +631,27 @@ update msg model =
       let _ = Debug.log "fetch spans failed" error in
       ( { model
         | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | spans = Failed error}))
+        }
+        , Cmd.none
+      )
+    ObjectSearchIndexReceived serverId datatime (Ok text) ->
+      case Parser.run Parse.objectSearchIndex text of
+        Ok index ->
+          ( { model
+            | spanData = model.spanData |> Maybe.map (\spanData -> {spanData | objectSearchIndex = Data index})
+            }
+            , Cmd.none
+          )
+        Err err ->
+          ( { model
+            | spanData = model.spanData |> Maybe.map (\spanData -> {spanData | objectSearchIndex = Failed <| Http.BadBody (Parse.deadEndsToString err)})
+            }
+            , Cmd.none
+          )
+    ObjectSearchIndexReceived serverId datatime (Err error) ->
+      let _ = Debug.log "fetch object search index failed" error in
+      ( { model
+        | spanData = model.spanData |> Maybe.map (\spanData -> {spanData | objectSearchIndex = Failed error})
         }
         , Cmd.none
       )
@@ -948,6 +972,7 @@ updateObjectSearch model =
   , selectedMatchingObjects = Set.fromList ids
   }
     |> andHighlightObjects
+    |> addUpdate requireObjectSearchIndex
 
 yesterday : Model -> (Model, Cmd Msg)
 yesterday model =
@@ -1009,7 +1034,7 @@ setTime time model =
     ( { model
       | mapTime = Just time
       , currentArc = marc
-      , spanData = mspan
+      , spanData = mspan |> Maybe.map asSpanData
       , timeRange = timeRange
       , dataAnimated = model.dataAnimated && animatable
       }
@@ -1296,7 +1321,7 @@ timeSelectionForTime model =
                 { model
                 | timeMode = ArcRange
                 , currentArc = newArc
-                , spanData = mspan
+                , spanData = mspan |> Maybe.map asSpanData
                 , coarseArc = Debug.log "timeselection" newArc
                 , timeRange = Just (arcToRange model.time arc)
                 }
@@ -1449,6 +1474,30 @@ fetchSpans spansUrl serverId =
   Http.get
     { url = Url.relative [spansUrl |> String.replace "{server}" (String.fromInt serverId)] []
     , expect = Http.expectJson (SpanList serverId) Decode.spans
+    }
+
+requireObjectSearchIndex : Model -> (Model, Cmd Msg)
+requireObjectSearchIndex model =
+  Maybe.map2 (\spanData serverId ->
+    if spanData.objectSearchIndex == NotRequested then
+      ( {model | spanData = Just {spanData | objectSearchIndex = Loading }}
+      , fetchObjectSearchIndex model.keySearchIndex serverId spanData.end
+      )
+    else
+      (model, Cmd.none)
+    )
+    model.spanData model.selectedServer
+    |> Maybe.withDefault (model, Cmd.none)
+
+fetchObjectSearchIndex : String -> Int -> Posix -> Cmd Msg
+fetchObjectSearchIndex indexUrl serverId datatime =
+  Http.get
+    { url = Url.relative [
+      indexUrl
+        |> String.replace "{server}" (String.fromInt serverId)
+        |> String.replace "{time}" (String.fromInt ((Time.posixToMillis datatime) // 1000))
+      ] []
+    , expect = Http.expectString (ObjectSearchIndexReceived serverId datatime)
     }
 
 fetchObjects : Cmd Msg

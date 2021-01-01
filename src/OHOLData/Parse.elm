@@ -3,6 +3,7 @@ module OHOLData.Parse exposing
   , line
   , objectId
   , objectCount
+  , deadEndsToString
   )
 
 import OHOLData exposing (ObjectId, ObjectSearchIndex)
@@ -54,3 +55,18 @@ objectId =
 objectCount : ObjectSearchParser ObjectId
 objectCount = 
   int "Expecting Instance Count" "Invalid Instance Count"
+
+deadEndsToString : List (DeadEnd Context Problem) -> String
+deadEndsToString deadEnds =
+  deadEnds
+    |> List.map deadEndToString
+    |> String.join "\n"
+
+deadEndToString : DeadEnd Context Problem -> String
+deadEndToString {problem, contextStack} =
+  problem :: (contextStack |> List.map contextToString)
+    |> String.join " while: "
+
+contextToString : {r|context : Context} -> String
+contextToString {context} =
+  context

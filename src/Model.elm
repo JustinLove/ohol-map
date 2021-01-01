@@ -28,6 +28,7 @@ module Model exposing
   , defaultCenter
   , highlightObjects
   , areAllObjectChecked
+  , asSpanData
   )
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
@@ -69,6 +70,8 @@ type alias Model =
   , lineageUrl: String
   , seedsUrl: String
   , spansUrl: String
+  , keySearchIndex: String
+  , logSearchIndex: String
   , sidebar : Sidebar
   , sidebarMode : SidebarMode
   , searchMode : SearchMode
@@ -133,6 +136,8 @@ initialModel config location key =
   , lineageUrl = config.lineageUrl
   , seedsUrl = config.seedsUrl
   , spansUrl = config.spansUrl
+  , keySearchIndex = config.keySearchIndex
+  , logSearchIndex = config.logSearchIndex
   , sidebar = OpenSidebar
   , sidebarMode = Search
   , searchMode = SearchObjects
@@ -225,7 +230,12 @@ type alias Server =
   , monuments : RemoteData (List Monument)
   }
 
-type alias SpanData = Span
+type alias SpanData =
+  { start: Posix
+  , end: Posix
+  , base: Posix
+  , objectSearchIndex: RemoteData Data.ObjectSearchIndex
+  }
 
 type Sidebar
   = ClosedSidebar
@@ -327,4 +337,12 @@ highlightObjects model =
 areAllObjectChecked : Model -> Bool
 areAllObjectChecked model =
   (List.length model.matchingObjects) == (Set.size model.selectedMatchingObjects)
+
+asSpanData : Span -> SpanData
+asSpanData span =
+  { start = span.start
+  , end = span.end
+  , base = span.base
+  , objectSearchIndex = NotRequested
+  }
 
