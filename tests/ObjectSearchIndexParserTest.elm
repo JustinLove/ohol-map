@@ -1,4 +1,4 @@
-module OHOLDataParseTest exposing (..)
+module ObjectSearchIndexParserTest exposing (..)
 
 import OHOLData as Data
 import OHOLData.Parse as Parse
@@ -9,21 +9,6 @@ import Time exposing (Posix)
 
 import Expect exposing (Expectation)
 import Test exposing (..)
-
-indexString = """1323 1
-66 2473
--
-764 3039
-51 3150
-"""
-
-indexResult : Dict Int (Int, Bool)
-indexResult = Dict.fromList
-  [ (1323, (1, True))
-  , (66, (2473, True))
-  , (764, (3039, False))
-  , (51, (3150, False))
-  ]
 
 suite : Test
 suite =
@@ -47,3 +32,20 @@ suite =
       (Parser.run Parse.objectSearchIndex indexString)
         |> Expect.equal (Ok indexResult)
     ]
+
+indexString = """1323 1
+66 2473
+-
+764 3039
+51 3150
+"""
+
+indexResult : Dict Int (Int, Bool)
+indexResult = Dict.fromList
+  [ (1323, (1, True))
+  , (66, (2473, True))
+  , (764, (3039, False))
+  , (51, (3150, False))
+  ]
+
+
