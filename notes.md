@@ -3,12 +3,12 @@
 - server search indexes
   - load timed logs, how to display
     - assembling spans?
-  - counts for maplog data?
+  - x counts for maplog data?
   - should load during interactive search?
   - select only one a time?
     - jump to instances?
   - default map position?
-  - special layers for key objects (towers in progress, apocalyse)?
+  - special layers for key objects (towers in progress, apocalyse, wells/mines/oil)?
 
 ## Features
 - not selecting arc index because arcs in list have been updated with a datatime, records do not match

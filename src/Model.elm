@@ -234,7 +234,8 @@ type alias SpanData =
   { start: Posix
   , end: Posix
   , base: Posix
-  , objectSearchIndex: RemoteData Data.ObjectSearchIndex
+  , keyObjectSearchIndex: RemoteData Data.ObjectSearchIndex
+  , logObjectSearchIndex: RemoteData Data.ObjectSearchIndex
   }
 
 type Sidebar
@@ -343,6 +344,7 @@ asSpanData span =
   { start = span.start
   , end = span.end
   , base = span.base
-  , objectSearchIndex = NotRequested
+  , keyObjectSearchIndex = NotRequested
+  , logObjectSearchIndex = NotRequested
   }
 

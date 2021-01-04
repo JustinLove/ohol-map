@@ -41,7 +41,8 @@ type Msg
   | ServerList (Result Http.Error (List Data.Server))
   | ArcList Int (Result Http.Error (List Data.Arc))
   | SpanList Int (Result Http.Error (List Data.Span))
-  | ObjectSearchIndexReceived Int Posix (Result Http.Error String)
+  | KeyObjectSearchIndexReceived Int Posix (Result Http.Error Data.ObjectSearchIndex)
+  | LogObjectSearchIndexReceived Int Posix (Result Http.Error Data.ObjectSearchIndex)
   | ObjectsReceived (Result Http.Error Data.Objects)
   | MonumentList Int (Result Http.Error (List Data.Monument))
   | DataLayer Int (Result Http.Error Json.Decode.Value)
@@ -178,6 +179,7 @@ update msg model =
         }
       , Leaflet.animOverlay animated
       )
+        |> addUpdate requireObjectSearchIndex
     UI (View.GameSecondsPerSecond seconds) ->
       ( { model
         | gameSecondsPerSecond = seconds
@@ -508,6 +510,7 @@ update msg model =
       , Leaflet.animOverlay
         (model.dataAnimated == False)
       )
+        |> addUpdate requireObjectSearchIndex
     Event (Err err) ->
       let _ = Debug.log "error" err in
       (model, Cmd.none)
@@ -627,6 +630,7 @@ update msg model =
         |> maybeSetTime mlastTime
         |> rebuildWorlds
         |> checkServerLoaded
+        |> addUpdate requireObjectSearchIndex
     SpanList serverId (Err error) ->
       let _ = Debug.log "fetch spans failed" error in
       ( { model
@@ -634,24 +638,29 @@ update msg model =
         }
         , Cmd.none
       )
-    ObjectSearchIndexReceived serverId datatime (Ok text) ->
-      case Parser.run Parse.objectSearchIndex text of
-        Ok index ->
-          ( { model
-            | spanData = model.spanData |> Maybe.map (\spanData -> {spanData | objectSearchIndex = Data index})
-            }
-            , Cmd.none
-          )
-        Err err ->
-          ( { model
-            | spanData = model.spanData |> Maybe.map (\spanData -> {spanData | objectSearchIndex = Failed <| Http.BadBody (Parse.deadEndsToString err)})
-            }
-            , Cmd.none
-          )
-    ObjectSearchIndexReceived serverId datatime (Err error) ->
+    KeyObjectSearchIndexReceived serverId datatime (Ok index) ->
+      ( { model
+        | spanData = model.spanData |> Maybe.map (\spanData -> {spanData | keyObjectSearchIndex = Data index})
+        }
+        , Cmd.none
+      )
+    KeyObjectSearchIndexReceived serverId datatime (Err error) ->
       let _ = Debug.log "fetch object search index failed" error in
       ( { model
-        | spanData = model.spanData |> Maybe.map (\spanData -> {spanData | objectSearchIndex = Failed error})
+        | spanData = model.spanData |> Maybe.map (\spanData -> {spanData | keyObjectSearchIndex = Failed error})
+        }
+        , Cmd.none
+      )
+    LogObjectSearchIndexReceived serverId datatime (Ok index) ->
+      ( { model
+        | spanData = model.spanData |> Maybe.map (\spanData -> {spanData | logObjectSearchIndex = Data index})
+        }
+        , Cmd.none
+      )
+    LogObjectSearchIndexReceived serverId datatime (Err error) ->
+      let _ = Debug.log "fetch object search index failed" error in
+      ( { model
+        | spanData = model.spanData |> Maybe.map (\spanData -> {spanData | logObjectSearchIndex = Failed error})
         }
         , Cmd.none
       )
@@ -1479,26 +1488,48 @@ fetchSpans spansUrl serverId =
 requireObjectSearchIndex : Model -> (Model, Cmd Msg)
 requireObjectSearchIndex model =
   Maybe.map2 (\spanData serverId ->
-    if spanData.objectSearchIndex == NotRequested then
-      ( {model | spanData = Just {spanData | objectSearchIndex = Loading }}
-      , fetchObjectSearchIndex model.keySearchIndex serverId spanData.end
-      )
+    if model.dataAnimated then
+      if spanData.logObjectSearchIndex == NotRequested then
+        ( {model | spanData = Just {spanData | logObjectSearchIndex = Loading }}
+        , fetchLogObjectSearchIndex model.logSearchIndex serverId spanData.end
+        )
+      else
+        (model, Cmd.none)
     else
-      (model, Cmd.none)
+      if spanData.keyObjectSearchIndex == NotRequested then
+        ( {model | spanData = Just {spanData | keyObjectSearchIndex = Loading }}
+        , fetchKeyObjectSearchIndex model.keySearchIndex serverId spanData.end
+        )
+      else
+        (model, Cmd.none)
     )
     model.spanData model.selectedServer
     |> Maybe.withDefault (model, Cmd.none)
 
-fetchObjectSearchIndex : String -> Int -> Posix -> Cmd Msg
-fetchObjectSearchIndex indexUrl serverId datatime =
+fetchKeyObjectSearchIndex : String -> Int -> Posix -> Cmd Msg
+fetchKeyObjectSearchIndex indexUrl serverId datatime =
+  fetchObjectSearchIndex (KeyObjectSearchIndexReceived serverId datatime) indexUrl serverId datatime
+
+fetchLogObjectSearchIndex : String -> Int -> Posix -> Cmd Msg
+fetchLogObjectSearchIndex indexUrl serverId datatime =
+  fetchObjectSearchIndex (LogObjectSearchIndexReceived serverId datatime) indexUrl serverId datatime
+
+fetchObjectSearchIndex : ((Result Http.Error Data.ObjectSearchIndex) -> Msg) -> String -> Int -> Posix -> Cmd Msg
+fetchObjectSearchIndex tagger indexUrl serverId datatime =
   Http.get
     { url = Url.relative [
       indexUrl
         |> String.replace "{server}" (String.fromInt serverId)
         |> String.replace "{time}" (String.fromInt ((Time.posixToMillis datatime) // 1000))
       ] []
-    , expect = Http.expectString (ObjectSearchIndexReceived serverId datatime)
+    , expect = Http.expectString (parseObjectSearchIndex >> tagger)
     }
+
+parseObjectSearchIndex : Result Http.Error String -> Result Http.Error Data.ObjectSearchIndex
+parseObjectSearchIndex =
+  Result.andThen
+    (Parser.run Parse.objectSearchIndex
+      >> Result.mapError (Http.BadBody << Parse.deadEndsToString))
 
 fetchObjects : Cmd Msg
 fetchObjects =

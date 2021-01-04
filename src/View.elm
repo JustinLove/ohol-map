@@ -713,7 +713,7 @@ objectName model objectId =
 objectStats : Model -> ObjectId -> (Int, Bool)
 objectStats model objectId =
   model.spanData
-    |> Maybe.map .objectSearchIndex
+    |> Maybe.map (if model.dataAnimated then .logObjectSearchIndex else .keyObjectSearchIndex)
     |> Maybe.map (RemoteData.withDefault Dict.empty)
     |> Maybe.andThen (Dict.get objectId)
     |> Maybe.withDefault (0, False)
