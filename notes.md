@@ -4,6 +4,7 @@
   - load timed logs, how to display
     - assembling spans?
   - x counts for maplog data?
+    - should show time range instead of static time
   - should load during interactive search?
   - select only one a time?
     - jump to instances?
