@@ -1,7 +1,7 @@
 module KeyValueYXFirstParserTest exposing (..)
 
 import OHOLData as Data
-import OHOLData.Parse as Parse exposing (Placement(..))
+import OHOLData.Parse as Parse exposing (Key(..))
 
 import Dict exposing (Dict)
 import Parser.Advanced as Parser
@@ -59,10 +59,10 @@ suite =
         |> Expect.equal (Ok [-51366])
     , test "coordinate line - one" <| \_ ->
       (Parser.run Parse.keyValueYXFirst "9F1367")
-        |> Expect.equal (Ok [Placement 0 -51367 9])
+        |> Expect.equal (Ok [Key 0 -51367 9])
     , test "coordinate line - two" <| \_ ->
       (Parser.run Parse.keyValueYXFirst "9F1367b")
-        |> Expect.equal (Ok [Placement 0 -51367 9, Placement 0 -51366 9])
+        |> Expect.equal (Ok [Key 0 -51367 9, Key 0 -51366 9])
     , test "value and coordiate line" <| \_ ->
       (Parser.run Parse.keyValueYXFirst minimalKeyValueYXFirst)
         |> Expect.equal (Ok minimalKeyValueYXFirstResult)
@@ -75,14 +75,14 @@ suite =
     ]
 
 minimalKeyValueYXFirst = "v753\n9F1367"
-minimalKeyValueYXFirstResult = [Parse.Placement 753 -51367 9]
+minimalKeyValueYXFirstResult = [Parse.Key 753 -51367 9]
 
 multiCoord = """v1065
 60F1323
 207B158"""
 multiCoordResult =
-  [ Parse.Placement 1065 -51323 60
-  , Parse.Placement 1065 -52481 267
+  [ Parse.Key 1065 -51323 60
+  , Parse.Key 1065 -52481 267
   ]
 
 multiValue = """v0
@@ -90,10 +90,10 @@ multiValue = """v0
 v1385
 -1b"""
 multiValueResult =
-  [ Parse.Placement 0 -18 1
-  , Parse.Placement 0 -17 1
-  , Parse.Placement 0 -6 1
-  , Parse.Placement 0 -5 1
-  , Parse.Placement 0 -3 1
-  , Parse.Placement 1385 -2 0
+  [ Parse.Key 0 -18 1
+  , Parse.Key 0 -17 1
+  , Parse.Key 0 -6 1
+  , Parse.Key 0 -5 1
+  , Parse.Key 0 -3 1
+  , Parse.Key 1385 -2 0
   ]

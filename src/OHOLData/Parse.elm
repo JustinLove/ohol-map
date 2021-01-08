@@ -1,15 +1,18 @@
 module OHOLData.Parse exposing
-  ( Placement(..)
+  ( Key(..)
+  , Log(..)
   , objectSearchIndex
   , line
-  , objectId
-  , objectCount
-  , deadEndsToString
   , keyValueYXFirst
+  , logValueYXTFirst
   , valueLine
+  , yLine
   , numberSeries
   , deltaY
   , encodedDeltaX
+  , objectId
+  , objectCount
+  , deadEndsToString
   )
 
 import OHOLData exposing (ObjectId, ObjectSearchIndex)
@@ -18,7 +21,8 @@ import Dict exposing (Dict)
 import Parser.Advanced as Parser exposing (..)
 import Time exposing (Posix)
 
-type Placement = Placement ObjectId Int Int
+type Key = Key ObjectId Int Int
+type Log = Log ObjectId Int Int Posix
 
 type alias ObjectSearchParser a = Parser Context Problem a
 type alias KeyValueYXFirstParser a = Parser Context Problem a
@@ -66,10 +70,18 @@ objectCount =
   int "Expecting Instance Count" "Invalid Instance Count"
 
 type alias KeyValueYXFirstState =
-  { reversedPlacements : List Placement
+  { reversedPlacements : List Key
   , id : ObjectId
   , x : Int
   , y : Int
+  }
+
+type alias LogValueYXTFirstState =
+  { reversedPlacements : List Log
+  , id : ObjectId
+  , x : Int
+  , y : Int
+  , t : Int
   }
 
 type alias NumberSeriesState a =
@@ -77,15 +89,15 @@ type alias NumberSeriesState a =
   , n : Int
   }
 
-keyValueYXFirst : KeyValueYXFirstParser (List Placement)
+keyValueYXFirst : KeyValueYXFirstParser (List Key)
 keyValueYXFirst =
   loop (KeyValueYXFirstState [] 0 0 0) keyValueYXFirstStep
 
 keyValueYXFirstStep
   : KeyValueYXFirstState
-  -> ObjectSearchParser (Step KeyValueYXFirstState (List Placement))
+  -> ObjectSearchParser (Step KeyValueYXFirstState (List Key))
 keyValueYXFirstStep ({reversedPlacements, id, x, y} as state) =
-  let constructor cid cy cx = Placement cid cx cy in
+  let constructor cid cy cx = Key cid cx cy in
   oneOf
     [ succeed (\newid -> Loop (KeyValueYXFirstState reversedPlacements newid x y))
       |= valueLine
@@ -104,11 +116,47 @@ keyValueYXFirstStep ({reversedPlacements, id, x, y} as state) =
       |> map (\_ -> Done (List.reverse reversedPlacements))
     ]
 
+logValueYXTFirst : KeyValueYXFirstParser (List Log)
+logValueYXTFirst =
+  loop (LogValueYXTFirstState [] 0 0 0 0) logValueYXTFirstStep
+
+logValueYXTFirstStep
+  : LogValueYXTFirstState
+  -> ObjectSearchParser (Step LogValueYXTFirstState (List Log))
+logValueYXTFirstStep ({reversedPlacements, id, x, y, t} as state) =
+  let constructor cid cy cx ct = Log cid cx cy (Time.millisToPosix (ct * 10)) in
+  oneOf
+    [ succeed (\newid -> Loop (LogValueYXTFirstState reversedPlacements newid x y t))
+      |= valueLine
+      |. spaces
+    , succeed (\dy -> Loop (LogValueYXTFirstState reversedPlacements id x (y + dy) t))
+      |= yLine
+      |. spaces
+    , succeed Loop
+      |= (deltaX
+        |> andThen (\dx ->
+          numberSeries
+            (constructor id y (x + dx))
+            (\updatedPlacements updatedT -> LogValueYXTFirstState updatedPlacements id (x + dx) y updatedT)
+            reversedPlacements t
+        ))
+      |. spaces
+    , succeed ()
+      |. end "unparsed trailing characters in logValueYXTFirst"
+      |> map (\_ -> Done (List.reverse reversedPlacements))
+    ]
+
 valueLine : KeyValueYXFirstParser ObjectId
 valueLine =
   succeed identity
     |. symbol (Token "v" "Looking for value line")
     |= objectId
+
+yLine : KeyValueYXFirstParser Int
+yLine =
+  succeed identity
+    |. symbol (Token "y" "Looking for value line")
+    |= deltaY
 
 numberSeries
   : (Int -> a)
@@ -137,6 +185,11 @@ numberSeriesStep2 constructor finalize ({reversedResults, n} as state) =
 deltaY : KeyValueYXFirstParser Int
 deltaY =
   inContext "Delta Y" <|
+    signedInt
+
+deltaX : KeyValueYXFirstParser Int
+deltaX =
+  inContext "Delta X" <|
     signedInt
 
 signedInt : KeyValueYXFirstParser Int
