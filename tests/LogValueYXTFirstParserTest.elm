@@ -1,7 +1,7 @@
 module LogValueYXTFirstParserTest exposing (..)
 
 import OHOLData as Data
-import OHOLData.Parse as Parse exposing (Log(..))
+import OHOLData.Parse as Parse exposing (Log(..), Object(..))
 
 import Dict exposing (Dict)
 import Parser.Advanced as Parser
@@ -30,7 +30,7 @@ minimalLogValueYXTFirst = """v153
 y84
 -52429b60825540792"""
 minimalLogValueYXTFirstResult =
-  [ Parse.Log 153 -52429 84 (t 1608255407920)
+  [ Parse.Log (Object 153) -52429 84 (t 1608255407920)
   ]
 
 multipleLogValueYXTFirst = """v520
@@ -39,7 +39,7 @@ y45
 y60
 -1579C826215e46"""
 multipleLogValueYXTFirstResult =
-  [ Parse.Log 520 -51331 45 (t 1608263757500)
-  , Parse.Log 520 -52910 105 (t 1608235495350)
-  , Parse.Log 520 -52910 105 (t 1608235499810)
+  [ Parse.Log (Object 520) -51331 45 (t 1608263757500)
+  , Parse.Log (Object 520) -52910 105 (t 1608235495350)
+  , Parse.Log (Object 520) -52910 105 (t 1608235499810)
   ]

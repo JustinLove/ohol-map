@@ -1,5 +1,6 @@
 module OHOLData.Parse exposing
-  ( Key(..)
+  ( Object(..)
+  , Key(..)
   , Log(..)
   , objectSearchIndex
   , line
@@ -21,8 +22,14 @@ import Dict exposing (Dict)
 import Parser.Advanced as Parser exposing (..)
 import Time exposing (Posix)
 
-type Key = Key ObjectId Int Int
-type Log = Log ObjectId Int Int Posix
+type Object
+  = Object ObjectId
+  | Use ObjectId Int
+  | Variant ObjectId Int
+  | Floor ObjectId
+
+type Key = Key Object Int Int
+type Log = Log Object Int Int Posix
 
 type alias ObjectSearchParser a = Parser Context Problem a
 type alias KeyValueYXFirstParser a = Parser Context Problem a
@@ -71,14 +78,14 @@ objectCount =
 
 type alias KeyValueYXFirstState =
   { reversedPlacements : List Key
-  , id : ObjectId
+  , id : Object
   , x : Int
   , y : Int
   }
 
 type alias LogValueYXTFirstState =
   { reversedPlacements : List Log
-  , id : ObjectId
+  , id : Object
   , x : Int
   , y : Int
   , t : Int
@@ -91,7 +98,7 @@ type alias NumberSeriesState a =
 
 keyValueYXFirst : KeyValueYXFirstParser (List Key)
 keyValueYXFirst =
-  loop (KeyValueYXFirstState [] 0 0 0) keyValueYXFirstStep
+  loop (KeyValueYXFirstState [] (Object 0) 0 0) keyValueYXFirstStep
 
 keyValueYXFirstStep
   : KeyValueYXFirstState
@@ -118,7 +125,7 @@ keyValueYXFirstStep ({reversedPlacements, id, x, y} as state) =
 
 logValueYXTFirst : KeyValueYXFirstParser (List Log)
 logValueYXTFirst =
-  loop (LogValueYXTFirstState [] 0 0 0 0) logValueYXTFirstStep
+  loop (LogValueYXTFirstState [] (Object 0) 0 0 0) logValueYXTFirstStep
 
 logValueYXTFirstStep
   : LogValueYXTFirstState
@@ -146,11 +153,31 @@ logValueYXTFirstStep ({reversedPlacements, id, x, y, t} as state) =
       |> map (\_ -> Done (List.reverse reversedPlacements))
     ]
 
-valueLine : KeyValueYXFirstParser ObjectId
+valueLine : KeyValueYXFirstParser Object
 valueLine =
   succeed identity
     |. symbol (Token "v" "Looking for value line")
-    |= objectId
+    |= object
+
+object : KeyValueYXFirstParser Object
+object =
+  oneOf
+    [ succeed Floor
+      |. symbol (Token "f" "Looking for floor")
+      |= objectId
+    , objectId
+      |> andThen (\id ->
+        oneOf
+          [ succeed (Use id)
+            |. symbol (Token "u" "Looking for uses")
+            |= int "Expecting use" "Invalid use"
+          , succeed (Variant id)
+            |. symbol (Token "v" "Looking for variant")
+            |= int "Expecting variant" "Invalid variant"
+          , succeed (Object id)
+          ]
+        )
+    ]
 
 yLine : KeyValueYXFirstParser Int
 yLine =

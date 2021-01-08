@@ -1,7 +1,7 @@
 module KeyValueYXFirstParserTest exposing (..)
 
 import OHOLData as Data
-import OHOLData.Parse as Parse exposing (Key(..))
+import OHOLData.Parse as Parse exposing (Key(..), Object(..))
 
 import Dict exposing (Dict)
 import Parser.Advanced as Parser
@@ -15,7 +15,16 @@ suite =
   describe "key-value-y-x-first parser"
     [ test "value line" <| \_ ->
       (Parser.run Parse.valueLine "v1")
-        |> Expect.equal (Ok 1)
+        |> Expect.equal (Ok (Object 1))
+    , test "floors" <| \_ ->
+      (Parser.run Parse.valueLine "vf1")
+        |> Expect.equal (Ok (Floor 1))
+    , test "uses" <| \_ ->
+      (Parser.run Parse.valueLine "v1u0")
+        |> Expect.equal (Ok (Use 1 0))
+    , test "variant" <| \_ ->
+      (Parser.run Parse.valueLine "v1v0")
+        |> Expect.equal (Ok (Variant 1 0))
     , test "positive dy coord" <| \_ ->
       (Parser.run Parse.deltaY "9F1376")
         |> Expect.equal (Ok 9)
@@ -59,10 +68,10 @@ suite =
         |> Expect.equal (Ok [-51366])
     , test "coordinate line - one" <| \_ ->
       (Parser.run Parse.keyValueYXFirst "9F1367")
-        |> Expect.equal (Ok [Key 0 -51367 9])
+        |> Expect.equal (Ok [Key (Object 0) -51367 9])
     , test "coordinate line - two" <| \_ ->
       (Parser.run Parse.keyValueYXFirst "9F1367b")
-        |> Expect.equal (Ok [Key 0 -51367 9, Key 0 -51366 9])
+        |> Expect.equal (Ok [Key (Object 0) -51367 9, Key (Object 0) -51366 9])
     , test "value and coordiate line" <| \_ ->
       (Parser.run Parse.keyValueYXFirst minimalKeyValueYXFirst)
         |> Expect.equal (Ok minimalKeyValueYXFirstResult)
@@ -75,14 +84,14 @@ suite =
     ]
 
 minimalKeyValueYXFirst = "v753\n9F1367"
-minimalKeyValueYXFirstResult = [Parse.Key 753 -51367 9]
+minimalKeyValueYXFirstResult = [Parse.Key (Object 753) -51367 9]
 
 multiCoord = """v1065
 60F1323
 207B158"""
 multiCoordResult =
-  [ Parse.Key 1065 -51323 60
-  , Parse.Key 1065 -52481 267
+  [ Parse.Key (Object 1065) -51323 60
+  , Parse.Key (Object 1065) -52481 267
   ]
 
 multiValue = """v0
@@ -90,10 +99,10 @@ multiValue = """v0
 v1385
 -1b"""
 multiValueResult =
-  [ Parse.Key 0 -18 1
-  , Parse.Key 0 -17 1
-  , Parse.Key 0 -6 1
-  , Parse.Key 0 -5 1
-  , Parse.Key 0 -3 1
-  , Parse.Key 1385 -2 0
+  [ Parse.Key (Object 0) -18 1
+  , Parse.Key (Object 0) -17 1
+  , Parse.Key (Object 0) -6 1
+  , Parse.Key (Object 0) -5 1
+  , Parse.Key (Object 0) -3 1
+  , Parse.Key (Object 1385) -2 0
   ]
