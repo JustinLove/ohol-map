@@ -37,46 +37,32 @@ suite =
     , test "positive long dx coord" <| \_ ->
       (Parser.run Parse.encodedDeltaX "b2")
         |> Expect.equal (Ok 12)
-    , test "coordinate line - one" <| \_ ->
-      (Parser.run (Parse.coordinateLine
-        { reversedPlacements = []
-        , id = 753
-        , x = 0
-        , y = 0
-        })
-        "9F1367")
-        |> Result.map .reversedPlacements
-        |> Expect.equal (Ok [Placement 753 -51367 9])
-    , test "coordinate line update x" <| \_ ->
-      (Parser.run (Parse.coordinateLine
-        { reversedPlacements = []
-        , id = 753
-        , x = 0
-        , y = 0
-        })
-        "9F1367")
-        |> Result.map .x
+    , test "number series - one" <| \_ ->
+      (Parser.run (Parse.numberSeries identity
+        (\results n -> results) [] 0)
+        "F1367")
+        |> Expect.equal (Ok [-51367])
+    , test "number series n" <| \_ ->
+      (Parser.run (Parse.numberSeries identity
+        (\results n -> n) [] 0)
+        "F1367")
         |> Expect.equal (Ok -51367)
-    , test "coordinate line uses base coords" <| \_ ->
-      (Parser.run (Parse.coordinateLine
-        { reversedPlacements = []
-        , id = 753
-        , x = 1
-        , y = 1
-        })
-        "9F1367")
-        |> Result.map .reversedPlacements
-        |> Expect.equal (Ok [Placement 753 -51366 10])
+    , test "number series - two" <| \_ ->
+      (Parser.run (Parse.numberSeries identity
+        (\results n -> results) [] 0)
+        "F1367b")
+        |> Expect.equal (Ok [-51366, -51367])
+    , test "number series uses base value" <| \_ ->
+      (Parser.run (Parse.numberSeries identity
+        (\results n -> results) [] 1)
+        "F1367")
+        |> Expect.equal (Ok [-51366])
+    , test "coordinate line - one" <| \_ ->
+      (Parser.run Parse.keyValueYXFirst "9F1367")
+        |> Expect.equal (Ok [Placement 0 -51367 9])
     , test "coordinate line - two" <| \_ ->
-      (Parser.run (Parse.coordinateLine
-        { reversedPlacements = []
-        , id = 753
-        , x = 0
-        , y = 0
-        })
-        "9F1367b")
-        |> Result.map .reversedPlacements
-        |> Expect.equal (Ok [Placement 753 -51366 9, Placement 753 -51367 9])
+      (Parser.run Parse.keyValueYXFirst "9F1367b")
+        |> Expect.equal (Ok [Placement 0 -51367 9, Placement 0 -51366 9])
     , test "value and coordiate line" <| \_ ->
       (Parser.run Parse.keyValueYXFirst minimalKeyValueYXFirst)
         |> Expect.equal (Ok minimalKeyValueYXFirstResult)

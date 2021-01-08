@@ -7,7 +7,7 @@ module OHOLData.Parse exposing
   , deadEndsToString
   , keyValueYXFirst
   , valueLine
-  , coordinateLine
+  , numberSeries
   , deltaY
   , encodedDeltaX
   )
@@ -26,11 +26,11 @@ type alias Context = String
 type alias Problem = String
 
 objectSearchIndex : ObjectSearchParser ObjectSearchIndex
-objectSearchIndex = 
+objectSearchIndex =
   lines
 
 lines : ObjectSearchParser ObjectSearchIndex
-lines = 
+lines =
   loop (Dict.empty, True) linesStep
 
 linesStep : (ObjectSearchIndex, Bool) -> ObjectSearchParser (Step (ObjectSearchIndex, Bool) ObjectSearchIndex)
@@ -48,7 +48,7 @@ linesStep (index, included) =
     ]
 
 line : Bool -> ObjectSearchParser ObjectSearchIndex
-line included = 
+line included =
   succeed (entry included)
     |= objectId
     |. spaces
@@ -58,11 +58,11 @@ entry : Bool -> ObjectId -> Int -> ObjectSearchIndex
 entry included id count = Dict.singleton id (count, included)
 
 objectId : ObjectSearchParser ObjectId
-objectId = 
+objectId =
   int "Expecting Object Id" "Invalid Object Id"
 
 objectCount : ObjectSearchParser ObjectId
-objectCount = 
+objectCount =
   int "Expecting Instance Count" "Invalid Instance Count"
 
 type alias KeyValueYXFirstState =
@@ -72,23 +72,35 @@ type alias KeyValueYXFirstState =
   , y : Int
   }
 
+type alias NumberSeriesState a =
+  { reversedResults : List a
+  , n : Int
+  }
+
 keyValueYXFirst : KeyValueYXFirstParser (List Placement)
-keyValueYXFirst = 
+keyValueYXFirst =
   loop (KeyValueYXFirstState [] 0 0 0) keyValueYXFirstStep
 
 keyValueYXFirstStep
   : KeyValueYXFirstState
   -> ObjectSearchParser (Step KeyValueYXFirstState (List Placement))
-keyValueYXFirstStep ({reversedPlacements, id, x, y} as state) = 
+keyValueYXFirstStep ({reversedPlacements, id, x, y} as state) =
+  let constructor cid cy cx = Placement cid cx cy in
   oneOf
     [ succeed (\newid -> Loop (KeyValueYXFirstState reversedPlacements newid x y))
       |= valueLine
       |. spaces
     , succeed Loop
-      |= coordinateLine state
+      |= (deltaY
+        |> andThen (\dy ->
+          numberSeries
+            (constructor id (y + dy))
+            (\updatedPlacements updatedX -> KeyValueYXFirstState updatedPlacements id updatedX (y + dy))
+            reversedPlacements x
+        ))
       |. spaces
     , succeed ()
-      |. end "unparsed trailing characters in index"
+      |. end "unparsed trailing characters in keyValueYXFirst"
       |> map (\_ -> Done (List.reverse reversedPlacements))
     ]
 
@@ -98,27 +110,38 @@ valueLine =
     |. symbol (Token "v" "Looking for value line")
     |= objectId
 
-coordinateLine : KeyValueYXFirstState -> KeyValueYXFirstParser KeyValueYXFirstState
-coordinateLine {reversedPlacements, id, x, y} = 
-  deltaY
-    |> andThen (\dy -> 
-      loop (KeyValueYXFirstState reversedPlacements id x (y + dy)) coordinateLineStep
-    )
+numberSeries
+  : (Int -> a)
+  -> (List a -> Int -> b)
+  -> List a
+  -> Int
+  -> KeyValueYXFirstParser b
+numberSeries constructor finalize reversedResults n =
+    loop (NumberSeriesState reversedResults n) (numberSeriesStep2 constructor finalize)
 
-coordinateLineStep
-  : KeyValueYXFirstState
-  -> KeyValueYXFirstParser (Step KeyValueYXFirstState KeyValueYXFirstState)
-coordinateLineStep ({reversedPlacements, id, x, y} as state) =
+numberSeriesStep2
+  : (Int -> a)
+  -> (List a -> Int -> b)
+  -> NumberSeriesState a
+  -> KeyValueYXFirstParser (Step (NumberSeriesState a) b)
+numberSeriesStep2 constructor finalize ({reversedResults, n} as state) =
   oneOf
-    [ succeed (\dx -> Loop (KeyValueYXFirstState ((Placement id (x + dx) y) :: reversedPlacements) id (x + dx) y))
-      |= encodedDeltaX
+    [ succeed (\dn ->
+      Loop (NumberSeriesState (constructor (n + dn) :: reversedResults) (n + dn))
+      )
+      |= encodedInt
     , succeed ()
-      |> map (\_ -> Done state)
+      |> map (\_ -> Done (finalize reversedResults n))
     ]
 
 deltaY : KeyValueYXFirstParser Int
-deltaY = 
-  inContext "Delta X" <|
+deltaY =
+  inContext "Delta Y" <|
+    signedInt
+
+signedInt : KeyValueYXFirstParser Int
+signedInt =
+  inContext "Signed Int" <|
     oneOf
       [ succeed negate
         |. symbol (Token "-" "Checking for negation")
@@ -127,12 +150,17 @@ deltaY =
       ]
 
 encodedDeltaX : KeyValueYXFirstParser Int
-encodedDeltaX = 
+encodedDeltaX =
+  encodedInt
+    |> inContext "Encoded Delta X"
+
+encodedInt : KeyValueYXFirstParser Int
+encodedInt =
   succeed Tuple.pair
     |= leadingLetter
     |= trailingDigits
     |> andThen assembleDecodedInt
-    |> inContext "Encoded Delta X"
+    |> inContext "Encoded Int"
 
 assembleDecodedInt : ((Bool, Char), String) -> KeyValueYXFirstParser Int
 assembleDecodedInt ((neg, head), tail) =
@@ -141,7 +169,7 @@ assembleDecodedInt ((neg, head), tail) =
     |> Maybe.withDefault (problem "did not decode as integer")
 
 leadingLetter : KeyValueYXFirstParser (Bool, Char)
-leadingLetter = 
+leadingLetter =
   chompIf Char.isAlpha "Looking for leading letter"
     |> getChompedString
     |> andThen decodeLeader
@@ -170,7 +198,7 @@ validLeadingLetter char =
     (65 <= code && code <= 73) || (97 <= code && code <= 105)
 
 trailingDigits : KeyValueYXFirstParser String
-trailingDigits = 
+trailingDigits =
   getChompedString <|
     chompWhile Char.isDigit
 
