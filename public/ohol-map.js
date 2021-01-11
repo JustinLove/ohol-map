@@ -3945,7 +3945,7 @@
             })
             resultPoints.redraw()
             break;
-          case 'focus':
+          case 'focusLife':
             var life = message.life;
             if (focusMarker) {
               focusMarker.remove();
@@ -3957,6 +3957,14 @@
             map.setView([life.birth_y, life.birth_x])
             var ms = life.birth_time*1000
             setMapTime(map, ms, 'focus')
+            break
+          case 'focusPoint':
+            if (focusMarker) {
+              focusMarker.remove();
+            }
+            focusMarker = L.marker([message.y, message.x])
+              .addTo(objectOverlay)
+            map.setView([message.y, message.x])
             break
           case 'searchOverlay':
             if (message.status) {

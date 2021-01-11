@@ -277,14 +277,14 @@ update msg model =
       )
     UI (View.SelectMatchingLife life) ->
       ( { model
-        | focus = Just life
+        | focusLife = Just life
         , timeRange = Just (lifeToRange life)
         , mapTime = Just life.birthTime
         }
       , Cmd.batch
         [ Leaflet.currentTime life.birthTime
         , Time.now |> Task.perform (ShowTimeNotice life.birthTime)
-        , Leaflet.focus (serverLife life)
+        , Leaflet.focusLife (serverLife life)
         ]
       )
        |> setServer life.serverId
@@ -308,6 +308,13 @@ update msg model =
       | selectedMatchingObjects = selectedMatchingObjects
       }
         |> andHighlightObjects
+    UI (View.SelectBrowseLocation (BrowseLocation x y)) ->
+      ( { model | focusLocation = Just (BrowseLocation x y) }
+      , Cmd.batch
+        --, Time.now |> Task.perform (ShowTimeNotice life.birthTime)
+        [ Leaflet.focusPoint x y
+        ]
+      )
     UI (View.ToggleAllObjects checked) ->
       let
         selectedMatchingObjects = if checked then

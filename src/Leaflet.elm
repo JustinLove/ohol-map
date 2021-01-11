@@ -11,7 +11,8 @@ port module Leaflet exposing
   , monumentList
   , dataLayer
   , displayResults
-  , focus
+  , focusLife
+  , focusPoint
   , searchOverlay
   , highlightObjects
   , animOverlay
@@ -121,11 +122,20 @@ displayResults lives =
     ]
     |> leafletCommand
 
-focus : Data.Life -> Cmd msg
-focus life =
+focusLife : Data.Life -> Cmd msg
+focusLife life =
   Encode.object
-    [ ("kind", Encode.string "focus")
+    [ ("kind", Encode.string "focusLife")
     , ("life", Encode.life life)
+    ]
+    |> leafletCommand
+
+focusPoint : Int -> Int -> Cmd msg
+focusPoint x y =
+  Encode.object
+    [ ("kind", Encode.string "focusPoint")
+    , ("x", Encode.int x)
+    , ("y", Encode.int y)
     ]
     |> leafletCommand
 

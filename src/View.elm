@@ -66,6 +66,7 @@ type Msg
   | SelectMatchingLife Life
   | ToggleMatchingObject ObjectId Bool
   | SelectMatchingObject ObjectId
+  | SelectBrowseLocation BrowseLocation
   | ToggleAllObjects Bool
   | SelectMaximumObjects (Maybe Int)
   | LockObjects
@@ -624,7 +625,7 @@ browseObjectListHeader model id =
 
 showMatchingLife model life =
   row
-    [ if Just life == model.focus then
+    [ if Just life == model.focusLife then
         Background.color (themePalette model.theme).highlight
       else
         Background.color (themePalette model.theme).background
@@ -726,10 +727,17 @@ showLockedObject model id =
 
 showBrowseObject : Model -> ObjectId -> BrowseLocation -> Element Msg
 showBrowseObject model id location =
-  Input.button [ width fill ]
-    { onPress = Nothing
-    , label = showBrowseObjectDetail id location
-    }
+  el
+    [ if Just location == model.focusLocation then
+        Background.color (themePalette model.theme).highlight
+      else
+        Background.color (themePalette model.theme).background
+    , width fill
+    ]
+    <| Input.button [ width fill ]
+      { onPress = Just (SelectBrowseLocation location)
+      , label = showBrowseObjectDetail id location
+      }
 
 showBrowseObjectDetail : ObjectId -> BrowseLocation -> Element Msg
 showBrowseObjectDetail id (BrowseLocation x y ) =

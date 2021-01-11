@@ -113,7 +113,7 @@ type alias Model =
   , objectIndex : RemoteData (List (ObjectId, String))
   , dataLayer : RemoteData Int
   , lives : RemoteData (List Life)
-  , focus : Maybe Life
+  , focusLife : Maybe Life
   , spanData : Maybe SpanData
   , maxiumMatchingObjects: Maybe Int
   , totalMatchingObjects: Int
@@ -121,6 +121,7 @@ type alias Model =
   , selectedMatchingObjects : Set ObjectId
   , lockedObjects : Set ObjectId
   , focusObject : Maybe ObjectId
+  , focusLocation : Maybe BrowseLocation
   , browseObjects : Dict ObjectId (RemoteData (List BrowseLocation))
   }
 
@@ -183,7 +184,7 @@ initialModel config location key =
   , objectIndex = NotRequested
   , dataLayer = NotRequested
   , lives = NotRequested
-  , focus = Nothing
+  , focusLife = Nothing
   , spanData = Nothing
   , maxiumMatchingObjects = Just 20
   , totalMatchingObjects = 0
@@ -191,7 +192,8 @@ initialModel config location key =
   , selectedMatchingObjects = Set.fromList initialObjectSearch
   , lockedObjects = Set.fromList initialObjectSearch
   , focusObject = List.head initialObjectSearch
-  , browseObjects = Dict.singleton 4654 (Data [BrowseLocation -50000 1600])
+  , focusLocation = Nothing
+  , browseObjects = Dict.singleton 4654 (Data [BrowseLocation -50809 -52, BrowseLocation -50809 -53])
   }
 
 type alias Config =
