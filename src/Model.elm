@@ -72,7 +72,9 @@ type alias Model =
   , seedsUrl: String
   , spansUrl: String
   , keySearchIndex: String
+  , keySearch: String
   , logSearchIndex: String
+  , logSearch: String
   , sidebar : Sidebar
   , sidebarMode : SidebarMode
   , searchMode : SearchMode
@@ -143,13 +145,15 @@ initialModel config location key =
   , seedsUrl = config.seedsUrl
   , spansUrl = config.spansUrl
   , keySearchIndex = config.keySearchIndex
+  , keySearch = config.keySearch
   , logSearchIndex = config.logSearchIndex
+  , logSearch = config.logSearch
   , sidebar = OpenSidebar
   , sidebarMode = Search
   , searchMode = SearchObjects
   , lifeSearchTerm = ""
   , objectSearchTerm = ""
-  , objectListMode = BrowseObjects
+  , objectListMode = MatchingObjects
   , timeMode = ServerRange
   , coarseStartTime = Time.millisToPosix 0
   , startTime = Time.millisToPosix 0
@@ -193,7 +197,7 @@ initialModel config location key =
   , lockedObjects = Set.fromList initialObjectSearch
   , focusObject = List.head initialObjectSearch
   , focusLocation = Nothing
-  , browseObjects = Dict.singleton 4654 (Data [BrowseLocation -50809 -52, BrowseLocation -50809 -53])
+  , browseObjects = Dict.empty --Dict.singleton 4654 (Data [BrowseLocation -50809 -52, BrowseLocation -50809 -53])
   }
 
 type alias Config =
@@ -203,7 +207,9 @@ type alias Config =
   , seedsUrl: String
   , spansUrl: String
   , keySearchIndex: String
+  , keySearch: String
   , logSearchIndex: String
+  , logSearch: String
   }
 
 defaultCenter = (Point 0 0 23)

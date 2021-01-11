@@ -31,6 +31,9 @@ suite =
     , test "negative dy coord" <| \_ ->
       (Parser.run Parse.deltaY "-9F1376")
         |> Expect.equal (Ok -9)
+    , test "negative dy coord - delivery truck" <| \_ ->
+      (Parser.run Parse.deltaY "-401E")
+        |> Expect.equal (Ok -401)
     , test "positive short dx coord" <| \_ ->
       (Parser.run Parse.encodedDeltaX "a")
         |> Expect.equal (Ok 0)
@@ -81,7 +84,17 @@ suite =
     , test "mutiple value lines" <| \_ ->
       (Parser.run Parse.keyValueYXFirst multiValue)
         |> Expect.equal (Ok multiValueResult)
+    , test "deliveryTruck" <| \_ ->
+      (Parser.run Parse.keyValueYXFirst deliveryTruck)
+        |> isOk
+        |> Expect.true "delivery truck did not parse"
     ]
+
+isOk : Result x a -> Bool
+isOk result =
+  case result of
+    Ok _ -> True
+    Err _ -> False
 
 minimalKeyValueYXFirst = "v753\n9F1367"
 minimalKeyValueYXFirstResult = [Parse.Key (Object 753) -51367 9]
@@ -106,3 +119,17 @@ multiValueResult =
   , Parse.Key (Object 0) -3 1
   , Parse.Key (Object 1385) -2 0
   ]
+
+deliveryTruck = """v4654
+-401E6618
+63H990
+3a
+24b858
+203h96
+55b145
+1a
+29f1
+49F78
+61f096
+284J61
+23563C8220"""

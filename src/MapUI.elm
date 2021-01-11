@@ -43,6 +43,7 @@ type Msg
   | SpanList Int (Result Http.Error (List Data.Span))
   | KeyObjectSearchIndexReceived Int Posix (Result Http.Error Data.ObjectSearchIndex)
   | LogObjectSearchIndexReceived Int Posix (Result Http.Error Data.ObjectSearchIndex)
+  | KeyObjectSearchReceived Int Posix ObjectId (Result Http.Error (List BrowseLocation))
   | ObjectsReceived (Result Http.Error Data.Objects)
   | MonumentList Int (Result Http.Error (List Data.Monument))
   | DataLayer Int (Result Http.Error Json.Decode.Value)
@@ -300,14 +301,13 @@ update msg model =
       }
         |> andHighlightObjects
     UI (View.SelectMatchingObject id) ->
-      let
-        selectedMatchingObjects =
-           Set.insert id model.selectedMatchingObjects
-      in
-      { model
-      | selectedMatchingObjects = selectedMatchingObjects
-      }
-        |> andHighlightObjects
+      ( { model
+        | objectListMode = BrowseObjects
+        , focusObject = Just id
+        }
+      , Cmd.none
+      )
+        |> addUpdate requireObjectSearch
     UI (View.SelectBrowseLocation (BrowseLocation x y)) ->
       ( { model | focusLocation = Just (BrowseLocation x y) }
       , Cmd.batch
@@ -677,6 +677,19 @@ update msg model =
       let _ = Debug.log "fetch object search index failed" error in
       ( { model
         | spanData = model.spanData |> Maybe.map (\spanData -> {spanData | logObjectSearchIndex = Failed error})
+        }
+        , Cmd.none
+      )
+    KeyObjectSearchReceived serverId datatime id (Ok list) ->
+      ( { model
+        | browseObjects = Dict.insert id (Data list) model.browseObjects
+        }
+        , Cmd.none
+      )
+    KeyObjectSearchReceived serverId datatime id (Err error) ->
+      let _ = Debug.log "fetch object search index failed" error in
+      ( { model
+        | browseObjects = Dict.insert id (Failed error) model.browseObjects
         }
         , Cmd.none
       )
@@ -1547,6 +1560,50 @@ parseObjectSearchIndex =
     (Parser.run Parse.objectSearchIndex
       >> Result.mapError (Http.BadBody << Parse.deadEndsToString))
 
+requireObjectSearch : Model -> (Model, Cmd Msg)
+requireObjectSearch model =
+  Maybe.map3 (\spanData serverId id ->
+    if model.dataAnimated then
+      if spanData.logObjectSearchIndex == NotRequested then
+        ( {model | spanData = Just {spanData | logObjectSearchIndex = Loading }}
+        , fetchLogObjectSearchIndex model.logSearchIndex serverId spanData.end
+        )
+      else
+        (model, Cmd.none)
+    else
+      if Dict.get id model.browseObjects == Nothing then
+        ( {model | browseObjects = Dict.insert id Loading model.browseObjects }
+        , fetchKeyObjectSearch model.keySearch serverId spanData.end id
+        )
+      else
+        (model, Cmd.none)
+    )
+    model.spanData model.selectedServer model.focusObject
+    |> Maybe.withDefault (model, Cmd.none)
+
+fetchKeyObjectSearch : String -> Int -> Posix -> ObjectId -> Cmd Msg
+fetchKeyObjectSearch listUrl serverId datatime id =
+  Http.get
+    { url = fetchObjectSearchUrl listUrl serverId datatime id
+    , expect = Http.expectString (parseKeyObjectSearch >> (KeyObjectSearchReceived serverId datatime id))
+    }
+
+fetchObjectSearchUrl : String -> Int -> Posix -> ObjectId -> String
+fetchObjectSearchUrl listUrl serverId datatime id =
+  Url.relative [
+    listUrl
+      |> String.replace "{server}" (String.fromInt serverId)
+      |> String.replace "{time}" (String.fromInt ((Time.posixToMillis datatime) // 1000))
+      |> String.replace "{id}" (String.fromInt id)
+    ] []
+
+parseKeyObjectSearch : Result Http.Error String -> Result Http.Error (List BrowseLocation)
+parseKeyObjectSearch =
+  Result.andThen
+    (Parser.run Parse.keyValueYXFirst
+      >> Result.map (List.map browseLocation)
+      >> Result.mapError (Http.BadBody << Parse.deadEndsToString))
+
 fetchObjects : Cmd Msg
 fetchObjects =
   Http.get
@@ -1603,6 +1660,10 @@ myServer versions objects objectIndex server =
   , objectIndex = RemoteData.withDefault [] objectIndex
   , monuments = NotRequested
   }
+
+browseLocation : Parse.Key -> BrowseLocation
+browseLocation (Parse.Key _ x y) =
+  BrowseLocation x y
 
 future : RemoteData (List Version) -> RemoteData (Dict ObjectId String) -> RemoteData (List (ObjectId, String)) -> Posix -> Server
 future versions objects objectIndex currentTime =

@@ -9,6 +9,9 @@
   - select only one a time?
     - jump to instances?
     - disabled option for tab header when nothing selected
+    - count of items on browse tab
+    - back/forward
+    - what about server/datatime context? -> spandata?
   - default map position?
   - special layers for key objects (towers in progress, apocalyse, wells/mines/oil)?
 

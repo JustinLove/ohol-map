@@ -70,11 +70,11 @@ entry included id count = Dict.singleton id (count, included)
 
 objectId : ObjectSearchParser ObjectId
 objectId =
-  int "Expecting Object Id" "Invalid Object Id"
+  justAnInt "Expecting Object Id"
 
 objectCount : ObjectSearchParser ObjectId
 objectCount =
-  int "Expecting Instance Count" "Invalid Instance Count"
+  justAnInt "Expecting Instance Count"
 
 type alias KeyValueYXFirstState =
   { reversedPlacements : List Key
@@ -170,10 +170,10 @@ object =
         oneOf
           [ succeed (Use id)
             |. symbol (Token "u" "Looking for uses")
-            |= int "Expecting use" "Invalid use"
+            |= justAnInt "Expecting use"
           , succeed (Variant id)
             |. symbol (Token "v" "Looking for variant")
-            |= int "Expecting variant" "Invalid variant"
+            |= justAnInt "Expecting variant"
           , succeed (Object id)
           ]
         )
@@ -225,9 +225,17 @@ signedInt =
     oneOf
       [ succeed negate
         |. symbol (Token "-" "Checking for negation")
-        |= int "Expecting int (negative)" "Invalid int (negative)"
-      , int "Expecting int" "Invalid int"
+        |= justAnInt "Expecting int (negative)"
+      , justAnInt "Expecting int"
       ]
+
+justAnInt : Problem -> KeyValueYXFirstParser Int
+justAnInt prob =
+  succeed ()
+    |. chompIf Char.isDigit prob
+    |. chompWhile Char.isDigit
+    |> getChompedString
+    |> andThen (String.toInt >> Maybe.map succeed >> Maybe.withDefault (problem "parsed as a integer but did not convert"))
 
 encodedDeltaX : KeyValueYXFirstParser Int
 encodedDeltaX =
