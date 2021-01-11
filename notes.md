@@ -8,6 +8,7 @@
   - should load during interactive search?
   - select only one a time?
     - jump to instances?
+    - disabled option for tab header when nothing selected
   - default map position?
   - special layers for key objects (towers in progress, apocalyse, wells/mines/oil)?
 

@@ -288,7 +288,7 @@ update msg model =
         ]
       )
        |> setServer life.serverId
-    UI (View.SelectMatchingObject id checked) ->
+    UI (View.ToggleMatchingObject id checked) ->
       let
         selectedMatchingObjects = if checked then
            Set.insert id model.selectedMatchingObjects
@@ -299,7 +299,16 @@ update msg model =
       | selectedMatchingObjects = selectedMatchingObjects
       }
         |> andHighlightObjects
-    UI (View.SelectAllObjects checked) ->
+    UI (View.SelectMatchingObject id) ->
+      let
+        selectedMatchingObjects =
+           Set.insert id model.selectedMatchingObjects
+      in
+      { model
+      | selectedMatchingObjects = selectedMatchingObjects
+      }
+        |> andHighlightObjects
+    UI (View.ToggleAllObjects checked) ->
       let
         selectedMatchingObjects = if checked then
            Set.fromList model.matchingObjects

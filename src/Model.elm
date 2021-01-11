@@ -16,6 +16,7 @@ module Model exposing
   , Server
   , Span
   , SpanData
+  , BrowseLocation(..)
   , TimeMode(..)
   , Version
   , World
@@ -119,7 +120,11 @@ type alias Model =
   , matchingObjects : List ObjectId
   , selectedMatchingObjects : Set ObjectId
   , lockedObjects : Set ObjectId
+  , focusObject : Maybe ObjectId
+  , browseObjects : Dict ObjectId (RemoteData (List BrowseLocation))
   }
+
+initialObjectSearch = [4654, 4737]
 
 initialModel : Config -> Url -> Navigation.Key -> Model
 initialModel config location key =
@@ -143,7 +148,7 @@ initialModel config location key =
   , searchMode = SearchObjects
   , lifeSearchTerm = ""
   , objectSearchTerm = ""
-  , objectListMode = MatchingObjects
+  , objectListMode = BrowseObjects
   , timeMode = ServerRange
   , coarseStartTime = Time.millisToPosix 0
   , startTime = Time.millisToPosix 0
@@ -182,9 +187,11 @@ initialModel config location key =
   , spanData = Nothing
   , maxiumMatchingObjects = Just 20
   , totalMatchingObjects = 0
-  , matchingObjects = [4654]
-  , selectedMatchingObjects = Set.fromList [4654]
-  , lockedObjects = Set.fromList [4654]
+  , matchingObjects = initialObjectSearch
+  , selectedMatchingObjects = Set.fromList initialObjectSearch
+  , lockedObjects = Set.fromList initialObjectSearch
+  , focusObject = List.head initialObjectSearch
+  , browseObjects = Dict.singleton 4654 (Data [BrowseLocation -50000 1600])
   }
 
 type alias Config =
@@ -238,6 +245,8 @@ type alias SpanData =
   , logObjectSearchIndex: RemoteData Data.ObjectSearchIndex
   }
 
+type BrowseLocation = BrowseLocation Int Int
+
 type Sidebar
   = ClosedSidebar
   | OpenSidebar
@@ -254,6 +263,7 @@ type SearchMode
 type ObjectListMode
   = MatchingObjects
   | LockedObjects
+  | BrowseObjects
 
 type TimeMode
   = ServerRange

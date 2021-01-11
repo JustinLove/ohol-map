@@ -64,8 +64,9 @@ type Msg
   | SelectPointColor PointColor
   | SelectPointLocation PointLocation
   | SelectMatchingLife Life
-  | SelectMatchingObject ObjectId Bool
-  | SelectAllObjects Bool
+  | ToggleMatchingObject ObjectId Bool
+  | SelectMatchingObject ObjectId
+  | ToggleAllObjects Bool
   | SelectMaximumObjects (Maybe Int)
   | LockObjects
   | ClearLocked
@@ -292,6 +293,7 @@ objectListSelect model =
     ]
     [ tabHeader "search" "Search" SelectObjectListMode MatchingObjects model.objectListMode palette
     , tabHeader "lock" locked SelectObjectListMode LockedObjects model.objectListMode palette
+    , tabHeader "forward" "Browse" SelectObjectListMode BrowseObjects model.objectListMode palette
     ]
 
 tabHeader : String -> String -> (mode -> Msg) -> mode -> mode -> Palette -> Element Msg
@@ -349,6 +351,7 @@ objectSearch model =
     [ case model.objectListMode of
         MatchingObjects -> objectFinder model
         LockedObjects -> showLockedObjects model (Set.toList model.lockedObjects)
+        BrowseObjects -> showBrowseObjects model
     , el [ alignBottom, width fill ] <| objectListSelect model
     ]
 
@@ -473,6 +476,32 @@ showLockedObjects model objects =
       |> (::) (lockedObjectListHeader model)
     )
 
+showBrowseObjects : Model -> Element Msg
+showBrowseObjects model =
+  case model.focusObject of
+    Just id ->
+      column [ spacing 0, width fill, height fill, scrollbarY ]
+        (model.browseObjects
+          |> Dict.get id
+          |> Maybe.withDefault NotRequested
+          |> (\remote -> case remote of
+              NotRequested ->
+                [ twoPartMessage "Not Requested" "This may be a bug" ]
+              NotAvailable ->
+                [ twoPartMessage "No Data Available" "Extremely comon objets are not indexed" ]
+              Loading ->
+                [ el [ centerX, centerY ] <| text "Loading" ]
+              Data locations ->
+                locations
+                  |> List.map (showBrowseObject model id)
+                  |> (::) (browseObjectListHeader model id)
+              Failed error ->
+                [ showError error ]
+            )
+        )
+    Nothing ->
+      twoPartMessage "No Object Selected" ""
+
 lifeListHeader =
   row
     [ width fill
@@ -505,7 +534,7 @@ objectListHeader model =
       ]
       [ row [ spacing 10, alignLeft ]
         [ Input.checkbox [ spacing 2 ]
-          { onChange = SelectAllObjects
+          { onChange = ToggleAllObjects
           , checked = (areAllObjectChecked model)
           , label = Input.labelHidden "toggle all"
           , icon = Input.defaultCheckbox
@@ -550,9 +579,9 @@ lockedObjectListHeader model =
     , spacing 10
     , width fill
     ]
-    [ row [ spacing 10, alignLeft ]
-      [ el [ width (px 32) ] none
-      , el [ Font.underline, alignLeft ] <| text "Name"
+    [ row [ spacing 10, alignLeft, Font.underline ]
+      [ el [ width (px 32) ] <| text "Del"
+      , el [ alignLeft ] <| text "Name"
       ]
     , row [ spacing 10, alignRight ]
         [ Input.button
@@ -569,6 +598,28 @@ lockedObjectListHeader model =
               ]
             }
         ]
+    ]
+
+browseObjectListHeader : Model -> ObjectId -> Element Msg
+browseObjectListHeader model id =
+  let
+    (title, _) = objectNameParts model id
+    palette = (themePalette model.theme)
+  in
+  column [ ]
+    [ el [ padding 6 ] <| objectWithSwatch id title
+    , row
+      [ Font.size 16
+      , Font.underline
+      , padding 6
+      , spacing 10
+      , width fill
+      , alignLeft
+      ]
+      [ el [ width (px 16) ] <| none
+      , el [ width (px 80), Font.alignRight ] <| text "x"
+      , el [ width (px 80), Font.alignRight ] <| text "y"
+      ]
     ]
 
 showMatchingLife model life =
@@ -603,7 +654,7 @@ showMatchingObject model id =
     [ column [ width (fill |> maximum 250), clipX ]
       [ row [width fill]
         [ Input.checkbox [ spacing 8 ]
-          { onChange = SelectMatchingObject id
+          { onChange = ToggleMatchingObject id
           , checked = Set.member id model.selectedMatchingObjects
           , label = Input.labelRight [ ] <| objectWithSwatch id title
           , icon = Input.defaultCheckbox
@@ -632,7 +683,7 @@ showMatchingObject model id =
           , padding 6
           , Background.color palette.control
           ]
-          { onPress = Nothing
+          { onPress = Just (SelectMatchingObject id)
           , label = row []
             [ count
               |> String.fromInt
@@ -673,6 +724,27 @@ showLockedObject model id =
       ]
     ]
 
+showBrowseObject : Model -> ObjectId -> BrowseLocation -> Element Msg
+showBrowseObject model id location =
+  Input.button [ width fill ]
+    { onPress = Nothing
+    , label = showBrowseObjectDetail id location
+    }
+
+showBrowseObjectDetail : ObjectId -> BrowseLocation -> Element Msg
+showBrowseObjectDetail id (BrowseLocation x y ) =
+  row [ padding 6, spacing 10, width fill ]
+    [ el [ width (px 16), Font.color (objectColor id) ] (icon "locate")
+    , x
+      |> String.fromInt
+      |> text
+      |> el [ width (px 80), Font.alignRight ]
+    , y
+      |> String.fromInt
+      |> text
+      |> el [ width (px 80), Font.alignRight ]
+    ]
+
 objectWithSwatch : Int -> String -> Element Msg
 objectWithSwatch id title =
   row
@@ -682,8 +754,7 @@ objectWithSwatch id title =
     ]
     [ el [ Font.color (objectColor id) ] (icon "locate")
     , el
-      [ (400 // (String.length title |> Debug.log "length"))
-        |> Debug.log "size"
+      [ (400 // (String.length title))
         |> clamp 8 20
         |> Font.size
       ] (title |> text)
@@ -1055,7 +1126,7 @@ arcSelect model =
   case arcs of
     NotRequested -> none
     NotAvailable -> none
-    Loading -> showLoading arcs
+    Loading -> showLoading
     Failed error -> showError error
     Data list ->
       let
@@ -1500,19 +1571,9 @@ gameTimeText totalSeconds =
     |> List.filterMap identity
     |> String.join " "
 
-showLoading : RemoteData a -> Element Msg
-showLoading remote =
-  case remote of
-    NotRequested ->
-      none
-    NotAvailable ->
-      none
-    Loading ->
-      el [ centerX, centerY ] <| text "Loading"
-    Data _ ->
-      none
-    Failed error ->
-      showError error
+showLoading : Element Msg
+showLoading =
+  el [ centerX, centerY ] <| text "Loading"
 
 showError : Http.Error -> Element Msg
 showError error =
@@ -1547,7 +1608,7 @@ showError error =
 
 twoPartMessage : String -> String -> Element Msg
 twoPartMessage header body =
-  column []
+  column [ centerX, centerY ]
     [ el [ centerX, Font.size (scaled 2)] <|
       text header
     , el [ centerX, Font.size (scaled 1)] <|
