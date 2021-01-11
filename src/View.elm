@@ -597,32 +597,63 @@ showMatchingObject model id =
   let
     (title, attrs) = objectNameParts model id
     (count, indexed) = objectStats model id
+    palette = themePalette model.theme
   in
-  column [ padding 6, width fill ]
-    [ row [width fill]
-      [ Input.checkbox [ spacing 8 ]
-        { onChange = SelectMatchingObject id
-        , checked = Set.member id model.selectedMatchingObjects
-        , label = Input.labelRight [ ] <| objectWithSwatch id title
-        , icon = Input.defaultCheckbox
-        }
-      , count |> String.fromInt |> text |> el [ alignRight, if indexed then Font.regular else Font.strike ]
+  row [ padding 6, width fill ]
+    [ column [ width (fill |> maximum 250), clipX ]
+      [ row [width fill]
+        [ Input.checkbox [ spacing 8 ]
+          { onChange = SelectMatchingObject id
+          , checked = Set.member id model.selectedMatchingObjects
+          , label = Input.labelRight [ ] <| objectWithSwatch id title
+          , icon = Input.defaultCheckbox
+          }
+        ]
+      , row [ Font.size 16, spacing 4, width fill ]
+        [ Input.checkbox [ spacing 8, width shrink ]
+          { onChange = ToggleLockObject id
+          , checked = Set.member id model.lockedObjects
+          , label = Input.labelHidden "lock/unlock"
+          , icon = (\checked ->
+            if checked then
+              icon "lock"
+            else
+              icon "unlocked"
+            )
+          }
+        , el [ width (px 16) ] none
+        , attrs |> text
+        ]
       ]
-    , row [ Font.size 16, spacing 4, width fill ]
-      [ Input.checkbox [ spacing 8, width shrink ]
-        { onChange = ToggleLockObject id
-        , checked = Set.member id model.lockedObjects
-        , label = Input.labelHidden "lock/unlock"
-        , icon = (\checked ->
-          if checked then
-            icon "lock"
-          else
-            icon "unlocked"
-          )
-        }
-      , el [ width (px 16) ] none
-      , attrs |> text
-      ]
+    , el [ alignRight ]
+      (if indexed then
+        Input.button
+          [ height fill
+          , padding 6
+          , Background.color palette.control
+          ]
+          { onPress = Nothing
+          , label = row []
+            [ count
+              |> String.fromInt
+              |> text
+            , icon "forward"
+            ]
+          }
+      else
+        Input.button
+          [ height fill
+          , padding 6
+          , Background.color palette.background
+          , Font.color palette.divider
+          ]
+          { onPress = Nothing
+          , label = row []
+            [ el [ Font.strike ] (text "0")
+            , icon "forward"
+            ]
+          }
+        )
     ]
 
 showLockedObject : Model -> ObjectId -> Element Msg
@@ -644,9 +675,18 @@ showLockedObject model id =
 
 objectWithSwatch : Int -> String -> Element Msg
 objectWithSwatch id title =
-  row []
+  row
+    [ ((String.fromInt id) ++ " " ++ title)
+      |> Html.Attributes.title
+      |> htmlAttribute
+    ]
     [ el [ Font.color (objectColor id) ] (icon "locate")
-    , title |> text
+    , el
+      [ (400 // (String.length title |> Debug.log "length"))
+        |> Debug.log "size"
+        |> clamp 8 20
+        |> Font.size
+      ] (title |> text)
     ]
 
 lifeDetailHeader =

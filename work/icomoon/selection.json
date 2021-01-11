@@ -4,6 +4,35 @@
     {
       "icon": {
         "paths": [
+          "M714.048 512l-271.52 271.52-90.528-90.496 181.024-181.024-181.024-181.024 90.496-90.496 271.552 271.52z"
+        ],
+        "width": 1024,
+        "attrs": [],
+        "isMulticolor": false,
+        "isMulticolor2": false,
+        "tags": [
+          "forward",
+          "move",
+          "walk",
+          "progression",
+          "development"
+        ],
+        "grid": 16
+      },
+      "attrs": [],
+      "properties": {
+        "id": 68,
+        "order": 24,
+        "prevSize": 32,
+        "name": "forward"
+      },
+      "setIdx": 0,
+      "setId": 3,
+      "iconIdx": 67
+    },
+    {
+      "icon": {
+        "paths": [
           "M874.048 512l-362.048 362.048-362.048-362.048 362.048-362.048 362.048 362.048z"
         ],
         "width": 1024,

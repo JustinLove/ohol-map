@@ -13,6 +13,8 @@
 
 ## Features
 - not selecting arc index because arcs in list have been updated with a datatime, records do not match
+- object search by id
+- player search by id?
 - animation range when going to url timestamp
 - time window range graph
 - in-app help
