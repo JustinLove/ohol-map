@@ -36,6 +36,7 @@ import Leaflet exposing (Point, PointColor(..), PointLocation(..))
 import OHOLData as Data
 import RemoteData exposing (RemoteData(..))
 import Theme exposing (Theme)
+import Zipper exposing (Zipper)
 
 import Browser.Navigation as Navigation
 import Dict exposing(Dict)
@@ -123,8 +124,7 @@ type alias Model =
   , selectedMatchingObjects : Set ObjectId
   , lockedObjects : Set ObjectId
   , focusObject : Maybe ObjectId
-  , focusLocation : Maybe BrowseLocation
-  , browseObjects : Dict ObjectId (RemoteData (List BrowseLocation))
+  , browseObjects : Dict ObjectId (RemoteData (Zipper BrowseLocation))
   }
 
 initialObjectSearch = [4654, 4737]
@@ -153,7 +153,7 @@ initialModel config location key =
   , searchMode = SearchObjects
   , lifeSearchTerm = ""
   , objectSearchTerm = ""
-  , objectListMode = MatchingObjects
+  , objectListMode = BrowseObjects
   , timeMode = ServerRange
   , coarseStartTime = Time.millisToPosix 0
   , startTime = Time.millisToPosix 0
@@ -196,8 +196,7 @@ initialModel config location key =
   , selectedMatchingObjects = Set.fromList initialObjectSearch
   , lockedObjects = Set.fromList initialObjectSearch
   , focusObject = List.head initialObjectSearch
-  , focusLocation = Nothing
-  , browseObjects = Dict.empty --Dict.singleton 4654 (Data [BrowseLocation -50809 -52, BrowseLocation -50809 -53])
+  , browseObjects = Dict.singleton 4654 (Data (Zipper.construct (BrowseLocation -50809 -52) [BrowseLocation -50809 -53]))
   }
 
 type alias Config =

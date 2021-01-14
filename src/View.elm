@@ -9,6 +9,7 @@ import Leaflet exposing (Point, PointColor(..), PointLocation(..))
 import Model exposing (..)
 import RemoteData exposing (RemoteData(..))
 import Theme exposing (Theme)
+import Zipper exposing (Zipper)
 
 import Browser
 import Dict exposing (Dict)
@@ -494,8 +495,8 @@ showBrowseObjects model =
                 [ el [ centerX, centerY ] <| text "Loading" ]
               Data locations ->
                 locations
-                  |> List.map (showBrowseObject model id)
-                  |> (::) (browseObjectListHeader model id)
+                  |> Zipper.mapToList (showBrowseObject model id (Zipper.current locations))
+                  |> (::) (browseObjectListHeader model id locations)
               Failed error ->
                 [ showError error ]
             )
@@ -601,14 +602,42 @@ lockedObjectListHeader model =
         ]
     ]
 
-browseObjectListHeader : Model -> ObjectId -> Element Msg
-browseObjectListHeader model id =
+browseObjectListHeader : Model -> ObjectId -> Zipper BrowseLocation -> Element Msg
+browseObjectListHeader model id locations =
   let
     (title, _) = objectNameParts model id
     palette = (themePalette model.theme)
   in
   column [ ]
-    [ el [ padding 6 ] <| objectWithSwatch id title
+    [ row [ width fill ]
+      [ el [ padding 6 ] <| objectWithSwatch id title
+      , Input.button
+        [ padding 2
+        , Border.color palette.divider
+        , Border.width 1
+        , Border.rounded 6
+        , Background.color palette.control
+        ]
+        { onPress = Just (SelectBrowseLocation (Zipper.current (Zipper.previous locations)))
+        , label = row [ centerX, spacing 4 ]
+          [ el [ Font.size 14 ] <| icon "rewind"
+          , text "Prev"
+          ]
+        }
+      , Input.button
+        [ padding 2
+        , Border.color palette.divider
+        , Border.width 1
+        , Border.rounded 6
+        , Background.color palette.control
+        ]
+        { onPress = Just (SelectBrowseLocation (Zipper.current (Zipper.next locations)))
+        , label = row [ centerX, spacing 4 ]
+          [ text "Next"
+          , el [ Font.size 14 ] <| icon "forward"
+          ]
+        }
+      ]
     , row
       [ Font.size 16
       , Font.underline
@@ -701,7 +730,10 @@ showMatchingObject model id =
           ]
           { onPress = Nothing
           , label = row []
-            [ el [ Font.strike ] (text "0")
+            [ count
+              |> String.fromInt
+              |> text
+              |> el [ Font.strike ]
             , icon "forward"
             ]
           }
@@ -725,10 +757,10 @@ showLockedObject model id =
       ]
     ]
 
-showBrowseObject : Model -> ObjectId -> BrowseLocation -> Element Msg
-showBrowseObject model id location =
+showBrowseObject : Model -> ObjectId -> BrowseLocation -> BrowseLocation -> Element Msg
+showBrowseObject model id current location =
   el
-    [ if Just location == model.focusLocation then
+    [ if location == current then
         Background.color (themePalette model.theme).highlight
       else
         Background.color (themePalette model.theme).background

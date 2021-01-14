@@ -1,4 +1,4 @@
-module RemoteData exposing (RemoteData(..), withDefault)
+module RemoteData exposing (RemoteData(..), withDefault, map)
 
 import Http
 
@@ -14,3 +14,12 @@ withDefault default data =
   case data of
     Data value -> value
     _ -> default
+
+map : (a -> b) -> RemoteData a -> RemoteData b
+map f data =
+  case data of
+    NotRequested -> NotRequested
+    NotAvailable -> NotAvailable
+    Loading -> Loading
+    Data value -> Data (f value)
+    Failed err -> Failed err

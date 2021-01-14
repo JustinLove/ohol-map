@@ -8,10 +8,11 @@
     - should show time range instead of static time
   - should load during interactive search?
   - select only one a time?
-    - jump to instances?
+    - x jump to instances?
+    - x back/forward
+    - log data
     - disabled option for tab header when nothing selected
     - count of items on browse tab
-    - back/forward
     - what about server/datatime context? -> spandata?
   - default map position?
   - special layers for key objects (towers in progress, apocalyse, wells/mines/oil)?

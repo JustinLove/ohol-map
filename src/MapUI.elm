@@ -13,6 +13,7 @@ import Persist.Decode
 import RemoteData exposing (RemoteData(..))
 import Theme exposing (Theme)
 import View exposing (timeNoticeDuration)
+import Zipper exposing (Zipper)
 
 import Browser
 import Browser.Events
@@ -308,12 +309,15 @@ update msg model =
       , Cmd.none
       )
         |> addUpdate requireObjectSearch
-    UI (View.SelectBrowseLocation (BrowseLocation x y)) ->
-      ( { model | focusLocation = Just (BrowseLocation x y) }
-      , Cmd.batch
-        --, Time.now |> Task.perform (ShowTimeNotice life.birthTime)
-        [ Leaflet.focusPoint x y
-        ]
+    UI (View.SelectBrowseLocation location) ->
+      ( { model
+        | browseObjects = model.focusObject
+          |> Maybe.map (\id ->
+            Dict.update id (Maybe.map (RemoteData.map (Zipper.goto location))) model.browseObjects
+          )
+            |> Maybe.withDefault model.browseObjects
+        }
+      , focusPoint location
       )
     UI (View.ToggleAllObjects checked) ->
       let
@@ -680,14 +684,16 @@ update msg model =
         }
         , Cmd.none
       )
-    KeyObjectSearchReceived serverId datatime id (Ok list) ->
+    KeyObjectSearchReceived serverId datatime id (Ok (head :: tail)) ->
       ( { model
-        | browseObjects = Dict.insert id (Data list) model.browseObjects
+        | browseObjects = Dict.insert id (Data (Zipper.construct head tail)) model.browseObjects
         }
-        , Cmd.none
+        , focusPoint head
       )
+    KeyObjectSearchReceived serverId datatime id (Ok []) ->
+      ( model, Cmd.none)
     KeyObjectSearchReceived serverId datatime id (Err error) ->
-      let _ = Debug.log "fetch object search index failed" error in
+      let _ = Debug.log "fetch object search failed" error in
       ( { model
         | browseObjects = Dict.insert id (Failed error) model.browseObjects
         }
@@ -1580,6 +1586,13 @@ requireObjectSearch model =
     )
     model.spanData model.selectedServer model.focusObject
     |> Maybe.withDefault (model, Cmd.none)
+
+focusPoint : BrowseLocation -> Cmd Msg
+focusPoint (BrowseLocation x y) =
+  Cmd.batch
+    --, Time.now |> Task.perform (ShowTimeNotice life.birthTime)
+    [ Leaflet.focusPoint x y
+    ]
 
 fetchKeyObjectSearch : String -> Int -> Posix -> ObjectId -> Cmd Msg
 fetchKeyObjectSearch listUrl serverId datatime id =
