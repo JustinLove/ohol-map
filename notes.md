@@ -5,7 +5,7 @@
     - assembling spans?
   - load counts when changing time
   - x counts for maplog data?
-    - should show time range instead of static time
+    - x should show time range instead of static time
   - should load during interactive search?
   - select only one a time?
     - x jump to instances?

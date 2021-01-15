@@ -522,14 +522,7 @@ objectListHeader model =
     , padding 6
     , width fill
     ]
-    [ row [ alignRight ]
-      [ ( model.spanData
-          |> Maybe.map .end
-          |> Maybe.map (date model.zone)
-          |> Maybe.withDefault ""
-          |> text
-        )
-      ]
+    [ spanDateRange model
     , row
       [ spacing 10
       , width fill
@@ -569,6 +562,28 @@ objectListHeader model =
         ]
       ]
     ]
+
+spanDateRange : Model -> Element msg
+spanDateRange model =
+  case model.spanData of
+    Just span ->
+      if model.dataAnimated then
+        row [ width fill ]
+          [ row [ alignRight ]
+            [ span.start |> (date model.zone) |> text
+            , text " to "
+            , span.end |> (date model.zone) |> text
+            ]
+          ]
+      else
+        row [ width fill ]
+          [ row [ alignRight ]
+            [ text "as of "
+            , span.end |> (date model.zone) |> text
+            ]
+          ]
+    Nothing ->
+      none
 
 lockedObjectListHeader : Model -> Element Msg
 lockedObjectListHeader model =
