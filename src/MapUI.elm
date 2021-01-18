@@ -313,11 +313,11 @@ update msg model =
       )
     UI (View.SelectBrowseLocation location) ->
       ( { model
-        | browseObjects = model.focusObject
+        | browseLocations = model.focusObject
           |> Maybe.map (\id ->
-            Dict.update id (Maybe.map (RemoteData.map (Zipper.goto location))) model.browseObjects
+            Dict.update id (Maybe.map (RemoteData.map (Zipper.goto location))) model.browseLocations
           )
-            |> Maybe.withDefault model.browseObjects
+            |> Maybe.withDefault model.browseLocations
         }
       , focusPoint location
       )
@@ -688,7 +688,7 @@ update msg model =
       )
     KeyObjectSearchReceived serverId datatime id (Ok (head :: tail)) ->
       ( { model
-        | browseObjects = Dict.insert id (Data (Zipper.construct head tail)) model.browseObjects
+        | browseLocations = Dict.insert id (Data (Zipper.construct head tail)) model.browseLocations
         }
         , focusPoint head
       )
@@ -697,13 +697,13 @@ update msg model =
     KeyObjectSearchReceived serverId datatime id (Err error) ->
       let _ = Debug.log "fetch key object search failed" error in
       ( { model
-        | browseObjects = Dict.insert id (Failed error) model.browseObjects
+        | browseLocations = Dict.insert id (Failed error) model.browseLocations
         }
         , Cmd.none
       )
     LogObjectSearchReceived serverId datatime id (Ok (head :: tail)) ->
       ( { model
-        | browseObjects = Dict.insert id (Data (Zipper.construct head tail)) model.browseObjects
+        | browseLocations = Dict.insert id (Data (Zipper.construct head tail)) model.browseLocations
         }
         , focusPoint head
       )
@@ -712,7 +712,7 @@ update msg model =
     LogObjectSearchReceived serverId datatime id (Err error) ->
       let _ = Debug.log "fetch log object search failed" error in
       ( { model
-        | browseObjects = Dict.insert id (Failed error) model.browseObjects
+        | browseLocations = Dict.insert id (Failed error) model.browseLocations
         }
         , Cmd.none
       )
@@ -1587,9 +1587,9 @@ requireObjectSearch : Model -> (Model, Cmd Msg)
 requireObjectSearch model =
   Maybe.map3 (\spanData serverId id ->
     if model.dataAnimated then
-      case Dict.get id model.browseObjects of
+      case Dict.get id model.browseLocations of
         Nothing ->
-          ( {model | browseObjects = Dict.insert id Loading model.browseObjects }
+          ( {model | browseLocations = Dict.insert id Loading model.browseLocations }
           , fetchLogObjectSearch model.logSearch serverId spanData.end id
           )
         Just (Data locations) ->
@@ -1597,9 +1597,9 @@ requireObjectSearch model =
         Just _ ->
           (model, Cmd.none)
     else
-      case Dict.get id model.browseObjects of
+      case Dict.get id model.browseLocations of
         Nothing ->
-          ( {model | browseObjects = Dict.insert id Loading model.browseObjects }
+          ( {model | browseLocations = Dict.insert id Loading model.browseLocations }
           , fetchKeyObjectSearch model.keySearch serverId spanData.end id
           )
         Just (Data locations) ->

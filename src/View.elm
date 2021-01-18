@@ -483,29 +483,77 @@ showLockedObjects model objects =
 
 showBrowseObjects : Model -> ObjectId -> Element Msg
 showBrowseObjects model id =
+  let
+    palette = (themePalette model.theme)
+  in
   column [ width fill, height fill, spacing 10 ]
     [ browseObjectsHeader model id
-    , (model.browseObjects
-      |> Dict.get id
-      |> Maybe.withDefault NotRequested
-      |> (\remote -> case remote of
-          NotRequested ->
-            twoPartMessage "Not Requested" "This may be a bug"
-          NotAvailable ->
-            twoPartMessage "No Data Available" "Extremely comon objets are not indexed"
-          Loading ->
-            el [ centerX, centerY ] <| text "Loading"
-          Data locations ->
-            column [ spacing 0, width fill, height fill, scrollbarY ]
-              (locations
-                |> Zipper.mapToList (showBrowseObject model id (Zipper.current locations))
-                |> (::) (browseObjectListHeader model id locations)
-              )
-          Failed error ->
-            showError error
+    , if model.dataAnimated then
+        (model.browsePlacements
+        |> Dict.get id
+        |> Maybe.withDefault NotRequested
+        |> showBrowseObjectResult (showBrowsePlacements palette id)
         )
-      )
+      else
+        (model.browseLocations
+        |> Dict.get id
+        |> Maybe.withDefault NotRequested
+        |> showBrowseObjectResult (showBrowseLocations palette id)
+        )
     ]
+
+showBrowseLocations : Palette -> ObjectId -> Zipper BrowseLocation -> Element Msg
+showBrowseLocations palette id locations =
+  showBrowseItems
+    { palette = palette
+    , tagger = SelectBrowseLocation
+    , header = (browseLocationListHeader palette)
+    , label = (showBrowseLocationDetail id)
+    , items = locations
+    }
+
+showBrowsePlacements : Palette -> ObjectId -> Zipper BrowsePlacement -> Element Msg
+showBrowsePlacements palette id placements =
+  showBrowseItems
+    { palette = palette
+    , tagger = (always None)
+    , header = (browsePlacementListHeader palette)
+    , label = (showBrowsePlacementDetail id)
+    , items = placements
+    }
+
+showBrowseItems :
+  { palette : Palette
+  , tagger : (a -> msg)
+  , header : (Zipper a -> Element msg)
+  , label : (a -> Element msg)
+  , items : Zipper a
+  } -> Element msg
+showBrowseItems {palette, tagger, header, label, items} =
+  items
+    |> Zipper.mapToList (showBrowseItem
+      { palette = palette
+      , tagger = tagger
+      , label = label
+      , current = (Zipper.current items)
+      })
+    |> (::) (header items)
+    |> (::) (previousNextButtons palette tagger items)
+    |> column [ spacing 0, width fill, height fill, scrollbarY ]
+
+showBrowseObjectResult : (a -> Element msg) -> RemoteData a -> Element msg
+showBrowseObjectResult withData remote =
+  case remote of
+    NotRequested ->
+      twoPartMessage "Not Requested" "This may be a bug"
+    NotAvailable ->
+      twoPartMessage "No Data Available" "Extremely common objets are not indexed"
+    Loading ->
+      el [ centerX, centerY ] <| text "Loading"
+    Data data ->
+      withData data
+    Failed error ->
+      showError error
 
 lifeListHeader =
   row
@@ -647,52 +695,65 @@ browseObjectsHeader model id =
         }
       ]
 
-browseObjectListHeader : Model -> ObjectId -> Zipper BrowseLocation -> Element Msg
-browseObjectListHeader model id locations =
-  let
-    palette = (themePalette model.theme)
-  in
-  column [ ]
-    [ row [ width fill ]
-      [ Input.button
-        [ padding 2
-        , Border.color palette.divider
-        , Border.width 1
-        , Border.rounded 6
-        , Background.color palette.control
+browseLocationListHeader : Palette -> Zipper BrowseLocation -> Element Msg
+browseLocationListHeader palette locations =
+  row
+    [ Font.size 16
+    , Font.underline
+    , padding 6
+    , spacing 10
+    , width fill
+    , alignLeft
+    ]
+    [ el [ width (px 16) ] <| none
+    , el [ width (px 80), Font.alignRight ] <| text "x"
+    , el [ width (px 80), Font.alignRight ] <| text "y"
+    ]
+
+browsePlacementListHeader : Palette -> Zipper BrowsePlacement -> Element Msg
+browsePlacementListHeader palette placements =
+  row
+    [ Font.size 16
+    , Font.underline
+    , padding 6
+    , spacing 10
+    , width fill
+    , alignLeft
+    ]
+    [ el [ width (px 16) ] <| none
+    , el [ width (px 80), Font.alignRight ] <| text "x"
+    , el [ width (px 80), Font.alignRight ] <| text "y"
+    ]
+
+previousNextButtons : Palette -> (a -> msg) -> Zipper a -> Element msg
+previousNextButtons palette tagger locations =
+  row [ width fill, spacing 10, padding 6 ]
+    [ Input.button
+      [ padding 2
+      , Border.color palette.divider
+      , Border.width 1
+      , Border.rounded 6
+      , Background.color palette.control
+      ]
+      { onPress = Just (tagger (Zipper.current (Zipper.previous locations)))
+      , label = row [ centerX, spacing 4 ]
+        [ el [ Font.size 14 ] <| icon "rewind"
+        , text "Prev"
         ]
-        { onPress = Just (SelectBrowseLocation (Zipper.current (Zipper.previous locations)))
-        , label = row [ centerX, spacing 4 ]
-          [ el [ Font.size 14 ] <| icon "rewind"
-          , text "Prev"
-          ]
-        }
-      , Input.button
-        [ padding 2
-        , Border.color palette.divider
-        , Border.width 1
-        , Border.rounded 6
-        , Background.color palette.control
+      }
+    , Input.button
+      [ padding 2
+      , Border.color palette.divider
+      , Border.width 1
+      , Border.rounded 6
+      , Background.color palette.control
+      ]
+      { onPress = Just (tagger (Zipper.current (Zipper.next locations)))
+      , label = row [ centerX, spacing 4 ]
+        [ text "Next"
+        , el [ Font.size 14 ] <| icon "forward"
         ]
-        { onPress = Just (SelectBrowseLocation (Zipper.current (Zipper.next locations)))
-        , label = row [ centerX, spacing 4 ]
-          [ text "Next"
-          , el [ Font.size 14 ] <| icon "forward"
-          ]
-        }
-      ]
-    , row
-      [ Font.size 16
-      , Font.underline
-      , padding 6
-      , spacing 10
-      , width fill
-      , alignLeft
-      ]
-      [ el [ width (px 16) ] <| none
-      , el [ width (px 80), Font.alignRight ] <| text "x"
-      , el [ width (px 80), Font.alignRight ] <| text "y"
-      ]
+      }
     ]
 
 showMatchingLife model life =
@@ -800,22 +861,41 @@ showLockedObject model id =
       ]
     ]
 
-showBrowseObject : Model -> ObjectId -> BrowseLocation -> BrowseLocation -> Element Msg
-showBrowseObject model id current location =
+showBrowseItem :
+  { palette : Palette
+  , tagger : (a -> msg)
+  , label : (a -> Element msg)
+  , current : a
+  } -> a -> Element msg
+showBrowseItem {palette, tagger, label, current} item =
   el
-    [ if location == current then
-        Background.color (themePalette model.theme).highlight
+    [ if item == current then
+        Background.color palette.highlight
       else
-        Background.color (themePalette model.theme).background
+        Background.color palette.background
     , width fill
     ]
     <| Input.button [ width fill ]
-      { onPress = Just (SelectBrowseLocation location)
-      , label = showBrowseObjectDetail id location
+      { onPress = Just (tagger item)
+      , label = label item
       }
 
-showBrowseObjectDetail : ObjectId -> BrowseLocation -> Element Msg
-showBrowseObjectDetail id (BrowseLocation x y ) =
+showBrowseLocationDetail : ObjectId -> BrowseLocation -> Element Msg
+showBrowseLocationDetail id (BrowseLocation x y ) =
+  row [ padding 6, spacing 10, width fill ]
+    [ el [ width (px 16), Font.color (objectColor id) ] (icon "locate")
+    , x
+      |> String.fromInt
+      |> text
+      |> el [ width (px 80), Font.alignRight ]
+    , y
+      |> String.fromInt
+      |> text
+      |> el [ width (px 80), Font.alignRight ]
+    ]
+
+showBrowsePlacementDetail : ObjectId -> BrowsePlacement -> Element Msg
+showBrowsePlacementDetail id (BrowsePlacement x y t) =
   row [ padding 6, spacing 10, width fill ]
     [ el [ width (px 16), Font.color (objectColor id) ] (icon "locate")
     , x
@@ -1658,7 +1738,7 @@ showLoading : Element Msg
 showLoading =
   el [ centerX, centerY ] <| text "Loading"
 
-showError : Http.Error -> Element Msg
+showError : Http.Error -> Element msg
 showError error =
   el [ centerX, centerY ] <|
     case error of
@@ -1689,7 +1769,7 @@ showError error =
           "Bad Body"
           body
 
-twoPartMessage : String -> String -> Element Msg
+twoPartMessage : String -> String -> Element msg
 twoPartMessage header body =
   column [ centerX, centerY ]
     [ el [ centerX, Font.size (scaled 2)] <|

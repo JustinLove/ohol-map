@@ -17,6 +17,7 @@ module Model exposing
   , Span
   , SpanData
   , BrowseLocation(..)
+  , BrowsePlacement(..)
   , TimeMode(..)
   , Version
   , World
@@ -124,7 +125,8 @@ type alias Model =
   , selectedMatchingObjects : Set ObjectId
   , lockedObjects : Set ObjectId
   , focusObject : Maybe ObjectId
-  , browseObjects : Dict ObjectId (RemoteData (Zipper BrowseLocation))
+  , browseLocations : Dict ObjectId (RemoteData (Zipper BrowseLocation))
+  , browsePlacements : Dict ObjectId (RemoteData (Zipper BrowsePlacement))
   }
 
 initialObjectSearch = [4654, 4737]
@@ -196,7 +198,8 @@ initialModel config location key =
   , selectedMatchingObjects = Set.fromList initialObjectSearch
   , lockedObjects = Set.fromList initialObjectSearch
   , focusObject = List.head initialObjectSearch
-  , browseObjects = Dict.singleton 4654 (Data (Zipper.construct (BrowseLocation -50809 -52) [BrowseLocation -50809 -53]))
+  , browseLocations = Dict.singleton 4654 (Data (Zipper.construct (BrowseLocation -50809 -52) [BrowseLocation -50809 -53]))
+  , browsePlacements = Dict.singleton 4654 (Data (Zipper.construct (BrowsePlacement -50809 -52 (Time.millisToPosix 1608319484000)) [BrowsePlacement -50809 -53 (Time.millisToPosix 1608319484000)]))
   }
 
 type alias Config =
@@ -253,6 +256,7 @@ type alias SpanData =
   }
 
 type BrowseLocation = BrowseLocation Int Int
+type BrowsePlacement = BrowsePlacement Int Int Posix
 
 type Sidebar
   = ClosedSidebar
