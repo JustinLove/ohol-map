@@ -492,13 +492,13 @@ showBrowseObjects model id =
         (model.browsePlacements
         |> Dict.get id
         |> Maybe.withDefault NotRequested
-        |> showBrowseObjectResult (showBrowsePlacements palette id)
+        |> showBrowseRemoteStatus (showBrowsePlacements palette id)
         )
       else
         (model.browseLocations
         |> Dict.get id
         |> Maybe.withDefault NotRequested
-        |> showBrowseObjectResult (showBrowseLocations palette id)
+        |> showBrowseRemoteStatus (showBrowseLocations palette id)
         )
     ]
 
@@ -541,8 +541,8 @@ showBrowseItems {palette, tagger, header, label, items} =
     |> (::) (previousNextButtons palette tagger items)
     |> column [ spacing 0, width fill, height fill, scrollbarY ]
 
-showBrowseObjectResult : (a -> Element msg) -> RemoteData a -> Element msg
-showBrowseObjectResult withData remote =
+showBrowseRemoteStatus : (a -> Element msg) -> RemoteData a -> Element msg
+showBrowseRemoteStatus withData remote =
   case remote of
     NotRequested ->
       twoPartMessage "Not Requested" "This may be a bug"
