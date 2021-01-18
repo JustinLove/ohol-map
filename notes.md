@@ -1,7 +1,7 @@
 ## server work
 - default position with no active monuments - precalculation
 - server search indexes
-  - load timed logs, how to display
+  - x load timed logs, how to display
     - assembling spans?
   - load counts when changing time
   - x counts for maplog data?
@@ -10,7 +10,7 @@
   - select only one a time?
     - x jump to instances?
     - x back/forward
-    - log data
+    - x log data
     - count of items on browse tab
     - what about server/datatime context? -> spandata?
   - default map position?

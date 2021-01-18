@@ -54,9 +54,12 @@ previous (Zipper before x after) =
 
 goto : a -> Zipper a -> Zipper a
 goto target zipper =
-  case nextTo target zipper of
-    Just zip -> zip
-    Nothing -> previousTo target zipper |> Maybe.withDefault zipper
+  if (current zipper) == target then
+    zipper
+  else
+    case nextTo target zipper of
+      Just zip -> zip
+      Nothing -> previousTo target zipper |> Maybe.withDefault zipper
 
 nextTo : a -> Zipper a -> Maybe (Zipper a)
 nextTo target (Zipper before x after) =

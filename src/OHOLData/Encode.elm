@@ -15,6 +15,7 @@ module OHOLData.Encode exposing
   , world
   , worlds
   , timeStamp
+  , msTime
   )
 
 import OHOLData exposing (Life, Server, Monument, Arc, Span, Spawn, GridPlacement, Biome, Generation, SecondPlaceBiomeObjects(..), World)

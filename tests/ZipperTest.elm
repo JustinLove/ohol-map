@@ -75,4 +75,10 @@ suite =
         |> goto 0
         |> current
         |> Expect.equal 0
+    , test "goto current" <| \_ ->
+      (construct 0 [1, 2])
+        |> next
+        |> goto 1
+        |> current
+        |> Expect.equal 1
     ]

@@ -2283,7 +2283,7 @@
       floors = tile._floors = {}
     }
     maplog.forEach(function(placement) {
-      if (lastTime < placement.t && placement.t < time) {
+      if (lastTime < placement.t && placement.t <= time) {
         if (placement.floor) {
           floors[placement.key] = placement
         } else {
@@ -3298,7 +3298,7 @@
       }
     })
     objectOverlay.eachLayer(function(layer) {
-      if (objectOverlayLayers.indexOf(layer) == -1) {
+      if (!layer.getIcon && objectOverlayLayers.indexOf(layer) == -1) {
         //console.log('remove', layer && layer.name)
         objectOverlay.removeLayer(layer)
         changes++
@@ -3956,7 +3956,7 @@
               .openPopup()
             map.setView([life.birth_y, life.birth_x])
             var ms = life.birth_time*1000
-            setMapTime(map, ms, 'focus')
+            setMapTime(map, ms, 'focus life')
             break
           case 'focusPoint':
             if (focusMarker) {
@@ -3965,6 +3965,15 @@
             focusMarker = L.marker([message.y, message.x])
               .addTo(objectOverlay)
             map.setView([message.y, message.x])
+            break
+          case 'focusPlacement':
+            if (focusMarker) {
+              focusMarker.remove();
+            }
+            focusMarker = L.marker([message.y, message.x])
+              .addTo(objectOverlay)
+            map.setView([message.y, message.x])
+            setMapTime(map, message.t, 'focus placement')
             break
           case 'focusNone':
             if (focusMarker) {

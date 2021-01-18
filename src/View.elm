@@ -69,6 +69,7 @@ type Msg
   | SelectMatchingObject ObjectId
   | ExitBrowseLocations
   | SelectBrowseLocation BrowseLocation
+  | SelectBrowsePlacement BrowsePlacement
   | ToggleAllObjects Bool
   | SelectMaximumObjects (Maybe Int)
   | LockObjects
@@ -516,7 +517,7 @@ showBrowsePlacements : Time.Zone -> Palette -> ObjectId -> Zipper BrowsePlacemen
 showBrowsePlacements zone palette id placements =
   showBrowseItems
     { palette = palette
-    , tagger = (always None)
+    , tagger = SelectBrowsePlacement
     , header = (browsePlacementListHeader palette)
     , label = (showBrowsePlacementDetail zone id)
     , items = placements
