@@ -45,7 +45,7 @@ type Msg
   | KeyObjectSearchIndexReceived Int Posix (Result Http.Error Data.ObjectSearchIndex)
   | LogObjectSearchIndexReceived Int Posix (Result Http.Error Data.ObjectSearchIndex)
   | KeyObjectSearchReceived Int Posix ObjectId (Result Http.Error (List BrowseLocation))
-  | LogObjectSearchReceived Int Posix ObjectId (Result Http.Error (List BrowseLocation))
+  | LogObjectSearchReceived Int Posix ObjectId (Result Http.Error (List BrowsePlacement))
   | ObjectsReceived (Result Http.Error Data.Objects)
   | MonumentList Int (Result Http.Error (List Data.Monument))
   | DataLayer Int (Result Http.Error Json.Decode.Value)
@@ -319,7 +319,7 @@ update msg model =
           )
             |> Maybe.withDefault model.browseLocations
         }
-      , focusPoint location
+      , focusLocation location
       )
     UI (View.ToggleAllObjects checked) ->
       let
@@ -690,7 +690,7 @@ update msg model =
       ( { model
         | browseLocations = Dict.insert id (Data (Zipper.construct head tail)) model.browseLocations
         }
-        , focusPoint head
+        , focusLocation head
       )
     KeyObjectSearchReceived serverId datatime id (Ok []) ->
       ( model, Cmd.none)
@@ -703,16 +703,16 @@ update msg model =
       )
     LogObjectSearchReceived serverId datatime id (Ok (head :: tail)) ->
       ( { model
-        | browseLocations = Dict.insert id (Data (Zipper.construct head tail)) model.browseLocations
+        | browsePlacements = Dict.insert id (Data (Zipper.construct head tail)) model.browsePlacements
         }
-        , focusPoint head
+        , focusPlacement head
       )
     LogObjectSearchReceived serverId datatime id (Ok []) ->
       ( model, Cmd.none)
     LogObjectSearchReceived serverId datatime id (Err error) ->
       let _ = Debug.log "fetch log object search failed" error in
       ( { model
-        | browseLocations = Dict.insert id (Failed error) model.browseLocations
+        | browsePlacements = Dict.insert id (Failed error) model.browsePlacements
         }
         , Cmd.none
       )
@@ -1587,13 +1587,13 @@ requireObjectSearch : Model -> (Model, Cmd Msg)
 requireObjectSearch model =
   Maybe.map3 (\spanData serverId id ->
     if model.dataAnimated then
-      case Dict.get id model.browseLocations of
+      case Dict.get id model.browsePlacements of
         Nothing ->
-          ( {model | browseLocations = Dict.insert id Loading model.browseLocations }
+          ( {model | browsePlacements = Dict.insert id Loading model.browsePlacements }
           , fetchLogObjectSearch model.logSearch serverId spanData.end id
           )
-        Just (Data locations) ->
-          (model, focusPoint (Zipper.current locations))
+        Just (Data placements) ->
+          (model, focusPlacement (Zipper.current placements))
         Just _ ->
           (model, Cmd.none)
     else
@@ -1603,18 +1603,24 @@ requireObjectSearch model =
           , fetchKeyObjectSearch model.keySearch serverId spanData.end id
           )
         Just (Data locations) ->
-          (model, focusPoint (Zipper.current locations))
+          (model, focusLocation (Zipper.current locations))
         Just _ ->
           (model, Cmd.none)
     )
     model.spanData model.selectedServer model.focusObject
     |> Maybe.withDefault (model, Cmd.none)
 
-focusPoint : BrowseLocation -> Cmd Msg
-focusPoint (BrowseLocation x y) =
+focusLocation : BrowseLocation -> Cmd Msg
+focusLocation (BrowseLocation x y) =
   Cmd.batch
-    --, Time.now |> Task.perform (ShowTimeNotice life.birthTime)
     [ Leaflet.focusPoint x y
+    ]
+
+focusPlacement : BrowsePlacement -> Cmd Msg
+focusPlacement (BrowsePlacement x y t) =
+  Cmd.batch
+    [ Time.now |> Task.perform (ShowTimeNotice t)
+    , Leaflet.focusPoint x y
     ]
 
 fetchKeyObjectSearch : String -> Int -> Posix -> ObjectId -> Cmd Msg
@@ -1638,11 +1644,11 @@ fetchLogObjectSearch listUrl serverId datatime id =
     , expect = Http.expectString (parseLogObjectSearch >> (LogObjectSearchReceived serverId datatime id))
     }
 
-parseLogObjectSearch : Result Http.Error String -> Result Http.Error (List BrowseLocation)
+parseLogObjectSearch : Result Http.Error String -> Result Http.Error (List BrowsePlacement)
 parseLogObjectSearch =
   Result.andThen
     (Parser.run Parse.logValueYXTFirst
-      >> Result.map (List.map logToBrowseLocation)
+      >> Result.map (List.map logToBrowsePlacement)
       >> Result.mapError (Http.BadBody << Parse.deadEndsToString))
 
 fetchObjectSearchUrl : String -> Int -> Posix -> ObjectId -> String
@@ -1715,9 +1721,9 @@ keyToBrowseLocation : Parse.Key -> BrowseLocation
 keyToBrowseLocation (Parse.Key _ x y) =
   BrowseLocation x y
 
-logToBrowseLocation : Parse.Log -> BrowseLocation
-logToBrowseLocation (Parse.Log _ x y t) =
-  BrowseLocation x y
+logToBrowsePlacement : Parse.Log -> BrowsePlacement
+logToBrowsePlacement (Parse.Log _ x y t) =
+  BrowsePlacement x y t
 
 future : RemoteData (List Version) -> RemoteData (Dict ObjectId String) -> RemoteData (List (ObjectId, String)) -> Posix -> Server
 future versions objects objectIndex currentTime =
