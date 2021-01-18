@@ -153,7 +153,7 @@ initialModel config location key =
   , searchMode = SearchObjects
   , lifeSearchTerm = ""
   , objectSearchTerm = ""
-  , objectListMode = BrowseObjects
+  , objectListMode = MatchingObjects
   , timeMode = ServerRange
   , coarseStartTime = Time.millisToPosix 0
   , startTime = Time.millisToPosix 0
@@ -270,7 +270,6 @@ type SearchMode
 type ObjectListMode
   = MatchingObjects
   | LockedObjects
-  | BrowseObjects
 
 type TimeMode
   = ServerRange

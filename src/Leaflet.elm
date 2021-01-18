@@ -13,6 +13,7 @@ port module Leaflet exposing
   , displayResults
   , focusLife
   , focusPoint
+  , focusNone
   , searchOverlay
   , highlightObjects
   , animOverlay
@@ -136,6 +137,13 @@ focusPoint x y =
     [ ("kind", Encode.string "focusPoint")
     , ("x", Encode.int x)
     , ("y", Encode.int y)
+    ]
+    |> leafletCommand
+
+focusNone : Cmd msg
+focusNone =
+  Encode.object
+    [ ("kind", Encode.string "focusNone")
     ]
     |> leafletCommand
 

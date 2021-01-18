@@ -11,7 +11,6 @@
     - x jump to instances?
     - x back/forward
     - log data
-    - disabled option for tab header when nothing selected
     - count of items on browse tab
     - what about server/datatime context? -> spandata?
   - default map position?

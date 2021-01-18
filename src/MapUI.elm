@@ -302,13 +302,14 @@ update msg model =
       }
         |> andHighlightObjects
     UI (View.SelectMatchingObject id) ->
-      ( { model
-        | objectListMode = BrowseObjects
-        , focusObject = Just id
-        }
+      ( { model | focusObject = Just id }
       , Cmd.none
       )
         |> addUpdate requireObjectSearch
+    UI (View.ExitBrowseLocations) ->
+      ( { model | focusObject = Nothing }
+      , Leaflet.focusNone
+      )
     UI (View.SelectBrowseLocation location) ->
       ( { model
         | browseObjects = model.focusObject
@@ -1577,12 +1578,15 @@ requireObjectSearch model =
       else
         (model, Cmd.none)
     else
-      if Dict.get id model.browseObjects == Nothing then
-        ( {model | browseObjects = Dict.insert id Loading model.browseObjects }
-        , fetchKeyObjectSearch model.keySearch serverId spanData.end id
-        )
-      else
-        (model, Cmd.none)
+      case Dict.get id model.browseObjects of
+        Nothing ->
+          ( {model | browseObjects = Dict.insert id Loading model.browseObjects }
+          , fetchKeyObjectSearch model.keySearch serverId spanData.end id
+          )
+        Just (Data locations) ->
+          (model, focusPoint (Zipper.current locations))
+        Just _ ->
+          (model, Cmd.none)
     )
     model.spanData model.selectedServer model.focusObject
     |> Maybe.withDefault (model, Cmd.none)

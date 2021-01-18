@@ -67,6 +67,7 @@ type Msg
   | SelectMatchingLife Life
   | ToggleMatchingObject ObjectId Bool
   | SelectMatchingObject ObjectId
+  | ExitBrowseLocations
   | SelectBrowseLocation BrowseLocation
   | ToggleAllObjects Bool
   | SelectMaximumObjects (Maybe Int)
@@ -295,7 +296,6 @@ objectListSelect model =
     ]
     [ tabHeader "search" "Search" SelectObjectListMode MatchingObjects model.objectListMode palette
     , tabHeader "lock" locked SelectObjectListMode LockedObjects model.objectListMode palette
-    , tabHeader "forward" "Browse" SelectObjectListMode BrowseObjects model.objectListMode palette
     ]
 
 tabHeader : String -> String -> (mode -> Msg) -> mode -> mode -> Palette -> Element Msg
@@ -345,17 +345,20 @@ objectSearch model =
       else
         palette.deemphasis
   in
-  column
-    [ width fill
-    , height fill
-    , Font.color color
-    ]
-    [ case model.objectListMode of
-        MatchingObjects -> objectFinder model
-        LockedObjects -> showLockedObjects model (Set.toList model.lockedObjects)
-        BrowseObjects -> showBrowseObjects model
-    , el [ alignBottom, width fill ] <| objectListSelect model
-    ]
+  case model.focusObject of
+    Just id ->
+      showBrowseObjects model id
+    Nothing ->
+      column
+        [ width fill
+        , height fill
+        , Font.color color
+        ]
+        [ case model.objectListMode of
+            MatchingObjects -> objectFinder model
+            LockedObjects -> showLockedObjects model (Set.toList model.lockedObjects)
+        , el [ alignBottom, width fill ] <| objectListSelect model
+        ]
 
 objectFinder : Model -> Element Msg
 objectFinder model =
@@ -478,31 +481,31 @@ showLockedObjects model objects =
       |> (::) (lockedObjectListHeader model)
     )
 
-showBrowseObjects : Model -> Element Msg
-showBrowseObjects model =
-  case model.focusObject of
-    Just id ->
-      column [ spacing 0, width fill, height fill, scrollbarY ]
-        (model.browseObjects
-          |> Dict.get id
-          |> Maybe.withDefault NotRequested
-          |> (\remote -> case remote of
-              NotRequested ->
-                [ twoPartMessage "Not Requested" "This may be a bug" ]
-              NotAvailable ->
-                [ twoPartMessage "No Data Available" "Extremely comon objets are not indexed" ]
-              Loading ->
-                [ el [ centerX, centerY ] <| text "Loading" ]
-              Data locations ->
-                locations
-                  |> Zipper.mapToList (showBrowseObject model id (Zipper.current locations))
-                  |> (::) (browseObjectListHeader model id locations)
-              Failed error ->
-                [ showError error ]
-            )
+showBrowseObjects : Model -> ObjectId -> Element Msg
+showBrowseObjects model id =
+  column [ width fill, height fill, spacing 10 ]
+    [ browseObjectsHeader model id
+    , (model.browseObjects
+      |> Dict.get id
+      |> Maybe.withDefault NotRequested
+      |> (\remote -> case remote of
+          NotRequested ->
+            twoPartMessage "Not Requested" "This may be a bug"
+          NotAvailable ->
+            twoPartMessage "No Data Available" "Extremely comon objets are not indexed"
+          Loading ->
+            el [ centerX, centerY ] <| text "Loading"
+          Data locations ->
+            column [ spacing 0, width fill, height fill, scrollbarY ]
+              (locations
+                |> Zipper.mapToList (showBrowseObject model id (Zipper.current locations))
+                |> (::) (browseObjectListHeader model id locations)
+              )
+          Failed error ->
+            showError error
         )
-    Nothing ->
-      twoPartMessage "No Object Selected" ""
+      )
+    ]
 
 lifeListHeader =
   row
@@ -617,16 +620,41 @@ lockedObjectListHeader model =
         ]
     ]
 
-browseObjectListHeader : Model -> ObjectId -> Zipper BrowseLocation -> Element Msg
-browseObjectListHeader model id locations =
+browseObjectsHeader : Model -> ObjectId -> Element Msg
+browseObjectsHeader model id =
   let
     (title, _) = objectNameParts model id
     palette = (themePalette model.theme)
   in
+    row [ width fill ]
+      [ Input.button
+        [ padding 2
+        , Border.color palette.divider
+        , Border.widthEach
+          { bottom = 1
+          , left = 0
+          , right = 0
+          , top = 0
+          }
+        , Background.color palette.control
+        , width fill
+        ]
+        { onPress = Just ExitBrowseLocations
+        , label = row [ centerX, spacing 4 ]
+          [ el [ Font.size 14 ] <| icon "cancel-circle"
+          , el [ padding 6 ] <| objectWithSwatch id title
+          ]
+        }
+      ]
+
+browseObjectListHeader : Model -> ObjectId -> Zipper BrowseLocation -> Element Msg
+browseObjectListHeader model id locations =
+  let
+    palette = (themePalette model.theme)
+  in
   column [ ]
     [ row [ width fill ]
-      [ el [ padding 6 ] <| objectWithSwatch id title
-      , Input.button
+      [ Input.button
         [ padding 2
         , Border.color palette.divider
         , Border.width 1

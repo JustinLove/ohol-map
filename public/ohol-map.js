@@ -3966,6 +3966,11 @@
               .addTo(objectOverlay)
             map.setView([message.y, message.x])
             break
+          case 'focusNone':
+            if (focusMarker) {
+              focusMarker.remove();
+            }
+            break
           case 'searchOverlay':
             if (message.status) {
               searchOverlay.addTo(map)
