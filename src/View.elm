@@ -138,7 +138,7 @@ timeOverlay model =
   case model.notice of
     TimeNotice time until ->
       time
-        |> date model.zone
+        |> dateYearMonthDayHourMinute model.zone
         |> text
         |> el [ centerX, centerY ]
         |> el
@@ -492,7 +492,7 @@ showBrowseObjects model id =
         (model.browsePlacements
         |> Dict.get id
         |> Maybe.withDefault NotRequested
-        |> showBrowseRemoteStatus (showBrowsePlacements palette id)
+        |> showBrowseRemoteStatus (showBrowsePlacements model.zone palette id)
         )
       else
         (model.browseLocations
@@ -512,13 +512,13 @@ showBrowseLocations palette id locations =
     , items = locations
     }
 
-showBrowsePlacements : Palette -> ObjectId -> Zipper BrowsePlacement -> Element Msg
-showBrowsePlacements palette id placements =
+showBrowsePlacements : Time.Zone -> Palette -> ObjectId -> Zipper BrowsePlacement -> Element Msg
+showBrowsePlacements zone palette id placements =
   showBrowseItems
     { palette = palette
     , tagger = (always None)
     , header = (browsePlacementListHeader palette)
-    , label = (showBrowsePlacementDetail id)
+    , label = (showBrowsePlacementDetail zone id)
     , items = placements
     }
 
@@ -621,16 +621,16 @@ spanDateRange model =
       if model.dataAnimated then
         row [ width fill ]
           [ row [ alignRight ]
-            [ span.start |> (date model.zone) |> text
+            [ span.start |> (dateYearMonthDayHourMinute model.zone) |> text
             , text " to "
-            , span.end |> (date model.zone) |> text
+            , span.end |> (dateYearMonthDayHourMinute model.zone) |> text
             ]
           ]
       else
         row [ width fill ]
           [ row [ alignRight ]
             [ text "as of "
-            , span.end |> (date model.zone) |> text
+            , span.end |> (dateYearMonthDayHourMinute model.zone) |> text
             ]
           ]
     Nothing ->
@@ -723,6 +723,7 @@ browsePlacementListHeader palette placements =
     [ el [ width (px 16) ] <| none
     , el [ width (px 80), Font.alignRight ] <| text "x"
     , el [ width (px 80), Font.alignRight ] <| text "y"
+    , el [ width (px 110), Font.alignLeft ] <| text "time"
     ]
 
 previousNextButtons : Palette -> (a -> msg) -> Zipper a -> Element msg
@@ -894,8 +895,8 @@ showBrowseLocationDetail id (BrowseLocation x y ) =
       |> el [ width (px 80), Font.alignRight ]
     ]
 
-showBrowsePlacementDetail : ObjectId -> BrowsePlacement -> Element Msg
-showBrowsePlacementDetail id (BrowsePlacement x y t) =
+showBrowsePlacementDetail : Time.Zone -> ObjectId -> BrowsePlacement -> Element Msg
+showBrowsePlacementDetail zone id (BrowsePlacement x y t) =
   row [ padding 6, spacing 10, width fill ]
     [ el [ width (px 16), Font.color (objectColor id) ] (icon "locate")
     , x
@@ -906,6 +907,10 @@ showBrowsePlacementDetail id (BrowsePlacement x y t) =
       |> String.fromInt
       |> text
       |> el [ width (px 80), Font.alignRight ]
+    , t
+      |> dateMonthDayHourMinute zone
+      |> text
+      |> el [ width (px 110) ]
     ]
 
 objectWithSwatch : Int -> String -> Element Msg
@@ -958,7 +963,7 @@ showMatchingLifeDetail model life =
         )
       , el [ width (px 140) ]
         ( life.birthTime
-          |> date model.zone
+          |> dateYearMonthDayHourMinute model.zone
           |> text
         )
       , el [ width (px 30) ]
@@ -992,8 +997,8 @@ objectStats model objectId =
     |> Maybe.andThen (Dict.get objectId)
     |> Maybe.withDefault (0, False)
 
-date : Time.Zone -> Posix -> String
-date zone time =
+dateYearMonthDayHourMinute : Time.Zone -> Posix -> String
+dateYearMonthDayHourMinute zone time =
   let
     year = Time.toYear zone time |> String.fromInt
     month = Time.toMonth zone time |> formatMonth
@@ -1003,12 +1008,22 @@ date zone time =
   in
     year ++ "-" ++ month ++ "-" ++ day ++ " " ++ hour ++ ":" ++ minute
 
+dateMonthDayHourMinute : Time.Zone -> Posix -> String
+dateMonthDayHourMinute zone time =
+  let
+    month = Time.toMonth zone time |> formatMonth
+    day = Time.toDay zone time |> String.fromInt |> String.padLeft 2 '0'
+    hour = Time.toHour zone time |> String.fromInt |> String.padLeft 2 '0'
+    minute = Time.toMinute zone time |> String.fromInt |> String.padLeft 2 '0'
+  in
+    month ++ "-" ++ day ++ " " ++ hour ++ ":" ++ minute
+
 dateWithSeconds : Time.Zone -> Posix -> String
 dateWithSeconds zone time =
   let
     second = Time.toSecond zone time |> String.fromInt |> String.padLeft 2 '0'
   in
-    (date zone time) ++ ":" ++ second
+    (dateYearMonthDayHourMinute zone time) ++ ":" ++ second
 
 dateWithZone : Time.Zone -> Posix -> Palette -> Element Msg
 dateWithZone zone time palette =
@@ -1141,7 +1156,7 @@ startTimeSelect model =
         row []
           [ text "Coarse Start "
           , ( model.coarseStartTime
-              |> date model.zone
+              |> dateYearMonthDayHourMinute model.zone
               |> text
             )
           ]
@@ -1161,7 +1176,7 @@ startTimeSelect model =
         row []
           [ text "Fine Start "
           , ( model.startTime
-              |> date model.zone
+              |> dateYearMonthDayHourMinute model.zone
               |> text
             )
           ]
@@ -1340,8 +1355,8 @@ arcSelect model =
       , case model.currentArc of
           Just arc ->
             column []
-              [ text <| date model.zone arc.start
-              , text <| date model.zone (arc.end |> Maybe.withDefault model.time)
+              [ text <| dateYearMonthDayHourMinute model.zone arc.start
+              , text <| dateYearMonthDayHourMinute model.zone (arc.end |> Maybe.withDefault model.time)
               ]
           Nothing ->
             text "Arc"
