@@ -707,8 +707,8 @@ browseLocationListHeader palette locations =
     , alignLeft
     ]
     [ el [ width (px 16) ] <| none
-    , el [ width (px 80), Font.alignRight ] <| text "x"
-    , el [ width (px 80), Font.alignRight ] <| text "y"
+    , el [ width (px 70), Font.alignRight ] <| text "x"
+    , el [ width (px 70), Font.alignRight ] <| text "y"
     ]
 
 browsePlacementListHeader : Palette -> Zipper BrowsePlacement -> Element Msg
@@ -722,8 +722,8 @@ browsePlacementListHeader palette placements =
     , alignLeft
     ]
     [ el [ width (px 16) ] <| none
-    , el [ width (px 80), Font.alignRight ] <| text "x"
-    , el [ width (px 80), Font.alignRight ] <| text "y"
+    , el [ width (px 70), Font.alignRight ] <| text "x"
+    , el [ width (px 70), Font.alignRight ] <| text "y"
     , el [ width (px 110), Font.alignLeft ] <| text "time"
     ]
 
@@ -889,11 +889,11 @@ showBrowseLocationDetail id (BrowseLocation x y ) =
     , x
       |> String.fromInt
       |> text
-      |> el [ width (px 80), Font.alignRight ]
+      |> el [ width (px 70), Font.alignRight ]
     , y
       |> String.fromInt
       |> text
-      |> el [ width (px 80), Font.alignRight ]
+      |> el [ width (px 70), Font.alignRight ]
     ]
 
 showBrowsePlacementDetail : Time.Zone -> ObjectId -> BrowsePlacement -> Element Msg
@@ -903,11 +903,11 @@ showBrowsePlacementDetail zone id (BrowsePlacement x y t) =
     , x
       |> String.fromInt
       |> text
-      |> el [ width (px 80), Font.alignRight ]
+      |> el [ width (px 70), Font.alignRight ]
     , y
       |> String.fromInt
       |> text
-      |> el [ width (px 80), Font.alignRight ]
+      |> el [ width (px 70), Font.alignRight ]
     , t
       |> dateMonthDayHourMinute zone
       |> text

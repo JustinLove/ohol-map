@@ -523,6 +523,8 @@ update msg model =
         )
           |> setServer id
           |> checkServerLoaded
+          |> addUpdate requireObjectSearchIndex
+          |> addUpdate requireObjectSearch
     ServerList (Err error) ->
       let _ = Debug.log "fetch servers failed" error in
       ({model | serverList = Failed error, servers = Dict.empty}, Cmd.none)
@@ -578,6 +580,7 @@ update msg model =
         |> rebuildWorlds
         |> checkServerLoaded
         |> addUpdate requireObjectSearchIndex
+        |> addUpdate requireObjectSearch
     SpanList serverId (Err error) ->
       let _ = Debug.log "fetch spans failed" error in
       ( { model
@@ -1064,6 +1067,7 @@ setTime time model =
         ]
     )
       |> addUpdate requireObjectSearchIndex
+      |> addUpdate requireObjectSearch
   else
     (model, Cmd.none)
 
@@ -1185,6 +1189,7 @@ setServerUpdate serverId model =
           ]
         )
           |> rebuildWorlds
+          |> addUpdate requireObjectSearch
           |> replaceUrl "setServerUpdate"
       Nothing ->
         ( { model
@@ -1565,7 +1570,6 @@ requireObjectSearch model =
           ( {model | browseLocations = Dict.insert id Loading model.browseLocations }
           , fetchKeyObjectSearch model.keySearch serverId spanData.end id
           )
-            |> Debug.log "fetch"
         Just (Data locations) ->
           focusLocation (Zipper.current locations) model
         Just _ ->
