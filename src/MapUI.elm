@@ -58,6 +58,7 @@ type Msg
   | CurrentTime Posix
   | Playback Posix
   | UpdateUrl Posix
+  | UpdateHighlightedObjects Posix
   | CurrentZone Time.Zone
   | CurrentUrl Url
   | Navigate Browser.UrlRequest
@@ -137,6 +138,7 @@ update msg model =
     UI (View.ObjectTyping term) ->
       { model | objectSearchTerm = term }
         |> updateObjectSearch
+        |> requireObjectSearchIndex
     UI (View.SelectTimeMode mode) ->
       ( { model | timeMode = mode }
       , Cmd.none
@@ -330,6 +332,7 @@ update msg model =
     UI (View.SelectMaximumObjects maximum) ->
       { model | maxiumMatchingObjects = maximum }
         |> updateObjectSearch
+        |> requireObjectSearchIndex
     UI (View.LockObjects) ->
       { model | lockedObjects = Set.union model.selectedMatchingObjects model.lockedObjects }
         |> andHighlightObjects
@@ -594,6 +597,7 @@ update msg model =
       ( { model
         | spanData = model.spanData |> Maybe.map (\spanData -> {spanData | keyObjectSearchIndex = Data index})
         }
+          |> updateObjectSearch
         , Cmd.none
       )
     KeyObjectSearchIndexReceived serverId datatime (Err error) ->
@@ -607,6 +611,7 @@ update msg model =
       ( { model
         | spanData = model.spanData |> Maybe.map (\spanData -> {spanData | logObjectSearchIndex = Data index})
         }
+          |> updateObjectSearch
         , Cmd.none
       )
     LogObjectSearchIndexReceived serverId datatime (Err error) ->
@@ -782,6 +787,8 @@ update msg model =
                 )
     UpdateUrl _ ->
       ({model | urlTime = model.mapTime}, replaceUrlCommand model)
+    UpdateHighlightedObjects _ ->
+      model |> andHighlightObjects
     CurrentZone zone ->
       ({model | zone = zone}, Cmd.none)
     CurrentUrl location ->
@@ -974,7 +981,7 @@ makeObjectIndex ids names =
   List.map2 Tuple.pair ids (List.map String.toLower names)
     |> List.sortBy (Tuple.second>>String.length)
 
-updateObjectSearch : Model -> (Model, Cmd Msg)
+updateObjectSearch : Model -> Model
 updateObjectSearch model =
   let
     lower = String.toLower model.objectSearchTerm
@@ -984,6 +991,7 @@ updateObjectSearch model =
       |> Maybe.map .objectIndex
       |> Maybe.withDefault []
       |> List.foldr (\(id, name) a -> if String.contains lower name then id :: a else a) []
+      |> sortDescendingCount model
     ids = case model.maxiumMatchingObjects of
       Just n -> List.take n total
       Nothing -> total
@@ -993,8 +1001,32 @@ updateObjectSearch model =
   , matchingObjects = ids
   , selectedMatchingObjects = Set.fromList ids
   }
-    |> andHighlightObjects
-    |> addUpdate requireObjectSearchIndex
+
+sortDescendingCount : Model -> List ObjectId -> List ObjectId
+sortDescendingCount model list =
+  let
+    counts = model.spanData
+      |> Maybe.map (\spanData ->
+        if model.dataAnimated then
+          spanData.logObjectSearchIndex
+        else
+          spanData.keyObjectSearchIndex
+        )
+      |> Maybe.withDefault NotRequested
+      |> RemoteData.withDefault Dict.empty
+    comp = \(aCount, aIndex) (bCount, bIndex) ->
+      if aIndex && not bIndex then
+        LT
+      else if bIndex && not aIndex then
+        GT
+      else
+        compare bCount aCount
+    descendingCount = \a b ->
+      comp
+        (Dict.get a counts |> Maybe.withDefault (0, False))
+        (Dict.get b counts |> Maybe.withDefault (0, False))
+  in
+    List.sortWith descendingCount list
 
 yesterday : Model -> (Model, Cmd Msg)
 yesterday model =
@@ -1233,8 +1265,10 @@ changeTheme theme =
     |> Leaflet.changeTheme
 
 andHighlightObjects : Model -> (Model, Cmd Msg)
-andHighlightObjects =
-  andCommand highlightObjectsCommand
+andHighlightObjects model =
+  ( { model | debouncedMatchingObjects = model.matchingObjects }
+  , highlightObjectsCommand model
+  )
 
 highlightObjectsCommand : Model -> Cmd Msg
 highlightObjectsCommand model =
@@ -1418,6 +1452,10 @@ subscriptions model =
     -- Attempt to prevent "Too many calls to Location or History APIs within a short timeframe."
     , if model.urlTime /= model.mapTime then
         Time.every 100 UpdateUrl
+      else
+        Sub.none
+    , if model.debouncedMatchingObjects /= model.matchingObjects then
+        Time.every 100 UpdateHighlightedObjects
       else
         Sub.none
     ]

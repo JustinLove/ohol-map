@@ -7,6 +7,8 @@
   - x counts for maplog data?
     - x should show time range instead of static time
   - should load during interactive search?
+    - x debounced
+    - map doesn't have any idea what we are doing, just has highlight list
   - interactive span changes
     - ui
     - map
@@ -16,6 +18,8 @@
     - x log data
     - x count of items on browse tab
     - x what about server/datatime context? -> spandata?
+  - x sort objects by count
+  - exclude probably tutorial in browse
   - default map position?
   - special layers for key objects (towers in progress, apocalyse, wells/mines/oil)?
 

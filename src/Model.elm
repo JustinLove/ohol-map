@@ -122,6 +122,7 @@ type alias Model =
   , maxiumMatchingObjects: Maybe Int
   , totalMatchingObjects: Int
   , matchingObjects : List ObjectId
+  , debouncedMatchingObjects : List ObjectId
   , selectedMatchingObjects : Set ObjectId
   , lockedObjects : Set ObjectId
   , focusObject : Maybe ObjectId
@@ -163,7 +164,7 @@ initialModel config location key =
   , coarseArc = Nothing
   , currentArc = Nothing
   , evesOnly = False
-  , dataAnimated = True
+  , dataAnimated = False
   , lifeDataVisible = False
   , graticuleVisible = False
   , monumentsVisible = True
@@ -193,9 +194,10 @@ initialModel config location key =
   , maxiumMatchingObjects = Just 20
   , totalMatchingObjects = 0
   , matchingObjects = initialObjectSearch
+  , debouncedMatchingObjects = initialObjectSearch
   , selectedMatchingObjects = Set.fromList initialObjectSearch
   , lockedObjects = Set.fromList initialObjectSearch
-  , focusObject = List.head initialObjectSearch
+  , focusObject = Nothing --List.head initialObjectSearch
   --, browseLocations = Dict.empty --Dict.singleton 4654 (Data (Zipper.construct (BrowseLocation -50809 -52) [BrowseLocation -50809 -53]))
   --, browsePlacements = Dict.empty --Dict.singleton 4654 (Data (Zipper.construct (BrowsePlacement -50809 -52 (Time.millisToPosix 1608319484000)) [BrowsePlacement -50809 -53 (Time.millisToPosix 1608319484000)]))
   }
