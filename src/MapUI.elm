@@ -183,6 +183,7 @@ update msg model =
       , Leaflet.animOverlay animated
       )
         |> addUpdate requireObjectSearchIndex
+        |> addUpdate requireObjectSearch
     UI (View.GameSecondsPerSecond seconds) ->
       ( { model
         | gameSecondsPerSecond = seconds
@@ -458,6 +459,7 @@ update msg model =
         (model.dataAnimated == False)
       )
         |> addUpdate requireObjectSearchIndex
+        |> addUpdate requireObjectSearch
     Event (Err err) ->
       let _ = Debug.log "error" err in
       (model, Cmd.none)
@@ -1193,6 +1195,7 @@ setServerUpdate serverId model =
           ]
         )
           |> rebuildWorlds
+          |> addUpdate requireObjectSearchIndex
           |> addUpdate requireObjectSearch
           |> replaceUrl "setServerUpdate"
       Nothing ->
