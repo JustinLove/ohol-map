@@ -1043,11 +1043,18 @@ setTime time model =
       animatable = timeRange
         |> Maybe.map (\range -> isInRange range time)
         |> Maybe.withDefault False
+      mspanData = Maybe.map2 (\spanData span ->
+          if spanData.end /= span.end then
+            asSpanData span
+          else
+            spanData
+          )
+          model.spanData mspan
     in
     ( { model
       | mapTime = Just time
       , currentArc = marc
-      , spanData = mspan |> Maybe.map asSpanData
+      , spanData = mspanData
       , timeRange = timeRange
       , dataAnimated = model.dataAnimated && animatable
       }
@@ -1056,6 +1063,7 @@ setTime time model =
         , Time.now |> Task.perform (ShowTimeNotice time)
         ]
     )
+      |> addUpdate requireObjectSearchIndex
   else
     (model, Cmd.none)
 
@@ -1491,24 +1499,27 @@ fetchSpans spansUrl serverId =
 
 requireObjectSearchIndex : Model -> (Model, Cmd Msg)
 requireObjectSearchIndex model =
-  Maybe.map2 (\spanData serverId ->
-    if model.dataAnimated then
-      if spanData.logObjectSearchIndex == NotRequested then
-        ( {model | spanData = Just {spanData | logObjectSearchIndex = Loading }}
-        , fetchLogObjectSearchIndex model.logSearchIndex serverId spanData.end
-        )
+  if List.isEmpty model.matchingObjects && Set.isEmpty model.lockedObjects then
+    (model, Cmd.none)
+  else
+    Maybe.map2 (\spanData serverId ->
+      if model.dataAnimated then
+        if spanData.logObjectSearchIndex == NotRequested then
+          ( {model | spanData = Just {spanData | logObjectSearchIndex = Loading }}
+          , fetchLogObjectSearchIndex model.logSearchIndex serverId spanData.end
+          )
+        else
+          (model, Cmd.none)
       else
-        (model, Cmd.none)
-    else
-      if spanData.keyObjectSearchIndex == NotRequested then
-        ( {model | spanData = Just {spanData | keyObjectSearchIndex = Loading }}
-        , fetchKeyObjectSearchIndex model.keySearchIndex serverId spanData.end
-        )
-      else
-        (model, Cmd.none)
-    )
-    model.spanData model.selectedServer
-    |> Maybe.withDefault (model, Cmd.none)
+        if spanData.keyObjectSearchIndex == NotRequested then
+          ( {model | spanData = Just {spanData | keyObjectSearchIndex = Loading }}
+          , fetchKeyObjectSearchIndex model.keySearchIndex serverId spanData.end
+          )
+        else
+          (model, Cmd.none)
+      )
+      model.spanData model.selectedServer
+      |> Maybe.withDefault (model, Cmd.none)
 
 fetchKeyObjectSearchIndex : String -> Int -> Posix -> Cmd Msg
 fetchKeyObjectSearchIndex indexUrl serverId datatime =
