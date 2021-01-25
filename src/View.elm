@@ -758,6 +758,10 @@ previousNextButtons palette tagger locations =
         , el [ Font.size 14 ] <| icon "forward"
         ]
       }
+    , Zipper.length locations
+      |> String.fromInt
+      |> text
+      |> el [ alignRight ]
     ]
 
 showMatchingLife model life =

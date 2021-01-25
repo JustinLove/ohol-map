@@ -1,6 +1,7 @@
 module Zipper exposing
   ( Zipper
   , construct
+  , length
   , toList
   , mapToList
   , current
@@ -14,6 +15,10 @@ type Zipper a = Zipper (List a) a (List a)
 construct : a -> (List a) -> Zipper a
 construct head tail =
   Zipper [] head tail
+
+length : Zipper a -> Int
+length (Zipper before x after) =
+  (List.length before) + 1 + (List.length after)
 
 toList : Zipper a -> List a
 toList (Zipper before x after) =

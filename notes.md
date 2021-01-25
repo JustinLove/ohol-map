@@ -3,16 +3,19 @@
 - server search indexes
   - x load timed logs, how to display
     - assembling spans?
-  - load counts when changing time
+  - x load counts when changing time
   - x counts for maplog data?
     - x should show time range instead of static time
   - should load during interactive search?
+  - interactive span changes
+    - ui
+    - map
   - select only one a time?
     - x jump to instances?
     - x back/forward
     - x log data
-    - count of items on browse tab
-    - what about server/datatime context? -> spandata?
+    - x count of items on browse tab
+    - x what about server/datatime context? -> spandata?
   - default map position?
   - special layers for key objects (towers in progress, apocalyse, wells/mines/oil)?
 
@@ -50,6 +53,7 @@
 
 
 ## rendering optimization
+- animated view, maybe just object search
 - TileKey cache
 - find bottleneck - network or render?
 - load time garbage collection
