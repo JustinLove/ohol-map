@@ -490,14 +490,16 @@ showBrowseObjects model id =
   column [ width fill, height fill, spacing 10 ]
     [ browseObjectsHeader model id
     , if model.dataAnimated then
-        (model.browsePlacements
-        |> Dict.get id
+        (model.spanData
+        |> Maybe.map .browsePlacements
+        |> Maybe.andThen (Dict.get id)
         |> Maybe.withDefault NotRequested
         |> showBrowseRemoteStatus (showBrowsePlacements model.zone palette id)
         )
       else
-        (model.browseLocations
-        |> Dict.get id
+        (model.spanData
+        |> Maybe.map .browseLocations
+        |> Maybe.andThen (Dict.get id)
         |> Maybe.withDefault NotRequested
         |> showBrowseRemoteStatus (showBrowseLocations palette id)
         )

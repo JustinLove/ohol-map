@@ -125,8 +125,6 @@ type alias Model =
   , selectedMatchingObjects : Set ObjectId
   , lockedObjects : Set ObjectId
   , focusObject : Maybe ObjectId
-  , browseLocations : Dict ObjectId (RemoteData (Zipper BrowseLocation))
-  , browsePlacements : Dict ObjectId (RemoteData (Zipper BrowsePlacement))
   }
 
 initialObjectSearch = [4654, 4737]
@@ -198,8 +196,8 @@ initialModel config location key =
   , selectedMatchingObjects = Set.fromList initialObjectSearch
   , lockedObjects = Set.fromList initialObjectSearch
   , focusObject = List.head initialObjectSearch
-  , browseLocations = Dict.empty --Dict.singleton 4654 (Data (Zipper.construct (BrowseLocation -50809 -52) [BrowseLocation -50809 -53]))
-  , browsePlacements = Dict.empty --Dict.singleton 4654 (Data (Zipper.construct (BrowsePlacement -50809 -52 (Time.millisToPosix 1608319484000)) [BrowsePlacement -50809 -53 (Time.millisToPosix 1608319484000)]))
+  --, browseLocations = Dict.empty --Dict.singleton 4654 (Data (Zipper.construct (BrowseLocation -50809 -52) [BrowseLocation -50809 -53]))
+  --, browsePlacements = Dict.empty --Dict.singleton 4654 (Data (Zipper.construct (BrowsePlacement -50809 -52 (Time.millisToPosix 1608319484000)) [BrowsePlacement -50809 -53 (Time.millisToPosix 1608319484000)]))
   }
 
 type alias Config =
@@ -253,6 +251,8 @@ type alias SpanData =
   , base: Posix
   , keyObjectSearchIndex: RemoteData Data.ObjectSearchIndex
   , logObjectSearchIndex: RemoteData Data.ObjectSearchIndex
+  , browseLocations : Dict ObjectId (RemoteData (Zipper BrowseLocation))
+  , browsePlacements : Dict ObjectId (RemoteData (Zipper BrowsePlacement))
   }
 
 type BrowseLocation = BrowseLocation Int Int
@@ -366,5 +366,7 @@ asSpanData span =
   , base = span.base
   , keyObjectSearchIndex = NotRequested
   , logObjectSearchIndex = NotRequested
+  , browseLocations = Dict.empty
+  , browsePlacements = Dict.empty
   }
 
