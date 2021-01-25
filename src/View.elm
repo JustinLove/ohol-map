@@ -80,8 +80,8 @@ type Msg
   | SelectSearchMode SearchMode
   | SelectObjectListMode ObjectListMode
   | SelectServer Int
-  | SelectArc Int
-  | SelectArcCoarse Int
+  | SelectArc (Maybe Arc)
+  | SelectArcCoarse (Maybe Arc)
   | SelectShow
 
 timeNoticeDuration = 6000
@@ -1335,7 +1335,7 @@ arcSelect model =
       column [ width fill, spacing 2 ]
       [ Input.slider
           [ Background.color controlColor ]
-          { onChange = round >> SelectArcCoarse
+          { onChange = round >> (arcForIndex model) >> SelectArcCoarse
           , label = Input.labelAbove [] <| text "Coarse"
           , min = 0
           , max = ((List.length list) - 1) |> toFloat
@@ -1345,7 +1345,7 @@ arcSelect model =
           }
       , Input.slider
           [ Background.color controlColor ]
-          { onChange = round >> SelectArc
+          { onChange = round >> (arcForIndex model) >> SelectArc
           , label = Input.labelAbove [] <| text "Fine"
           , min = max (coarseIndex - 7) 0
           , max = min (coarseIndex + 7) (((List.length list) - 1) |> toFloat)
@@ -1394,6 +1394,15 @@ posixToFloat offsetDays =
   Time.posixToMillis
     >> (\x -> x // 1000 + offsetDays*24*60*60)
     >> toFloat
+
+arcForIndex : Model -> Int -> Maybe Arc
+arcForIndex model index =
+  case currentArcs model of
+    Data list ->
+      list
+        |> List.drop index
+        |> List.head
+    _ -> Nothing
 
 dataOptions : Model -> Element Msg
 dataOptions model =

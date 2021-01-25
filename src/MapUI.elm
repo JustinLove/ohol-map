@@ -367,79 +367,10 @@ update msg model =
     UI (View.SelectServer serverId) ->
       ( model, Cmd.none )
         |> setServer serverId
-    UI (View.SelectArc index) ->
-      let
-        marc = case currentArcs model of
-          Data list ->
-            list
-              |> List.drop index
-              |> List.head
-          _ -> Nothing
-      in
-      case marc of
-        Just arc ->
-          let
-            start = increment arc.start
-            end = arc.dataTime
-              |> Maybe.withDefault (arc.end
-                |> Maybe.withDefault model.time
-                )
-            mspan = spanForTime end (currentSpans model)
-          in
-          { model
-          | currentArc = marc
-          , spanData = mspan |> Maybe.map asSpanData
-          , coarseStartTime = start
-          , startTime = start
-          , timeRange = Just (arcToRange model.time arc)
-          }
-            |> setTime end
-        Nothing ->
-          ( { model
-            | currentArc = marc
-            , spanData = Nothing
-            , coarseArc = marc
-            , timeRange = Nothing
-            }
-          , Cmd.none
-          )
-    UI (View.SelectArcCoarse index) ->
-      let
-        marc = case currentArcs model of
-          Data list ->
-            list
-              |> List.drop index
-              |> List.head
-          _ -> Nothing
-      in
-      case marc of
-        Just arc ->
-          let
-            start = increment arc.start
-            end = arc.dataTime
-              |> Maybe.withDefault (arc.end
-                |> Maybe.withDefault model.time
-                )
-            mspan = spanForTime end (currentSpans model)
-          in
-          { model
-          | currentArc = marc
-          , coarseArc = Debug.log "selectarccoarse" marc
-          , spanData = mspan |> Maybe.map asSpanData
-          , coarseStartTime = start
-          , startTime = start
-          , timeRange = Just (arcToRange model.time arc)
-          }
-            |> setTime end
-        Nothing ->
-          ( { model
-            | currentArc = marc
-            , coarseArc = marc
-            , spanData = Nothing
-            , timeRange = Nothing
-            }
-          , Cmd.none
-          )
+    UI (View.SelectArc marc) ->
+      selectArc model marc model.coarseArc
+    UI (View.SelectArcCoarse marc) ->
+      selectArc model marc marc
     UI (View.SelectShow) ->
       ( {model | dataLayer = Loading}
       , fetchDataForTime model
@@ -959,6 +890,35 @@ rebuildArcs arcspan =
       {arcspan | arcs = Data (Data.assignDataTime spans arcs)}
     _ -> arcspan
 
+selectArc : Model -> Maybe Arc -> Maybe Arc -> (Model, Cmd Msg)
+selectArc model marc mcourseArc =
+  if marc == model.currentArc && mcourseArc == model.coarseArc then
+    (model, Cmd.none)
+  else
+    case marc of
+      Just arc ->
+        let
+          start = increment arc.start
+          end = arc.dataTime
+            |> Maybe.withDefault (arc.end
+              |> Maybe.withDefault model.time
+              )
+        in
+        { model
+        | currentArc = marc
+        , coarseArc = mcourseArc
+        , coarseStartTime = start
+        , startTime = start
+        }
+          |> setTime end
+      Nothing ->
+        ( { model
+          | currentArc = Nothing
+          , coarseArc = Nothing
+          }
+        , Cmd.none
+        )
+
 requireLives : Model -> (Model, Cmd Msg)
 requireLives model =
   let m2 = {model | lifeDataVisible = True} in
@@ -1374,8 +1334,8 @@ timeSelectionForTime model =
                 { model
                 | timeMode = ArcRange
                 , currentArc = newArc
+                , coarseArc = newArc
                 , spanData = mspan |> Maybe.map asSpanData
-                , coarseArc = Debug.log "timeselection" newArc
                 , timeRange = Just (arcToRange model.time arc)
                 }
               Nothing ->
@@ -1594,6 +1554,7 @@ requireObjectSearch model =
           ( {model | browseLocations = Dict.insert id Loading model.browseLocations }
           , fetchKeyObjectSearch model.keySearch serverId spanData.end id
           )
+            |> Debug.log "fetch"
         Just (Data locations) ->
           focusLocation (Zipper.current locations) model
         Just _ ->
