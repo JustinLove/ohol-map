@@ -6,9 +6,9 @@
   - x load counts when changing time
   - x counts for maplog data?
     - x should show time range instead of static time
-  - should load during interactive search?
+  - x should load during interactive search?
     - x debounced
-    - map doesn't have any idea what we are doing, just has highlight list
+    - x number limit - map doesn't have any idea what we are doing, just has highlight list
   - interactive span changes
     - ui
     - map

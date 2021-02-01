@@ -995,11 +995,16 @@ updateObjectSearch model =
     ids = case model.maxiumMatchingObjects of
       Just n -> List.take n total
       Nothing -> total
+    initialSelected =
+      if List.length ids < 100 then
+        Set.fromList ids
+      else
+        Set.empty
   in
   { model
   | totalMatchingObjects = List.length total
   , matchingObjects = ids
-  , selectedMatchingObjects = Set.fromList ids
+  , selectedMatchingObjects = initialSelected
   }
 
 sortDescendingCount : Model -> List ObjectId -> List ObjectId
