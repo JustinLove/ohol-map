@@ -148,17 +148,17 @@ update msg model =
       | coarseStartTime = time
       , startTime = time
       }
-        |> setTime time
+        |> jumpTime time
     UI (View.StartTime time) ->
       { model
       | startTime = time
       }
-        |> setTime time
+        |> jumpTime time
     UI (View.HoursBefore hours) ->
       { model
       | hoursPeriod = hours
       }
-        |> setTime (relativeStartTime hours model.time)
+        |> jumpTime (relativeStartTime hours model.time)
     UI (View.HoursAfter hours) ->
       ( { model
         | hoursPeriod = hours
@@ -199,9 +199,7 @@ update msg model =
       , Cmd.none
       )
     UI (View.MapTime time) ->
-      ( {model|mapTime = Just time}
-      , Leaflet.currentTime time
-      )
+      scrubTime time model
     UI (View.Play) ->
       ( { model
         | player = Starting
@@ -730,7 +728,7 @@ update msg model =
       { model
       | player = Starting
       }
-        |> setTime (relativeStartTime hoursBefore time)
+        |> jumpTime (relativeStartTime hoursBefore time)
     ShowTimeNotice show time ->
       let
         until = time
@@ -926,7 +924,7 @@ selectArc model marc mcourseArc =
         , coarseStartTime = start
         , startTime = start
         }
-          |> setTime end
+          |> jumpTime end
       Nothing ->
         ( { model
           | currentArc = Nothing
@@ -1074,45 +1072,54 @@ fetchDailyReview model =
     |> Maybe.map (\start -> Time.now |> Task.perform (FetchBetween start))
     |> Maybe.withDefault Cmd.none
 
-setTime : Posix -> Model -> (Model, Cmd Msg)
-setTime time model =
+jumpTime : Posix -> Model -> (Model, Cmd Msg)
+jumpTime time model =
+  model
+    |> scrubTime time
+    |> mapModel setTimeRange
+    |> appendCommand (Time.now |> Task.perform (ShowTimeNotice time))
+
+scrubTime : Posix -> Model -> (Model, Cmd Msg)
+scrubTime time model =
   if model.mapTime /= Just time then
     let
       marc = arcForTime time (currentArcs model)
       mspan = spanForTime time (currentSpans model)
-      timeRange =
-        if model.lifeDataVisible then
-          model.timeRange
+      mspanData =
+        if (Maybe.map .end model.spanData) /= (Maybe.map .end mspan) then
+          Maybe.map asSpanData mspan
         else
-          marc
-            |> Maybe.map (arcToRange model.time)
-      animatable = timeRange
-        |> Maybe.map (\range -> isInRange range time)
-        |> Maybe.withDefault False
-      mspanData = Maybe.map2 (\spanData span ->
-          if spanData.end /= span.end then
-            asSpanData span
-          else
-            spanData
-          )
-          model.spanData mspan
+          model.spanData
     in
     ( { model
       | mapTime = Just time
       , currentArc = marc
       , spanData = mspanData
-      , timeRange = timeRange
-      , dataAnimated = model.dataAnimated && animatable
       }
-    , Cmd.batch
-        [ Leaflet.currentTime time
-        , Time.now |> Task.perform (ShowTimeNotice time)
-        ]
+    , Leaflet.currentTime time
     )
       |> addUpdate requireObjectSearchIndex
       |> addUpdate requireObjectSearch
   else
     (model, Cmd.none)
+
+setTimeRange : Model -> Model
+setTimeRange model =
+  let
+    timeRange =
+      if model.lifeDataVisible then
+        model.timeRange
+      else
+        model.currentArc
+          |> Maybe.map (arcToRange model.time)
+    animatable = timeRange
+      |> Maybe.map2 (\time range -> isInRange range time) model.mapTime
+      |> Maybe.withDefault False
+  in
+    { model
+    | timeRange = timeRange
+    , dataAnimated = model.dataAnimated && animatable
+    }
 
 arcForTime : Posix -> RemoteData (List Arc) -> Maybe Arc
 arcForTime time marcs =
@@ -1981,3 +1988,18 @@ addUpdate f (model, cmd) =
     (m2, c2) = f model
   in
     (m2, Cmd.batch [ cmd, c2 ])
+
+mapModel : (model -> model) -> (model, Cmd msg) -> (model, Cmd msg)
+mapModel f (model, cmd) =
+  ( f model
+  , cmd
+  )
+
+appendCommand : Cmd msg -> (model, Cmd msg) -> (model, Cmd msg)
+appendCommand newCmd (model, cmd) =
+  ( model
+  , Cmd.batch
+    [ cmd
+    , newCmd
+    ]
+  )

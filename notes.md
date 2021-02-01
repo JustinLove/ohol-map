@@ -10,8 +10,8 @@
     - x debounced
     - x number limit - map doesn't have any idea what we are doing, just has highlight list
   - interactive span changes
-    - ui
-    - map
+    - x ui
+    - x? map
   - select only one a time?
     - x jump to instances?
     - x back/forward
@@ -80,6 +80,7 @@
 ## network optimization
 - tile not found in anim view? - may be no activity, possible to use ending key?
 - Only fetch reasonable amount of data for lives (per column?)
+- rate limit object search loading - progressive loading needs rework of tile data loading, it is all one big promise
 
 ## other optimzation
 - optimize monument updates (most time updates will not cross a time that changes anything)
