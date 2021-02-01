@@ -1,4 +1,4 @@
-module RemoteData exposing (RemoteData(..), withDefault, map)
+module RemoteData exposing (RemoteData(..), withDefault, map, toMaybe)
 
 import Http
 
@@ -23,3 +23,12 @@ map f data =
     Loading -> Loading
     Data value -> Data (f value)
     Failed err -> Failed err
+
+toMaybe : RemoteData a -> Maybe a
+toMaybe data =
+  case data of
+    NotRequested -> Nothing
+    NotAvailable -> Nothing
+    Loading -> Nothing
+    Data value -> Just value
+    Failed err -> Nothing

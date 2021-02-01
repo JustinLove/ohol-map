@@ -31,6 +31,12 @@ module Model exposing
   , highlightObjects
   , areAllObjectChecked
   , asSpanData
+  , mapBrowseLocations
+  , mapFocusBrowseLocations
+  , mapBrowsePlacements
+  , mapFocusBrowsePlacements
+  , currentLocation
+  , currentPlacement
   )
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
@@ -126,9 +132,10 @@ type alias Model =
   , selectedMatchingObjects : Set ObjectId
   , lockedObjects : Set ObjectId
   , focusObject : Maybe ObjectId
+  , browseProbablyTutorial : Bool
   }
 
-initialObjectSearch = [4654, 4737]
+initialObjectSearch = [133, 4654, 4737]
 
 initialModel : Config -> Url -> Navigation.Key -> Model
 initialModel config location key =
@@ -197,7 +204,8 @@ initialModel config location key =
   , debouncedMatchingObjects = initialObjectSearch
   , selectedMatchingObjects = Set.fromList initialObjectSearch
   , lockedObjects = Set.fromList initialObjectSearch
-  , focusObject = Nothing --List.head initialObjectSearch
+  , focusObject = List.head initialObjectSearch
+  , browseProbablyTutorial = False
   --, browseLocations = Dict.empty --Dict.singleton 4654 (Data (Zipper.construct (BrowseLocation -50809 -52) [BrowseLocation -50809 -53]))
   --, browsePlacements = Dict.empty --Dict.singleton 4654 (Data (Zipper.construct (BrowsePlacement -50809 -52 (Time.millisToPosix 1608319484000)) [BrowsePlacement -50809 -53 (Time.millisToPosix 1608319484000)]))
   }
@@ -372,3 +380,60 @@ asSpanData span =
   , browsePlacements = Dict.empty
   }
 
+mapBrowseLocations
+  : (Dict ObjectId (RemoteData (Zipper BrowseLocation)) -> Dict ObjectId (RemoteData (Zipper BrowseLocation)))
+  -> Model
+  -> Model
+mapBrowseLocations f model =
+  { model
+  | spanData = model.spanData |> Maybe.map (\spanData ->
+    { spanData
+    | browseLocations = f spanData.browseLocations
+    })
+  }
+
+mapFocusBrowseLocations : (Zipper BrowseLocation -> Zipper BrowseLocation) -> Model -> Model
+mapFocusBrowseLocations f model =
+  mapBrowseLocations (browseUpdate f model.focusObject) model
+
+mapBrowsePlacements
+  : (Dict ObjectId (RemoteData (Zipper BrowsePlacement)) -> Dict ObjectId (RemoteData (Zipper BrowsePlacement)))
+  -> Model
+  -> Model
+mapBrowsePlacements f model =
+  { model
+  | spanData = model.spanData |> Maybe.map (\spanData ->
+    { spanData
+    | browsePlacements = f spanData.browsePlacements
+    })
+  }
+
+mapFocusBrowsePlacements : (Zipper BrowsePlacement -> Zipper BrowsePlacement) -> Model -> Model
+mapFocusBrowsePlacements f model =
+  mapBrowsePlacements (browseUpdate f model.focusObject) model
+
+browseUpdate
+  : (Zipper a -> Zipper a)
+  -> Maybe ObjectId 
+  -> Dict ObjectId (RemoteData (Zipper a))
+  -> Dict ObjectId (RemoteData (Zipper a))
+browseUpdate f mid browse =
+  mid
+    |> Maybe.map (\id ->
+      Dict.update id (Maybe.map (RemoteData.map f)) browse
+    )
+    |> Maybe.withDefault browse
+
+currentLocation : Model -> Maybe BrowseLocation
+currentLocation model =
+  Maybe.map2 Dict.get model.focusObject (Maybe.map .browseLocations model.spanData)
+    |> Maybe.withDefault Nothing
+    |> Maybe.andThen RemoteData.toMaybe
+    |> Maybe.map Zipper.current
+
+currentPlacement : Model -> Maybe BrowsePlacement
+currentPlacement model =
+  Maybe.map2 Dict.get model.focusObject (Maybe.map .browsePlacements model.spanData)
+    |> Maybe.withDefault Nothing
+    |> Maybe.andThen RemoteData.toMaybe
+    |> Maybe.map Zipper.current

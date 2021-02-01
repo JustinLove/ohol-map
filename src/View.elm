@@ -70,6 +70,9 @@ type Msg
   | ExitBrowseLocations
   | SelectBrowseLocation BrowseLocation
   | SelectBrowsePlacement BrowsePlacement
+  | Previous
+  | Next
+  | ToggleBrowseProbablyTutorial Bool
   | ToggleAllObjects Bool
   | SelectMaximumObjects (Maybe Int)
   | LockObjects
@@ -494,54 +497,70 @@ showBrowseObjects model id =
         |> Maybe.map .browsePlacements
         |> Maybe.andThen (Dict.get id)
         |> Maybe.withDefault NotRequested
-        |> showBrowseRemoteStatus (showBrowsePlacements model.zone palette id)
+        |> showBrowseRemoteStatus (showBrowsePlacements model.zone palette id model.browseProbablyTutorial)
         )
       else
         (model.spanData
         |> Maybe.map .browseLocations
         |> Maybe.andThen (Dict.get id)
         |> Maybe.withDefault NotRequested
-        |> showBrowseRemoteStatus (showBrowseLocations palette id)
+        |> showBrowseRemoteStatus (showBrowseLocations palette id model.browseProbablyTutorial)
         )
     ]
 
-showBrowseLocations : Palette -> ObjectId -> Zipper BrowseLocation -> Element Msg
-showBrowseLocations palette id locations =
+showBrowseLocations : Palette -> ObjectId -> Bool -> Zipper BrowseLocation -> Element Msg
+showBrowseLocations palette id browseProbablyTutorial locations =
   showBrowseItems
     { palette = palette
     , tagger = SelectBrowseLocation
     , header = (browseLocationListHeader palette)
     , label = (showBrowseLocationDetail id)
+    , inTutorial = browseLocationInTutorial
     , items = locations
+    , browseProbablyTutorial = browseProbablyTutorial
     }
 
-showBrowsePlacements : Time.Zone -> Palette -> ObjectId -> Zipper BrowsePlacement -> Element Msg
-showBrowsePlacements zone palette id placements =
+showBrowsePlacements : Time.Zone -> Palette -> ObjectId -> Bool -> Zipper BrowsePlacement -> Element Msg
+showBrowsePlacements zone palette id browseProbablyTutorial placements =
   showBrowseItems
     { palette = palette
     , tagger = SelectBrowsePlacement
     , header = (browsePlacementListHeader palette)
     , label = (showBrowsePlacementDetail zone id)
+    , inTutorial = browsePlacementInTutorial
     , items = placements
+    , browseProbablyTutorial = browseProbablyTutorial
     }
 
 showBrowseItems :
   { palette : Palette
-  , tagger : (a -> msg)
-  , header : (Zipper a -> Element msg)
-  , label : (a -> Element msg)
+  , tagger : (a -> Msg)
+  , header : (Zipper a -> Element Msg)
+  , label : (a -> Element Msg)
+  , inTutorial : (a -> Bool)
   , items : Zipper a
-  } -> Element msg
-showBrowseItems {palette, tagger, header, label, items} =
-  items
-    |> Zipper.mapToList (showBrowseItem
+  , browseProbablyTutorial : Bool
+  } -> Element Msg
+showBrowseItems {palette, tagger, header, label, inTutorial, items, browseProbablyTutorial} =
+  let
+    filteredItems = items
+      |> Zipper.toList
+      |> (\list ->
+        if browseProbablyTutorial then
+          list
+        else
+          List.filter (not << inTutorial) list
+        )
+  in
+  filteredItems
+    |> List.map (showBrowseItem
       { palette = palette
       , tagger = tagger
       , label = label
       , current = (Zipper.current items)
       })
     |> (::) (header items)
-    |> (::) (previousNextButtons palette tagger items)
+    |> (::) (previousNextButtons palette browseProbablyTutorial filteredItems)
     |> column [ spacing 0, width fill, height fill, scrollbarY ]
 
 showBrowseRemoteStatus : (a -> Element msg) -> RemoteData a -> Element msg
@@ -729,8 +748,8 @@ browsePlacementListHeader palette placements =
     , el [ width (px 110), Font.alignLeft ] <| text "time"
     ]
 
-previousNextButtons : Palette -> (a -> msg) -> Zipper a -> Element msg
-previousNextButtons palette tagger locations =
+previousNextButtons : Palette -> Bool -> List a -> Element Msg
+previousNextButtons palette browseProbablyTutorial items =
   row [ width fill, spacing 10, padding 6 ]
     [ Input.button
       [ padding 2
@@ -739,7 +758,7 @@ previousNextButtons palette tagger locations =
       , Border.rounded 6
       , Background.color palette.control
       ]
-      { onPress = Just (tagger (Zipper.current (Zipper.previous locations)))
+      { onPress = Just Previous
       , label = row [ centerX, spacing 4 ]
         [ el [ Font.size 14 ] <| icon "rewind"
         , text "Prev"
@@ -752,13 +771,19 @@ previousNextButtons palette tagger locations =
       , Border.rounded 6
       , Background.color palette.control
       ]
-      { onPress = Just (tagger (Zipper.current (Zipper.next locations)))
+      { onPress = Just Next
       , label = row [ centerX, spacing 4 ]
         [ text "Next"
         , el [ Font.size 14 ] <| icon "forward"
         ]
       }
-    , Zipper.length locations
+    , Input.checkbox [ spacing 4 ]
+      { onChange = ToggleBrowseProbablyTutorial
+      , checked = browseProbablyTutorial
+      , label = Input.labelRight [] (text "tutorial")
+      , icon = Input.defaultCheckbox
+      }
+    , List.length items
       |> String.fromInt
       |> text
       |> el [ alignRight ]
@@ -919,6 +944,12 @@ showBrowsePlacementDetail zone id (BrowsePlacement x y t) =
       |> text
       |> el [ width (px 110) ]
     ]
+
+browseLocationInTutorial : BrowseLocation -> Bool
+browseLocationInTutorial (BrowseLocation x y) = x >= 5000000
+
+browsePlacementInTutorial : BrowsePlacement -> Bool
+browsePlacementInTutorial (BrowsePlacement x y t) = x >= 5000000
 
 objectWithSwatch : Int -> String -> Element Msg
 objectWithSwatch id title =

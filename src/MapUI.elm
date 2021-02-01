@@ -313,9 +313,33 @@ update msg model =
       , Leaflet.focusNone
       )
     UI (View.SelectBrowseLocation location) ->
-      focusLocation location model
+      model
+        |> mapFocusBrowseLocations (Zipper.goto location)
+        |> focusLocation location
     UI (View.SelectBrowsePlacement placement) ->
-      focusPlacement placement model
+      model
+        |> mapFocusBrowsePlacements (Zipper.goto placement)
+        |> focusPlacement placement
+    UI (View.Previous) ->
+      if model.dataAnimated then
+        model
+          |> mapFocusBrowsePlacements (Zipper.previous)
+          |> focusCurrentPlacement
+      else
+        model
+          |> mapFocusBrowseLocations (Zipper.previous)
+          |> focusCurrentLocation
+    UI (View.Next) ->
+      if model.dataAnimated then
+        model
+          |> mapFocusBrowsePlacements (Zipper.next)
+          |> focusCurrentPlacement
+      else
+        model
+          |> mapFocusBrowseLocations (Zipper.next)
+          |> focusCurrentLocation
+    UI (View.ToggleBrowseProbablyTutorial checked) ->
+      ( { model | browseProbablyTutorial = checked }, Cmd.none )
     UI (View.ToggleAllObjects checked) ->
       let
         selectedMatchingObjects = if checked then
@@ -620,35 +644,27 @@ update msg model =
         , Cmd.none
       )
     KeyObjectSearchReceived serverId datatime id (Ok (head :: tail)) ->
-      { model
-      | spanData = model.spanData
-        |> Maybe.map (\spanData -> {spanData | browseLocations = Dict.insert id (Data (Zipper.construct head tail)) spanData.browseLocations})
-      }
-       |> focusLocation head
+      model
+        |> mapBrowseLocations (Dict.insert id (Data (Zipper.construct head tail)))
+        |> focusLocation head
     KeyObjectSearchReceived serverId datatime id (Ok []) ->
       ( model, Cmd.none)
     KeyObjectSearchReceived serverId datatime id (Err error) ->
       let _ = Debug.log "fetch key object search failed" error in
-      ( { model
-        | spanData = model.spanData
-          |> Maybe.map (\spanData -> {spanData | browseLocations = Dict.insert id (Failed error) spanData.browseLocations })
-        }
+      ( model
+          |> mapBrowseLocations (Dict.insert id (Failed error))
         , Cmd.none
       )
     LogObjectSearchReceived serverId datatime id (Ok (head :: tail)) ->
-      { model
-      | spanData = model.spanData
-        |> Maybe.map (\spanData -> {spanData | browsePlacements = Dict.insert id (Data (Zipper.construct head tail)) spanData.browsePlacements})
-      }
+      model
+        |> mapBrowsePlacements (Dict.insert id (Data (Zipper.construct head tail)))
         |> focusPlacement head
     LogObjectSearchReceived serverId datatime id (Ok []) ->
       ( model, Cmd.none)
     LogObjectSearchReceived serverId datatime id (Err error) ->
       let _ = Debug.log "fetch log object search failed" error in
-      ( { model
-        | spanData = model.spanData
-          |> Maybe.map (\spanData -> {spanData | browsePlacements = Dict.insert id (Failed error) spanData.browsePlacements })
-        }
+      ( model
+          |> mapBrowsePlacements (Dict.insert id (Failed error))
         , Cmd.none
       )
     ObjectsReceived (Ok objects) ->
@@ -1640,38 +1656,33 @@ requireObjectSearch model =
     |> Maybe.withDefault (model, Cmd.none)
 
 focusLocation : BrowseLocation -> Model -> (Model, Cmd Msg)
-focusLocation ((BrowseLocation x y) as location) model =
-  ( { model
-    | spanData = model.spanData |> Maybe.map (\spanData ->
-      { spanData
-      | browseLocations = model.focusObject
-        |> Maybe.map (\id ->
-          Dict.update id (Maybe.map (RemoteData.map (Zipper.goto location))) spanData.browseLocations
-        )
-          |> Maybe.withDefault spanData.browseLocations
-      })
-    }
+focusLocation (BrowseLocation x y) model =
+  ( model
   , Leaflet.focusPoint x y
   )
 
+focusCurrentLocation : Model -> (Model, Cmd Msg)
+focusCurrentLocation model =
+  currentLocation model
+    |> Maybe.map (\location -> focusLocation location model)
+    |> Maybe.withDefault (model, Cmd.none)
+
 focusPlacement : BrowsePlacement -> Model -> (Model, Cmd Msg)
-focusPlacement ((BrowsePlacement x y t) as placement) model =
+focusPlacement (BrowsePlacement x y t) model =
   ( { model
-    | spanData = model.spanData |> Maybe.map (\spanData ->
-      { spanData
-      | browsePlacements = model.focusObject
-        |> Maybe.map (\id ->
-          Dict.update id (Maybe.map (RemoteData.map (Zipper.goto placement))) spanData.browsePlacements
-        )
-          |> Maybe.withDefault spanData.browsePlacements
-      })
-    , mapTime = Just t
+    | mapTime = Just t
     }
   , Cmd.batch
     [ Leaflet.focusPlacement x y t
     , Time.now |> Task.perform (ShowTimeNotice t)
     ]
   )
+
+focusCurrentPlacement : Model -> (Model, Cmd Msg)
+focusCurrentPlacement model =
+  currentPlacement model
+    |> Maybe.map (\placement -> focusPlacement placement model)
+    |> Maybe.withDefault (model, Cmd.none)
 
 fetchKeyObjectSearch : String -> Int -> Posix -> ObjectId -> Cmd Msg
 fetchKeyObjectSearch listUrl serverId datatime id =
