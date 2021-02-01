@@ -8,6 +8,8 @@ module Zipper exposing
   , next
   , previous
   , goto
+  , nextMatching
+  , previousMatching
   )
 
 type Zipper a = Zipper (List a) a (List a)
@@ -87,3 +89,29 @@ previousTo target (Zipper before x after) =
         previousTo target (Zipper tail head (x :: after))
     _ ->
       Nothing
+
+nextMatching : (a -> Bool) -> Zipper a -> Zipper a
+nextMatching test zipper =
+  nextMatchingInner (current zipper) test (next zipper)
+
+nextMatchingInner : a -> (a -> Bool) -> Zipper a -> Zipper a
+nextMatchingInner start test ((Zipper _ x _) as zipper) =
+  if x == start then
+    zipper
+  else if test x then
+    zipper
+  else
+    nextMatchingInner start test (next zipper)
+
+previousMatching : (a -> Bool) -> Zipper a -> Zipper a
+previousMatching test zipper =
+  previousMatchingInner (current zipper) test (previous zipper)
+
+previousMatchingInner : a -> (a -> Bool) -> Zipper a -> Zipper a
+previousMatchingInner start test ((Zipper _ x _) as zipper) =
+  if x == start then
+    zipper
+  else if test x then
+    zipper
+  else
+    previousMatchingInner start test (previous zipper)

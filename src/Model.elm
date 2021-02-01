@@ -37,6 +37,8 @@ module Model exposing
   , mapFocusBrowsePlacements
   , currentLocation
   , currentPlacement
+  , browseLocationInTutorial
+  , browsePlacementInTutorial
   )
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
@@ -437,3 +439,10 @@ currentPlacement model =
     |> Maybe.withDefault Nothing
     |> Maybe.andThen RemoteData.toMaybe
     |> Maybe.map Zipper.current
+
+browseLocationInTutorial : BrowseLocation -> Bool
+browseLocationInTutorial (BrowseLocation x y) = x >= 5000000
+
+browsePlacementInTutorial : BrowsePlacement -> Bool
+browsePlacementInTutorial (BrowsePlacement x y t) = x >= 5000000
+

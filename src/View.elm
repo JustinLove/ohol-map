@@ -945,12 +945,6 @@ showBrowsePlacementDetail zone id (BrowsePlacement x y t) =
       |> el [ width (px 110) ]
     ]
 
-browseLocationInTutorial : BrowseLocation -> Bool
-browseLocationInTutorial (BrowseLocation x y) = x >= 5000000
-
-browsePlacementInTutorial : BrowsePlacement -> Bool
-browsePlacementInTutorial (BrowsePlacement x y t) = x >= 5000000
-
 objectWithSwatch : Int -> String -> Element Msg
 objectWithSwatch id title =
   row

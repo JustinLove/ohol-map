@@ -19,9 +19,10 @@
     - x count of items on browse tab
     - x what about server/datatime context? -> spandata?
   - x sort objects by count
-  - exclude probably tutorial in browse
+  - x exclude probably tutorial in browse
   - default map position?
   - special layers for key objects (towers in progress, apocalyse, wells/mines/oil)?
+    - experiment with current data, consider optimizing what works
 
 ## Features
 - not selecting arc index because arcs in list have been updated with a datatime, records do not match

@@ -81,4 +81,49 @@ suite =
         |> goto 1
         |> current
         |> Expect.equal 1
+    , test "next matching match" <| \_ ->
+      (construct 0 [1])
+        |> nextMatching (always True)
+        |> current
+        |> Expect.equal 1
+    , test "next matching no match found" <| \_ ->
+      (construct 0 [1])
+        |> nextMatching (always False)
+        |> current
+        |> Expect.equal 0
+    , test "next matching several steps" <| \_ ->
+      (construct 0 [1, 2])
+        |> nextMatching (\x -> x == 2)
+        |> current
+        |> Expect.equal 2
+    , test "next matching wraparound" <| \_ ->
+      (construct 0 [1, 2])
+        |> next
+        |> nextMatching (\x -> x == 0)
+        |> current
+        |> Expect.equal 0
+    , test "previous matching match" <| \_ ->
+      (construct 0 [1])
+        |> next
+        |> previousMatching (always True)
+        |> current
+        |> Expect.equal 0
+    , test "previous matching no match found" <| \_ ->
+      (construct 0 [1])
+        |> next
+        |> previousMatching (always False)
+        |> current
+        |> Expect.equal 1
+    , test "previous matching several steps" <| \_ ->
+      (construct 0 [1, 2])
+        |> next
+        |> next
+        |> previousMatching (\x -> x == 0)
+        |> current
+        |> Expect.equal 0
+    , test "previous matching wraparound" <| \_ ->
+      (construct 0 [1, 2])
+        |> previousMatching (\x -> x == 2)
+        |> current
+        |> Expect.equal 2
     ]

@@ -321,23 +321,9 @@ update msg model =
         |> mapFocusBrowsePlacements (Zipper.goto placement)
         |> focusPlacement placement
     UI (View.Previous) ->
-      if model.dataAnimated then
-        model
-          |> mapFocusBrowsePlacements (Zipper.previous)
-          |> focusCurrentPlacement
-      else
-        model
-          |> mapFocusBrowseLocations (Zipper.previous)
-          |> focusCurrentLocation
+      previousBrowseItem model
     UI (View.Next) ->
-      if model.dataAnimated then
-        model
-          |> mapFocusBrowsePlacements (Zipper.next)
-          |> focusCurrentPlacement
-      else
-        model
-          |> mapFocusBrowseLocations (Zipper.next)
-          |> focusCurrentLocation
+      nextBrowseItem model
     UI (View.ToggleBrowseProbablyTutorial checked) ->
       ( { model | browseProbablyTutorial = checked }, Cmd.none )
     UI (View.ToggleAllObjects checked) ->
@@ -1654,6 +1640,48 @@ requireObjectSearch model =
     )
     model.spanData model.selectedServer model.focusObject
     |> Maybe.withDefault (model, Cmd.none)
+
+previousBrowseItem : Model -> (Model, Cmd Msg)
+previousBrowseItem model =
+  if model.dataAnimated then
+    model
+      |> mapFocusBrowsePlacements (
+        if model.browseProbablyTutorial then
+          Zipper.previous
+        else
+          Zipper.previousMatching (not << browsePlacementInTutorial)
+        )
+      |> focusCurrentPlacement
+  else
+    model
+      |> mapFocusBrowseLocations (
+        if model.browseProbablyTutorial then
+          Zipper.previous
+        else
+          Zipper.previousMatching (not << browseLocationInTutorial)
+        )
+      |> focusCurrentLocation
+
+nextBrowseItem : Model -> (Model, Cmd Msg)
+nextBrowseItem model =
+  if model.dataAnimated then
+    model
+      |> mapFocusBrowsePlacements (
+        if model.browseProbablyTutorial then
+          Zipper.next
+        else
+          Zipper.nextMatching (not << browsePlacementInTutorial)
+        )
+      |> focusCurrentPlacement
+  else
+    model
+      |> mapFocusBrowseLocations (
+        if model.browseProbablyTutorial then
+          Zipper.next
+        else
+          Zipper.nextMatching (not << browseLocationInTutorial)
+        )
+      |> focusCurrentLocation
 
 focusLocation : BrowseLocation -> Model -> (Model, Cmd Msg)
 focusLocation (BrowseLocation x y) model =
