@@ -213,6 +213,11 @@
   })
   monumentOverlay.name = 'monument overlay'
 
+  var notableOverlay = L.layerGroup([], {
+    className: 'notable-overlay',
+  })
+  notableOverlay.name = 'notable overlay'
+
   var overlays = {
     graticule: null,
     "Rift": riftOverlay,
@@ -221,6 +226,7 @@
     "Object Search": objectOverlay,
     "Fade": baseFade,
     "Monuments": monumentOverlay,
+    "Notable": notableOverlay,
     "Activity Map": activityOverlay,
     "Biomes": biomeLayerToggle,
   }
@@ -263,6 +269,21 @@
       } else {
         layer.removeLayer(point.monument)
       }
+    })
+  }
+
+  var updateNotableLayer = function(layer, data) {
+    var now = new Date()
+    if (data) {
+      L.Util.setOptions(layer, {data: data})
+    } else {
+      data = layer.options.data || [];
+    }
+    layer.clearLayers()
+    data.forEach(function(point) {
+      point.monument = L.marker([point.y, point.x], {})
+        .bindPopup(point.obj)
+        .addTo(layer)
     })
   }
 
@@ -3930,6 +3951,10 @@
             updateMonumentLayer(monumentOverlay, message.monuments.data)
             monumentsByTime(monumentOverlay, mapTime, 'monumentList')
             monumentOverlay.addTo(map)
+            break;
+          case 'notableObjects':
+            updateNotableLayer(notableOverlay, message.locations)
+            notableOverlay.addTo(map)
             break;
           case 'dataLayer':
             setDataLayers(message.lives.data)

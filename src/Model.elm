@@ -28,6 +28,7 @@ module Model exposing
   , serverLoading
   , initialModel
   , defaultCenter
+  , notableObjects
   , highlightObjects
   , areAllObjectChecked
   , asSpanData
@@ -35,6 +36,7 @@ module Model exposing
   , mapFocusBrowseLocations
   , mapBrowsePlacements
   , mapFocusBrowsePlacements
+  , mapNotableLocations
   , currentLocation
   , currentPlacement
   , browseLocationInTutorial
@@ -43,6 +45,7 @@ module Model exposing
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
 import OHOLData as Data
+import OHOLData.Parse as Parse
 import RemoteData exposing (RemoteData(..))
 import Theme exposing (Theme)
 import Zipper exposing (Zipper)
@@ -137,7 +140,15 @@ type alias Model =
   , browseProbablyTutorial : Bool
   }
 
-initialObjectSearch = [133, 4654, 4737]
+initialObjectSearch = [4654, 4737]
+notableObjects =
+  [ 839 -- bell ring
+  , 2477 -- apoc l1
+  , 2487 -- apoc l2
+  , 2485 -- apoc l3
+  , 2483 -- apoc l4
+  , 2482 -- apocalypse
+  ]
 
 initialModel : Config -> Url -> Navigation.Key -> Model
 initialModel config location key =
@@ -265,6 +276,7 @@ type alias SpanData =
   , logObjectSearchIndex: RemoteData Data.ObjectSearchIndex
   , browseLocations : Dict ObjectId (RemoteData (Zipper BrowseLocation))
   , browsePlacements : Dict ObjectId (RemoteData (Zipper BrowsePlacement))
+  , notableLocations : RemoteData (List Parse.Key)
   }
 
 type BrowseLocation = BrowseLocation Int Int
@@ -380,6 +392,7 @@ asSpanData span =
   , logObjectSearchIndex = NotRequested
   , browseLocations = Dict.empty
   , browsePlacements = Dict.empty
+  , notableLocations = NotRequested
   }
 
 mapBrowseLocations
@@ -413,6 +426,18 @@ mapBrowsePlacements f model =
 mapFocusBrowsePlacements : (Zipper BrowsePlacement -> Zipper BrowsePlacement) -> Model -> Model
 mapFocusBrowsePlacements f model =
   mapBrowsePlacements (browseUpdate f model.focusObject) model
+
+mapNotableLocations
+  : (RemoteData (List Parse.Key) -> RemoteData (List Parse.Key))
+  -> Model
+  -> Model
+mapNotableLocations f model =
+  { model
+  | spanData = model.spanData |> Maybe.map (\spanData ->
+    { spanData
+    | notableLocations = f spanData.notableLocations
+    })
+  }
 
 browseUpdate
   : (Zipper a -> Zipper a)

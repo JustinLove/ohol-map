@@ -46,6 +46,7 @@ type Msg
   | LogObjectSearchIndexReceived Int Posix (Result Http.Error Data.ObjectSearchIndex)
   | KeyObjectSearchReceived Int Posix ObjectId (Result Http.Error (List BrowseLocation))
   | LogObjectSearchReceived Int Posix ObjectId (Result Http.Error (List BrowsePlacement))
+  | NotableObjectReceived Int Posix ObjectId (Result Http.Error (List Parse.Key))
   | ObjectsReceived (Result Http.Error Data.Objects)
   | MonumentList Int (Result Http.Error (List Data.Monument))
   | DataLayer Int (Result Http.Error Json.Decode.Value)
@@ -538,6 +539,7 @@ update msg model =
           |> checkServerLoaded
           |> addUpdate requireObjectSearchIndex
           |> addUpdate requireObjectSearch
+          |> addUpdate requireNotableObjects
     ServerList (Err error) ->
       let _ = Debug.log "fetch servers failed" error in
       ({model | serverList = Failed error, servers = Dict.empty}, Cmd.none)
@@ -594,6 +596,7 @@ update msg model =
         |> checkServerLoaded
         |> addUpdate requireObjectSearchIndex
         |> addUpdate requireObjectSearch
+        |> addUpdate requireNotableObjects
     SpanList serverId (Err error) ->
       let _ = Debug.log "fetch spans failed" error in
       ( { model
@@ -651,6 +654,34 @@ update msg model =
       let _ = Debug.log "fetch log object search failed" error in
       ( model
           |> mapBrowsePlacements (Dict.insert id (Failed error))
+        , Cmd.none
+      )
+    NotableObjectReceived serverId datatime id (Ok data) ->
+      case model.spanData of
+        Just spanData ->
+          let
+            notable = spanData.notableLocations
+              |> RemoteData.map (\value -> List.append value data)
+              |> RemoteData.withDefault data
+          in
+            ( { model
+              | spanData = Just { spanData | notableLocations = Data notable }
+              }
+            , Leaflet.notableObjects notable
+            )
+        Nothing ->
+          ( model, Cmd.none )
+    NotableObjectReceived serverId datatime id (Err error) ->
+      let _ = Debug.log "fetch notable object failed" error in
+      ( model
+        |> mapNotableLocations (\previous ->
+          case previous of
+            NotRequested -> Failed error
+            NotAvailable -> Failed error
+            Loading -> Failed error
+            Data value -> Data value
+            Failed err -> Failed error
+          )
         , Cmd.none
       )
     ObjectsReceived (Ok objects) ->
@@ -1102,6 +1133,7 @@ scrubTime time model =
     )
       |> addUpdate requireObjectSearchIndex
       |> addUpdate requireObjectSearch
+      |> addUpdate requireNotableObjects
   else
     (model, Cmd.none)
 
@@ -1243,6 +1275,7 @@ setServerUpdate serverId model =
           |> rebuildWorlds
           |> addUpdate requireObjectSearchIndex
           |> addUpdate requireObjectSearch
+          |> addUpdate requireNotableObjects
           |> replaceUrl "setServerUpdate"
       Nothing ->
         ( { model
@@ -1738,6 +1771,38 @@ parseLogObjectSearch =
   Result.andThen
     (Parser.run Parse.logValueYXTFirst
       >> Result.map (List.map logToBrowsePlacement)
+      >> Result.mapError (Http.BadBody << Parse.deadEndsToString))
+
+requireNotableObjects : Model -> (Model, Cmd Msg)
+requireNotableObjects model =
+  Maybe.map2 (\spanData serverId ->
+    if spanData.notableLocations == NotRequested then
+      ( {model | spanData = Just {spanData | notableLocations = Loading }}
+      , fetchNotableObjects model.keySearch serverId spanData.end
+      )
+    else
+      (model, Cmd.none)
+    )
+    model.spanData model.selectedServer
+    |> Maybe.withDefault (model, Cmd.none)
+
+fetchNotableObjects : String -> Int -> Posix -> Cmd Msg
+fetchNotableObjects listUrl serverId datatime =
+  notableObjects
+    |> List.map (fetchNotableObject listUrl serverId datatime)
+    |> Cmd.batch
+
+fetchNotableObject : String -> Int -> Posix -> ObjectId -> Cmd Msg
+fetchNotableObject listUrl serverId datatime id =
+  Http.get
+    { url = fetchObjectSearchUrl listUrl serverId datatime id
+    , expect = Http.expectString (parseNotableObject >> (NotableObjectReceived serverId datatime id))
+    }
+
+parseNotableObject : Result Http.Error String -> Result Http.Error (List Parse.Key)
+parseNotableObject =
+  Result.andThen
+    (Parser.run Parse.keyValueYXFirst
       >> Result.mapError (Http.BadBody << Parse.deadEndsToString))
 
 fetchObjectSearchUrl : String -> Int -> Posix -> ObjectId -> String

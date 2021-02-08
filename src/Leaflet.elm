@@ -9,6 +9,7 @@ port module Leaflet exposing
   , worldList
   , objectBounds
   , monumentList
+  , notableObjects
   , dataLayer
   , displayResults
   , focusLife
@@ -34,6 +35,7 @@ port module Leaflet exposing
 import OHOLData as Data
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
+import OHOLData.Parse as Parse
 
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -107,6 +109,22 @@ monumentList serverId monuments =
     , ("monuments", monuments)
     ]
     |> leafletCommand
+
+notableObjects : List Parse.Key -> Cmd msg
+notableObjects locations =
+  Encode.object
+    [ ("kind", Encode.string "notableObjects")
+    , ("locations", Encode.list keyPlacement locations)
+    ]
+    |> leafletCommand
+
+keyPlacement : Parse.Key -> Encode.Value
+keyPlacement (Parse.Key obj x y) =
+  Encode.object
+    [ ("obj", Encode.string <| Parse.objectPlacementCode obj)
+    , ("x", Encode.int x)
+    , ("y", Encode.int y)
+    ]
 
 dataLayer : Encode.Value -> Cmd msg
 dataLayer lives =

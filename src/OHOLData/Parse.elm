@@ -2,6 +2,7 @@ module OHOLData.Parse exposing
   ( Object(..)
   , Key(..)
   , Log(..)
+  , objectPlacementCode
   , objectSearchIndex
   , line
   , keyValueYXFirst
@@ -35,6 +36,15 @@ type alias ObjectSearchParser a = Parser Context Problem a
 type alias KeyValueYXFirstParser a = Parser Context Problem a
 type alias Context = String
 type alias Problem = String
+
+objectPlacementCode : Object -> String
+objectPlacementCode obj =
+  case obj of
+    Object id -> String.fromInt id
+    Use id count -> (String.fromInt id) ++ "u" ++ (String.fromInt count)
+    Variant id n -> (String.fromInt id) ++ "v" ++ (String.fromInt n)
+    Floor id -> "F" ++ (String.fromInt id)
+
 
 objectSearchIndex : ObjectSearchParser ObjectSearchIndex
 objectSearchIndex =
