@@ -705,6 +705,7 @@ update msg model =
       , Leaflet.objectBounds objects.idsValue objects.boundsValue
       )
         |> rebuildWorlds
+        |> addUpdate requireNotableObjects
     ObjectsReceived (Err error) ->
       let _ = Debug.log "fetch objects failed" error in
       (model, Cmd.none)
@@ -1775,7 +1776,7 @@ parseLogObjectSearch =
 
 requireNotableObjects : Model -> (Model, Cmd Msg)
 requireNotableObjects model =
-  Maybe.map2 (\spanData serverId ->
+  Maybe.map3 (\spanData serverId _ ->
     if spanData.notableLocations == NotRequested then
       ( {model | spanData = Just {spanData | notableLocations = Loading }}
       , fetchNotableObjects model.keySearch serverId spanData.end
@@ -1783,7 +1784,7 @@ requireNotableObjects model =
     else
       (model, Cmd.none)
     )
-    model.spanData model.selectedServer
+    model.spanData model.selectedServer (RemoteData.toMaybe model.objects)
     |> Maybe.withDefault (model, Cmd.none)
 
 fetchNotableObjects : String -> Int -> Posix -> Cmd Msg

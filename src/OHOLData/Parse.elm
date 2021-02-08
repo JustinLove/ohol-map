@@ -3,6 +3,7 @@ module OHOLData.Parse exposing
   , Key(..)
   , Log(..)
   , objectPlacementCode
+  , objectPlacementId
   , objectSearchIndex
   , line
   , keyValueYXFirst
@@ -45,6 +46,13 @@ objectPlacementCode obj =
     Variant id n -> (String.fromInt id) ++ "v" ++ (String.fromInt n)
     Floor id -> "F" ++ (String.fromInt id)
 
+objectPlacementId : Object -> ObjectId
+objectPlacementId obj =
+  case obj of
+    Object id -> id
+    Use id count -> id
+    Variant id n -> id
+    Floor id -> id
 
 objectSearchIndex : ObjectSearchParser ObjectSearchIndex
 objectSearchIndex =

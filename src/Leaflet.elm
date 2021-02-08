@@ -121,7 +121,7 @@ notableObjects locations =
 keyPlacement : Parse.Key -> Encode.Value
 keyPlacement (Parse.Key obj x y) =
   Encode.object
-    [ ("obj", Encode.string <| Parse.objectPlacementCode obj)
+    [ ("id", Encode.int <| Parse.objectPlacementId obj)
     , ("x", Encode.int x)
     , ("y", Encode.int y)
     ]

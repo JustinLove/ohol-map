@@ -142,7 +142,7 @@ type alias Model =
 
 initialObjectSearch = [4654, 4737]
 notableObjects =
-  [ 839 -- bell ring
+  [ 839 -- bell ring - does not included stuck
   , 2477 -- apoc l1
   , 2487 -- apoc l2
   , 2485 -- apoc l3
