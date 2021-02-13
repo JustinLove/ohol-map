@@ -10,6 +10,7 @@ var oholMapConfig = {
   actIndex: 'pl/{server}/{time}/am/{z}/index.txt',
   keySearch: 'pl/{server}/{time}/ks/{id}.txt',
   keySearchIndex: 'pl/{server}/{time}/ks/index.txt',
+  keySearchNotable: 'pl/{server}/{time}/ks/notable.txt',
   logSearch: 'pl/{server}/{time}/ls/{id}.txt',
   logSearchIndex: 'pl/{server}/{time}/ls/index.txt',
   actIndex: 'pl/{server}/{time}/am/{z}/index.txt',
