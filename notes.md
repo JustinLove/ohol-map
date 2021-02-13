@@ -22,9 +22,12 @@
   - x exclude probably tutorial in browse
   - default map position?
   - special layers for key objects (towers in progress, apocalyse, wells/mines/oil)?
-    - experiment with current data, consider optimizing what works
+    - x experiment with current data, consider optimizing what works
+    - preprocesed object list - picking objects
+    - object indexes do not included data from tiles that were not loaded during processing
 
 ## Features
+- option to show object search as images
 - not selecting arc index because arcs in list have been updated with a datatime, records do not match
 - object search by id
 - player search by id?

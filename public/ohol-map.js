@@ -307,7 +307,6 @@
     layer.clearLayers()
     data.forEach(function(point) {
       point.monument = L.marker([point.y, point.x], {icon: icons[point.id]})
-        .bindPopup(point.id.toString())
         .addTo(layer)
     })
   }

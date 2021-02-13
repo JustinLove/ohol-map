@@ -142,7 +142,45 @@ type alias Model =
 
 initialObjectSearch = [4654, 4737]
 notableObjects =
+  -- monumentcall
+  -- monumentstep
+  -- famuse + what?
+  -- active oil?
   [ 839 -- bell ring - does not included stuck
+  , 834 -- no bell
+  , 832
+  , 829
+  , 828
+  , 826
+  , 825
+  , 823
+  , 822
+  , 818
+  , 819
+  , 816
+  , 662 -- deep well
+  , 663 -- deep well
+  , 1097 -- full deep well
+  , 1098 -- full shallow well
+  , 2224 -- firing newcomen pump
+  , 2344 -- firing kero newcomen pump
+  , 2389 -- running water pump
+  , 3031 -- exhausted deep well
+  , 3041 -- unpowered pump head, from exhausted
+  , 3042 -- unpowered pump head, from deep
+  , 2387 -- unpowered pump head, from shallow
+  , 2388 -- dry diesel water pump
+  , 2390 -- wet diesel water pump
+  , 3963 -- ready well site
+  , 3964 -- unpowered pump head, disel removed
+  --, 943 -- deep iron pit
+  --, 944 -- iron mine
+  --, 945 -- collapsed iron mine
+  --, 3944 -- stripped iron vein
+  --, 3953 -- stripped muddy iron vein
+  --, 3957 -- shallow iron pit
+  --, 3091 -- exhausted oil well
+  , 4530 -- fueled oil pump
   , 2477 -- apoc l1
   , 2487 -- apoc l2
   , 2485 -- apoc l3
