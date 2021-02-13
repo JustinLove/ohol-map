@@ -41,6 +41,7 @@ module Model exposing
   , currentPlacement
   , browseLocationInTutorial
   , browsePlacementInTutorial
+  , lockedObjectList
   )
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
@@ -509,3 +510,14 @@ browseLocationInTutorial (BrowseLocation x y) = x >= 5000000
 browsePlacementInTutorial : BrowsePlacement -> Bool
 browsePlacementInTutorial (BrowsePlacement x y t) = x >= 5000000
 
+lockedObjectList : Model -> List (ObjectId, Maybe String)
+lockedObjectList model =
+  let
+    names = model.selectedServer
+      |> Maybe.andThen (\serverId-> Dict.get serverId model.servers)
+      |> Maybe.map .objects
+      |> Maybe.withDefault Dict.empty
+  in
+    model.lockedObjects
+      |> Set.toList
+      |> List.map (\objectId -> (objectId, Dict.get objectId names))

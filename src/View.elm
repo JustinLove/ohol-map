@@ -76,6 +76,7 @@ type Msg
   | ToggleAllObjects Bool
   | SelectMaximumObjects (Maybe Int)
   | LockObjects
+  | DownloadLocked
   | ClearLocked
   | ToggleLockObject ObjectId Bool
   | SelectLineage Life
@@ -674,7 +675,19 @@ lockedObjectListHeader model =
       , el [ alignLeft ] <| text "Name"
       ]
     , row [ spacing 10, alignRight ]
-        [ Input.button
+        [ {-Input.button
+            [ padding 2
+            , Border.color palette.divider
+            , Border.width 1
+            , Border.rounded 6
+            , Background.color palette.control
+            ]
+            { onPress = Just DownloadLocked
+            , label = row [ centerX, spacing 4 ]
+              [ text "Download"
+              ]
+            }
+        , -}Input.button
             [ padding 2
             , Border.color palette.divider
             , Border.width 1

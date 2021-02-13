@@ -10,6 +10,7 @@ import OHOLData.Parse as Parse
 import Persist exposing (Persist)
 import Persist.Encode
 import Persist.Decode
+import Persist.Serialize
 import RemoteData exposing (RemoteData(..))
 import Theme exposing (Theme)
 import View exposing (timeNoticeDuration)
@@ -22,6 +23,7 @@ import Browser.Navigation as Navigation
 import Http
 import Json.Decode
 import Dict exposing(Dict)
+import File.Download
 import Parser.Advanced as Parser
 import Process
 import Set exposing (Set)
@@ -345,6 +347,12 @@ update msg model =
     UI (View.LockObjects) ->
       { model | lockedObjects = Set.union model.selectedMatchingObjects model.lockedObjects }
         |> andHighlightObjects
+    UI (View.DownloadLocked) ->
+      ( model
+      , model
+        |> exportLocked
+        |> File.Download.string "locked_objects.txt" "text/plain"
+      )
     UI (View.ClearLocked) ->
       { model | lockedObjects = Set.fromList [] }
         |> andHighlightObjects
@@ -850,6 +858,12 @@ resolveLoaded model =
     , Leaflet.showActivityMapBelowZoom model.showActivityMapBelowZoom
     ]
   )
+
+exportLocked : Model -> String
+exportLocked model =
+  model
+    |> lockedObjectList
+    |> Persist.Serialize.lockedObjects
 
 sidebarCommand : Model -> Cmd Msg
 sidebarCommand model =
