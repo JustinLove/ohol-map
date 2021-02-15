@@ -448,18 +448,7 @@ showLifeResult model remote =
 showObjectResult : Model -> List ObjectId -> Element Msg
 showObjectResult model objects =
   if List.isEmpty objects then
-    column [ centerX, centerY, Font.size (scaled 1) ]
-      [ el [ centerX, Font.size (scaled 2)] <|
-        text "Restrictions"
-      , el [ centerX ] <|
-        text "Loaded in current view"
-      , el [ centerX ] <|
-        text "zoom >= 24"
-      , el [ centerX ] <|
-        text "Animated: small objects may"
-      , el [ centerX ] <|
-        text "not be included at zoom < 27"
-      ]
+    none
   else
     showMatchingObjects model objects
 

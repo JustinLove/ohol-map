@@ -48,7 +48,7 @@ type Msg
   | LogObjectSearchIndexReceived Int Posix (Result Http.Error Data.ObjectSearchIndex)
   | KeyObjectSearchReceived Int Posix ObjectId (Result Http.Error (List BrowseLocation))
   | LogObjectSearchReceived Int Posix ObjectId (Result Http.Error (List BrowsePlacement))
-  | NotableObjectReceived Int Posix (Result Http.Error (List Parse.Key))
+  | NotableObjectsReceived Int Posix (Result Http.Error (List Parse.Key))
   | ObjectsReceived (Result Http.Error Data.Objects)
   | MonumentList Int (Result Http.Error (List Data.Monument))
   | DataLayer Int (Result Http.Error Json.Decode.Value)
@@ -664,34 +664,22 @@ update msg model =
           |> mapBrowsePlacements (Dict.insert id (Failed error))
         , Cmd.none
       )
-    NotableObjectReceived serverId datatime (Ok data) ->
+    NotableObjectsReceived serverId datatime (Ok data) ->
       case model.spanData of
         Just spanData ->
-          let
-            notable = spanData.notableLocations
-              |> RemoteData.map (\value -> List.append value data)
-              |> RemoteData.withDefault data
-          in
-            ( { model
-              | spanData = Just { spanData | notableLocations = Data notable }
-              }
-            , Leaflet.notableObjects notable
-            )
-              |> checkDefaultCenter
+          ( { model
+            | spanData = Just { spanData | notableLocations = Data data}
+            }
+          , Leaflet.notableObjects data
+          )
+            |> checkDefaultCenter
         Nothing ->
           ( model, Cmd.none )
-    NotableObjectReceived serverId datatime (Err error) ->
+    NotableObjectsReceived serverId datatime (Err error) ->
       let _ = Debug.log "fetch notable object failed" error in
       ( model
-        |> mapNotableLocations (\previous ->
-          case previous of
-            NotRequested -> Failed error
-            NotAvailable -> Failed error
-            Loading -> Failed error
-            Data value -> Data value
-            Failed err -> Failed error
-          )
-        , Cmd.none
+        |> mapNotableLocations (\previous -> Failed error)
+        , Leaflet.notableObjects []
       )
         |> checkDefaultCenter
     ObjectsReceived (Ok objects) ->
@@ -1834,7 +1822,7 @@ fetchNotableObjects listUrl serverId datatime =
       listUrl
         |> String.replace "{server}" (String.fromInt serverId)
         |> String.replace "{time}" (String.fromInt ((Time.posixToMillis datatime) // 1000))
-    , expect = Http.expectString (parseNotableObject >> (NotableObjectReceived serverId datatime))
+    , expect = Http.expectString (parseNotableObject >> (NotableObjectsReceived serverId datatime))
     }
 
 parseNotableObject : Result Http.Error String -> Result Http.Error (List Parse.Key)

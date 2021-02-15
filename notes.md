@@ -1,5 +1,5 @@
 ## server work
-- default position with no active monuments - precalculation
+- x default position with no active monuments - precalculation
 - server search indexes
   - x load timed logs, how to display
     - assembling spans?
@@ -9,10 +9,10 @@
   - x should load during interactive search?
     - x debounced
     - x number limit - map doesn't have any idea what we are doing, just has highlight list
-  - interactive span changes
+  - x interactive span changes
     - x ui
     - x? map
-  - select only one a time?
+  - x select only one a time?
     - x jump to instances?
     - x back/forward
     - x log data
@@ -21,9 +21,9 @@
   - x sort objects by count
   - x exclude probably tutorial in browse
   - x default map position?
-    - test if no span data
-    - update notable when changing span
-      - if no data
+    - x test if no span data
+    - x update notable when changing span
+      - x if no data
   - x special layers for key objects (towers in progress, apocalyse, wells/mines/oil)?
     - x experiment with current data, consider optimizing what works
     - x preprocesed object list - picking objects
