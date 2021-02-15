@@ -141,7 +141,7 @@ type alias Model =
   , browseProbablyTutorial : Bool
   }
 
-initialObjectSearch = [4654, 4737]
+initialObjectSearch = [] --[4654, 4737]
 
 initialModel : Config -> Url -> Navigation.Key -> Model
 initialModel config location key =
@@ -164,8 +164,8 @@ initialModel config location key =
   , logSearchIndex = config.logSearchIndex
   , logSearch = config.logSearch
   , sidebar = OpenSidebar
-  , sidebarMode = Search
-  , searchMode = SearchObjects
+  , sidebarMode = DataFilter
+  , searchMode = SearchLives
   , lifeSearchTerm = ""
   , objectSearchTerm = ""
   , objectListMode = MatchingObjects

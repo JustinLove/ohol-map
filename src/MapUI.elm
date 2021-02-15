@@ -677,6 +677,7 @@ update msg model =
               }
             , Leaflet.notableObjects notable
             )
+              |> checkDefaultCenter
         Nothing ->
           ( model, Cmd.none )
     NotableObjectReceived serverId datatime (Err error) ->
@@ -692,6 +693,7 @@ update msg model =
           )
         , Cmd.none
       )
+        |> checkDefaultCenter
     ObjectsReceived (Ok objects) ->
       let
         versions = Data.completeVersions objects.spawnChanges
@@ -724,7 +726,7 @@ update msg model =
       , Cmd.none
       )
         |> updateMonuments serverId
-        |> checkDefaultCenter monuments
+        |> checkDefaultCenter
         |> checkServerLoaded
     MonumentList serverId (Err error) ->
       let _ = Debug.log "fetch monuments failed" error in
@@ -910,38 +912,62 @@ updateMonumentsCommand serverId model =
   in
     Leaflet.monumentList serverId (Encode.monuments monuments)
 
-checkDefaultCenter : List Monument -> (Model, Cmd Msg) -> (Model, Cmd Msg)
-checkDefaultCenter monuments =
-  addUpdate (checkDefaultCenterUpdate monuments)
+checkDefaultCenter : (Model, Cmd Msg) -> (Model, Cmd Msg)
+checkDefaultCenter =
+  addUpdate checkDefaultCenterUpdate
 
-checkDefaultCenterUpdate : List Monument -> Model -> (Model, Cmd Msg)
-checkDefaultCenterUpdate monuments model =
+checkDefaultCenterUpdate : Model -> (Model, Cmd Msg)
+checkDefaultCenterUpdate model =
   if model.center == DefaultCenter then
-    let
-      recent = monuments
-        |> dropWhile (\{date} ->
-            case model.mapTime of
-              Just time ->
-                let
-                  msTime = Time.posixToMillis time
-                  msStart = Time.posixToMillis date
-                in
-                  msTime < msStart
-              Nothing -> False
-          )
-        |> List.head
-        |> Maybe.map (\{x,y} -> Point x y defaultCenter.z)
-        |> Maybe.withDefault defaultCenter
-    in
-    if recent /= defaultCenter then
-      ( { model | center = SetCenter recent }
-      , Leaflet.setView recent
-      )
-        |> replaceUrl "checkDefaultCenter"
-    else
-      (model, Cmd.none)
+    case notablePoint model of
+      Just point ->
+        ( { model | center = SetCenter point }
+        , Leaflet.setView point
+        )
+          |> replaceUrl "checkDefaultCenter"
+      Nothing ->
+        (model, Cmd.none)
   else
     (model, Cmd.none)
+
+notablePoint : Model -> Maybe Point
+notablePoint model =
+  model.spanData
+    |> Maybe.map .notableLocations
+    |> Maybe.withDefault NotAvailable
+    |> notableLocation model
+
+notableLocation : Model -> RemoteData (List Parse.Key) -> Maybe Point
+notableLocation model locations =
+  case locations of
+    Data ((Parse.Key _ x y)::_) -> Just <| Point x y defaultCenter.z
+    Data _ -> monumentCenter model
+    Failed _ -> monumentCenter model
+    _ -> Nothing
+
+monumentCenter : Model -> Maybe Point
+monumentCenter model =
+  currentServer model
+    |> Maybe.map .monuments
+    |> Maybe.withDefault NotAvailable
+    |> RemoteData.toMaybe
+    |> Maybe.andThen (recentMonumentLocation model.mapTime)
+
+recentMonumentLocation : Maybe Posix -> List Monument -> Maybe Point
+recentMonumentLocation mmapTime monuments =
+  monuments
+    |> dropWhile (\{date} ->
+        case mmapTime of
+          Just time ->
+            let
+              msTime = Time.posixToMillis time
+              msStart = Time.posixToMillis date
+            in
+              msTime < msStart
+          Nothing -> False
+      )
+    |> List.head
+    |> Maybe.map (\{x,y} -> Point x y defaultCenter.z)
 
 type alias ArcSpan r = {r|arcs: RemoteData (List Arc), spans: RemoteData (List Span)}
 

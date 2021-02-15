@@ -20,11 +20,13 @@
     - x what about server/datatime context? -> spandata?
   - x sort objects by count
   - x exclude probably tutorial in browse
-  - default map position?
-  - special layers for key objects (towers in progress, apocalyse, wells/mines/oil)?
+  - x default map position?
+    - test if no span data
+    - update notable when changing span
+      - if no data
+  - x special layers for key objects (towers in progress, apocalyse, wells/mines/oil)?
     - x experiment with current data, consider optimizing what works
-    - preprocesed object list - picking objects
-    - object indexes do not included data from tiles that were not loaded during processing
+    - x preprocesed object list - picking objects
 
 ## Features
 - option to show object search as images
