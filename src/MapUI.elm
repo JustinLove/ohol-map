@@ -1962,11 +1962,17 @@ fetchMatchingLives : String -> String -> Cmd Msg
 fetchMatchingLives baseUrl term =
   Http.get
     { url = Url.crossOrigin baseUrl ["lives"]
-      [ Url.string "q" term
+      [ lifeSearchParameter term
       , Url.int "limit" 100
       ]
     , expect = Http.expectJson MatchingLives Decode.lives
     }
+
+lifeSearchParameter : String -> Url.QueryParameter
+lifeSearchParameter term =
+  case String.toInt term of
+    Just number -> Url.int "playerid" number
+    Nothing -> Url.string "q" term
 
 fetchLineage : String -> Life -> Cmd Msg
 fetchLineage baseUrl life =

@@ -400,7 +400,7 @@ lifeSearchBox palette term =
     { onChange = LifeTyping
     , text = term
     , placeholder = Nothing
-    , label = Input.labelAbove [] <| text "Character Name or Hash"
+    , label = Input.labelAbove [] <| text "Character Name, Hash, or Id"
     }
 
 objectSearchBox : Palette -> String -> Element Msg
@@ -415,7 +415,7 @@ objectSearchBox palette term =
       { onChange = ObjectTyping
       , text = term
       , placeholder = Nothing
-      , label = Input.labelAbove [] <| text "Object Name"
+      , label = Input.labelAbove [] <| text "Object Name or Id"
       }
     , column []
       [ text ""

@@ -3,7 +3,6 @@
 ## Features
 - option to show object search as images
 - not selecting arc index because arcs in list have been updated with a datatime, records do not match
-- player search by id?
 - animation range when going to url timestamp
 - time window range graph
 - assembling log search spans?
