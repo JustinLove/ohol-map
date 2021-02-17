@@ -1045,12 +1045,17 @@ updateObjectSearch : Model -> Model
 updateObjectSearch model =
   let
     lower = String.toLower model.objectSearchTerm
+    test = case String.toInt model.objectSearchTerm of
+      Just number ->
+        \(id, name) a -> if id == number then id :: a else a
+      Nothing ->
+        \(id, name) a -> if String.contains lower name then id :: a else a
     total = model.selectedServer
       |> Maybe.andThen (\x -> if lower == "" then Nothing else Just x)
       |> Maybe.andThen (\id -> Dict.get id model.servers)
       |> Maybe.map .objectIndex
       |> Maybe.withDefault []
-      |> List.foldr (\(id, name) a -> if String.contains lower name then id :: a else a) []
+      |> List.foldr test []
       |> sortDescendingCount model
     ids = case model.maxiumMatchingObjects of
       Just n -> List.take n total
