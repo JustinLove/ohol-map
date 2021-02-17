@@ -365,7 +365,7 @@
     },
   })
 
-  overlays['Checker'] = new L.GridLayer.CheckerLayer()
+  //overlays['Checker'] = new L.GridLayer.CheckerLayer()
 
 
   // fractal generation copying https://github.com/jasonrohrer/OneLife/blob/master/commonSource/fractalNoise.cpp
@@ -3887,7 +3887,7 @@
     setMapTime(map, t, 'inhabit')
     oholBase.addTo(map)
     overlays['Activity Map'].addTo(map)
-    //overlays['Biomes'].addTo(map)
+    overlays['Biomes'].addTo(map)
     //base['Topographic Test'].addTo(map)
     overlays['Rift'].addTo(map)
     //overlays['Bands'].addTo(map)

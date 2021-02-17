@@ -1,32 +1,4 @@
 ## server work
-- x default position with no active monuments - precalculation
-- server search indexes
-  - x load timed logs, how to display
-    - assembling spans?
-  - x load counts when changing time
-  - x counts for maplog data?
-    - x should show time range instead of static time
-  - x should load during interactive search?
-    - x debounced
-    - x number limit - map doesn't have any idea what we are doing, just has highlight list
-  - x interactive span changes
-    - x ui
-    - x? map
-  - x select only one a time?
-    - x jump to instances?
-    - x back/forward
-    - x log data
-    - x count of items on browse tab
-    - x what about server/datatime context? -> spandata?
-  - x sort objects by count
-  - x exclude probably tutorial in browse
-  - x default map position?
-    - x test if no span data
-    - x update notable when changing span
-      - x if no data
-  - x special layers for key objects (towers in progress, apocalyse, wells/mines/oil)?
-    - x experiment with current data, consider optimizing what works
-    - x preprocesed object list - picking objects
 
 ## Features
 - option to show object search as images
@@ -35,6 +7,7 @@
 - player search by id?
 - animation range when going to url timestamp
 - time window range graph
+- assembling log search spans?
 - in-app help
 - town cluster labels
 - center view on main area?
