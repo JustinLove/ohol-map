@@ -1,7 +1,6 @@
 ## server work
 
 ## Features
-- span changes forcing notable on
 - newcomen wells in wrong spot
 - favicon
 - option to show object search as images

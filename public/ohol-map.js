@@ -3900,6 +3900,7 @@
     //base['Topographic Test'].addTo(map)
     overlays['Rift'].addTo(map)
     //overlays['Bands'].addTo(map)
+    overlays['Notable'].addTo(map)
     //overlays['Checker'].addTo(map)
     //overlays['graticule'].addTo(map)
     //base['Fractal'].addTo(map)
@@ -3987,7 +3988,6 @@
             break;
           case 'notableObjects':
             updateNotableLayer(notableOverlay, message.locations)
-            notableOverlay.addTo(map)
             break;
           case 'dataLayer':
             setDataLayers(message.lives.data)
