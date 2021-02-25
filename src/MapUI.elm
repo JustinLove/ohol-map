@@ -1414,12 +1414,7 @@ timeRoute location model =
     case mt of
       Just t ->
         if msmapTime /= mst then
-          ( { model|mapTime = Just t}
-          , Cmd.batch
-            [ Leaflet.currentTime t
-            , Time.now |> Task.perform (ShowTimeNotice t)
-            ]
-          )
+          jumpTime t model
         else
           (model, Cmd.none)
       Nothing ->

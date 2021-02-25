@@ -1,7 +1,6 @@
 ## server work
 
 ## Features
-- animation range when going to url timestamp
 - option to show object search as images
 - time window range graph
 - assembling log search spans?
