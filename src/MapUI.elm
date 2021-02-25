@@ -554,8 +554,17 @@ update msg model =
     ArcList serverId (Ok arcs) ->
       let
         lastArc = arcs |> List.reverse |> List.head
+        rspans = model.servers
+          |> Dict.get serverId
+          |> Maybe.map .spans
+          |> Maybe.withDefault NotAvailable
+        assignDataTime =
+          case rspans of
+            Data spans -> Data.assignArcDataTime spans
+            _ -> identity
         marc = model.mapTime
           |> Maybe.andThen (\time -> arcForTime time (Data arcs))
+          |> Maybe.map assignDataTime
           |> (\ma -> case ma of
             Just _ -> ma
             Nothing -> lastArc
@@ -584,6 +593,7 @@ update msg model =
     SpanList serverId (Ok spans) ->
       let
         lastSpan = spans |> List.reverse |> List.head
+        assignDataTime = Data.assignArcDataTime spans
         mspan = model.mapTime
           |> Maybe.andThen (\time -> spanForTime time (Data spans))
           |> (\ms -> case ms of
@@ -596,6 +606,8 @@ update msg model =
           | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | spans = Data spans} |> rebuildArcs))
           , timeRange = mspan |> Maybe.map spanToRange
           , spanData = mspan |> Maybe.map asSpanData
+          , coarseArc = model.coarseArc |> Maybe.map assignDataTime
+          , currentArc = model.currentArc |> Maybe.map assignDataTime
           }
         , Cmd.none
         )
@@ -1160,6 +1172,7 @@ scrubTime time model =
     in
     ( { model
       | mapTime = Just time
+      , coarseArc = marc
       , currentArc = marc
       , spanData = mspanData
       }

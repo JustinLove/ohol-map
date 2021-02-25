@@ -1,9 +1,8 @@
 ## server work
 
 ## Features
-- option to show object search as images
-- not selecting arc index because arcs in list have been updated with a datatime, records do not match
 - animation range when going to url timestamp
+- option to show object search as images
 - time window range graph
 - assembling log search spans?
 - in-app help

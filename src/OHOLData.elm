@@ -23,6 +23,7 @@ module OHOLData exposing
   , crucibleCodeChanges
   , tholCodeChanges
   , assignDataTime
+  , assignArcDataTime
   , rebuildWorlds
   , terminateMonuments
   , current
