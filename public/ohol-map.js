@@ -287,7 +287,7 @@
         var bounds= objectBounds[id]
         var iw = (bounds[2] - bounds[0]) * iconScale
         var ih = (bounds[3] - bounds[1]) * iconScale
-        var ix = bounds[2] * iconScale
+        var ix = -bounds[0] * iconScale
         var iy = bounds[3] * iconScale
         var icon = L.icon({
           iconUrl: 'static/sprites/obj_'+id+'.png',

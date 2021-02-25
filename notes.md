@@ -1,7 +1,6 @@
 ## server work
 
 ## Features
-- newcomen wells in wrong spot
 - favicon
 - option to show object search as images
 - not selecting arc index because arcs in list have been updated with a datatime, records do not match
