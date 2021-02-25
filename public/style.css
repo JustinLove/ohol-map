@@ -26,6 +26,10 @@ body {
   z-index: 230;
 }
 
+.leaflet-landmark-pane {
+  z-index: 300;
+}
+
 .interactive .leaflet-tile-container {
   pointer-events: auto;
 }

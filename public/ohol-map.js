@@ -137,7 +137,7 @@
   crucibleBase.name = 'cruicible'
   //base['Crucible'] = crucibleBase
 
-  var dataOverlay = L.layerGroup([], {className: 'data-overlay'})
+  var dataOverlay = L.layerGroup([], {className: 'data-overlay', pane: 'overlayPane'})
   dataOverlay.name = 'data overlay'
   dataOverlay.on('add', function(ev) {
     var map = ev.target._map
@@ -210,11 +210,13 @@
   var monumentOverlay = L.layerGroup([], {
     className: 'monument-overlay',
     showOnlyCurrentMonuments: true,
+    pane: 'landmarkPane',
   })
   monumentOverlay.name = 'monument overlay'
 
   var notableOverlay = L.layerGroup([], {
     className: 'notable-overlay',
+    pane: 'landmarkPane',
   })
   notableOverlay.name = 'notable overlay'
 
@@ -251,6 +253,7 @@
       point.monument = L.marker([point.y, point.x], {
           opacity: Math.max(0.4, Math.min(1.0, 1.0 - (age / (age+30)))),
           icon: icons[835],
+          pane: 'landmarkPane',
         })
         .bindPopup(date.toString())
         .addTo(layer)
@@ -306,7 +309,10 @@
     }
     layer.clearLayers()
     data.forEach(function(point) {
-      point.monument = L.marker([point.y, point.x], {icon: icons[point.id]})
+      point.monument = L.marker([point.y, point.x], {
+          icon: icons[point.id],
+          pane: 'landmarkPane',
+        })
         .addTo(layer)
     })
   }
@@ -1066,7 +1072,7 @@
       return L.rectangle([
         [top,-bandWidth],
         [bottom,bandWidth]
-      ], {color: rgbToString(band.color)})
+      ], {color: rgbToString(band.color), interactive: false})
     }))
   }
 
@@ -2931,6 +2937,7 @@
 
   var lifePointOverlay = new L.GridLayer.LifePointOverlay({
     className: 'interactive life-point-overlay',
+    pane: 'overlayPane',
   })
   lifePointOverlay.name = 'life point overlay'
 
@@ -2938,6 +2945,7 @@
     className: 'interactive life-anim-overlay',
     time: 0,
     alternateStatic: lifePointOverlay,
+    pane: 'overlayPane',
   })
   lifeAnimOverlay.name = 'life anim overlay'
   L.Util.setOptions(lifePointOverlay, {alternateAnim: lifeAnimOverlay})
@@ -3846,6 +3854,7 @@
     map.createPane('baseimagePane');
     map.createPane('objectPane');
     map.createPane('activityPane');
+    map.createPane('landmarkPane');
 
     map.on('zoomend', function(ev) {
       riftLayerByTime(mapTime, map.getZoom())
