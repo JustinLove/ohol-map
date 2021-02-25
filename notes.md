@@ -1,7 +1,6 @@
 ## server work
 
 ## Features
-- favicon
 - option to show object search as images
 - not selecting arc index because arcs in list have been updated with a datatime, records do not match
 - animation range when going to url timestamp
