@@ -1,6 +1,8 @@
 ## server work
 
 ## Features
+- objects log search above 24
+- mime types
 - option to show object search as images
 - time window range graph
 - assembling log search spans?

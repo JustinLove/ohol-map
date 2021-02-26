@@ -1141,15 +1141,36 @@ dailyReview model =
     ]
   )
 
+oneDayAgo : Posix -> Posix
+oneDayAgo =
+  Time.posixToMillis
+    >> (\x -> x - (24*60*60*1000))
+    >> Time.millisToPosix
+
 fetchDailyReview : Model -> Cmd Msg
 fetchDailyReview model =
-  model
-    |> currentServer
-    |> Maybe.map (.spans >> RemoteData.withDefault [])
-    |> Maybe.andThen (List.reverse >> List.head)
-    |> Maybe.map .start
-    |> Maybe.map (\start -> Time.now |> Task.perform (FetchBetween start))
-    |> Maybe.withDefault Cmd.none
+  let
+    mserver = model |> currentServer
+    mspanStart = mserver
+      |> Maybe.map (.spans >> RemoteData.withDefault [])
+      |> Maybe.andThen (List.reverse >> List.head)
+      |> Maybe.map .start
+    mserverEnd = mserver
+      |> Maybe.map .maxTime
+      |> Maybe.map oneDayAgo
+    mstart = case (mspanStart, mserverEnd) of
+      (Just span, Just lives) ->
+        if Time.posixToMillis span < Time.posixToMillis lives then
+          Just span
+        else
+          Just lives
+      (Just span, Nothing) -> Just span
+      (Nothing, Just lives) -> Just lives
+      (Nothing, Nothing) -> Nothing
+  in
+    mstart
+      |> Maybe.map (\start -> Time.now |> Task.perform (FetchBetween start))
+      |> Maybe.withDefault Cmd.none
 
 jumpTime : Posix -> Model -> (Model, Cmd Msg)
 jumpTime time model =
