@@ -2535,6 +2535,7 @@
         dataTime: sEnd.toString(),
         time: ms,
         animate: true,
+        maxZoom: 26,
       }, gen, objectLayerOptions))
     ])
   }
