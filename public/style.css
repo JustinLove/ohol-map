@@ -57,6 +57,11 @@ body {
   margin-top: 2px;
 }
 
+.object-icon {
+  height: 100%;
+  object-fit: contain;
+}
+
 .timecontrol-close:before {
     width: 100%;
     text-align: center;

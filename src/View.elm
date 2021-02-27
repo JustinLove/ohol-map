@@ -591,7 +591,8 @@ objectListHeader model =
       , width fill
       ]
       [ row [ spacing 10, alignLeft ]
-        [ Input.checkbox [ spacing 2 ]
+        [ el [ width (px 30) ] none
+        , Input.checkbox [ spacing 2 ]
           { onChange = ToggleAllObjects
           , checked = (areAllObjectChecked model)
           , label = Input.labelHidden "toggle all"
@@ -660,7 +661,8 @@ lockedObjectListHeader model =
     , width fill
     ]
     [ row [ spacing 10, alignLeft, Font.underline ]
-      [ el [ width (px 32) ] <| text "Del"
+      [ el [ width (px 30) ] <| none
+      , el [ width (px 32) ] <| text "Del"
       , el [ alignLeft ] <| text "Name"
       ]
     , row [ spacing 10, alignRight ]
@@ -714,7 +716,8 @@ browseObjectsHeader model id =
         { onPress = Just ExitBrowseLocations
         , label = row [ centerX, spacing 4 ]
           [ el [ Font.size 14 ] <| icon "cancel-circle"
-          , el [ padding 6 ] <| objectWithSwatch id title
+          , objectIconWithSwatch id title
+          , el [ padding 6 ] <| objectTitle id title ""
           ]
         }
       ]
@@ -820,12 +823,13 @@ showMatchingObject model id =
     palette = themePalette model.theme
   in
   row [ padding 6, width fill ]
-    [ column [ width (fill |> maximum 250), clipX ]
-      [ row [width fill]
+    [ objectIconWithSwatch id title
+    , column [ width (fill |> maximum 250), clipX ]
+      [ row [width fill ]
         [ Input.checkbox [ spacing 8 ]
           { onChange = ToggleMatchingObject id
           , checked = Set.member id model.selectedMatchingObjects
-          , label = Input.labelRight [ ] <| objectWithSwatch id title
+          , label = Input.labelRight [ ] <| objectTitle id title attrs
           , icon = Input.defaultCheckbox
           }
         ]
@@ -841,8 +845,6 @@ showMatchingObject model id =
               icon "unlocked"
             )
           }
-        , el [ width (px 16) ] none
-        , attrs |> text
         ]
       ]
     , el [ alignRight ]
@@ -882,17 +884,16 @@ showMatchingObject model id =
 showLockedObject : Model -> ObjectId -> Element Msg
 showLockedObject model id =
   let (title, attrs) = objectNameParts model id in
-  column [ padding 6 ]
-    [ row [ spacing 8]
-      [ Input.button [ Font.size 14, Region.description "remove from locked" ]
-        { onPress = Just (ToggleLockObject id False)
-        , label = icon "cancel-circle"
-        }
-      , objectWithSwatch id title
-      ]
-    , row [ Font.size 16, spacing 4 ]
-      [ el [ width (px 38) ] none
-      , attrs |> text
+  row []
+    [ objectIconWithSwatch id title
+    , column [ padding 6 ]
+      [ row [ spacing 8]
+        [ Input.button [ Font.size 14, Region.description "remove from locked" ]
+          { onPress = Just (ToggleLockObject id False)
+          , label = icon "cancel-circle"
+          }
+        , objectTitle id title attrs
+        ]
       ]
     ]
 
@@ -947,20 +948,44 @@ showBrowsePlacementDetail zone id (BrowsePlacement x y t) =
       |> el [ width (px 110) ]
     ]
 
-objectWithSwatch : Int -> String -> Element Msg
-objectWithSwatch id title =
-  row
-    [ ((String.fromInt id) ++ " " ++ title)
+objectTitle : Int -> String -> String -> Element Msg
+objectTitle id title attrs =
+  el
+    [ (400 // (String.length title))
+      |> clamp 8 20
+      |> Font.size
+    , ((String.fromInt id) ++ " " ++ title)
       |> Html.Attributes.title
       |> htmlAttribute
-    ]
-    [ el [ Font.color (objectColor id) ] (icon "locate")
-    , el
-      [ (400 // (String.length title))
-        |> clamp 8 20
-        |> Font.size
-      ] (title |> text)
-    ]
+    , below (row [ Font.size 16, spacing 4 ]
+        [ attrs |> text
+        ])
+    ] (title |> text)
+
+objectSwatch : Int -> Element Msg
+objectSwatch id =
+  el [ Font.color (objectColor id) ] (icon "locate")
+
+objectIcon : Int -> String -> Element Msg
+objectIcon id title =
+  Html.img
+    [ Html.Attributes.width 40
+    , Html.Attributes.class "object-icon"
+    , Html.Attributes.src ("static/sprites/obj_" ++ (String.fromInt id) ++ ".png")
+    , Html.Attributes.alt title
+    ] []
+    |> html
+    |> el
+      [ centerX
+      , centerY
+      , width (px 40)
+      , height (px 40)
+      ]
+
+objectIconWithSwatch : Int -> String -> Element Msg
+objectIconWithSwatch id title =
+  objectIcon id title
+    |> el [ inFront (el [ moveDown 20, moveRight 20 ] (objectSwatch id)) ]
 
 lifeDetailHeader =
   column [ padding 4 ]
