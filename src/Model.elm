@@ -28,7 +28,8 @@ module Model exposing
   , serverLoading
   , initialModel
   , defaultCenter
-  , highlightObjects
+  , highlightObjectPoints
+  , highlightObjectIcons
   , areAllObjectChecked
   , asSpanData
   , mapBrowseLocations
@@ -137,11 +138,12 @@ type alias Model =
   , debouncedMatchingObjects : List ObjectId
   , selectedMatchingObjects : Set ObjectId
   , lockedObjects : Set ObjectId
+  , iconObjects : Set ObjectId
   , focusObject : Maybe ObjectId
   , browseProbablyTutorial : Bool
   }
 
-initialObjectSearch = [] --[4654, 4737]
+initialObjectSearch = [4654, 4737]
 
 initialModel : Config -> Url -> Navigation.Key -> Model
 initialModel config location key =
@@ -163,11 +165,11 @@ initialModel config location key =
   , keySearchNotable = config.keySearchNotable
   , logSearchIndex = config.logSearchIndex
   , logSearch = config.logSearch
-  , sidebar = ClosedSidebar
-  , sidebarMode = DataFilter
-  , searchMode = SearchLives
+  , sidebar = OpenSidebar
+  , sidebarMode = Search
+  , searchMode = SearchObjects
   , lifeSearchTerm = ""
-  , objectSearchTerm = ""
+  , objectSearchTerm = "adobe"
   , objectListMode = MatchingObjects
   , timeMode = ServerRange
   , coarseStartTime = Time.millisToPosix 0
@@ -211,7 +213,8 @@ initialModel config location key =
   , debouncedMatchingObjects = initialObjectSearch
   , selectedMatchingObjects = Set.fromList initialObjectSearch
   , lockedObjects = Set.fromList initialObjectSearch
-  , focusObject = List.head initialObjectSearch
+  , iconObjects = Set.fromList initialObjectSearch
+  , focusObject = Nothing --List.head initialObjectSearch
   , browseProbablyTutorial = False
   --, browseLocations = Dict.empty --Dict.singleton 4654 (Data (Zipper.construct (BrowseLocation -50809 -52) [BrowseLocation -50809 -53]))
   --, browsePlacements = Dict.empty --Dict.singleton 4654 (Data (Zipper.construct (BrowsePlacement -50809 -52 (Time.millisToPosix 1608319484000)) [BrowsePlacement -50809 -53 (Time.millisToPosix 1608319484000)]))
@@ -373,6 +376,14 @@ centerUrl location mt preset ms center =
 highlightObjects : Model -> Set ObjectId
 highlightObjects model =
   Set.union model.selectedMatchingObjects model.lockedObjects
+
+highlightObjectPoints : Model -> Set ObjectId
+highlightObjectPoints model =
+  Set.diff (highlightObjects model) model.iconObjects
+
+highlightObjectIcons : Model -> Set ObjectId
+highlightObjectIcons model =
+  Set.intersect (highlightObjects model) model.iconObjects
 
 areAllObjectChecked : Model -> Bool
 areAllObjectChecked model =

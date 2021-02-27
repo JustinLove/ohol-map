@@ -184,11 +184,12 @@ searchOverlay status =
     ]
     |> leafletCommand
 
-highlightObjects : List Int -> Cmd msg
-highlightObjects ids =
+highlightObjects : List Int -> List Int -> Cmd msg
+highlightObjects points icons =
   Encode.object
     [ ("kind", Encode.string "highlightObjects")
-    , ("ids", Encode.list Encode.int ids)
+    , ("points", Encode.list Encode.int points)
+    , ("icons", Encode.list Encode.int icons)
     ]
     |> leafletCommand
 

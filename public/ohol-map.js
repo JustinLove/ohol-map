@@ -317,6 +317,37 @@
     })
   }
 
+  L.LayerGroup.ObjectIconLayer = L.LayerGroup.extend({
+    options: {
+      className: 'object-icon-overlay-static',
+      pane: 'overlayPane',
+    },
+    initialize: function(cache, options) {
+      this._layers = {};
+      this._cache = cache;
+      options = L.Util.setOptions(this, options);
+    },
+    redraw: function() {
+      var layer = this
+      var options = layer.options
+      var highlightObjects = options.highlightObjectIcons
+      layer.clearLayers()
+      if (!highlightObjects) {
+        return
+      }
+      layer._cache.loadTile({}, {time: options.dataTime, server: mapServer, highlightObjects: highlightObjects}).then(function(data) {
+        loadIcons(data)
+        data.forEach(function(point) {
+          point.monument = L.marker([point.y, point.x], {
+              icon: icons[point.id],
+              pane: 'overlayPane',
+            })
+            .addTo(layer)
+        })
+      })
+    },
+  })
+
   var updatePlacementLayer = function(layer, data) {
     layer.clearLayers()
     L.Util.setOptions(layer, {data: data})
@@ -1546,6 +1577,9 @@
         span.maplogSearchPoint = maplogSearchPoint
         L.Util.setOptions(keySearchPoint, {alternateAnim: maplogSearchPoint})
         L.Util.setOptions(maplogSearchPoint, {alternateStatic: keySearchPoint})
+        var keySearchIcon = createArcKeySearchIconOverlay(span.dataTime)
+        keySearchIcon.name = "object search image"
+        span.keySearchIcon = keySearchIcon
 
         var actmap = createArcActivityMapLayer(span.dataTime)
         actmap.name = "activity map"
@@ -2480,6 +2514,15 @@
     ])
   }
 
+  var createArcKeySearchIconOverlay = function(end) {
+    return new L.layerGroup([
+      baseAttributionLayer,
+      new L.LayerGroup.ObjectIconLayer(keySearchCache, Object.assign({
+        dataTime: end.toString(),
+      }, objectLayerOptions))
+    ])
+  }
+
   var maplogCache = new TileLogValueYXTCache(oholMapConfig.maplog, {
     dataminzoom: 24,
     datamaxzoom: 27,
@@ -2632,6 +2675,12 @@
             layer.redraw && layer.redraw()
           })
         }
+        if (span.keySearchIcon) {
+          span.keySearchIcon.eachLayer(function(layer) {
+            L.Util.setOptions(layer, options)
+            layer.redraw && layer.redraw()
+          })
+        }
         if (span.maplogLayer) {
           span.maplogLayer.eachLayer(function(layer) {
             L.Util.setOptions(layer, options)
@@ -2671,6 +2720,12 @@
         }
         if (span.keySearchPoint) {
           span.keySearchPoint.eachLayer(function(layer) {
+            L.Util.setOptions(layer, options)
+            layer.redraw && layer.redraw()
+          })
+        }
+        if (span.keySearchIcon) {
+          span.keySearchIcon.eachLayer(function(layer) {
             L.Util.setOptions(layer, options)
             layer.redraw && layer.redraw()
           })
@@ -3124,7 +3179,7 @@
     createTile: function (coords, done) {
       var layer = this
       var options = layer.options
-      var highlightObjects = options.highlightObjects
+      var highlightObjects = options.highlightObjectPoints
       var tile = document.createElement('canvas');
       if (!highlightObjects) {
         if (done) done(null, tile)
@@ -3164,7 +3219,7 @@
     createTile: function (coords, done) {
       var layer = this
       var options = layer.options
-      var highlightObjects = options.highlightObjects
+      var highlightObjects = options.highlightObjectPoints
       var tile = document.createElement('canvas');
       if (!highlightObjects) {
         if (done) done(null, tile)
@@ -3188,7 +3243,7 @@
       return tile
     },
     tileAt: function(tile, time) {
-      var highlightObjects = this.options.highlightObjects
+      var highlightObjects = this.options.highlightObjectPoints
       if (!highlightObjects) {
         console.log('anim - no objects')
         return
@@ -3234,7 +3289,7 @@
     createTile: function (coords, done) {
       var layer = this
       var options = layer.options
-      var highlightObjects = options.highlightObjects
+      var highlightObjects = options.highlightObjectPoints
       var tile = document.createElement('canvas');
       if (!highlightObjects) {
         if (done) done(null, tile)
@@ -3329,6 +3384,7 @@
       objectOverlayLayers = [
         !dataAnimated && targetSpan && targetSpan.keyPlacementPoint,
         !dataAnimated && targetSpan && targetSpan.keySearchPoint,
+        !dataAnimated && targetSpan && targetSpan.keySearchIcon,
         dataAnimated && targetSpan && targetSpan.maplogPoint,
         dataAnimated && targetSpan && targetSpan.maplogSearchPoint,
       ].filter(function(x) {return !!x})
@@ -4047,8 +4103,8 @@
             }
             break
           case 'highlightObjects':
-            setObjectHighlightOptions({highlightObjects: message.ids})
-            if (message.ids.length > 0 && !map.hasLayer(objectOverlay)) {
+            setObjectHighlightOptions({highlightObjectPoints: message.points, highlightObjectIcons: message.icons})
+            if ((message.points.length > 0 || message.icons.length > 0 ) && !map.hasLayer(objectOverlay)) {
               map.addLayer(objectOverlay)
             }
             break

@@ -1387,10 +1387,9 @@ andHighlightObjects model =
 
 highlightObjectsCommand : Model -> Cmd Msg
 highlightObjectsCommand model =
-  model
-    |> highlightObjects
-    |> Set.toList
-    |> Leaflet.highlightObjects
+  Leaflet.highlightObjects
+    (highlightObjectPoints model |> Set.toList)
+    (highlightObjectIcons model |> Set.toList)
 
 replaceUrl : String -> (Model, Cmd Msg) -> (Model, Cmd Msg)
 replaceUrl reason =
