@@ -181,14 +181,7 @@ update msg model =
       )
        |> addCommand saveState
     UI (View.ToggleAnimated animated) ->
-      ( { model
-        | dataAnimated = animated
-        , player = if animated == False then Stopped else model.player
-        }
-      , Leaflet.animOverlay animated
-      )
-        |> addUpdate requireObjectSearchIndex
-        |> addUpdate requireObjectSearch
+      toggleAnimated animated model
     UI (View.GameSecondsPerSecond seconds) ->
       ( { model
         | gameSecondsPerSecond = seconds
@@ -475,15 +468,7 @@ update msg model =
       )
         |> addCommand sidebarCommand
     Event (Ok (Leaflet.AnimToggle)) ->
-      ( { model
-        | dataAnimated = not model.dataAnimated
-        , player = if (not model.dataAnimated) == False then Stopped else model.player
-        }
-      , Leaflet.animOverlay
-        (model.dataAnimated == False)
-      )
-        |> addUpdate requireObjectSearchIndex
-        |> addUpdate requireObjectSearch
+      toggleAnimated (not model.dataAnimated) model
     Event (Err err) ->
       let _ = Debug.log "error" err in
       (model, Cmd.none)
@@ -1046,6 +1031,18 @@ requireSelectedLives model =
       )
     _ ->
       (model, Leaflet.dataLayerVisible True)
+
+toggleAnimated : Bool -> Model -> (Model, Cmd Msg)
+toggleAnimated animated model =
+  ( { model
+    | dataAnimated = animated
+    , player = if animated == False then Stopped else model.player
+    }
+      |> updateObjectSearch
+  , Leaflet.animOverlay animated
+  )
+    |> addUpdate requireObjectSearchIndex
+    |> addUpdate requireObjectSearch
 
 makeObjectMap : List ObjectId -> List String -> Dict ObjectId String
 makeObjectMap ids names =
