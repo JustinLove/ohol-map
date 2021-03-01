@@ -366,17 +366,10 @@ update msg model =
       { model
       | lockedObjects = lockedObjects
       }
+        |> toggleIconDisplay id (imageWhenLocked id model)
         |> andHighlightObjects
     UI (View.ToggleIconDisplay id checked) ->
-      let
-        iconObjects = if checked then
-           Set.insert id model.iconObjects
-         else
-           Set.remove id model.iconObjects
-      in
-      { model
-      | iconObjects = iconObjects
-      }
+      toggleIconDisplay id checked model
         |> andHighlightObjects
     UI (View.SelectLineage life) ->
       ( model
@@ -1092,6 +1085,7 @@ updateObjectSearch model =
   { model
   | totalMatchingObjects = List.length total
   , matchingObjects = ids
+  , defaultImageObjects = pickDefaultImageObjects model (Set.fromList ids)
   , selectedMatchingObjects = initialSelected
   }
 
@@ -1120,6 +1114,40 @@ sortDescendingCount model list =
         (Dict.get b counts |> Maybe.withDefault (0, False))
   in
     List.sortWith descendingCount list
+
+pickDefaultImageObjects : Model -> Set ObjectId -> Set ObjectId
+pickDefaultImageObjects model set =
+  let
+    counts = model.spanData
+      |> Maybe.map (\spanData ->
+        if model.dataAnimated then
+          spanData.logObjectSearchIndex
+        else
+          spanData.keyObjectSearchIndex
+        )
+      |> Maybe.withDefault NotRequested
+      |> RemoteData.withDefault Dict.empty
+    defaultImage = \a ->
+      Dict.get a counts
+        |> Maybe.withDefault (0, False)
+        |> (\(count, index) -> index && count < 40)
+  in
+    Set.filter defaultImage set
+
+imageWhenLocked : ObjectId -> Model -> Bool
+imageWhenLocked id model =
+  model.spanData
+    |> Maybe.map (\spanData ->
+      if model.dataAnimated then
+        spanData.logObjectSearchIndex
+      else
+        spanData.keyObjectSearchIndex
+      )
+    |> Maybe.withDefault NotRequested
+    |> RemoteData.withDefault Dict.empty
+    |> Dict.get id
+    |> Maybe.withDefault (0, False)
+    |> (\(count, index) -> index && count < 200)
 
 yesterday : Model -> (Model, Cmd Msg)
 yesterday model =
@@ -1399,8 +1427,8 @@ andHighlightObjects model =
 highlightObjectsCommand : Model -> Cmd Msg
 highlightObjectsCommand model =
   Leaflet.highlightObjects
-    (highlightObjectPoints model |> Set.toList)
-    (highlightObjectIcons model |> Set.toList)
+    (highlightObjectSwatches model |> Set.toList)
+    (highlightObjectImages model |> Set.toList)
 
 replaceUrl : String -> (Model, Cmd Msg) -> (Model, Cmd Msg)
 replaceUrl reason =

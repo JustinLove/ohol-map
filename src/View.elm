@@ -714,7 +714,7 @@ browseObjectsHeader model id =
         { onPress = Just ExitBrowseLocations
         , label = row [ centerX, spacing 4 ]
           [ el [ Font.size 14 ] <| icon "cancel-circle"
-          , objectIconWithSwatch id title
+          , objectImageWithSwatch id title
           , el [ padding 6 ] <| objectTitle id title ""
           ]
         }
@@ -821,7 +821,7 @@ showMatchingObject model id =
     palette = themePalette model.theme
   in
   row [ padding 6, width fill ]
-    [ objectIconControl model.iconObjects id title
+    [ objectIconControl (effectiveImageObjects model) id title
       |> el [ moveLeft 6 ]
     , column [ width (fill |> maximum 250), clipX ]
       [ row [width fill ]
@@ -882,7 +882,7 @@ showLockedObject : Model -> ObjectId -> Element Msg
 showLockedObject model id =
   let (title, attrs) = objectNameParts model id in
   row []
-    [ objectIconControl model.iconObjects id title
+    [ objectIconControl (effectiveImageObjects model) id title
     , column [ padding 6 ]
       [ row [ spacing 8]
         [ Input.button [ Font.size 14, Region.description "remove from locked" ]
@@ -963,8 +963,8 @@ objectSwatch : ObjectId -> Element Msg
 objectSwatch id =
   el [ Font.color (objectColor id) ] (icon "locate")
 
-objectIcon : ObjectId -> String -> Element Msg
-objectIcon id title =
+objectImage : ObjectId -> String -> Element Msg
+objectImage id title =
   Html.img
     [ Html.Attributes.width 40
     , Html.Attributes.class "object-icon"
@@ -979,32 +979,32 @@ objectIcon id title =
       , height (px 40)
       ]
 
-objectIconWithSwatch : ObjectId -> String -> Element Msg
-objectIconWithSwatch id title =
-  objectIcon id title
+objectImageWithSwatch : ObjectId -> String -> Element Msg
+objectImageWithSwatch id title =
+  objectImage id title
     |> el [ inFront (el [ moveDown 20, moveRight 20 ] (objectSwatch id)) ]
 
-objectIconWithSwatchPrimary : ObjectId -> String -> Element Msg
-objectIconWithSwatchPrimary id title =
-  objectIcon id title
+objectImageWithSwatchPrimary : ObjectId -> String -> Element Msg
+objectImageWithSwatchPrimary id title =
+  objectImage id title
     |> el [ alpha 0.5 ]
     |> el [ inFront (el [ moveDown 20, moveRight 20 ] (objectSwatch id)) ]
 
 objectIconControl : Set ObjectId -> ObjectId -> String -> Element Msg
-objectIconControl iconObjects id title =
+objectIconControl imageObjects id title =
   Input.checkbox
     [ "click to change icon display mode"
       |> Html.Attributes.title
       |> htmlAttribute
     ]
     { onChange = ToggleIconDisplay id
-    , checked = Set.member id iconObjects
+    , checked = Set.member id imageObjects
     , label = Input.labelHidden "icon display mode"
     , icon = (\checked ->
         if checked then
-          objectIcon id title
+          objectImage id title
         else
-          objectIconWithSwatchPrimary id title
+          objectImageWithSwatchPrimary id title
       )
     }
 

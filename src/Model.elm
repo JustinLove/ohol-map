@@ -28,8 +28,10 @@ module Model exposing
   , serverLoading
   , initialModel
   , defaultCenter
-  , highlightObjectPoints
-  , highlightObjectIcons
+  , effectiveImageObjects
+  , highlightObjectSwatches
+  , highlightObjectImages
+  , toggleIconDisplay
   , areAllObjectChecked
   , asSpanData
   , mapBrowseLocations
@@ -138,7 +140,9 @@ type alias Model =
   , debouncedMatchingObjects : List ObjectId
   , selectedMatchingObjects : Set ObjectId
   , lockedObjects : Set ObjectId
-  , iconObjects : Set ObjectId
+  , imageObjects : Set ObjectId
+  , swatchObjects : Set ObjectId
+  , defaultImageObjects : Set ObjectId
   , focusObject : Maybe ObjectId
   , browseProbablyTutorial : Bool
   }
@@ -169,7 +173,7 @@ initialModel config location key =
   , sidebarMode = Search
   , searchMode = SearchObjects
   , lifeSearchTerm = ""
-  , objectSearchTerm = "adobe"
+  , objectSearchTerm = "iron"
   , objectListMode = MatchingObjects
   , timeMode = ServerRange
   , coarseStartTime = Time.millisToPosix 0
@@ -213,7 +217,9 @@ initialModel config location key =
   , debouncedMatchingObjects = initialObjectSearch
   , selectedMatchingObjects = Set.fromList initialObjectSearch
   , lockedObjects = Set.fromList initialObjectSearch
-  , iconObjects = Set.fromList initialObjectSearch
+  , imageObjects = Set.fromList initialObjectSearch
+  , swatchObjects = Set.empty
+  , defaultImageObjects = Set.fromList initialObjectSearch
   , focusObject = Nothing --List.head initialObjectSearch
   , browseProbablyTutorial = False
   --, browseLocations = Dict.empty --Dict.singleton 4654 (Data (Zipper.construct (BrowseLocation -50809 -52) [BrowseLocation -50809 -53]))
@@ -377,13 +383,38 @@ highlightObjects : Model -> Set ObjectId
 highlightObjects model =
   Set.union model.selectedMatchingObjects model.lockedObjects
 
-highlightObjectPoints : Model -> Set ObjectId
-highlightObjectPoints model =
-  Set.diff (highlightObjects model) model.iconObjects
+effectiveImageObjects : Model -> Set ObjectId
+effectiveImageObjects model =
+  model.defaultImageObjects
+    |> Set.union model.imageObjects
+    |> (\s -> Set.diff s model.swatchObjects)
 
-highlightObjectIcons : Model -> Set ObjectId
-highlightObjectIcons model =
-  Set.intersect (highlightObjects model) model.iconObjects
+highlightObjectSwatches : Model -> Set ObjectId
+highlightObjectSwatches model =
+  effectiveImageObjects model
+    |> Set.diff (highlightObjects model)
+
+highlightObjectImages : Model -> Set ObjectId
+highlightObjectImages model =
+  effectiveImageObjects model
+    |> Set.intersect (highlightObjects model)
+
+toggleIconDisplay : ObjectId -> Bool -> Model -> Model
+toggleIconDisplay id checked model =
+  let
+    imageObjects = if checked then
+       Set.insert id model.imageObjects
+     else
+       Set.remove id model.imageObjects
+    swatchObjects = if checked then
+       Set.remove id model.swatchObjects
+     else
+       Set.insert id model.swatchObjects
+  in
+  { model
+  | imageObjects = imageObjects
+  , swatchObjects = swatchObjects
+  }
 
 areAllObjectChecked : Model -> Bool
 areAllObjectChecked model =

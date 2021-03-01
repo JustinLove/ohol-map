@@ -317,9 +317,9 @@
     })
   }
 
-  L.LayerGroup.ObjectIconLayer = L.LayerGroup.extend({
+  L.LayerGroup.ObjectImageLayer = L.LayerGroup.extend({
     options: {
-      className: 'object-icon-overlay-static',
+      className: 'object-image-overlay-static',
       pane: 'overlayPane',
     },
     initialize: function(cache, options) {
@@ -330,7 +330,7 @@
     redraw: function() {
       var layer = this
       var options = layer.options
-      var highlightObjects = options.highlightObjectIcons
+      var highlightObjects = options.highlightObjectImages
       layer.clearLayers()
       if (!highlightObjects) {
         return
@@ -2517,7 +2517,7 @@
   var createArcKeySearchIconOverlay = function(end) {
     return new L.layerGroup([
       baseAttributionLayer,
-      new L.LayerGroup.ObjectIconLayer(keySearchCache, Object.assign({
+      new L.LayerGroup.ObjectImageLayer(keySearchCache, Object.assign({
         dataTime: end.toString(),
       }, objectLayerOptions))
     ])
@@ -3098,7 +3098,7 @@
     }
   }
 
-  L.GridLayer.ObjectPointOverlay = L.GridLayer.extend({
+  L.GridLayer.ObjectSwatchOverlay = L.GridLayer.extend({
     options: {
       pane: 'overlayPane',
       minZoom: 24,
@@ -3167,7 +3167,7 @@
     },
   })
 
-  L.GridLayer.KeyPlacementPoint = L.GridLayer.ObjectPointOverlay.extend({
+  L.GridLayer.KeyPlacementPoint = L.GridLayer.ObjectSwatchOverlay.extend({
     options: Object.assign({
       className: 'object-point-overlay-static',
       animate: false,
@@ -3179,7 +3179,7 @@
     createTile: function (coords, done) {
       var layer = this
       var options = layer.options
-      var highlightObjects = options.highlightObjectPoints
+      var highlightObjects = options.highlightObjectSwatches
       var tile = document.createElement('canvas');
       if (!highlightObjects) {
         if (done) done(null, tile)
@@ -3206,7 +3206,7 @@
     },
   })
 
-  L.GridLayer.MaplogPoint = L.GridLayer.ObjectPointOverlay.extend({
+  L.GridLayer.MaplogPoint = L.GridLayer.ObjectSwatchOverlay.extend({
     options: Object.assign({
       time: 0,
       className: 'object-point-overlay-anim',
@@ -3219,7 +3219,7 @@
     createTile: function (coords, done) {
       var layer = this
       var options = layer.options
-      var highlightObjects = options.highlightObjectPoints
+      var highlightObjects = options.highlightObjectSwatches
       var tile = document.createElement('canvas');
       if (!highlightObjects) {
         if (done) done(null, tile)
@@ -3243,7 +3243,7 @@
       return tile
     },
     tileAt: function(tile, time) {
-      var highlightObjects = this.options.highlightObjectPoints
+      var highlightObjects = this.options.highlightObjectSwatches
       if (!highlightObjects) {
         console.log('anim - no objects')
         return
@@ -3276,7 +3276,7 @@
     },
   })
 
-  L.GridLayer.KeySearchPoint = L.GridLayer.ObjectPointOverlay.extend({
+  L.GridLayer.KeySearchPoint = L.GridLayer.ObjectSwatchOverlay.extend({
     options: Object.assign({
       className: 'object-index-overlay-static',
       minZoom: 2,
@@ -3289,7 +3289,7 @@
     createTile: function (coords, done) {
       var layer = this
       var options = layer.options
-      var highlightObjects = options.highlightObjectPoints
+      var highlightObjects = options.highlightObjectSwatches
       var tile = document.createElement('canvas');
       if (!highlightObjects) {
         if (done) done(null, tile)
@@ -4103,8 +4103,8 @@
             }
             break
           case 'highlightObjects':
-            setObjectHighlightOptions({highlightObjectPoints: message.points, highlightObjectIcons: message.icons})
-            if ((message.points.length > 0 || message.icons.length > 0 ) && !map.hasLayer(objectOverlay)) {
+            setObjectHighlightOptions({highlightObjectSwatches: message.swatches, highlightObjectImages: message.images})
+            if ((message.swatches.length > 0 || message.images.length > 0 ) && !map.hasLayer(objectOverlay)) {
               map.addLayer(objectOverlay)
             }
             break
