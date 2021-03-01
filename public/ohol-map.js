@@ -1577,9 +1577,9 @@
         span.maplogSearchPoint = maplogSearchPoint
         L.Util.setOptions(keySearchPoint, {alternateAnim: maplogSearchPoint})
         L.Util.setOptions(maplogSearchPoint, {alternateStatic: keySearchPoint})
-        var keySearchIcon = createArcKeySearchIconOverlay(span.dataTime)
-        keySearchIcon.name = "object search image"
-        span.keySearchIcon = keySearchIcon
+        var keySearchImage = createArcKeySearchImageOverlay(span.dataTime)
+        keySearchImage.name = "object search image"
+        span.keySearchImage = keySearchImage
 
         var actmap = createArcActivityMapLayer(span.dataTime)
         actmap.name = "activity map"
@@ -2514,7 +2514,7 @@
     ])
   }
 
-  var createArcKeySearchIconOverlay = function(end) {
+  var createArcKeySearchImageOverlay = function(end) {
     return new L.layerGroup([
       baseAttributionLayer,
       new L.LayerGroup.ObjectImageLayer(keySearchCache, Object.assign({
@@ -2578,6 +2578,7 @@
         dataTime: sEnd.toString(),
         time: ms,
         animate: true,
+        alsoShowImagePoints: true,
         maxZoom: 26,
       }, gen, objectLayerOptions))
     ])
@@ -2675,8 +2676,8 @@
             layer.redraw && layer.redraw()
           })
         }
-        if (span.keySearchIcon) {
-          span.keySearchIcon.eachLayer(function(layer) {
+        if (span.keySearchImage) {
+          span.keySearchImage.eachLayer(function(layer) {
             L.Util.setOptions(layer, options)
             layer.redraw && layer.redraw()
           })
@@ -2724,8 +2725,8 @@
             layer.redraw && layer.redraw()
           })
         }
-        if (span.keySearchIcon) {
-          span.keySearchIcon.eachLayer(function(layer) {
+        if (span.keySearchImage) {
+          span.keySearchImage.eachLayer(function(layer) {
             L.Util.setOptions(layer, options)
             layer.redraw && layer.redraw()
           })
@@ -3281,6 +3282,7 @@
       className: 'object-index-overlay-static',
       minZoom: 2,
       maxZoom: 23,
+      alsoShowImagePoints: false,
     }, objectGenerationOptions),
     initialize: function(cache, options) {
       this._cache = cache;
@@ -3289,7 +3291,12 @@
     createTile: function (coords, done) {
       var layer = this
       var options = layer.options
-      var highlightObjects = options.highlightObjectSwatches
+      var highlightObjects
+      if (options.alsoShowImagePoints) {
+        highlightObjects = options.highlightObjectSwatches.concat(options.highlightObjectImages)
+      } else {
+        highlightObjects = options.highlightObjectSwatches
+      }
       var tile = document.createElement('canvas');
       if (!highlightObjects) {
         if (done) done(null, tile)
@@ -3384,7 +3391,7 @@
       objectOverlayLayers = [
         !dataAnimated && targetSpan && targetSpan.keyPlacementPoint,
         !dataAnimated && targetSpan && targetSpan.keySearchPoint,
-        !dataAnimated && targetSpan && targetSpan.keySearchIcon,
+        !dataAnimated && targetSpan && targetSpan.keySearchImage,
         dataAnimated && targetSpan && targetSpan.maplogPoint,
         dataAnimated && targetSpan && targetSpan.maplogSearchPoint,
       ].filter(function(x) {return !!x})
@@ -3408,7 +3415,7 @@
       }
     })
     objectOverlay.eachLayer(function(layer) {
-      if (!layer.getIcon && objectOverlayLayers.indexOf(layer) == -1) {
+      if (objectOverlayLayers.indexOf(layer) == -1) {
         //console.log('remove', layer && layer.name)
         objectOverlay.removeLayer(layer)
         changes++
@@ -4110,9 +4117,11 @@
             break
           case 'animOverlay':
             dataAnimated = message.status
-            toggleAnimated(dataOverlay, message.status)
-            toggleAnimated(objectOverlay, message.status)
-            toggleAnimated(oholBase, message.status)
+            // base layer does this for the object image layer, which has no alterate to toggle
+            //toggleAnimated(dataOverlay, message.status)
+            //toggleAnimated(objectOverlay, message.status)
+            //toggleAnimated(oholBase, message.status)
+            baseLayerByTime(map, mapTime, 'animOverlay')
             L.Util.setOptions(legendControl, {dataAnimated: message.status})
             legendControl.redraw()
             toggleAnimationControls(map)
