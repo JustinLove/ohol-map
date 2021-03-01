@@ -367,6 +367,17 @@ update msg model =
       | lockedObjects = lockedObjects
       }
         |> andHighlightObjects
+    UI (View.ToggleIconDisplay id checked) ->
+      let
+        iconObjects = if checked then
+           Set.insert id model.iconObjects
+         else
+           Set.remove id model.iconObjects
+      in
+      { model
+      | iconObjects = iconObjects
+      }
+        |> andHighlightObjects
     UI (View.SelectLineage life) ->
       ( model
       , fetchLineage model.apiUrl life

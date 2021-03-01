@@ -79,6 +79,7 @@ type Msg
   | DownloadLocked
   | ClearLocked
   | ToggleLockObject ObjectId Bool
+  | ToggleIconDisplay ObjectId Bool
   | SelectLineage Life
   | SelectSidebarMode SidebarMode
   | SelectSearchMode SearchMode
@@ -590,18 +591,15 @@ objectListHeader model =
       [ spacing 10
       , width fill
       ]
-      [ row [ spacing 10, alignLeft ]
-        [ el [ width (px 30) ] none
+      [ row [ spacing 10, alignLeft, Font.underline ]
+        [ el [ width (px 30) ] <| text "Icon"
         , Input.checkbox [ spacing 2 ]
           { onChange = ToggleAllObjects
           , checked = (areAllObjectChecked model)
           , label = Input.labelHidden "toggle all"
           , icon = Input.defaultCheckbox
           }
-        , row [ Font.underline ]
-          [ el [ width (px 18) ] none
-          , text "Name"
-          ]
+        , text "Name"
         ]
       , row [ alignRight, spacing 2 ]
         [ model.totalMatchingObjects
@@ -661,7 +659,7 @@ lockedObjectListHeader model =
     , width fill
     ]
     [ row [ spacing 10, alignLeft, Font.underline ]
-      [ el [ width (px 30) ] <| none
+      [ el [ width (px 30) ] <| text "Icon"
       , el [ width (px 32) ] <| text "Del"
       , el [ alignLeft ] <| text "Name"
       ]
@@ -823,7 +821,8 @@ showMatchingObject model id =
     palette = themePalette model.theme
   in
   row [ padding 6, width fill ]
-    [ objectIconWithSwatch id title
+    [ objectIconControl model.iconObjects id title
+      |> el [ moveLeft 6 ]
     , column [ width (fill |> maximum 250), clipX ]
       [ row [width fill ]
         [ Input.checkbox [ spacing 8 ]
@@ -833,19 +832,17 @@ showMatchingObject model id =
           , icon = Input.defaultCheckbox
           }
         ]
-      , row [ Font.size 16, spacing 4, width fill ]
-        [ Input.checkbox [ spacing 8, width shrink ]
-          { onChange = ToggleLockObject id
-          , checked = Set.member id model.lockedObjects
-          , label = Input.labelHidden "lock/unlock"
-          , icon = (\checked ->
-            if checked then
-              icon "lock"
-            else
-              icon "unlocked"
-            )
-          }
-        ]
+      , Input.checkbox [ spacing 8, Font.size 16, width shrink ]
+        { onChange = ToggleLockObject id
+        , checked = Set.member id model.lockedObjects
+        , label = Input.labelHidden "lock/unlock"
+        , icon = (\checked ->
+          if checked then
+            icon "lock"
+          else
+            icon "unlocked"
+          )
+        }
       ]
     , el [ alignRight ]
       (if indexed then
@@ -885,7 +882,7 @@ showLockedObject : Model -> ObjectId -> Element Msg
 showLockedObject model id =
   let (title, attrs) = objectNameParts model id in
   row []
-    [ objectIconWithSwatch id title
+    [ objectIconControl model.iconObjects id title
     , column [ padding 6 ]
       [ row [ spacing 8]
         [ Input.button [ Font.size 14, Region.description "remove from locked" ]
@@ -948,7 +945,7 @@ showBrowsePlacementDetail zone id (BrowsePlacement x y t) =
       |> el [ width (px 110) ]
     ]
 
-objectTitle : Int -> String -> String -> Element Msg
+objectTitle : ObjectId -> String -> String -> Element Msg
 objectTitle id title attrs =
   el
     [ (400 // (String.length title))
@@ -962,11 +959,11 @@ objectTitle id title attrs =
         ])
     ] (title |> text)
 
-objectSwatch : Int -> Element Msg
+objectSwatch : ObjectId -> Element Msg
 objectSwatch id =
   el [ Font.color (objectColor id) ] (icon "locate")
 
-objectIcon : Int -> String -> Element Msg
+objectIcon : ObjectId -> String -> Element Msg
 objectIcon id title =
   Html.img
     [ Html.Attributes.width 40
@@ -982,10 +979,34 @@ objectIcon id title =
       , height (px 40)
       ]
 
-objectIconWithSwatch : Int -> String -> Element Msg
+objectIconWithSwatch : ObjectId -> String -> Element Msg
 objectIconWithSwatch id title =
   objectIcon id title
     |> el [ inFront (el [ moveDown 20, moveRight 20 ] (objectSwatch id)) ]
+
+objectIconWithSwatchPrimary : ObjectId -> String -> Element Msg
+objectIconWithSwatchPrimary id title =
+  objectIcon id title
+    |> el [ alpha 0.5 ]
+    |> el [ inFront (el [ moveDown 20, moveRight 20 ] (objectSwatch id)) ]
+
+objectIconControl : Set ObjectId -> ObjectId -> String -> Element Msg
+objectIconControl iconObjects id title =
+  Input.checkbox
+    [ "click to change icon display mode"
+      |> Html.Attributes.title
+      |> htmlAttribute
+    ]
+    { onChange = ToggleIconDisplay id
+    , checked = Set.member id iconObjects
+    , label = Input.labelHidden "icon display mode"
+    , icon = (\checked ->
+        if checked then
+          objectIcon id title
+        else
+          objectIconWithSwatchPrimary id title
+      )
+    }
 
 lifeDetailHeader =
   column [ padding 4 ]
