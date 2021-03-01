@@ -1,7 +1,6 @@
 ## server work
 
 ## Features
-- option to show object search as images
 - time window range graph
 - assembling log search spans?
 - in-app help

@@ -977,6 +977,8 @@ objectImage id title =
       , centerY
       , width (px 40)
       , height (px 40)
+      , Background.color (rgb 0.5 0.5 0.5)
+      , Border.rounded 8
       ]
 
 objectImageWithSwatch : ObjectId -> String -> Element Msg
