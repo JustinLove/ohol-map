@@ -147,7 +147,7 @@ type alias Model =
   , browseProbablyTutorial : Bool
   }
 
-initialObjectSearch = [4654, 4737]
+initialObjectSearch = []--[4654, 4737]
 
 initialModel : Config -> Url -> Navigation.Key -> Model
 initialModel config location key =
@@ -169,11 +169,11 @@ initialModel config location key =
   , keySearchNotable = config.keySearchNotable
   , logSearchIndex = config.logSearchIndex
   , logSearch = config.logSearch
-  , sidebar = OpenSidebar
-  , sidebarMode = Search
-  , searchMode = SearchObjects
+  , sidebar = ClosedSidebar
+  , sidebarMode = DataFilter
+  , searchMode = SearchLives
   , lifeSearchTerm = ""
-  , objectSearchTerm = "iron"
+  , objectSearchTerm = ""
   , objectListMode = MatchingObjects
   , timeMode = ServerRange
   , coarseStartTime = Time.millisToPosix 0
