@@ -1,7 +1,9 @@
 ## server work
 
 ## Features
+- why does anim toggle need both toggleAnimated if we are calling baseLayerByTime?
 - time window range graph
+- object search header locked
 - assembling log search spans?
 - in-app help
 - town cluster labels
