@@ -2,6 +2,7 @@ module MapUI exposing (..)
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
 import LocalStorage
+import Log
 import Model exposing (..)
 import OHOLData as Data
 import OHOLData.Decode as Decode
@@ -470,8 +471,7 @@ update msg model =
     Event (Ok (Leaflet.AnimToggle)) ->
       toggleAnimated (not model.dataAnimated) model
     Event (Err err) ->
-      let _ = Debug.log "error" err in
-      (model, Cmd.none)
+      (model, Log.decodeError "error" err)
     MatchingLives (Ok lives) ->
       ( {model | lives = lives |> List.map myLife |> Data}
       , Cmd.batch
@@ -480,8 +480,7 @@ update msg model =
         ]
       )
     MatchingLives (Err error) ->
-      let _ = Debug.log "fetch lives failed" error in
-      ({model | lives = Failed error}, Cmd.none)
+      ({model | lives = Failed error}, Log.httpError "fetch lives failed" error)
     LineageLives serverId (Ok value) ->
       ( { model
         | lives = case value |> Json.Decode.decodeValue Decode.lives of
@@ -499,8 +498,7 @@ update msg model =
         ]
       )
     LineageLives serverId (Err error) ->
-      let _ = Debug.log "fetch lives failed" error in
-      ({model | lives = Failed error}, Cmd.none)
+      ({model | lives = Failed error}, Log.httpError "fetch lives failed" error)
     ServerList (Ok serverList) ->
       let
         servers = serverList
@@ -538,8 +536,7 @@ update msg model =
           |> addUpdate requireObjectSearch
           |> addUpdate requireNotableObjects
     ServerList (Err error) ->
-      let _ = Debug.log "fetch servers failed" error in
-      ({model | serverList = Failed error, servers = Dict.empty}, Cmd.none)
+      ({model | serverList = Failed error, servers = Dict.empty}, Log.httpError "fetch servers failed" error)
     ArcList serverId (Ok arcs) ->
       let
         lastArc = arcs |> List.reverse |> List.head
@@ -571,13 +568,12 @@ update msg model =
         |> updateMonuments serverId
         |> checkServerLoaded
     ArcList serverId (Err error) ->
-      let _ = Debug.log "fetch arcs failed" error in
       ( { model
         | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | arcs = Failed error}))
         , currentArc = Nothing
         , coarseArc = Nothing
         , timeRange = Nothing}
-        , Cmd.none
+      , Log.httpError "fetch arcs failed" error
       )
     SpanList serverId (Ok spans) ->
       let
@@ -607,11 +603,10 @@ update msg model =
         |> addUpdate requireObjectSearch
         |> addUpdate requireNotableObjects
     SpanList serverId (Err error) ->
-      let _ = Debug.log "fetch spans failed" error in
       ( { model
         | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | spans = Failed error}))
         }
-        , Cmd.none
+      , Log.httpError "fetch spans failed" error
       )
     KeyObjectSearchIndexReceived serverId datatime (Ok index) ->
       ( { model
@@ -621,11 +616,10 @@ update msg model =
         , Cmd.none
       )
     KeyObjectSearchIndexReceived serverId datatime (Err error) ->
-      let _ = Debug.log "fetch object search index failed" error in
       ( { model
         | spanData = model.spanData |> Maybe.map (\spanData -> {spanData | keyObjectSearchIndex = Failed error})
         }
-        , Cmd.none
+      , Log.httpError "fetch object search index failed" error
       )
     LogObjectSearchIndexReceived serverId datatime (Ok index) ->
       ( { model
@@ -635,11 +629,10 @@ update msg model =
         , Cmd.none
       )
     LogObjectSearchIndexReceived serverId datatime (Err error) ->
-      let _ = Debug.log "fetch object search index failed" error in
       ( { model
         | spanData = model.spanData |> Maybe.map (\spanData -> {spanData | logObjectSearchIndex = Failed error})
         }
-        , Cmd.none
+      , Log.httpError "fetch object search index failed" error
       )
     KeyObjectSearchReceived serverId datatime id (Ok (head :: tail)) ->
       model
@@ -648,10 +641,9 @@ update msg model =
     KeyObjectSearchReceived serverId datatime id (Ok []) ->
       ( model, Cmd.none)
     KeyObjectSearchReceived serverId datatime id (Err error) ->
-      let _ = Debug.log "fetch key object search failed" error in
       ( model
           |> mapBrowseLocations (Dict.insert id (Failed error))
-        , Cmd.none
+      , Log.httpError "fetch key object search failed" error
       )
     LogObjectSearchReceived serverId datatime id (Ok (head :: tail)) ->
       model
@@ -660,10 +652,9 @@ update msg model =
     LogObjectSearchReceived serverId datatime id (Ok []) ->
       ( model, Cmd.none)
     LogObjectSearchReceived serverId datatime id (Err error) ->
-      let _ = Debug.log "fetch log object search failed" error in
       ( model
           |> mapBrowsePlacements (Dict.insert id (Failed error))
-        , Cmd.none
+      , Log.httpError "fetch log object search failed" error
       )
     NotableObjectsReceived serverId datatime (Ok data) ->
       case model.spanData of
@@ -677,10 +668,12 @@ update msg model =
         Nothing ->
           ( model, Cmd.none )
     NotableObjectsReceived serverId datatime (Err error) ->
-      let _ = Debug.log "fetch notable object failed" error in
       ( model
         |> mapNotableLocations (\previous -> Failed error)
-        , Leaflet.notableObjects []
+      , Cmd.batch
+        [ Leaflet.notableObjects []
+        , Log.httpError "fetch notable object failed" error
+        ]
       )
         |> checkDefaultCenter
     ObjectsReceived (Ok objects) ->
@@ -706,8 +699,7 @@ update msg model =
         |> rebuildWorlds
         |> addUpdate requireNotableObjects
     ObjectsReceived (Err error) ->
-      let _ = Debug.log "fetch objects failed" error in
-      (model, Cmd.none)
+      (model, Log.httpError "fetch objects failed" error)
     MonumentList serverId (Ok monuments) ->
       ( { model
         | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | monuments = Data monuments}))
@@ -718,8 +710,7 @@ update msg model =
         |> checkDefaultCenter
         |> checkServerLoaded
     MonumentList serverId (Err error) ->
-      let _ = Debug.log "fetch monuments failed" error in
-      (model, Cmd.none)
+      (model, Log.httpError "fetch monuments failed" error)
     DataLayer serverId (Ok lives) ->
       ( { model
         | dataLayer = Data serverId
@@ -730,8 +721,9 @@ update msg model =
         ]
       )
     DataLayer serverId (Err error) ->
-      let _ = Debug.log "fetch data failed" error in
-      ({model | dataLayer = Failed error}, Cmd.none)
+      ( {model | dataLayer = Failed error}
+      , Log.httpError "fetch data failed" error
+      )
     NoDataLayer ->
       ( { model
         | dataLayer = NotRequested

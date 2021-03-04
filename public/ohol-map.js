@@ -4195,6 +4195,29 @@
   var loaded = localStorage.getItem(key)
   app.ports.localStorageLoaded.send(loaded)
 
+  // --------------- Log --------------------
+  if (app.ports.logCommand) {
+    app.ports.logCommand.subscribe(function(message) {
+      switch(message.kind) {
+        case 'debug':
+          console.debug(message.note, message.value)
+          break
+        case 'info':
+          console.info(message.note, message.value)
+          break
+        case 'warn':
+          console.warn(message.note, message.value)
+          break
+        case 'error':
+          console.error(message.note, message.value)
+          break
+        default:
+          console.log('unknown message', message)
+          break;
+      }
+    })
+  }
+
   /*
   var testSource = new CustomRandomSource(124567)
   for (var i = 0;i< 3;i++) {

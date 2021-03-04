@@ -21,7 +21,7 @@ decodeLoaded decoder =
   Maybe.andThen (\string ->
     string
      |> Json.Decode.decodeString decoder
-     |> Result.mapError (Debug.log "local storage decode error")
+     --|> Result.mapError (Debug.log "local storage decode error")
      |> Result.toMaybe
     )
 

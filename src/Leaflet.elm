@@ -313,7 +313,6 @@ event tagger =
 decodeEvent : Decode.Value -> Result Decode.Error Event
 decodeEvent thing =
   Decode.decodeValue eventDecoder thing
-    |> Result.mapError (Debug.log "map decode error")
 
 eventDecoder : Decode.Decoder Event
 eventDecoder =

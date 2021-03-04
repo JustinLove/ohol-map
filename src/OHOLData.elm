@@ -376,6 +376,7 @@ overlap world span =
   in
    over
 
+{-
 checkSpans : List Span -> List World -> List World
 checkSpans spans worlds =
   let
@@ -383,6 +384,7 @@ checkSpans spans worlds =
     _ = worlds |> List.concatMap .spans |> List.length |> Debug.log "used"
   in
     worlds
+    -}
 
 inRange : Int -> List {a|start:Posix} -> Bool
 inRange time list =
@@ -786,7 +788,7 @@ fixupStartTime =
 humanTime : String -> Posix
 humanTime s =
   Iso8601.toTime s
-    |> Result.mapError (Debug.log ("time error " ++ s))
+    --|> Result.mapError (Debug.log ("time error " ++ s))
     |> Result.withDefault (Time.millisToPosix 0)
 
 cellD = 128
