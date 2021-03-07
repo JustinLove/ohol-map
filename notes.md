@@ -1,6 +1,7 @@
 ## server work
 
 ## Features
+- turn off notable in other servers
 - why does anim toggle need both toggleAnimated if we are calling baseLayerByTime?
 - time window range graph
 - object search header locked

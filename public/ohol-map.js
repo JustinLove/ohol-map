@@ -281,10 +281,12 @@
   var iconScale = 1/8
 
   var loadIcons = function(placements) {
+    if (objectBounds.length < 1) return
     placements.forEach(function(placement) {
       var id = placement.id
       if (id != 0 && !icons[id]) {
         var bounds= objectBounds[id]
+        if (!bounds) return;
         var iw = (bounds[2] - bounds[0]) * iconScale
         var ih = (bounds[3] - bounds[1]) * iconScale
         var ix = -bounds[0] * iconScale
