@@ -606,7 +606,10 @@ update msg model =
       ( { model
         | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | spans = Failed error}))
         }
-      , Log.httpError "fetch spans failed" error
+      , Cmd.batch
+        [ Log.httpError "fetch spans failed" error
+        , Leaflet.notableObjects []
+        ]
       )
     KeyObjectSearchIndexReceived serverId datatime (Ok index) ->
       ( { model
@@ -1871,10 +1874,14 @@ requireNotableObjects model =
       , fetchNotableObjects model.keySearchNotable serverId spanData.end
       )
     else
-      (model, Cmd.none)
+      ( model
+      , spanData.notableLocations
+        |> RemoteData.withDefault []
+        |> Leaflet.notableObjects
+      )
     )
     model.spanData model.selectedServer (RemoteData.toMaybe model.objects)
-    |> Maybe.withDefault (model, Cmd.none)
+    |> Maybe.withDefault (model, Leaflet.notableObjects [])
 
 fetchNotableObjects : String -> Int -> Posix -> Cmd Msg
 fetchNotableObjects listUrl serverId datatime =
