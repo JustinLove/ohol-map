@@ -572,7 +572,7 @@ update msg model =
         | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | arcs = Failed error}))
         , currentArc = Nothing
         , coarseArc = Nothing
-        , timeRange = Nothing}
+        }
       , Log.httpError "fetch arcs failed" error
       )
     SpanList serverId (Ok spans) ->
