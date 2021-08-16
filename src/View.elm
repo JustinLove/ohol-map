@@ -20,6 +20,7 @@ import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
+import Element.Lazy as Element
 import Element.Region as Region
 import Html exposing (Html)
 import Html.Attributes
@@ -141,6 +142,18 @@ view model =
 
 timeOverlay : Model -> Element Msg
 timeOverlay model =
+  Element.lazy timeOverlayLazy
+    { notice = model.notice 
+    , zone = model.zone
+    , time = model.time
+    }
+
+timeOverlayLazy :
+  { notice : Notice
+  , zone : Time.Zone
+  , time : Time.Posix
+  } -> Element Msg
+timeOverlayLazy model =
   case model.notice of
     TimeNotice time until ->
       time
@@ -166,9 +179,26 @@ timeOverlay model =
     NoNotice ->
       none
 
-
 timeline : Model -> Element Msg
 timeline model =
+  Element.lazy timelineLazy
+    { theme = model.theme
+    , mapTime = model.mapTime
+    , timeRange = model.timeRange
+    , player = model.player
+    , zone = model.zone
+    , currentArc = model.currentArc
+    }
+
+timelineLazy :
+  { theme : Theme
+  , mapTime : Maybe Posix
+  , timeRange : Maybe (Posix, Posix)
+  , player : Player
+  , zone : Time.Zone
+  , currentArc : Maybe Arc
+  } -> Element Msg
+timelineLazy model =
   let
     palette = themePalette model.theme
   in
