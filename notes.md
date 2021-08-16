@@ -1,8 +1,12 @@
+## bugs
+- too man calls to location or history api in a short time - time scrolling while object seach is open - cannot reproduce
+- when objects search is open and location selected, cannot pan - cannot reproduce
+
 ## server work
 
 ## Features
 - turn off notable in other servers
-- why does anim toggle need both toggleAnimated if we are calling baseLayerByTime?
+- x why does anim toggle need both toggleAnimated if we are calling baseLayerByTime?
 - time window range graph
 - object search header locked
 - assembling log search spans?

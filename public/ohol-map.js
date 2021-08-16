@@ -4120,10 +4120,10 @@
           case 'animOverlay':
             dataAnimated = message.status
             // base layer does this for the object image layer, which has no alterate to toggle
+            //  toggleAnimated(objectOverlay, message.status)
+            //  toggleAnimated(oholBase, message.status)
             // life layer doesn't transition without these, but base layer seems like it should take care of it.
             toggleAnimated(dataOverlay, message.status)
-            toggleAnimated(objectOverlay, message.status)
-            toggleAnimated(oholBase, message.status)
             baseLayerByTime(map, mapTime, 'animOverlay')
             L.Util.setOptions(legendControl, {dataAnimated: message.status})
             legendControl.redraw()
