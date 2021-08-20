@@ -76,6 +76,8 @@ type Center
 type alias Model =
   { location : Url
   , navigationKey : Navigation.Key
+  , windowWidth : Int
+  , windowHeight : Int
   , theme : Theme
   , zone : Time.Zone
   , time : Posix
@@ -153,6 +155,8 @@ initialModel : Config -> Url -> Navigation.Key -> Model
 initialModel config location key =
   { location = location
   , navigationKey = key
+  , windowWidth = 320
+  , windowHeight = 300
   , theme = Theme.Dark
   , zone = Time.utc
   , time = Time.millisToPosix 0

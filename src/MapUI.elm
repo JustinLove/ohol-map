@@ -19,7 +19,7 @@ import Zipper exposing (Zipper)
 
 import Browser
 import Browser.Events
---import Browser.Dom
+import Browser.Dom as Dom
 import Browser.Navigation as Navigation
 import Http
 import Json.Decode
@@ -66,6 +66,7 @@ type Msg
   | CurrentZone Time.Zone
   | CurrentUrl Url
   | Navigate Browser.UrlRequest
+  | WindowSize (Int, Int)
 
 main = Browser.application
   { init = init
@@ -99,8 +100,15 @@ init config location key =
       , Leaflet.showActivityMapBelowZoom model.showActivityMapBelowZoom
       , highlightObjectsCommand model
       , sidebarCommand model
+      , initialWindowSize
       ]
     )
+
+initialWindowSize : Cmd Msg
+initialWindowSize =
+  Dom.getViewport
+    |> Task.map (\viewport -> (round viewport.viewport.width, round viewport.viewport.height))
+    |> Task.perform WindowSize
 
 updatePreset : Msg -> Model -> (Model, Cmd Msg)
 updatePreset msg model =
@@ -825,6 +833,10 @@ update msg model =
       )
     Navigate (Browser.External url) ->
       (model, Navigation.load url)
+    WindowSize (width, height) ->
+      ( {model | windowWidth = width, windowHeight = height}
+      , Cmd.none
+      )
 
 saveState : Model -> Cmd Msg
 saveState model =
@@ -1598,6 +1610,7 @@ subscriptions model =
         Time.every 100 UpdateHighlightedObjects
       else
         Sub.none
+    , Browser.Events.onResize (\w h -> WindowSize (w, h))
     ]
 
 fetchServers : String -> Cmd Msg
