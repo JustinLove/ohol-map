@@ -205,6 +205,15 @@ update msg model =
       )
     UI (View.MapTime time) ->
       scrubTime time model
+    UI (View.TimelineDown (x, _)) ->
+      let time = timelineScreenToTime model x in
+      scrubTime time {model | drag = Dragging time}
+    UI (View.TimelineUp (x, _)) ->
+      let time = timelineScreenToTime model x in
+      scrubTime time {model | drag = Released}
+    UI (View.TimelineMove (x, _)) ->
+      let time = timelineScreenToTime model x in
+      scrubTime time model
     UI (View.Play) ->
       ( { model
         | player = Starting

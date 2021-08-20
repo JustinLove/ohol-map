@@ -13,6 +13,8 @@ module Model exposing
   , ObjectId
   , Player(..)
   , Preset(..)
+  , ScreenLocation
+  , DragMode(..)
   , Server
   , Span
   , SpanData
@@ -44,6 +46,7 @@ module Model exposing
   , browseLocationInTutorial
   , browsePlacementInTutorial
   , lockedObjectList
+  , timelineScreenToTime
   )
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
@@ -117,6 +120,7 @@ type alias Model =
   , gameSecondsPerSecond : Int
   , framesPerSecond : Int
   , timeRange : Maybe (Posix, Posix)
+  , drag : DragMode
   , player : Player
   , fadeTallObjects : Bool
   , showNaturalObjectsAboveZoom : Int
@@ -196,6 +200,7 @@ initialModel config location key =
   , gameSecondsPerSecond = 600
   , framesPerSecond = 10
   , timeRange = Nothing
+  , drag = Released
   , player = Stopped
   , fadeTallObjects = False
   , showNaturalObjectsAboveZoom = 26
@@ -325,6 +330,12 @@ type Preset
   = NoPreset
   | Yesterday
   | DailyReview
+
+type alias ScreenLocation = (Float, Float)
+
+type DragMode
+  = Released
+  | Dragging Posix
 
 currentServer : Model -> Maybe Server
 currentServer model =
@@ -523,3 +534,25 @@ lockedObjectList model =
     model.lockedObjects
       |> Set.toList
       |> List.map (\objectId -> (objectId, Dict.get objectId names))
+
+timelineScreenToTime : Model -> Float -> Posix
+timelineScreenToTime model x =
+  case model.timeRange of
+    Just (start, end) ->
+      let
+        width = case model.sidebar of
+          OpenSidebar -> model.windowWidth - 330
+          ClosedSidebar -> model.windowWidth
+        min = (Time.posixToMillis start) + 1
+        max = Time.posixToMillis end
+        timeRange = (max - min) |> toFloat
+        screenRange = width |> toFloat
+      in
+        (x / screenRange)
+          |> (*) timeRange
+          |> round
+          |> (+) min
+          |> clamp min max
+          |> Time.millisToPosix
+    Nothing ->
+      Time.millisToPosix 0

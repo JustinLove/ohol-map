@@ -27,7 +27,7 @@ import Html.Attributes
 import Html.Events exposing (on, stopPropagationOn)
 import Html.Keyed
 import Http
-import Json.Decode
+import Json.Decode as Decode
 import SolidColor
 import Set exposing (Set)
 import Svg exposing (svg, use)
@@ -53,6 +53,9 @@ type Msg
   | GameSecondsPerSecond Int
   | FramesPerSecond Int
   | MapTime Posix
+  | TimelineDown ScreenLocation
+  | TimelineUp ScreenLocation
+  | TimelineMove ScreenLocation
   | Play
   | Pause
   | ToggleFadeTallObjects Bool
@@ -107,6 +110,9 @@ view model =
     , Background.color (themePalette model.theme).background
     , themeClass model.theme
     , htmlAttribute (Html.Attributes.id "layout")
+    , when (model.drag /= Released) (Html.Events.on "mouseup" (mouseDecoder TimelineUp))
+    , when (model.drag /= Released) (Html.Events.on "mouseleave" (mouseDecoder TimelineUp))
+    , when (model.drag /= Released) (Html.Events.on "mousemove" (mouseDecoder TimelineMove))
     ] <|
     Keyed.row [ width fill, height fill ]
       [ ( "main"
@@ -181,14 +187,25 @@ timeOverlayLazy model =
 
 timeline : Model -> Element Msg
 timeline model =
-  Element.lazy timelineLazy
-    { theme = model.theme
-    , mapTime = model.mapTime
-    , timeRange = model.timeRange
-    , player = model.player
-    , zone = model.zone
-    , currentArc = model.currentArc
-    }
+  column [ width fill ]
+    [ Element.lazy timelineLazy
+      { theme = model.theme
+      , mapTime = model.mapTime
+      , timeRange = model.timeRange
+      , player = model.player
+      , zone = model.zone
+      , currentArc = model.currentArc
+      , drag = model.drag
+      }
+    , Element.lazy timelineLazyBasic
+      { theme = model.theme
+      , mapTime = model.mapTime
+      , timeRange = model.timeRange
+      , player = model.player
+      , zone = model.zone
+      , currentArc = model.currentArc
+      }
+    ]
 
 timelineLazy :
   { theme : Theme
@@ -197,8 +214,118 @@ timelineLazy :
   , player : Player
   , zone : Time.Zone
   , currentArc : Maybe Arc
+  , drag : DragMode
   } -> Element Msg
 timelineLazy model =
+  let
+    palette = themePalette model.theme
+  in
+  case (model.mapTime, model.timeRange) of
+    (Just time, Just (start, end)) ->
+      column [ width fill ]
+        [ row []
+          [ case model.player of
+            Stopped ->
+              Input.button [ width (px 40), padding 4 ]
+                { onPress = Just Play
+                , label = el [ centerX ] <| icon "play3"
+                }
+            _ ->
+              Input.button [ width (px 40), padding 4 ]
+                { onPress = Just Pause
+                , label = el [ centerX ] <| icon "pause2"
+                }
+          , if model.zone == Time.utc then
+              Input.button []
+                { onPress = Just (ToggleUTC False)
+                , label = dateWithZone model.zone time palette
+                }
+            else
+              Input.button []
+                { onPress = Just (ToggleUTC True)
+                , label = dateWithZone model.zone time palette
+                }
+          , ( model.currentArc
+              |> Maybe.andThen (yearOfArc time)
+              |> Maybe.map (\s -> text (", " ++ s))
+              |> Maybe.withDefault none
+            )
+          , ( time
+              |> Time.posixToMillis
+              |> String.fromInt
+              |> (\s -> text (", " ++ s))
+            )
+          ]
+        , timeControl
+          { theme = model.theme
+          , drag = model.drag
+          , time = time
+          , start = start
+          , end = end
+          }
+        ]
+    _ ->
+      none
+
+timeControl :
+  { theme : Theme
+  , drag : DragMode
+  , time : Posix
+  , start : Posix
+  , end : Posix
+  } -> Element Msg
+timeControl model =
+  let
+    palette = themePalette model.theme
+    min = (Time.posixToMillis model.start) + 1
+    max = Time.posixToMillis model.end
+    value = Time.posixToMillis model.time
+  in
+  row
+    [ Background.color palette.control
+    , width fill
+    , height (px 20)
+    , when (model.drag == Released) (Html.Events.preventDefaultOn "mousedown" (Decode.map (\msg -> (msg,True)) (mouseDecoder TimelineDown)))
+    , htmlAttribute (Html.Attributes.draggable "false")
+    ]
+    [ el
+      [ width (fillPortion (value - min)) ]
+        none
+    , el
+      [ width (px 4)
+      , height (px 20)
+      , Background.color palette.foreground
+      ]
+        none
+    , el
+      [ width (fillPortion (max - value)) ]
+        none
+    ]
+    {-
+  , Input.slider
+    [ Background.color palette.control ]
+    { onChange = round
+      >> ((*) 1000)
+      >> Time.millisToPosix
+      >> MapTime
+    , label = Input.labelHidden "timeline"
+    , min = (start |> posixToFloat 0) + 1
+    , max = end |> posixToFloat 0
+    , value = time |> posixToFloat 0
+    , thumb = Input.defaultThumb
+    , step = Just 1
+    }
+    -}
+
+timelineLazyBasic :
+  { theme : Theme
+  , mapTime : Maybe Posix
+  , timeRange : Maybe (Posix, Posix)
+  , player : Player
+  , zone : Time.Zone
+  , currentArc : Maybe Arc
+  } -> Element Msg
+timelineLazyBasic model =
   let
     palette = themePalette model.theme
   in
@@ -1941,27 +2068,41 @@ inverseHeading palette title =
 
 onChange : (String -> msg) -> Attribute msg
 onChange tagger =
-  targetValue Json.Decode.string tagger
+  targetValue Decode.string tagger
     |> on "change"
     |> htmlAttribute
 
-targetValue : Json.Decode.Decoder a -> (a -> msg) -> Json.Decode.Decoder msg
+targetValue : Decode.Decoder a -> (a -> msg) -> Decode.Decoder msg
 targetValue decoder tagger =
-  Json.Decode.map tagger
-    (Json.Decode.at ["target", "value" ] decoder)
+  Decode.map tagger
+    (Decode.at ["target", "value" ] decoder)
 
 onEnter : msg -> Attribute msg
 onEnter msg =
-  Json.Decode.field "key" Json.Decode.string
-    |> Json.Decode.andThen
+  Decode.field "key" Decode.string
+    |> Decode.andThen
       (\key ->
         if key == "Enter" then
-          Json.Decode.succeed msg
+          Decode.succeed msg
         else
-          Json.Decode.fail "Not the enter key"
+          Decode.fail "Not the enter key"
       )
     |> on "keyup"
     |> htmlAttribute
+
+when : Bool -> Html.Attribute msg -> Attribute msg
+when test att =
+  (if test then att else Html.Attributes.class "")
+    |> htmlAttribute
+
+mouseDecoder tagger =
+  (Decode.map tagger clientDecoder)
+
+clientDecoder : Decode.Decoder ScreenLocation
+clientDecoder =
+  Decode.map2 Tuple.pair
+    (Decode.field "clientX" Decode.float)
+    (Decode.field "clientY" Decode.float)
 
 themeClass : Theme -> Attribute Msg
 themeClass theme =
