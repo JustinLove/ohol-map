@@ -343,6 +343,7 @@ type alias ScreenLocation = (Float, Float)
 type DragMode
   = Released
   | Dragging TimelineId Posix
+  | Scrubbing TimelineId Posix
 
 currentServer : Model -> Maybe Server
 currentServer model =

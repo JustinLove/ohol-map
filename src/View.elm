@@ -54,6 +54,7 @@ type Msg
   | GameSecondsPerSecond Int
   | FramesPerSecond Int
   | MapTime Posix
+  | TimelineGrab TimelineId ScreenLocation
   | TimelineDown TimelineId ScreenLocation
   | TimelineUp ScreenLocation
   | TimelineMove ScreenLocation
@@ -338,9 +339,13 @@ timeControl model line =
       [ width (fillPortion (value - min)) ]
         none
     , el
-      [ width (px 4)
-      , height (px 20)
+      [ width (px 16)
+      , height (px 16)
+      , Border.rounded 8
+      , Border.width 1
+      , Border.color palette.divider
       , Background.color palette.foreground
+      , when (model.drag == Released) (Html.Events.custom "mousedown" (Decode.map (\msg -> {message = msg, stopPropagation = True, preventDefault = True}) (mouseDecoder (TimelineGrab line.id))))
       ]
         none
     , el

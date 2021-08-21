@@ -205,6 +205,13 @@ update msg model =
       )
     UI (View.MapTime time) ->
       scrubTime time model
+    UI (View.TimelineGrab index (x, _)) ->
+      case timeline model index of
+        Just line ->
+          let time = timelineScreenToTime line x in
+          scrubTime time {model | drag = Scrubbing index time}
+        Nothing ->
+          (model, Cmd.none)
     UI (View.TimelineDown index (x, _)) ->
       case timeline model index of
         Just line ->
@@ -1274,6 +1281,16 @@ timelineDrag x model =
           in
           model
             |> timelineRange index range
+            |> scrubTime time
+        Nothing ->
+          (model, Cmd.none)
+    Scrubbing index start ->
+      case timeline model index of
+        Just line ->
+          let
+            time = timelineScreenToTime line x
+          in
+          model
             |> scrubTime time
         Nothing ->
           (model, Cmd.none)
