@@ -307,6 +307,31 @@ timeControl model line =
     , height (px 20)
     , when (model.drag == Released) (Html.Events.preventDefaultOn "mousedown" (Decode.map (\msg -> (msg,True)) (mouseDecoder (TimelineDown line.id))))
     , htmlAttribute (Html.Attributes.draggable "false")
+    , behindContent
+      (case line.timeRange of
+        Just (from, to) ->
+          let
+            start = (Time.posixToMillis from) + 1
+            end = Time.posixToMillis to
+          in
+          row
+            [ width fill ]
+            [ el
+              [ width (fillPortion (start - min)) ]
+                none
+            , el
+              [ width (fillPortion (end - start))
+              , height (px 20)
+              , Background.color palette.selected
+              ]
+                none
+            , el
+              [ width (fillPortion (max - end)) ]
+                none
+            ]
+        Nothing ->
+          none
+      )
     ]
     [ el
       [ width (fillPortion (value - min)) ]

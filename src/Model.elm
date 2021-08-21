@@ -559,6 +559,7 @@ type alias Timeline =
   { id : TimelineId
   , minTime : Posix
   , maxTime : Posix
+  , timeRange : Maybe (Posix, Posix)
   , width : Int
   }
 
@@ -576,6 +577,7 @@ timeline model index =
         { id = index
         , minTime = serverMinTime model.servers selectedServer
         , maxTime = serverMaxTime model.servers selectedServer
+        , timeRange = model.timeRange
         , width = width
         }
     1 ->
@@ -585,6 +587,7 @@ timeline model index =
             { id = index
             , minTime = min
             , maxTime = max
+            , timeRange = Nothing
             , width = width
             }
         Nothing ->
