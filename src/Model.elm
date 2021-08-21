@@ -46,10 +46,11 @@ module Model exposing
   , browseLocationInTutorial
   , browsePlacementInTutorial
   , lockedObjectList
-  , timelineScreenToTime
   , Timeline
   , TimelineId
   , timeline
+  , timelineScreenToTime
+  , timelineRange
   )
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
@@ -538,21 +539,6 @@ lockedObjectList model =
       |> Set.toList
       |> List.map (\objectId -> (objectId, Dict.get objectId names))
 
-timelineScreenToTime : Timeline -> Float -> Posix
-timelineScreenToTime line x =
-  let
-    min = (Time.posixToMillis line.minTime) + 1
-    max = Time.posixToMillis line.maxTime
-    range = (max - min) |> toFloat
-    screenRange = line.width |> toFloat
-  in
-    (x / screenRange)
-      |> (*) range
-      |> round
-      |> (+) min
-      |> clamp min max
-      |> Time.millisToPosix
-
 type alias TimelineId = Int
 
 type alias Timeline =
@@ -622,3 +608,25 @@ serverTime field aggragate servers current =
         |> Maybe.withDefault 0
         |> Time.millisToPosix
 
+timelineScreenToTime : Timeline -> Float -> Posix
+timelineScreenToTime line x =
+  let
+    min = (Time.posixToMillis line.minTime) + 1
+    max = Time.posixToMillis line.maxTime
+    range = (max - min) |> toFloat
+    screenRange = line.width |> toFloat
+  in
+    (x / screenRange)
+      |> (*) range
+      |> round
+      |> (+) min
+      |> clamp min max
+      |> Time.millisToPosix
+
+timelineRange : TimelineId -> Maybe (Posix, Posix) -> Model -> Model
+timelineRange index range model =
+  case index of
+    0 ->
+      {model | timeRange = range}
+    _ ->
+      model

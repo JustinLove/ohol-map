@@ -213,9 +213,9 @@ update msg model =
         Nothing ->
           (model, Cmd.none)
     UI (View.TimelineUp (x, _)) ->
-      ({model | drag = Released}, Cmd.none)
+      timelineDrag x {model | drag = Released}
     UI (View.TimelineMove (x, _)) ->
-      timelineDrag model x
+      timelineDrag x model
     UI (View.Play) ->
       ( { model
         | player = Starting
@@ -1259,14 +1259,22 @@ scrubTime time model =
   else
     (model, Cmd.none)
 
-timelineDrag : Model -> Float -> (Model, Cmd Msg)
-timelineDrag model x =
+timelineDrag : Float -> Model -> (Model, Cmd Msg)
+timelineDrag x model =
   case model.drag of
-    Dragging index _ ->
+    Dragging index start ->
       case timeline model index of
         Just line ->
-          let time = timelineScreenToTime line x in
-          scrubTime time model
+          let
+            time = timelineScreenToTime line x
+            range = if Time.posixToMillis start <= Time.posixToMillis time then
+                Just (start, time)
+              else
+                Just (time, start)
+          in
+          model
+            |> timelineRange index range
+            |> scrubTime time
         Nothing ->
           (model, Cmd.none)
     Released ->
