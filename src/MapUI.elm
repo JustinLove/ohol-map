@@ -205,15 +205,17 @@ update msg model =
       )
     UI (View.MapTime time) ->
       scrubTime time model
-    UI (View.TimelineDown (x, _)) ->
-      let time = timelineScreenToTime model x in
-      scrubTime time {model | drag = Dragging time}
+    UI (View.TimelineDown index (x, _)) ->
+      case timeline model index of
+        Just line ->
+          let time = timelineScreenToTime line x in
+          scrubTime time {model | drag = Dragging index time}
+        Nothing ->
+          (model, Cmd.none)
     UI (View.TimelineUp (x, _)) ->
-      let time = timelineScreenToTime model x in
-      scrubTime time {model | drag = Released}
+      ({model | drag = Released}, Cmd.none)
     UI (View.TimelineMove (x, _)) ->
-      let time = timelineScreenToTime model x in
-      scrubTime time model
+      timelineDrag model x
     UI (View.Play) ->
       ( { model
         | player = Starting
@@ -1257,6 +1259,19 @@ scrubTime time model =
   else
     (model, Cmd.none)
 
+timelineDrag : Model -> Float -> (Model, Cmd Msg)
+timelineDrag model x =
+  case model.drag of
+    Dragging index _ ->
+      case timeline model index of
+        Just line ->
+          let time = timelineScreenToTime line x in
+          scrubTime time model
+        Nothing ->
+          (model, Cmd.none)
+    Released ->
+        (model, Cmd.none)
+
 setTimeRange : Model -> Model
 setTimeRange model =
   let
@@ -1272,7 +1287,7 @@ setTimeRange model =
   in
     { model
     | timeRange = timeRange
-    , dataAnimated = model.dataAnimated && animatable
+    , dataAnimated = True --model.dataAnimated && animatable
     }
 
 arcForTime : Posix -> RemoteData (List Arc) -> Maybe Arc

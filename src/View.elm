@@ -53,7 +53,7 @@ type Msg
   | GameSecondsPerSecond Int
   | FramesPerSecond Int
   | MapTime Posix
-  | TimelineDown ScreenLocation
+  | TimelineDown TimelineId ScreenLocation
   | TimelineUp ScreenLocation
   | TimelineMove ScreenLocation
   | Play
@@ -133,7 +133,7 @@ view model =
             )
           , ( "timeline"
             , if model.dataAnimated && model.timeRange /= Nothing then
-                timeline model
+                displayTimeline model
               else
                 none
             )
@@ -185,19 +185,23 @@ timeOverlayLazy model =
     NoNotice ->
       none
 
-timeline : Model -> Element Msg
-timeline model =
+displayTimeline : Model -> Element Msg
+displayTimeline model =
+  let
+    selectedServer = model.selectedServer |> Maybe.andThen (\id -> Dict.get id model.servers)
+  in
   column [ width fill ]
-    [ Element.lazy timelineLazy
+    [ Element.lazy displayTimelineLazy
       { theme = model.theme
       , mapTime = model.mapTime
-      , timeRange = model.timeRange
+      , zero = timeline model 0
+      , one = timeline model 1
       , player = model.player
       , zone = model.zone
       , currentArc = model.currentArc
       , drag = model.drag
       }
-    , Element.lazy timelineLazyBasic
+    , Element.lazy displayTimelineLazyBasic
       { theme = model.theme
       , mapTime = model.mapTime
       , timeRange = model.timeRange
@@ -207,21 +211,22 @@ timeline model =
       }
     ]
 
-timelineLazy :
+displayTimelineLazy :
   { theme : Theme
   , mapTime : Maybe Posix
-  , timeRange : Maybe (Posix, Posix)
+  , zero : Maybe Timeline
+  , one : Maybe Timeline
   , player : Player
   , zone : Time.Zone
   , currentArc : Maybe Arc
   , drag : DragMode
   } -> Element Msg
-timelineLazy model =
+displayTimelineLazy model =
   let
     palette = themePalette model.theme
   in
-  case (model.mapTime, model.timeRange) of
-    (Just time, Just (start, end)) ->
+  case model.mapTime of
+    Just time ->
       column [ width fill ]
         [ row []
           [ case model.player of
@@ -256,13 +261,30 @@ timelineLazy model =
               |> (\s -> text (", " ++ s))
             )
           ]
-        , timeControl
-          { theme = model.theme
-          , drag = model.drag
-          , time = time
-          , start = start
-          , end = end
-          }
+        , model.one |> Maybe.map (timeControl
+            { theme = model.theme
+            , drag = model.drag
+            , time = time
+            }
+              >> el
+                [ Border.widthEach
+                  { bottom = 1
+                  , left = 0
+                  , right = 0
+                  , top = 0
+                  }
+                , Border.color palette.divider
+                , width fill
+                ]
+          )
+          |> Maybe.withDefault none
+        , model.zero |> Maybe.map (timeControl
+            { theme = model.theme
+            , drag = model.drag
+            , time = time
+            }
+          )
+          |> Maybe.withDefault none
         ]
     _ ->
       none
@@ -271,21 +293,19 @@ timeControl :
   { theme : Theme
   , drag : DragMode
   , time : Posix
-  , start : Posix
-  , end : Posix
-  } -> Element Msg
-timeControl model =
+  } -> Timeline -> Element Msg
+timeControl model line =
   let
     palette = themePalette model.theme
-    min = (Time.posixToMillis model.start) + 1
-    max = Time.posixToMillis model.end
-    value = Time.posixToMillis model.time
+    min = (Time.posixToMillis line.minTime) + 1
+    max = Time.posixToMillis line.maxTime
+    value = Time.posixToMillis model.time |> clamp min max
   in
   row
     [ Background.color palette.control
     , width fill
     , height (px 20)
-    , when (model.drag == Released) (Html.Events.preventDefaultOn "mousedown" (Decode.map (\msg -> (msg,True)) (mouseDecoder TimelineDown)))
+    , when (model.drag == Released) (Html.Events.preventDefaultOn "mousedown" (Decode.map (\msg -> (msg,True)) (mouseDecoder (TimelineDown line.id))))
     , htmlAttribute (Html.Attributes.draggable "false")
     ]
     [ el
@@ -317,7 +337,7 @@ timeControl model =
     }
     -}
 
-timelineLazyBasic :
+displayTimelineLazyBasic :
   { theme : Theme
   , mapTime : Maybe Posix
   , timeRange : Maybe (Posix, Posix)
@@ -325,7 +345,7 @@ timelineLazyBasic :
   , zone : Time.Zone
   , currentArc : Maybe Arc
   } -> Element Msg
-timelineLazyBasic model =
+displayTimelineLazyBasic model =
   let
     palette = themePalette model.theme
   in
@@ -1381,8 +1401,8 @@ dataButtonDisabled palette =
 startTimeSelect : Model -> Element Msg
 startTimeSelect model =
   let
-    selectedServer = model.selectedServer |> Maybe.andThen (\id -> Dict.get id model.servers)
     controlColor = (themePalette model.theme).control
+    range = timeline model 0
   in
   column [ width fill, spacing 2 ]
     [ Input.slider
@@ -1399,8 +1419,8 @@ startTimeSelect model =
               |> text
             )
           ]
-      , min = serverMinTime model.servers selectedServer
-      , max = serverMaxTime model.servers selectedServer
+      , min = range |> Maybe.map (.minTime>>(posixToFloat 0)) |> Maybe.withDefault 0
+      , max = range |> Maybe.map (.maxTime>>(posixToFloat 0)) |> Maybe.withDefault 0
       , value = model.coarseStartTime |> posixToFloat 0
       , thumb = Input.defaultThumb
       , step = Just 1
@@ -1600,32 +1620,6 @@ arcSelect model =
           Nothing ->
             text "Arc"
       ]
-
-serverMinTime : Dict Int Server -> Maybe Server -> Float
-serverMinTime =
-  serverTime .minTime List.minimum
-
-serverMaxTime : Dict Int Server -> Maybe Server -> Float
-serverMaxTime =
-  serverTime .maxTime List.maximum
-
-serverTime
-  :  (Server -> Posix)
-  -> (List Float -> Maybe Float)
-  -> Dict Int Server
-  -> Maybe Server
-  -> Float
-serverTime field aggragate servers current =
-  case current of
-    Just server ->
-      server |> field |> posixToFloat 0
-    Nothing ->
-      servers
-        |> Dict.values
-        |> List.map field
-        |> List.map (posixToFloat 0)
-        |> aggragate
-        |> Maybe.withDefault 0
 
 posixToFloat : Int -> Posix -> Float
 posixToFloat offsetDays =

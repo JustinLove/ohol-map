@@ -47,6 +47,9 @@ module Model exposing
   , browsePlacementInTutorial
   , lockedObjectList
   , timelineScreenToTime
+  , Timeline
+  , TimelineId
+  , timeline
   )
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
@@ -335,7 +338,7 @@ type alias ScreenLocation = (Float, Float)
 
 type DragMode
   = Released
-  | Dragging Posix
+  | Dragging TimelineId Posix
 
 currentServer : Model -> Maybe Server
 currentServer model =
@@ -535,24 +538,84 @@ lockedObjectList model =
       |> Set.toList
       |> List.map (\objectId -> (objectId, Dict.get objectId names))
 
-timelineScreenToTime : Model -> Float -> Posix
-timelineScreenToTime model x =
-  case model.timeRange of
-    Just (start, end) ->
-      let
-        width = case model.sidebar of
-          OpenSidebar -> model.windowWidth - 330
-          ClosedSidebar -> model.windowWidth
-        min = (Time.posixToMillis start) + 1
-        max = Time.posixToMillis end
-        timeRange = (max - min) |> toFloat
-        screenRange = width |> toFloat
-      in
-        (x / screenRange)
-          |> (*) timeRange
-          |> round
-          |> (+) min
-          |> clamp min max
-          |> Time.millisToPosix
+timelineScreenToTime : Timeline -> Float -> Posix
+timelineScreenToTime line x =
+  let
+    min = (Time.posixToMillis line.minTime) + 1
+    max = Time.posixToMillis line.maxTime
+    range = (max - min) |> toFloat
+    screenRange = line.width |> toFloat
+  in
+    (x / screenRange)
+      |> (*) range
+      |> round
+      |> (+) min
+      |> clamp min max
+      |> Time.millisToPosix
+
+type alias TimelineId = Int
+
+type alias Timeline =
+  { id : TimelineId
+  , minTime : Posix
+  , maxTime : Posix
+  , width : Int
+  }
+
+timeline : Model -> TimelineId -> Maybe Timeline
+timeline model index =
+  let
+    selectedServer = model.selectedServer |> Maybe.andThen (\id -> Dict.get id model.servers)
+    width = case model.sidebar of
+      OpenSidebar -> model.windowWidth - 330
+      ClosedSidebar -> model.windowWidth
+  in
+  case index of
+    0 ->
+      Just
+        { id = index
+        , minTime = serverMinTime model.servers selectedServer
+        , maxTime = serverMaxTime model.servers selectedServer
+        , width = width
+        }
+    1 ->
+      case model.timeRange of
+        Just (min, max) ->
+          Just
+            { id = index
+            , minTime = min
+            , maxTime = max
+            , width = width
+            }
+        Nothing ->
+          Nothing
+    _ ->
+      Nothing
+
+serverMinTime : Dict Int Server -> Maybe Server -> Posix
+serverMinTime =
+  serverTime .minTime List.minimum
+
+serverMaxTime : Dict Int Server -> Maybe Server -> Posix
+serverMaxTime =
+  serverTime .maxTime List.maximum
+
+serverTime
+  :  (Server -> Posix)
+  -> (List Int -> Maybe Int)
+  -> Dict Int Server
+  -> Maybe Server
+  -> Posix
+serverTime field aggragate servers current =
+  case current of
+    Just server ->
+      server |> field
     Nothing ->
-      Time.millisToPosix 0
+      servers
+        |> Dict.values
+        |> List.map field
+        |> List.map Time.posixToMillis
+        |> aggragate
+        |> Maybe.withDefault 0
+        |> Time.millisToPosix
+
