@@ -11,6 +11,7 @@ import RemoteData exposing (RemoteData(..))
 import Theme exposing (Theme)
 import Zipper exposing (Zipper)
 
+import Array
 import Browser
 import Dict exposing (Dict)
 import Element exposing (..)
@@ -196,6 +197,9 @@ displayTimeline model =
       , mapTime = model.mapTime
       , zero = timeline model 0
       , one = timeline model 1
+      , timelines =
+        List.range 0 (Array.length model.timelineSelections)
+          |> List.filterMap (timeline model)
       , player = model.player
       , zone = model.zone
       , currentArc = model.currentArc
@@ -216,6 +220,7 @@ displayTimelineLazy :
   , mapTime : Maybe Posix
   , zero : Maybe Timeline
   , one : Maybe Timeline
+  , timelines : List Timeline
   , player : Player
   , zone : Time.Zone
   , currentArc : Maybe Arc
@@ -261,7 +266,10 @@ displayTimelineLazy model =
               |> (\s -> text (", " ++ s))
             )
           ]
-        , model.one |> Maybe.map (timeControl
+        , column [ width fill ]
+            (model.timelines
+            |> List.reverse
+            |> List.map (timeControl
             { theme = model.theme
             , drag = model.drag
             , time = time
@@ -276,15 +284,8 @@ displayTimelineLazy model =
                 , Border.color palette.divider
                 , width fill
                 ]
+            )
           )
-          |> Maybe.withDefault none
-        , model.zero |> Maybe.map (timeControl
-            { theme = model.theme
-            , drag = model.drag
-            , time = time
-            }
-          )
-          |> Maybe.withDefault none
         ]
     _ ->
       none

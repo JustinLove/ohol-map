@@ -60,6 +60,7 @@ import RemoteData exposing (RemoteData(..))
 import Theme exposing (Theme)
 import Zipper exposing (Zipper)
 
+import Array exposing (Array)
 import Browser.Navigation as Navigation
 import Dict exposing(Dict)
 import Http
@@ -124,6 +125,7 @@ type alias Model =
   , gameSecondsPerSecond : Int
   , framesPerSecond : Int
   , timeRange : Maybe (Posix, Posix)
+  , timelineSelections : Array (Posix, Posix)
   , drag : DragMode
   , player : Player
   , fadeTallObjects : Bool
@@ -204,6 +206,7 @@ initialModel config location key =
   , gameSecondsPerSecond = 600
   , framesPerSecond = 10
   , timeRange = Nothing
+  , timelineSelections = Array.empty
   , drag = Released
   , player = Stopped
   , fadeTallObjects = False
@@ -557,29 +560,26 @@ timeline model index =
       OpenSidebar -> model.windowWidth - 330
       ClosedSidebar -> model.windowWidth
   in
-  case index of
-    0 ->
-      Just
-        { id = index
-        , minTime = serverMinTime model.servers selectedServer
-        , maxTime = serverMaxTime model.servers selectedServer
-        , timeRange = model.timeRange
-        , width = width
-        }
-    1 ->
-      case model.timeRange of
-        Just (min, max) ->
-          Just
-            { id = index
-            , minTime = min
-            , maxTime = max
-            , timeRange = Nothing
-            , width = width
-            }
-        Nothing ->
-          Nothing
-    _ ->
-      Nothing
+  if index == 0 then
+    Just
+      { id = index
+      , minTime = serverMinTime model.servers selectedServer
+      , maxTime = serverMaxTime model.servers selectedServer
+      , timeRange = Array.get index model.timelineSelections
+      , width = width
+      }
+  else
+    case Array.get (index-1) model.timelineSelections of
+      Just (min, max) ->
+        Just
+          { id = index
+          , minTime = min
+          , maxTime = max
+          , timeRange = Array.get index model.timelineSelections
+          , width = width
+          }
+      Nothing ->
+        Nothing
 
 serverMinTime : Dict Int Server -> Maybe Server -> Posix
 serverMinTime =
@@ -624,9 +624,21 @@ timelineScreenToTime line x =
       |> Time.millisToPosix
 
 timelineRange : TimelineId -> Maybe (Posix, Posix) -> Model -> Model
-timelineRange index range model =
-  case index of
-    0 ->
-      {model | timeRange = range}
-    _ ->
-      model
+timelineRange index mrange model =
+  let
+    lines =
+      case mrange of
+        Just range ->
+          (if index < Array.length model.timelineSelections then
+            Array.set index range model.timelineSelections
+          else
+            Array.push range model.timelineSelections
+          )
+            |> Array.slice 0 (index+1)
+        Nothing ->
+          Array.slice 0 index model.timelineSelections
+  in
+    { model
+    | timelineSelections = lines
+    , timeRange = mrange
+    }
