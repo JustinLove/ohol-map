@@ -273,23 +273,24 @@ displayTimelineLazy model =
             )
           ]
         , column [ width fill ]
-            (model.timelines
+          (model.timelines
             |> List.reverse
             |> List.map (timeControl
-            { theme = model.theme
-            , drag = model.drag
-            , time = time
-            }
-              >> el
-                [ Border.widthEach
-                  { bottom = 1
-                  , left = 0
-                  , right = 0
-                  , top = 0
-                  }
-                , Border.color palette.divider
-                , width fill
-                ]
+              { theme = model.theme
+              , zone = model.zone
+              , drag = model.drag
+              , time = time
+              }
+                >> el
+                  [ Border.widthEach
+                    { bottom = 0
+                    , left = 0
+                    , right = 0
+                    , top = 1
+                    }
+                  , Border.color palette.divider
+                  , width fill
+                  ]
             )
           )
         ]
@@ -298,6 +299,7 @@ displayTimelineLazy model =
 
 timeControl :
   { theme : Theme
+  , zone : Time.Zone
   , drag : DragMode
   , time : Posix
   } -> Timeline -> Element Msg
@@ -339,6 +341,8 @@ timeControl model line =
         Nothing ->
           none
       )
+    , behindContent (el [ Font.color palette.deemphasis, alignLeft ] (text (dateWithSeconds model.zone line.minTime)))
+    , behindContent (el [ Font.color palette.deemphasis, alignRight ] (text (dateWithSeconds model.zone line.maxTime)))
     ]
     [ el
       [ width (fillPortion (value - min)) ]
@@ -357,21 +361,6 @@ timeControl model line =
       [ width (fillPortion (max - value)) ]
         none
     ]
-    {-
-  , Input.slider
-    [ Background.color palette.control ]
-    { onChange = round
-      >> ((*) 1000)
-      >> Time.millisToPosix
-      >> MapTime
-    , label = Input.labelHidden "timeline"
-    , min = (start |> posixToFloat 0) + 1
-    , max = end |> posixToFloat 0
-    , value = time |> posixToFloat 0
-    , thumb = Input.defaultThumb
-    , step = Just 1
-    }
-    -}
 
 displayTimelineLazyBasic :
   { theme : Theme
