@@ -221,6 +221,13 @@ update msg model =
           (model, Cmd.none)
     UI (View.TimelineUp (x, _)) ->
       timelineDrag x {model | drag = Released}
+    UI (View.TimelineEnter held (x, _)) ->
+      if held then
+        timelineDrag x model
+      else
+        ({model | drag = Released}, Cmd.none)
+    UI (View.TimelineLeave (x, _)) ->
+      timelineDrag (timelineLeave model x) model
     UI (View.TimelineMove (x, _)) ->
       timelineDrag x model
     UI (View.Play) ->

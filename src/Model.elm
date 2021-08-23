@@ -50,6 +50,7 @@ module Model exposing
   , TimelineId
   , timeline
   , timelineScreenToTime
+  , timelineLeave
   , timelineRange
   )
 
@@ -608,6 +609,20 @@ serverTime field aggragate servers current =
         |> aggragate
         |> Maybe.withDefault 0
         |> Time.millisToPosix
+
+timelineLeave : Model -> Float -> Float
+timelineLeave model x =
+  let
+    width =
+      (case model.sidebar of
+        OpenSidebar -> model.windowWidth - 330
+        ClosedSidebar -> model.windowWidth
+      ) |> toFloat
+  in
+    if x < width/2 then
+      0
+    else
+      width
 
 timelineScreenToTime : Timeline -> Float -> Posix
 timelineScreenToTime line x =

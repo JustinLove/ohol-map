@@ -12,6 +12,7 @@ import Theme exposing (Theme)
 import Zipper exposing (Zipper)
 
 import Array
+import Bitwise
 import Browser
 import Dict exposing (Dict)
 import Element exposing (..)
@@ -57,6 +58,8 @@ type Msg
   | TimelineGrab TimelineId ScreenLocation
   | TimelineDown TimelineId ScreenLocation
   | TimelineUp ScreenLocation
+  | TimelineEnter Bool ScreenLocation
+  | TimelineLeave ScreenLocation
   | TimelineMove ScreenLocation
   | Play
   | Pause
@@ -113,7 +116,9 @@ view model =
     , themeClass model.theme
     , htmlAttribute (Html.Attributes.id "layout")
     , when (model.drag /= Released) (Html.Events.on "mouseup" (mouseDecoder TimelineUp))
-    , when (model.drag /= Released) (Html.Events.on "mouseleave" (mouseDecoder TimelineUp))
+    , when (model.drag /= Released) (Html.Events.on "mouseleave" (mouseDecoder TimelineLeave))
+    , when (model.drag /= Released) (Html.Events.on "mouseenter" (mouseWithHeldDecoder TimelineEnter))
+    , when (model.drag /= Released) (Html.Events.on "mouseleave" (mouseDecoder TimelineLeave))
     , when (model.drag /= Released) (Html.Events.on "mousemove" (mouseDecoder TimelineMove))
     ] <|
     Keyed.row [ width fill, height fill ]
@@ -2120,8 +2125,18 @@ when test att =
   (if test then att else Html.Attributes.class "")
     |> htmlAttribute
 
+mouseWithHeldDecoder tagger =
+  Decode.map2 tagger
+    buttonPressedDecoder
+    clientDecoder
+
 mouseDecoder tagger =
   (Decode.map tagger clientDecoder)
+
+buttonPressedDecoder : Decode.Decoder Bool
+buttonPressedDecoder =
+  Decode.field "buttons" Decode.int
+    |> Decode.map (\button -> Bitwise.and button 1 /= 0)
 
 clientDecoder : Decode.Decoder ScreenLocation
 clientDecoder =
