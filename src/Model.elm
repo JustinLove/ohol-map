@@ -46,8 +46,9 @@ module Model exposing
   , browseLocationInTutorial
   , browsePlacementInTutorial
   , lockedObjectList
-  , Timeline
   , TimelineId
+  , TimelineData(..)
+  , Timeline
   , timeline
   , timelineScreenToTime
   , timelineLeave
@@ -554,12 +555,18 @@ lockedObjectList model =
 
 type alias TimelineId = Int
 
+type TimelineData
+  = TimelineBlank
+  | TimelineArcs (List Arc)
+  | TimelineSpans (List Span)
+
 type alias Timeline =
   { id : TimelineId
   , minTime : Posix
   , maxTime : Posix
   , timeRange : Maybe (Posix, Posix)
   , width : Int
+  , data : TimelineData
   }
 
 timeline : Model -> TimelineId -> Maybe Timeline
@@ -572,13 +579,19 @@ timeline model index =
   if index == 0 then
     let
       selectedServer = model.selectedServer |> Maybe.andThen (\id -> Dict.get id model.servers)
+      minTime = serverMinTime model.servers selectedServer
+      maxTime = serverMaxTime model.servers selectedServer
     in
     Just
       { id = index
-      , minTime = serverMinTime model.servers selectedServer
-      , maxTime = serverMaxTime model.servers selectedServer
+      , minTime = minTime
+      , maxTime = maxTime
       , timeRange = Array.get index model.timelineSelections
       , width = width
+      , data = currentArcs model
+        |> RemoteData.map (arcsInRange (minTime, maxTime))
+        |> RemoteData.map TimelineArcs
+        |> RemoteData.withDefault TimelineBlank
       }
   else
     case Array.get (index-1) model.timelineSelections of
@@ -589,6 +602,10 @@ timeline model index =
           , maxTime = max
           , timeRange = Array.get index model.timelineSelections
           , width = width
+          , data = currentSpans model
+            |> RemoteData.map (spansInRange (min, max))
+            |> RemoteData.map TimelineSpans
+            |> RemoteData.withDefault TimelineBlank
           }
       Nothing ->
         Nothing
@@ -717,7 +734,6 @@ lifeToRange : Life -> (Posix, Posix)
 lifeToRange {birthTime, deathTime} =
   (birthTime, deathTime |> Maybe.withDefault (relativeEndTime 1 birthTime))
 
-
 relativeStartTime : Int -> Posix -> Posix
 relativeStartTime hoursPeriod time =
   time
@@ -731,3 +747,27 @@ relativeEndTime hoursPeriod time =
     |> Time.posixToMillis
     |> (\x -> x + hoursPeriod * 60 * 60 * 1000)
     |> Time.millisToPosix
+
+arcsInRange : (Posix, Posix) -> List Arc -> List Arc
+arcsInRange (minTime, maxTime) arcs =
+  let
+    min = Time.posixToMillis minTime
+    max = Time.posixToMillis maxTime
+  in
+  arcs
+    |> List.filter (\{start} -> Time.posixToMillis start <= max)
+    |> List.filter (\{end} ->
+        case end of
+          Just t -> min <= Time.posixToMillis t
+          Nothing -> True
+        )
+
+spansInRange : (Posix, Posix) -> List Span -> List Span
+spansInRange (minTime, maxTime) spans =
+  let
+    min = Time.posixToMillis minTime
+    max = Time.posixToMillis maxTime
+  in
+  spans
+    |> List.filter (\{start} -> Time.posixToMillis start <= max)
+    |> List.filter (\{end} -> min <= Time.posixToMillis end)

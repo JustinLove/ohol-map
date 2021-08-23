@@ -317,6 +317,19 @@ timeControl model line =
     , when (model.drag == Released) (Html.Events.preventDefaultOn "mousedown" (Decode.map (\msg -> (msg,True)) (mouseDecoder (TimelineDown line.id))))
     , htmlAttribute (Html.Attributes.draggable "false")
     , behindContent
+      ( case line.data of
+        TimelineBlank ->
+          none
+        TimelineArcs arcs ->
+          arcs
+            |> List.map (arcToRange line.maxTime)
+            |> displayTimelineArcs palette min max
+        TimelineSpans spans ->
+          spans
+            |> List.map spanToRange
+            |> displayTimelineArcs palette min max
+      )
+    , behindContent
       (case line.timeRange of
         Just (from, to) ->
           let
@@ -332,6 +345,7 @@ timeControl model line =
               [ width (fillPortion (end - start))
               , height (px 20)
               , Background.color palette.selected
+              , alpha 0.5
               ]
                 none
             , el
@@ -341,8 +355,8 @@ timeControl model line =
         Nothing ->
           none
       )
-    , behindContent (el [ Font.color palette.deemphasis, alignLeft ] (text (dateWithSeconds model.zone line.minTime)))
-    , behindContent (el [ Font.color palette.deemphasis, alignRight ] (text (dateWithSeconds model.zone line.maxTime)))
+    , behindContent (el [ Font.color palette.highlight, alignLeft ] (text (dateWithSeconds model.zone line.minTime)))
+    , behindContent (el [ Font.color palette.highlight, alignRight ] (text (dateWithSeconds model.zone line.maxTime)))
     ]
     [ el
       [ width (fillPortion (value - min)) ]
@@ -361,6 +375,26 @@ timeControl model line =
       [ width (fillPortion (max - value)) ]
         none
     ]
+
+displayTimelineArcs : Palette -> Int -> Int -> List (Posix, Posix) -> Element msg
+displayTimelineArcs palette min max arcs =
+  arcs
+    |> List.indexedMap (\index (start, end) ->
+      let
+        s = Time.posixToMillis start |> clamp min max
+        e = Time.posixToMillis end |> clamp min max
+        c = if Bitwise.and index 1 == 1 then
+            palette.background
+          else
+            palette.control
+      in
+        el
+          [ width (fillPortion (e-s))
+          , height (px 20)
+          , Background.color c
+          ] none
+    )
+    |> row [ width fill, height (px 20) ]
 
 displayTimelineLazyBasic :
   { theme : Theme
