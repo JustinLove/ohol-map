@@ -160,21 +160,31 @@ update msg model =
       | coarseStartTime = time
       , startTime = time
       }
-        |> jumpTime time
+        |> jumpTime time currentSpanRange
     UI (View.StartTime time) ->
       { model
       | startTime = time
       }
-        |> jumpTime time
+        |> jumpTime time currentSpanRange
     UI (View.HoursBefore hours) ->
+      let
+        start = relativeStartTime hours model.time
+        range = (start, model.time)
+      in
       { model
       | hoursPeriod = hours
       }
-        |> jumpTime (relativeStartTime hours model.time)
+        |> jumpTime start (\_ -> Just range)
     UI (View.HoursAfter hours) ->
+      let
+        mrange =
+          Just (model.startTime, relativeEndTime hours model.startTime)
+            |> lifeRangeIfVisible model
+      in
       ( { model
         | hoursPeriod = hours
         }
+          |> setTimeRange mrange
       , Cmd.none
       )
     UI (View.ToggleEvesOnly evesOnly) ->
@@ -312,9 +322,9 @@ update msg model =
     UI (View.SelectMatchingLife life) ->
       ( { model
         | focusLife = Just life
-        , timeRange = Just (lifeToRange life)
         , mapTime = Just life.birthTime
         }
+          |> setTimeRange (Just (lifeToRange life))
       , Cmd.batch
         [ Leaflet.currentTime life.birthTime
         , Time.now |> Task.perform (ShowTimeNotice life.birthTime)
@@ -480,9 +490,9 @@ update msg model =
             |> Maybe.map (inRange (min, max))
       in
       ( { model
-        | timeRange = Just (min, max)
-        , mapTime = mapTime
+        | mapTime = mapTime
         }
+          |> setTimeRange (Just (min, max))
       , Cmd.batch
         [ mapTime
           |> Maybe.map Leaflet.currentTime
@@ -593,8 +603,8 @@ update msg model =
           | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | arcs = Data arcs} |> rebuildArcs))
           , currentArc = marc
           , coarseArc = marc
-          , timeRange = marc |> Maybe.map (arcToRange model.time)
           }
+            |> setTimeRange (marc |> Maybe.map (arcToRange model.time))
         , Cmd.none
         )
         |> rebuildWorlds
@@ -622,11 +632,11 @@ update msg model =
       in
         ( { model
           | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | spans = Data spans} |> rebuildArcs))
-          , timeRange = mspan |> Maybe.map spanToRange
           , spanData = mspan |> Maybe.map asSpanData
           , coarseArc = model.coarseArc |> Maybe.map assignDataTime
           , currentArc = model.currentArc |> Maybe.map assignDataTime
           }
+            |> setTimeRange (mspan |> Maybe.map spanToRange)
         , Cmd.none
         )
         |> maybeSetTime mlastTime
@@ -789,7 +799,7 @@ update msg model =
       { model
       | player = Starting
       }
-        |> jumpTime (relativeStartTime hoursBefore time)
+        |> jumpTime (relativeStartTime hoursBefore time) currentArcRange
     ShowTimeNotice show time ->
       let
         until = time
@@ -1019,7 +1029,7 @@ selectArc model marc mcourseArc =
         , coarseStartTime = start
         , startTime = start
         }
-          |> jumpTime end
+          |> jumpTime end currentArcRange
       Nothing ->
         ( { model
           | currentArc = Nothing
@@ -1240,11 +1250,11 @@ fetchDailyReview model =
       |> Maybe.map (\start -> Time.now |> Task.perform (FetchBetween start))
       |> Maybe.withDefault Cmd.none
 
-jumpTime : Posix -> Model -> (Model, Cmd Msg)
-jumpTime time model =
+jumpTime : Posix -> (Model -> Maybe (Posix, Posix)) -> Model -> (Model, Cmd Msg)
+jumpTime time calculateRange model =
   model
     |> scrubTime time
-    |> mapModel setTimeRange
+    |> mapModel (\m -> setTimeRange (calculateRange m |> lifeRangeIfVisible m) m)
     |> appendCommand (Time.now |> Task.perform (ShowTimeNotice time))
 
 scrubTime : Posix -> Model -> (Model, Cmd Msg)
@@ -1304,23 +1314,25 @@ timelineDrag x model =
     Released ->
         (model, Cmd.none)
 
-setTimeRange : Model -> Model
-setTimeRange model =
-  let
-    timeRange =
-      if model.lifeDataVisible then
-        model.timeRange
-      else
-        model.currentArc
-          |> Maybe.map (arcToRange model.time)
-    animatable = timeRange
-      |> Maybe.map2 (\time range -> isInRange range time) model.mapTime
-      |> Maybe.withDefault False
-  in
-    { model
-    | timeRange = timeRange
-    , dataAnimated = True --model.dataAnimated && animatable
-    }
+lifeRangeIfVisible : Model -> Maybe (Posix, Posix) -> Maybe (Posix, Posix)
+lifeRangeIfVisible model timeRange =
+  if model.lifeDataVisible then
+    model.timeRange
+  else
+    timeRange
+
+currentArcRange : Model -> Maybe (Posix, Posix)
+currentArcRange model =
+  model.currentArc
+    |> Maybe.map (arcToRange model.time)
+
+currentSpanRange : Model -> Maybe (Posix, Posix)
+currentSpanRange model =
+  case model.spanData |> Maybe.map spanToRange of
+    Just range ->
+      Just range
+    Nothing ->
+      currentArcRange model
 
 arcForTime : Posix -> RemoteData (List Arc) -> Maybe Arc
 arcForTime time marcs =
@@ -1533,7 +1545,7 @@ timeRoute location model =
     case mt of
       Just t ->
         if msmapTime /= mst then
-          jumpTime t model
+          jumpTime t currentSpanRange model
         else
           (model, Cmd.none)
       Nothing ->
@@ -1598,8 +1610,8 @@ timeSelectionForTime model =
                 , currentArc = newArc
                 , coarseArc = newArc
                 , spanData = mspan |> Maybe.map asSpanData
-                , timeRange = Just (arcToRange model.time arc)
                 }
+                  |> setTimeRange (Just (arcToRange model.time arc))
               Nothing ->
                 timeSelectionAround model
         _ ->
@@ -2154,20 +2166,6 @@ fetchRecentLives baseUrl serverId =
     , expect = Http.expectJson (DataLayer serverId) Json.Decode.value
     }
 
-relativeStartTime : Int -> Posix -> Posix
-relativeStartTime hoursPeriod time =
-  time
-    |> Time.posixToMillis
-    |> (\x -> x - hoursPeriod * 60 * 60 * 1000)
-    |> Time.millisToPosix
-
-relativeEndTime : Int -> Posix -> Posix
-relativeEndTime hoursPeriod time =
-  time
-    |> Time.posixToMillis
-    |> (\x -> x + hoursPeriod * 60 * 60 * 1000)
-    |> Time.millisToPosix
-
 fetchDataLayer : String -> Int -> Posix -> Posix -> Bool -> Cmd Msg
 fetchDataLayer baseUrl serverId startTime endTime evesOnly =
   Http.get
@@ -2195,36 +2193,6 @@ extractHashString key location =
   { location | path = "", query = location.fragment }
     |> Url.Parser.parse (Url.Parser.query (Url.Parser.Query.string key))
     |> Maybe.withDefault Nothing
-
-inRange : (Posix, Posix) -> Posix -> Posix
-inRange (mint, maxt) t =
-  let
-    mini = Time.posixToMillis mint
-    maxi = Time.posixToMillis maxt
-    i = Time.posixToMillis t
-  in
-    Time.millisToPosix (min maxi (max mini i))
-
-isInRange : (Posix, Posix) -> Posix -> Bool
-isInRange (mint, maxt) t =
-  let
-    mini = Time.posixToMillis mint
-    maxi = Time.posixToMillis maxt
-    i = Time.posixToMillis t
-  in
-    mini < i && i <= maxi
-
-arcToRange : Posix -> Arc -> (Posix, Posix)
-arcToRange default {start,end} =
-  (start, end |> Maybe.withDefault default)
-
-spanToRange : Span -> (Posix, Posix)
-spanToRange {start,end} =
-  (start, end)
-
-lifeToRange : Life -> (Posix, Posix)
-lifeToRange {birthTime, deathTime} =
-  (birthTime, deathTime |> Maybe.withDefault (relativeEndTime 1 birthTime))
 
 increment : Posix -> Posix
 increment =

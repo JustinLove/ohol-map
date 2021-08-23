@@ -52,6 +52,14 @@ module Model exposing
   , timelineScreenToTime
   , timelineLeave
   , timelineRange
+  , setTimeRange
+  , inRange
+  , isInRange
+  , arcToRange
+  , spanToRange
+  , lifeToRange
+  , relativeStartTime
+  , relativeEndTime
   )
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..))
@@ -199,7 +207,7 @@ initialModel config location key =
   , coarseArc = Nothing
   , currentArc = Nothing
   , evesOnly = False
-  , dataAnimated = False
+  , dataAnimated = True --False
   , lifeDataVisible = False
   , graticuleVisible = False
   , monumentsVisible = True
@@ -557,12 +565,14 @@ type alias Timeline =
 timeline : Model -> TimelineId -> Maybe Timeline
 timeline model index =
   let
-    selectedServer = model.selectedServer |> Maybe.andThen (\id -> Dict.get id model.servers)
     width = case model.sidebar of
       OpenSidebar -> model.windowWidth - 330
       ClosedSidebar -> model.windowWidth
   in
   if index == 0 then
+    let
+      selectedServer = model.selectedServer |> Maybe.andThen (\id -> Dict.get id model.servers)
+    in
     Just
       { id = index
       , minTime = serverMinTime model.servers selectedServer
@@ -658,3 +668,66 @@ timelineRange index mrange model =
     | timelineSelections = lines
     , timeRange = mrange
     }
+
+setTimeRange : Maybe (Posix, Posix) -> Model -> Model
+setTimeRange mrange model =
+  {-
+    animatable = timeRange
+      |> Maybe.map2 (\time range -> isInRange range time) model.mapTime
+      |> Maybe.withDefault False
+      -}
+  case model.currentArc of
+    Just arc ->
+      if model.timeMode == ArcRange then
+        timelineRange 0 mrange model
+      else
+        model
+          |> timelineRange 0 (Just (arcToRange model.time arc))
+          |> timelineRange 1 (mrange)
+    Nothing ->
+      timelineRange 0 mrange model
+
+inRange : (Posix, Posix) -> Posix -> Posix
+inRange (mint, maxt) t =
+  let
+    mini = Time.posixToMillis mint
+    maxi = Time.posixToMillis maxt
+    i = Time.posixToMillis t
+  in
+    Time.millisToPosix (min maxi (max mini i))
+
+isInRange : (Posix, Posix) -> Posix -> Bool
+isInRange (mint, maxt) t =
+  let
+    mini = Time.posixToMillis mint
+    maxi = Time.posixToMillis maxt
+    i = Time.posixToMillis t
+  in
+    mini < i && i <= maxi
+
+arcToRange : Posix -> Arc -> (Posix, Posix)
+arcToRange default {start,end} =
+  (start, end |> Maybe.withDefault default)
+
+spanToRange : {s| start : Posix, end : Posix} -> (Posix, Posix)
+spanToRange {start,end} =
+  (start, end)
+
+lifeToRange : Life -> (Posix, Posix)
+lifeToRange {birthTime, deathTime} =
+  (birthTime, deathTime |> Maybe.withDefault (relativeEndTime 1 birthTime))
+
+
+relativeStartTime : Int -> Posix -> Posix
+relativeStartTime hoursPeriod time =
+  time
+    |> Time.posixToMillis
+    |> (\x -> x - hoursPeriod * 60 * 60 * 1000)
+    |> Time.millisToPosix
+
+relativeEndTime : Int -> Posix -> Posix
+relativeEndTime hoursPeriod time =
+  time
+    |> Time.posixToMillis
+    |> (\x -> x + hoursPeriod * 60 * 60 * 1000)
+    |> Time.millisToPosix
