@@ -569,6 +569,7 @@ type alias TimelineId = Int
 type TimelineData
   = TimelineBlank
   | TimelineWorlds (List World)
+  | TimelineArcs (List Arc)
   | TimelineSpans (List Span)
 
 type alias Timeline =
@@ -602,6 +603,10 @@ timeline model index =
       , data = currentWorlds model
         |> (worldsInRange (minTime, maxTime))
         |> TimelineWorlds
+      --, data = currentArcs model
+        --|> RemoteData.map (arcsInRange (minTime, maxTime))
+        --|> RemoteData.map TimelineArcs
+        --|> RemoteData.withDefault TimelineBlank
       }
   else
     case Array.get (index-1) model.timelineSelections of

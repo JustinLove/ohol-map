@@ -324,6 +324,10 @@ timeControl model line =
           worlds
             |> List.map (worldToRange line.maxTime)
             |> displayTimelineArcs palette min max
+        TimelineArcs worlds ->
+          worlds
+            |> List.map (arcToRange line.maxTime)
+            |> displayTimelineArcs palette min max
         TimelineSpans spans ->
           spans
             |> List.map spanToRange

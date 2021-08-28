@@ -917,10 +917,10 @@ sidebarCommand model =
 
 rebuildWorlds : (Model, Cmd Msg) -> (Model, Cmd Msg)
 rebuildWorlds =
-  addCommand rebuildWorldsCommand
+  addUpdate rebuildWorldsUpdate
 
-rebuildWorldsCommand : Model -> Cmd Msg
-rebuildWorldsCommand model =
+rebuildWorldsUpdate : Model -> (Model, Cmd Msg)
+rebuildWorldsUpdate model =
   let
     mServer = currentServer model
     prop = \field -> Maybe.map field >> Maybe.withDefault NotRequested >> RemoteData.withDefault []
@@ -930,7 +930,13 @@ rebuildWorldsCommand model =
       (mServer |> prop .arcs)
       (mServer |> prop .spans)
   in
-    Leaflet.worldList worlds
+    ( case (model.selectedServer, mServer) of
+      (Just id, Just server) ->
+        { model | servers = Dict.insert id {server | worlds = worlds} model.servers }
+      _ ->
+        model
+    , Leaflet.worldList worlds
+    )
 
 updateMonuments : Int -> (Model, Cmd Msg) -> (Model, Cmd Msg)
 updateMonuments serverId =
