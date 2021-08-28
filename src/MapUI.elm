@@ -23,6 +23,7 @@ import Browser.Dom as Dom
 import Browser.Navigation as Navigation
 import Http
 import Json.Decode
+import Json.Encode
 import Dict exposing(Dict)
 import File.Download
 import Parser.Advanced as Parser
@@ -232,12 +233,15 @@ update msg model =
     UI (View.TimelineUp (x, _)) ->
       timelineDrag x {model | drag = Released}
     UI (View.TimelineEnter held (x, _)) ->
-      if held then
-        timelineDrag x model
+      if model.hasSeenJunkEnter then
+        if held then
+          timelineDrag x model
+        else
+          ({model | drag = Released}, Cmd.none)
       else
-        ({model | drag = Released}, Cmd.none)
+        ({model | hasSeenJunkEnter = True}, Log.info "discarding junk enter" (Json.Encode.string ""))
     UI (View.TimelineLeave (x, _)) ->
-      timelineDrag (timelineLeave model x) model
+      timelineDrag (timelineLeave model x) {model | hasSeenJunkEnter = True}
     UI (View.TimelineMove (x, _)) ->
       timelineDrag x model
     UI (View.Play) ->

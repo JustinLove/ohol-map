@@ -314,7 +314,7 @@ timeControl model line =
     [ Background.color palette.control
     , width fill
     , height (px 20)
-    , when (model.drag == Released) (Html.Events.preventDefaultOn "mousedown" (Decode.map (\msg -> (msg,True)) (mouseDecoder (TimelineDown line.id))))
+    , htmlAttribute (Html.Events.preventDefaultOn "mousedown" (Decode.map (\msg -> (msg,True)) (mouseDecoder (TimelineDown line.id))))
     , htmlAttribute (Html.Attributes.draggable "false")
     , behindContent
       ( case line.data of
@@ -368,7 +368,7 @@ timeControl model line =
       , Border.width 1
       , Border.color palette.divider
       , Background.color palette.foreground
-      , when (model.drag == Released) (Html.Events.custom "mousedown" (Decode.map (\msg -> {message = msg, stopPropagation = True, preventDefault = True}) (mouseDecoder (TimelineGrab line.id))))
+      , htmlAttribute (Html.Events.custom "mousedown" (Decode.map (\msg -> {message = msg, stopPropagation = True, preventDefault = True}) (mouseDecoder (TimelineGrab line.id))))
       ]
         none
     , el

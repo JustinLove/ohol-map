@@ -137,6 +137,7 @@ type alias Model =
   , timeRange : Maybe (Posix, Posix)
   , timelineSelections : Array (Posix, Posix)
   , drag : DragMode
+  , hasSeenJunkEnter : Bool
   , player : Player
   , fadeTallObjects : Bool
   , showNaturalObjectsAboveZoom : Int
@@ -218,6 +219,7 @@ initialModel config location key =
   , timeRange = Nothing
   , timelineSelections = Array.empty
   , drag = Released
+  , hasSeenJunkEnter = False
   , player = Stopped
   , fadeTallObjects = False
   , showNaturalObjectsAboveZoom = 26

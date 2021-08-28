@@ -7,9 +7,13 @@
 ## Features
 - x why does anim toggle need both toggleAnimated if we are calling baseLayerByTime?
 - time window range graph
+  - x first range select fails
   - switching data modes
   - data hit detection
   - when to dislay min/max time
+  - worlds cover more history
+  - what if data doesn't cover whole timeline range
+  - lazy background
 - object search header locked
 - assembling log search spans?
 - in-app help
