@@ -10,7 +10,7 @@
   - x first range select fails
   - x switching data modes
   - x worlds cover more history
-  - what if data doesn't cover whole timeline range
+  - x what if data doesn't cover whole timeline range
   - data hit detection
   - when to dislay min/max time
   - lazy background

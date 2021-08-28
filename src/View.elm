@@ -14,6 +14,8 @@ import Zipper exposing (Zipper)
 import Array
 import Bitwise
 import Browser
+import Chart
+import Chart.Attributes as CA
 import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
@@ -323,15 +325,15 @@ timeControl model line =
         TimelineWorlds worlds ->
           worlds
             |> List.map (worldToRange line.maxTime)
-            |> displayTimelineArcs palette min max
+            |> displayTimelineArcs palette line.width min max
         TimelineArcs worlds ->
           worlds
             |> List.map (arcToRange line.maxTime)
-            |> displayTimelineArcs palette min max
+            |> displayTimelineArcs palette line.width min max
         TimelineSpans spans ->
           spans
             |> List.map spanToRange
-            |> displayTimelineArcs palette min max
+            |> displayTimelineArcs palette line.width min max
       )
     , behindContent
       (case line.timeRange of
@@ -380,25 +382,38 @@ timeControl model line =
         none
     ]
 
-displayTimelineArcs : Palette -> Int -> Int -> List (Posix, Posix) -> Element msg
-displayTimelineArcs palette min max arcs =
-  arcs
-    |> List.indexedMap (\index (start, end) ->
-      let
-        s = Time.posixToMillis start |> clamp min max
-        e = Time.posixToMillis end |> clamp min max
-        c = if Bitwise.and index 1 == 1 then
-            palette.background
-          else
-            palette.control
-      in
-        el
-          [ width (fillPortion (e-s))
-          , height (px 20)
-          , Background.color c
-          ] none
-    )
-    |> row [ width fill, height (px 20) ]
+displayTimelineArcs : Palette -> Int -> Int -> Int -> List (Posix, Posix) -> Element msg
+displayTimelineArcs palette lineWidth min max arcs =
+  let
+    data = arcs
+      |> List.indexedMap (\index (start, end) ->
+        let
+          s = Time.posixToMillis start |> clamp min max |> toFloat
+          e = Time.posixToMillis end |> clamp min max |> toFloat
+          c = if Bitwise.and index 1 == 1 then
+              palette.background
+            else
+              palette.control
+        in
+          Chart.rect
+            [ CA.x1 s
+            , CA.x2 e
+            , CA.color (colorToString c)
+            , CA.borderWidth 0
+            ]
+      )
+  in
+    Chart.chart
+      [ CA.width (toFloat lineWidth)
+      , CA.height 20
+      , CA.range
+        [ CA.lowest (toFloat min) CA.exactly
+        , CA.highest (toFloat max) CA.exactly
+        ]
+      ]
+      [ Chart.withPlane (\_ -> data)
+      ]
+      |> html
 
 displayTimelineLazyBasic :
   { theme : Theme
@@ -2218,6 +2233,14 @@ darkTheme =
   , selected = rgb 0.23 0.6 0.98
   , deemphasis = rgb 0.3 0.3 0.3
   }
+
+colorToString : Color -> String
+colorToString c =
+  c |> toRgb |> (\{red, green, blue} -> "rgb(" ++ (floatTo255 red) ++ "," ++ (floatTo255 green) ++ "," ++ (floatTo255 blue) ++ ")")
+
+floatTo255 : Float -> String
+floatTo255 x =
+  (x * 255) |> round |> String.fromInt
 
 objectColor : ObjectId -> Element.Color
 objectColor id =
