@@ -325,15 +325,15 @@ timeControl model line =
         TimelineWorlds worlds ->
           worlds
             |> List.map (worldToRange line.maxTime)
-            |> displayTimelineArcs palette line.width min max
+            |> displayTimelineArcs palette line
         TimelineArcs worlds ->
           worlds
             |> List.map (arcToRange line.maxTime)
-            |> displayTimelineArcs palette line.width min max
+            |> displayTimelineArcs palette line
         TimelineSpans spans ->
           spans
             |> List.map spanToRange
-            |> displayTimelineArcs palette line.width min max
+            |> displayTimelineArcs palette line
       )
     , behindContent
       (case line.timeRange of
@@ -382,29 +382,33 @@ timeControl model line =
         none
     ]
 
-displayTimelineArcs : Palette -> Int -> Int -> Int -> List (Posix, Posix) -> Element msg
-displayTimelineArcs palette lineWidth min max arcs =
+displayTimelineArcs : Palette -> Timeline -> List (Posix, Posix) -> Element msg
+displayTimelineArcs palette line arcs =
   let
+    min = (Time.posixToMillis line.minTime) + 1
+    max = Time.posixToMillis line.maxTime
+    background = colorToString palette.background
+    control = colorToString palette.control
     data = arcs
       |> List.indexedMap (\index (start, end) ->
         let
           s = Time.posixToMillis start |> clamp min max |> toFloat
           e = Time.posixToMillis end |> clamp min max |> toFloat
           c = if Bitwise.and index 1 == 1 then
-              palette.background
+              background
             else
-              palette.control
+              control
         in
           Chart.rect
             [ CA.x1 s
             , CA.x2 e
-            , CA.color (colorToString c)
+            , CA.color c
             , CA.borderWidth 0
             ]
       )
   in
     Chart.chart
-      [ CA.width (toFloat lineWidth)
+      [ CA.width (toFloat line.width)
       , CA.height 20
       , CA.range
         [ CA.lowest (toFloat min) CA.exactly
@@ -412,6 +416,7 @@ displayTimelineArcs palette lineWidth min max arcs =
         ]
       ]
       [ Chart.withPlane (\_ -> data)
+      , Chart.withPlane (\_ -> [])
       ]
       |> html
 
