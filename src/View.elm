@@ -335,32 +335,6 @@ timeControl model line =
             |> List.map spanToRange
             |> displayTimelineArcs palette line
       )
-    , behindContent
-      (case line.timeRange of
-        Just (from, to) ->
-          let
-            start = (Time.posixToMillis from) + 1
-            end = Time.posixToMillis to
-          in
-          row
-            [ width fill ]
-            [ el
-              [ width (fillPortion (start - min)) ]
-                none
-            , el
-              [ width (fillPortion (end - start))
-              , height (px 20)
-              , Background.color palette.selected
-              , alpha 0.5
-              ]
-                none
-            , el
-              [ width (fillPortion (max - end)) ]
-                none
-            ]
-        Nothing ->
-          none
-      )
     , behindContent (el [ Font.color palette.highlight, alignLeft ] (text (dateWithSeconds model.zone line.minTime)))
     , behindContent (el [ Font.color palette.highlight, alignRight ] (text (dateWithSeconds model.zone line.maxTime)))
     ]
@@ -416,7 +390,24 @@ displayTimelineArcs palette line arcs =
         ]
       ]
       [ Chart.withPlane (\_ -> data)
-      , Chart.withPlane (\_ -> [])
+      , Chart.withPlane (\_ ->
+        case line.timeRange of
+          Just (from, to) ->
+            let
+              start = (Time.posixToMillis from) + 1
+              end = Time.posixToMillis to
+            in
+              [ Chart.rect
+                [ CA.x1 (toFloat start)
+                , CA.x2 (toFloat end)
+                , CA.color (colorToString palette.selected)
+                , CA.borderWidth 0
+                , CA.opacity 0.5
+                ]
+              ]
+          Nothing ->
+            []
+        )
       ]
       |> html
 
