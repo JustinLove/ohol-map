@@ -320,9 +320,9 @@ timeControl model line =
       ( case line.data of
         TimelineBlank ->
           none
-        TimelineArcs arcs ->
-          arcs
-            |> List.map (arcToRange line.maxTime)
+        TimelineWorlds worlds ->
+          worlds
+            |> List.map (worldToRange line.maxTime)
             |> displayTimelineArcs palette min max
         TimelineSpans spans ->
           spans

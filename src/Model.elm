@@ -24,6 +24,7 @@ module Model exposing
   , Version
   , World
   , centerUrl
+  , currentWorlds
   , currentArcs
   , currentSpans
   , currentServer
@@ -56,6 +57,7 @@ module Model exposing
   , setTimeRange
   , inRange
   , isInRange
+  , worldToRange
   , arcToRange
   , spanToRange
   , lifeToRange
@@ -369,6 +371,13 @@ serverLoading server =
   || server.monuments == Loading
   || server.versions == Loading
 
+currentWorlds : Model -> List World
+currentWorlds model =
+  model
+    |> currentServer
+    |> Maybe.map .worlds
+    |> Maybe.withDefault []
+
 currentArcs : Model -> RemoteData (List Arc)
 currentArcs model =
   model
@@ -559,7 +568,7 @@ type alias TimelineId = Int
 
 type TimelineData
   = TimelineBlank
-  | TimelineArcs (List Arc)
+  | TimelineWorlds (List World)
   | TimelineSpans (List Span)
 
 type alias Timeline =
@@ -590,10 +599,9 @@ timeline model index =
       , maxTime = maxTime
       , timeRange = Array.get index model.timelineSelections
       , width = width
-      , data = currentArcs model
-        |> RemoteData.map (arcsInRange (minTime, maxTime))
-        |> RemoteData.map TimelineArcs
-        |> RemoteData.withDefault TimelineBlank
+      , data = currentWorlds model
+        |> (worldsInRange (minTime, maxTime))
+        |> TimelineWorlds
       }
   else
     case Array.get (index-1) model.timelineSelections of
@@ -611,10 +619,9 @@ timeline model index =
           , width = width
           , data =
             if typicalSpanWidth < 10 then
-              currentArcs model
-                |> RemoteData.map (arcsInRange (min, max))
-                |> RemoteData.map TimelineArcs
-                |> RemoteData.withDefault TimelineBlank
+              currentWorlds model
+                |> (worldsInRange (min, max))
+                |> TimelineWorlds
             else
               currentSpans model
                 |> RemoteData.map (spansInRange (min, max))
@@ -736,6 +743,10 @@ isInRange (mint, maxt) t =
   in
     mini < i && i <= maxi
 
+worldToRange : Posix -> World -> (Posix, Posix)
+worldToRange default {start,end} =
+  (start, end |> Maybe.withDefault default)
+
 arcToRange : Posix -> Arc -> (Posix, Posix)
 arcToRange default {start,end} =
   (start, end |> Maybe.withDefault default)
@@ -761,6 +772,20 @@ relativeEndTime hoursPeriod time =
     |> Time.posixToMillis
     |> (\x -> x + hoursPeriod * 60 * 60 * 1000)
     |> Time.millisToPosix
+
+worldsInRange : (Posix, Posix) -> List World -> List World
+worldsInRange (minTime, maxTime) worlds =
+  let
+    min = Time.posixToMillis minTime
+    max = Time.posixToMillis maxTime
+  in
+  worlds
+    |> List.filter (\{start} -> Time.posixToMillis start <= max)
+    |> List.filter (\{end} ->
+        case end of
+          Just t -> min <= Time.posixToMillis t
+          Nothing -> True
+        )
 
 arcsInRange : (Posix, Posix) -> List Arc -> List Arc
 arcsInRange (minTime, maxTime) arcs =

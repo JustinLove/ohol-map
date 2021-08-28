@@ -9,10 +9,10 @@
 - time window range graph
   - x first range select fails
   - x switching data modes
-  - worlds cover more history
+  - x worlds cover more history
+  - what if data doesn't cover whole timeline range
   - data hit detection
   - when to dislay min/max time
-  - what if data doesn't cover whole timeline range
   - lazy background
 - object search header locked
 - assembling log search spans?
