@@ -598,16 +598,28 @@ timeline model index =
   else
     case Array.get (index-1) model.timelineSelections of
       Just (min, max) ->
+        let
+          range = toFloat ((Time.posixToMillis max) - (Time.posixToMillis min))
+          day = 24 * 60 * 60 * 1000
+          typicalSpanWidth = (day / range) * (toFloat width)
+        in
         Just
           { id = index
           , minTime = min
           , maxTime = max
           , timeRange = Array.get index model.timelineSelections
           , width = width
-          , data = currentSpans model
-            |> RemoteData.map (spansInRange (min, max))
-            |> RemoteData.map TimelineSpans
-            |> RemoteData.withDefault TimelineBlank
+          , data =
+            if typicalSpanWidth < 10 then
+              currentArcs model
+                |> RemoteData.map (arcsInRange (min, max))
+                |> RemoteData.map TimelineArcs
+                |> RemoteData.withDefault TimelineBlank
+            else
+              currentSpans model
+                |> RemoteData.map (spansInRange (min, max))
+                |> RemoteData.map TimelineSpans
+                |> RemoteData.withDefault TimelineBlank
           }
       Nothing ->
         Nothing
