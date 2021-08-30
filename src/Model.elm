@@ -15,6 +15,7 @@ module Model exposing
   , Preset(..)
   , ScreenLocation
   , DragMode(..)
+  , Hover(..)
   , Server
   , Span
   , SpanData
@@ -139,6 +140,7 @@ type alias Model =
   , timeRange : Maybe (Posix, Posix)
   , timelineSelections : Array (Posix, Posix)
   , drag : DragMode
+  , hover : Hover
   , hasSeenJunkEnter : Bool
   , player : Player
   , fadeTallObjects : Bool
@@ -221,6 +223,7 @@ initialModel config location key =
   , timeRange = Nothing
   , timelineSelections = Array.empty
   , drag = Released
+  , hover = Away
   , hasSeenJunkEnter = False
   , player = Stopped
   , fadeTallObjects = False
@@ -358,6 +361,10 @@ type DragMode
   = Released
   | Dragging TimelineId Posix
   | Scrubbing TimelineId Posix
+
+type Hover
+  = Away
+  | Hovering TimelineId Posix
 
 currentServer : Model -> Maybe Server
 currentServer model =

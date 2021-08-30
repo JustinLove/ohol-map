@@ -11,8 +11,8 @@
   - x switching data modes
   - x worlds cover more history
   - x what if data doesn't cover whole timeline range
+  - x when to dislay min/max time
   - data hit detection
-  - when to dislay min/max time
   - lazy background
 - object search header locked
 - assembling log search spans?

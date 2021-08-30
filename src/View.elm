@@ -57,12 +57,14 @@ type Msg
   | GameSecondsPerSecond Int
   | FramesPerSecond Int
   | MapTime Posix
+  | TimelineMove TimelineId ScreenLocation
+  | TimelineLeave TimelineId ScreenLocation
   | TimelineGrab TimelineId ScreenLocation
   | TimelineDown TimelineId ScreenLocation
-  | TimelineUp ScreenLocation
-  | TimelineEnter Bool ScreenLocation
-  | TimelineLeave ScreenLocation
-  | TimelineMove ScreenLocation
+  | WindowUp ScreenLocation
+  | WindowEnter Bool ScreenLocation
+  | WindowLeave ScreenLocation
+  | WindowMove ScreenLocation
   | Play
   | Pause
   | ToggleFadeTallObjects Bool
@@ -117,11 +119,10 @@ view model =
     , Background.color (themePalette model.theme).background
     , themeClass model.theme
     , htmlAttribute (Html.Attributes.id "layout")
-    , when (model.drag /= Released) (Html.Events.on "mouseup" (mouseDecoder TimelineUp))
-    , when (model.drag /= Released) (Html.Events.on "mouseleave" (mouseDecoder TimelineLeave))
-    , when (model.drag /= Released) (Html.Events.on "mouseenter" (mouseWithHeldDecoder TimelineEnter))
-    , when (model.drag /= Released) (Html.Events.on "mouseleave" (mouseDecoder TimelineLeave))
-    , when (model.drag /= Released) (Html.Events.on "mousemove" (mouseDecoder TimelineMove))
+    , when (model.drag /= Released) (Html.Events.on "mouseup" (mouseDecoder WindowUp))
+    , when (model.drag /= Released) (Html.Events.on "mouseleave" (mouseDecoder WindowLeave))
+    , when (model.drag /= Released) (Html.Events.on "mouseenter" (mouseWithHeldDecoder WindowEnter))
+    , when (model.drag /= Released) (Html.Events.on "mousemove" (mouseDecoder WindowMove))
     ] <|
     Keyed.row [ width fill, height fill ]
       [ ( "main"
@@ -212,6 +213,7 @@ displayTimeline model =
       , zone = model.zone
       , currentArc = model.currentArc
       , drag = model.drag
+      , hover = model.hover
       }
     , Element.lazy displayTimelineLazyBasic
       { theme = model.theme
@@ -233,6 +235,7 @@ displayTimelineLazy :
   , zone : Time.Zone
   , currentArc : Maybe Arc
   , drag : DragMode
+  , hover : Hover
   } -> Element Msg
 displayTimelineLazy model =
   let
@@ -281,6 +284,7 @@ displayTimelineLazy model =
               { theme = model.theme
               , zone = model.zone
               , drag = model.drag
+              , hover = model.hover
               , time = time
               }
                 >> el
@@ -303,6 +307,7 @@ timeControl :
   { theme : Theme
   , zone : Time.Zone
   , drag : DragMode
+  , hover : Hover
   , time : Posix
   } -> Timeline -> Element Msg
 timeControl model line =
@@ -310,13 +315,29 @@ timeControl model line =
     palette = themePalette model.theme
     min = (Time.posixToMillis line.minTime) + 1
     max = Time.posixToMillis line.maxTime
+    range = max - min
     value = Time.posixToMillis model.time |> clamp min max
+    (left, right) =
+      case model.hover of
+        Hovering index hoverTime ->
+          if index == line.id then
+            let
+              t = Time.posixToMillis hoverTime |> clamp min max
+              x = round ((toFloat (t - min)) / (toFloat range) * (toFloat line.width))
+            in
+              (190 < x, x < line.width - 190)
+          else
+            (True, True)
+        Away ->
+          (True, True)
   in
   row
     [ Background.color palette.control
     , width fill
     , height (px 20)
     , htmlAttribute (Html.Events.preventDefaultOn "mousedown" (Decode.map (\msg -> (msg,True)) (mouseDecoder (TimelineDown line.id))))
+    , htmlAttribute (Html.Events.on "mousemove" (mouseDecoder (TimelineMove line.id)))
+    , htmlAttribute (Html.Events.on "mouseleave" (mouseDecoder (TimelineLeave line.id)))
     , htmlAttribute (Html.Attributes.draggable "false")
     , behindContent
       ( case line.data of
@@ -335,8 +356,22 @@ timeControl model line =
             |> List.map spanToRange
             |> displayTimelineArcs palette line
       )
-    , behindContent (el [ Font.color palette.highlight, alignLeft ] (text (dateWithSeconds model.zone line.minTime)))
-    , behindContent (el [ Font.color palette.highlight, alignRight ] (text (dateWithSeconds model.zone line.maxTime)))
+    , behindContent
+      (el
+        [ Font.color palette.highlight
+        , alignLeft
+        , if (left) then alpha 1 else alpha 0
+        ]
+        (text (dateWithSeconds model.zone line.minTime))
+      )
+    , behindContent
+      (el
+        [ Font.color palette.highlight
+        , alignRight
+        , if (right) then alpha 1 else alpha 0
+        ]
+        (text (dateWithSeconds model.zone line.maxTime))
+      )
     ]
     [ el
       [ width (fillPortion (value - min)) ]

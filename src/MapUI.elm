@@ -216,6 +216,15 @@ update msg model =
       )
     UI (View.MapTime time) ->
       scrubTime time model
+    UI (View.TimelineMove index (x, _)) ->
+      case timeline model index of
+        Just line ->
+          let time = timelineScreenToTime line x in
+          ({model | hover = Hovering index time}, Cmd.none)
+        Nothing ->
+          (model, Cmd.none)
+    UI (View.TimelineLeave index _) ->
+      ({model | hover = Away}, Cmd.none)
     UI (View.TimelineGrab index (x, _)) ->
       case timeline model index of
         Just line ->
@@ -230,9 +239,9 @@ update msg model =
           scrubTime time {model | drag = Dragging index time}
         Nothing ->
           (model, Cmd.none)
-    UI (View.TimelineUp (x, _)) ->
+    UI (View.WindowUp (x, _)) ->
       timelineDrag x {model | drag = Released}
-    UI (View.TimelineEnter held (x, _)) ->
+    UI (View.WindowEnter held (x, _)) ->
       if model.hasSeenJunkEnter then
         if held then
           timelineDrag x model
@@ -240,9 +249,9 @@ update msg model =
           ({model | drag = Released}, Cmd.none)
       else
         ({model | hasSeenJunkEnter = True}, Log.info "discarding junk enter" (Json.Encode.string ""))
-    UI (View.TimelineLeave (x, _)) ->
+    UI (View.WindowLeave (x, _)) ->
       timelineDrag (timelineLeave model x) {model | hasSeenJunkEnter = True}
-    UI (View.TimelineMove (x, _)) ->
+    UI (View.WindowMove (x, _)) ->
       timelineDrag x model
     UI (View.Play) ->
       ( { model
