@@ -246,8 +246,12 @@ displayTimelineLazy model =
       let
         labelTime =
           case model.hover of
-            Hovering _ t -> t
+            Hovering _ t _ -> t
             Away -> time
+        labelNote =
+          case model.hover of
+            Hovering _ _ s -> s
+            Away -> Nothing
       in
       column [ width fill ]
         [ row []
@@ -275,6 +279,10 @@ displayTimelineLazy model =
               |> Time.posixToMillis
               |> String.fromInt
               |> (\s -> text (", " ++ s))
+            )
+          , ( labelNote
+              |> Maybe.map (\s -> text (", " ++ s))
+              |> Maybe.withDefault none
             )
           ]
         , column [ width fill ]
@@ -319,7 +327,7 @@ timeControl model line =
     value = Time.posixToMillis model.time |> clamp min max
     (left, right, hoverX) =
       case model.hover of
-        Hovering index hoverTime ->
+        Hovering index hoverTime _ ->
           let
             t = Time.posixToMillis hoverTime |> clamp min max
             x = round ((toFloat (t - min)) / (toFloat range) * (toFloat line.width))
@@ -374,7 +382,7 @@ timeControl model line =
       )
     , behindContent
       (case model.hover of
-        Hovering _ _ ->
+        Hovering _ _ _ ->
           el
             [ Background.color palette.selected
             , width (px 2)

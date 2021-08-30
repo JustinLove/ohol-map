@@ -220,7 +220,11 @@ update msg model =
       case timeline model index of
         Just line ->
           let time = timelineScreenToTime line x in
-          ({model | hover = Hovering index time}, Cmd.none)
+          if index == 0 then
+            let mnote = worldForTime time (currentWorlds model) |> Maybe.map .name in
+            ({model | hover = Hovering index time mnote}, Cmd.none)
+          else
+            ({model | hover = Hovering index time Nothing}, Cmd.none)
         Nothing ->
           (model, Cmd.none)
     UI (View.TimelineLeave index _) ->
@@ -1352,6 +1356,12 @@ currentSpanRange model =
       Just range
     Nothing ->
       currentArcRange model
+
+worldForTime : Posix -> List World -> Maybe World
+worldForTime time worlds =
+  worlds
+    |> List.filter (\world -> isInRange (worldToRange time world) time)
+    |> List.head
 
 arcForTime : Posix -> RemoteData (List Arc) -> Maybe Arc
 arcForTime time marcs =

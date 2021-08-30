@@ -364,7 +364,7 @@ type DragMode
 
 type Hover
   = Away
-  | Hovering TimelineId Posix
+  | Hovering TimelineId Posix (Maybe String)
 
 currentServer : Model -> Maybe Server
 currentServer model =
