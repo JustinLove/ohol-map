@@ -243,6 +243,12 @@ displayTimelineLazy model =
   in
   case model.mapTime of
     Just time ->
+      let
+        labelTime =
+          case model.hover of
+            Hovering _ t -> t
+            Away -> time
+      in
       column [ width fill ]
         [ row []
           [ case model.player of
@@ -256,22 +262,16 @@ displayTimelineLazy model =
                 { onPress = Just Pause
                 , label = el [ centerX ] <| icon "pause2"
                 }
-          , if model.zone == Time.utc then
-              Input.button []
-                { onPress = Just (ToggleUTC False)
-                , label = dateWithZone model.zone time palette
-                }
-            else
-              Input.button []
-                { onPress = Just (ToggleUTC True)
-                , label = dateWithZone model.zone time palette
-                }
+          , Input.button []
+              { onPress = Just (ToggleUTC (model.zone /= Time.utc))
+              , label = dateWithZone model.zone labelTime palette
+              }
           , ( model.currentArc
-              |> Maybe.andThen (yearOfArc time)
+              |> Maybe.andThen (yearOfArc labelTime)
               |> Maybe.map (\s -> text (", " ++ s))
               |> Maybe.withDefault none
             )
-          , ( time
+          , ( labelTime
               |> Time.posixToMillis
               |> String.fromInt
               |> (\s -> text (", " ++ s))
@@ -317,19 +317,19 @@ timeControl model line =
     max = Time.posixToMillis line.maxTime
     range = max - min
     value = Time.posixToMillis model.time |> clamp min max
-    (left, right) =
+    (left, right, hoverX) =
       case model.hover of
         Hovering index hoverTime ->
-          if index == line.id then
-            let
-              t = Time.posixToMillis hoverTime |> clamp min max
-              x = round ((toFloat (t - min)) / (toFloat range) * (toFloat line.width))
-            in
-              (190 < x, x < line.width - 190)
-          else
-            (True, True)
+          let
+            t = Time.posixToMillis hoverTime |> clamp min max
+            x = round ((toFloat (t - min)) / (toFloat range) * (toFloat line.width))
+          in
+            if index == line.id then
+              (190 < x, x < line.width - 190, x)
+            else
+              (True, True, x)
         Away ->
-          (True, True)
+          (True, True, 0)
   in
   row
     [ Background.color palette.control
@@ -347,8 +347,8 @@ timeControl model line =
           worlds
             |> List.map (worldToRange line.maxTime)
             |> displayTimelineArcs palette line
-        TimelineArcs worlds ->
-          worlds
+        TimelineArcs arcs ->
+          arcs
             |> List.map (arcToRange line.maxTime)
             |> displayTimelineArcs palette line
         TimelineSpans spans ->
@@ -371,6 +371,19 @@ timeControl model line =
         , if (right) then alpha 1 else alpha 0
         ]
         (text (dateWithSeconds model.zone line.maxTime))
+      )
+    , behindContent
+      (case model.hover of
+        Hovering _ _ ->
+          el
+            [ Background.color palette.selected
+            , width (px 2)
+            , height (px 20)
+            , moveRight ((toFloat hoverX) - 1)
+            ]
+              none
+        Away ->
+          none
       )
     ]
     [ el
