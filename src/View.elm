@@ -276,11 +276,11 @@ displayTimelineLazy model =
               |> Maybe.map (\s -> text (", " ++ s))
               |> Maybe.withDefault none
             )
-          , ( labelTime
+          {-, ( labelTime
               |> Time.posixToMillis
               |> String.fromInt
               |> (\s -> text (", " ++ s))
-            )
+            ) -}
           , ( labelNote
               |> Maybe.map (\s -> text (", " ++ s))
               |> Maybe.withDefault none
@@ -420,6 +420,7 @@ displayTimelineArcs palette line arcs =
     max = Time.posixToMillis line.maxTime
     background = colorToString palette.background
     control = colorToString palette.control
+    monumentColor = colorToString palette.gold
     data = arcs
       |> List.indexedMap (\index (start, end) ->
         let
@@ -437,6 +438,18 @@ displayTimelineArcs palette line arcs =
             , CA.borderWidth 0
             ]
       )
+    monuments = line.monuments
+      |> List.indexedMap (\index {date} ->
+        let
+          t = Time.posixToMillis date |> clamp min max |> toFloat
+        in
+          Chart.rect
+            [ CA.x1 t
+            , CA.x2 t
+            , CA.border monumentColor
+            --, CA.borderWidth 0
+            ]
+      )
   in
     Chart.chart
       [ CA.width (toFloat line.width)
@@ -447,6 +460,7 @@ displayTimelineArcs palette line arcs =
         ]
       ]
       [ Chart.withPlane (\_ -> data)
+      , Chart.withPlane (\_ -> monuments)
       , Chart.withPlane (\_ ->
         case line.timeRange of
           Just (from, to) ->
@@ -2277,6 +2291,7 @@ type alias Palette =
   , input: Color
   , selected: Color
   , deemphasis: Color
+  , gold: Color
   }
 
 lightTheme : Palette
@@ -2289,6 +2304,7 @@ lightTheme =
   , input = rgb 1.0 1.0 1.0
   , selected = rgb 0.23 0.6 0.98
   , deemphasis = rgb 0.4 0.4 0.4
+  , gold = rgb 1.0 0.8 0.1
   }
 
 darkTheme : Palette
@@ -2301,6 +2317,7 @@ darkTheme =
   , input = rgb 0.0 0.0 0.0
   , selected = rgb 0.23 0.6 0.98
   , deemphasis = rgb 0.3 0.3 0.3
+  , gold = rgb 0.4 0.32 0.0
   }
 
 colorToString : Color -> String

@@ -28,6 +28,7 @@ module Model exposing
   , currentWorlds
   , currentArcs
   , currentSpans
+  , currentMonuments
   , currentServer
   , serverLoading
   , initialModel
@@ -397,6 +398,13 @@ currentSpans model =
     |> Maybe.map .spans
     |> Maybe.withDefault NotRequested
 
+currentMonuments : Model -> RemoteData (List Monument)
+currentMonuments model =
+  model
+    |> currentServer
+    |> Maybe.map .monuments
+    |> Maybe.withDefault NotRequested
+
 centerCoord : (Point -> a) -> Center -> Maybe a
 centerCoord f center =
   case center of
@@ -584,6 +592,7 @@ type alias Timeline =
   , timeRange : Maybe (Posix, Posix)
   , width : Int
   , data : TimelineData
+  , monuments : List Monument
   }
 
 timeline : Model -> TimelineId -> Maybe Timeline
@@ -612,6 +621,7 @@ timeline model index =
         --|> RemoteData.map (arcsInRange (minTime, maxTime))
         --|> RemoteData.map TimelineArcs
         --|> RemoteData.withDefault TimelineBlank
+      , monuments = []
       }
   else
     case Array.get (index-1) model.timelineSelections of
@@ -637,6 +647,9 @@ timeline model index =
                 |> RemoteData.map (spansInRange (min, max))
                 |> RemoteData.map TimelineSpans
                 |> RemoteData.withDefault TimelineBlank
+          , monuments = currentMonuments model
+            |> RemoteData.map (monumentsInRange (min, max))
+            |> RemoteData.withDefault []
           }
       Nothing ->
         Nothing
@@ -849,3 +862,15 @@ spansInRange (minTime, maxTime) spans =
   spans
     |> List.filter (\{start} -> Time.posixToMillis start <= max)
     |> List.filter (\{end} -> min <= Time.posixToMillis end)
+
+monumentsInRange : (Posix, Posix) -> List Monument -> List Monument
+monumentsInRange (minTime, maxTime) monuments =
+  let
+    min = Time.posixToMillis minTime
+    max = Time.posixToMillis maxTime
+  in
+  monuments
+    |> List.filter (\{date} ->
+        let t = Time.posixToMillis date in
+        min <= t && t <= max
+      )
