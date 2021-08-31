@@ -689,13 +689,42 @@ timelineScreenToTime line x =
     max = Time.posixToMillis line.maxTime
     range = (max - min) |> toFloat
     screenRange = line.width |> toFloat
-  in
-    (x / screenRange)
+    ms = (x / screenRange)
       |> (*) range
       |> round
       |> (+) min
       |> clamp min max
-      |> Time.millisToPosix
+    snapRange =
+      (4 / screenRange)
+        |> (*) range
+        |> round
+    snaps =
+      (case line.data of
+        TimelineBlank ->
+          []
+        TimelineWorlds worlds ->
+          worlds
+            |> List.map (.start>>Time.posixToMillis)
+        TimelineArcs arcs ->
+          arcs
+            |> List.map (.start>>Time.posixToMillis)
+        TimelineSpans spans ->
+          spans
+            |> List.map (.start>>Time.posixToMillis)
+      )
+        |> List.filter (\snap -> snap - snapRange < ms && ms < snap + snapRange )
+  in
+    if List.isEmpty snaps then
+      ms |> Time.millisToPosix
+    else
+      snaps
+        |> List.foldl (\snap candidate ->
+            if abs (ms - snap) < abs (ms - candidate) then
+              snap
+            else
+              candidate
+          ) 0
+        |> Time.millisToPosix
 
 timelineRange : TimelineId -> Maybe (Posix, Posix) -> Model -> Model
 timelineRange index mrange model =

@@ -12,9 +12,11 @@
   - x worlds cover more history
   - x what if data doesn't cover whole timeline range
   - x when to dislay min/max time
+  - x snap to edges
   - data hit detection
   - monuments?
   - live publish range?
+  - separate dragging uncommited drag selection
   - lazy background
 - object search header locked
 - assembling log search spans?
