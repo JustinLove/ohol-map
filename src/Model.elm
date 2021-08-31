@@ -136,6 +136,7 @@ type alias Model =
   , graticuleVisible : Bool
   , monumentsVisible : Bool
   , showOnlyCurrentMonuments : Bool
+  , monumentsOnTimeline : Bool
   , gameSecondsPerSecond : Int
   , framesPerSecond : Int
   , timeRange : Maybe (Posix, Posix)
@@ -218,6 +219,7 @@ initialModel config location key =
   , graticuleVisible = False
   , monumentsVisible = True
   , showOnlyCurrentMonuments = True
+  , monumentsOnTimeline = False
   , gameSecondsPerSecond = 600
   , framesPerSecond = 10
   , timeRange = Nothing
@@ -621,7 +623,13 @@ timeline model index =
         --|> RemoteData.map (arcsInRange (minTime, maxTime))
         --|> RemoteData.map TimelineArcs
         --|> RemoteData.withDefault TimelineBlank
-      , monuments = []
+      , monuments =
+        if model.monumentsOnTimeline then
+          currentMonuments model
+            |> RemoteData.map (monumentsInRange (minTime, maxTime))
+            |> RemoteData.withDefault []
+        else
+          []
       }
   else
     case Array.get (index-1) model.timelineSelections of
@@ -647,9 +655,13 @@ timeline model index =
                 |> RemoteData.map (spansInRange (min, max))
                 |> RemoteData.map TimelineSpans
                 |> RemoteData.withDefault TimelineBlank
-          , monuments = currentMonuments model
-            |> RemoteData.map (monumentsInRange (min, max))
-            |> RemoteData.withDefault []
+          , monuments =
+            if model.monumentsOnTimeline then
+              currentMonuments model
+                |> RemoteData.map (monumentsInRange (min, max))
+                |> RemoteData.withDefault []
+            else
+              []
           }
       Nothing ->
         Nothing

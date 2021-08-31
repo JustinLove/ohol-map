@@ -71,6 +71,7 @@ type Msg
   | ToggleFadeTallObjects Bool
   | ToggleShowMonuments Bool
   | ToggleShowOnlyCurrentMonuments Bool
+  | ToggleMonumentsOnTimeline Bool
   | SelectNaturalObjectZoom Int
   | ToggleShowActivityMap Bool
   | SelectActivityMapSampleSize Int
@@ -2048,16 +2049,23 @@ animationOptions palette model =
 
 monumentOptions : Palette -> Model -> Element Msg
 monumentOptions palette model =
+  let pad = paddingEach { top = 0, bottom = 0, left = 10, right = 10 } in
   subsectionControl
     { tagger = ToggleShowMonuments
     , checked = model.monumentsVisible
     , label = "Monuments"
     , palette = palette
     }
-    [ Input.checkbox [ padding 10, spacing 2 ]
+    [ Input.checkbox [ pad, spacing 2 ]
       { onChange = ToggleShowOnlyCurrentMonuments
       , checked = model.showOnlyCurrentMonuments
       , label = Input.labelRight [ padding 6 ] (text "Show Only Current Monuments")
+      , icon = Input.defaultCheckbox
+      }
+    , Input.checkbox [ pad, spacing 2 ]
+      { onChange = ToggleMonumentsOnTimeline
+      , checked = model.monumentsOnTimeline
+      , label = Input.labelRight [ padding 6 ] (text "Monuments On Timeline")
       , icon = Input.defaultCheckbox
       }
     ]

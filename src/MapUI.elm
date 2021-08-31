@@ -285,6 +285,12 @@ update msg model =
         }
       , Leaflet.showOnlyCurrentMonuments show
       )
+    UI (View.ToggleMonumentsOnTimeline show) ->
+      ( { model
+        | monumentsOnTimeline = show
+        }
+      , Cmd.none
+      )
     UI (View.ToggleFadeTallObjects fade) ->
       ( { model
         | fadeTallObjects = fade

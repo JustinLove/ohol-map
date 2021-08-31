@@ -14,8 +14,10 @@
   - x when to dislay min/max time
   - x snap to edges
   - monuments?
+    - snap, jump to location
   - live publish range?
   - separate dragging uncommited drag selection
+  - truncate world name in header
   - lazy background
   - data hit detection??
 - object search header locked
