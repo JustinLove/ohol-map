@@ -13,6 +13,8 @@
   - x what if data doesn't cover whole timeline range
   - x when to dislay min/max time
   - data hit detection
+  - monuments?
+  - live publish range?
   - lazy background
 - object search header locked
 - assembling log search spans?

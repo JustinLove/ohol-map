@@ -141,7 +141,6 @@ type alias Model =
   , timelineSelections : Array (Posix, Posix)
   , drag : DragMode
   , hover : Hover
-  , hasSeenJunkEnter : Bool
   , player : Player
   , fadeTallObjects : Bool
   , showNaturalObjectsAboveZoom : Int
@@ -224,7 +223,6 @@ initialModel config location key =
   , timelineSelections = Array.empty
   , drag = Released
   , hover = Away
-  , hasSeenJunkEnter = False
   , player = Stopped
   , fadeTallObjects = False
   , showNaturalObjectsAboveZoom = 26

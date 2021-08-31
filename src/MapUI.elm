@@ -246,17 +246,16 @@ update msg model =
     UI (View.WindowUp (x, _)) ->
       timelineDrag x {model | drag = Released}
     UI (View.WindowEnter held (x, _)) ->
-      if model.hasSeenJunkEnter then
-        if held then
-          timelineDrag x model
-        else
-          ({model | drag = Released}, Cmd.none)
+      if held then
+        timelineDrag x model
       else
-        ({model | hasSeenJunkEnter = True}, Log.info "discarding junk enter" (Json.Encode.string ""))
+        ({model | drag = Released}, Cmd.none)
     UI (View.WindowLeave (x, _)) ->
-      timelineDrag (timelineLeave model x) {model | hasSeenJunkEnter = True}
+      timelineDrag (timelineLeave model x) model
     UI (View.WindowMove (x, _)) ->
       timelineDrag x model
+    UI (View.EventDebug value) ->
+      (model, Log.debug "event" value)
     UI (View.Play) ->
       ( { model
         | player = Starting

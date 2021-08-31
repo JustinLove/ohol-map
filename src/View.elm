@@ -65,6 +65,7 @@ type Msg
   | WindowEnter Bool ScreenLocation
   | WindowLeave ScreenLocation
   | WindowMove ScreenLocation
+  | EventDebug Decode.Value
   | Play
   | Pause
   | ToggleFadeTallObjects Bool
@@ -2219,13 +2220,29 @@ when test att =
   (if test then att else Html.Attributes.class "")
     |> htmlAttribute
 
+eventDebug tagger =
+  Decode.map tagger Decode.value
+
 mouseWithHeldDecoder tagger =
   Decode.map2 tagger
     buttonPressedDecoder
     clientDecoder
+    |> requireRelatedTarget
 
 mouseDecoder tagger =
   (Decode.map tagger clientDecoder)
+
+requireRelatedTarget decoder =
+  relatedTarget
+    |> Decode.andThen (\_ -> decoder)
+
+relatedTarget =
+  (Decode.field "relatedTarget" (Decode.nullable Decode.value))
+    |> Decode.andThen (\target ->
+      case target of
+        Just a -> Decode.succeed a
+        Nothing -> Decode.fail "no target"
+      )
 
 buttonPressedDecoder : Decode.Decoder Bool
 buttonPressedDecoder =
