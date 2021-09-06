@@ -128,7 +128,7 @@ view model =
     ] <|
     Keyed.row [ width fill, height fill ]
       [ ( "main"
-        , Keyed.column [ width fill, height fill ]
+        , Keyed.column [ width fill, height fill, clipX ]
           [ ( "map"
             , el
               [ width fill
@@ -256,7 +256,7 @@ displayTimelineLazy model =
             Away -> Nothing
       in
       column [ width fill ]
-        [ row []
+        [ row [ ]
           [ case model.player of
             Stopped ->
               Input.button [ width (px 40), padding 4 ]
