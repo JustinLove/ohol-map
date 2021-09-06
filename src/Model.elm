@@ -54,6 +54,8 @@ module Model exposing
   , Timeline
   , timeline
   , timelineScreenToTime
+  , timelineTimeInDistance
+  , timelineTimeToScreen
   , timelineLeave
   , timelineRange
   , setTimeRange
@@ -219,7 +221,7 @@ initialModel config location key =
   , graticuleVisible = False
   , monumentsVisible = True
   , showOnlyCurrentMonuments = True
-  , monumentsOnTimeline = False
+  , monumentsOnTimeline = True
   , gameSecondsPerSecond = 600
   , framesPerSecond = 10
   , timeRange = Nothing
@@ -707,8 +709,8 @@ timelineLeave model x =
     else
       width
 
-timelineScreenToTime : Timeline -> Float -> Posix
-timelineScreenToTime line x =
+timelineScreenToTime : RemoteData (List Monument) -> Timeline -> Float -> Posix
+timelineScreenToTime monuments line x =
   let
     min = (Time.posixToMillis line.minTime) + 1
     max = Time.posixToMillis line.maxTime
@@ -737,6 +739,7 @@ timelineScreenToTime line x =
           spans
             |> List.map (.start>>Time.posixToMillis)
       )
+        |> List.append (monuments |> RemoteData.withDefault [] |> List.map (.date>>Time.posixToMillis))
         |> List.filter (\snap -> snap - snapRange < ms && ms < snap + snapRange )
   in
     if List.isEmpty snaps then
@@ -750,6 +753,34 @@ timelineScreenToTime line x =
               candidate
           ) 0
         |> Time.millisToPosix
+
+timelineTimeInDistance : Timeline -> Float -> Int
+timelineTimeInDistance line length =
+  let
+    min = (Time.posixToMillis line.minTime) + 1
+    max = Time.posixToMillis line.maxTime
+    range = (max - min) |> toFloat
+    screenRange = line.width |> toFloat
+  in
+    (length / screenRange)
+      |> (*) range
+      |> round
+
+timelineTimeToScreen : Timeline -> Posix -> Float
+timelineTimeToScreen line time =
+  let
+    min = (Time.posixToMillis line.minTime) + 1
+    max = Time.posixToMillis line.maxTime
+    range = (max - min) |> toFloat
+    screenRange = line.width |> toFloat
+    ms = Time.posixToMillis time
+  in
+    ms
+      |> (\t -> t - min)
+      |> toFloat
+      |> (\t -> t / range)
+      |> (*) screenRange
+      |> clamp 0 screenRange
 
 timelineRange : TimelineId -> Maybe (Posix, Posix) -> Model -> Model
 timelineRange index mrange model =

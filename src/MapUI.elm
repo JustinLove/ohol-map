@@ -219,7 +219,7 @@ update msg model =
     UI (View.TimelineMove index (x, _)) ->
       case timeline model index of
         Just line ->
-          let time = timelineScreenToTime line x in
+          let time = timelineScreenToTime (currentMonuments model) line x in
           if index == 0 then
             let mnote = worldForTime time (currentWorlds model) |> Maybe.map .name in
             ({model | hover = Hovering index time mnote}, Cmd.none)
@@ -232,14 +232,14 @@ update msg model =
     UI (View.TimelineGrab index (x, _)) ->
       case timeline model index of
         Just line ->
-          let time = timelineScreenToTime line x in
+          let time = timelineScreenToTime (currentMonuments model) line x in
           scrubTime time {model | drag = Scrubbing index time}
         Nothing ->
           (model, Cmd.none)
     UI (View.TimelineDown index (x, _)) ->
       case timeline model index of
         Just line ->
-          let time = timelineScreenToTime line x in
+          let time = timelineScreenToTime (currentMonuments model) line x in
           scrubTime time {model | drag = Dragging index time}
         Nothing ->
           (model, Cmd.none)
@@ -1318,22 +1318,29 @@ timelineDrag x model =
       case timeline model index of
         Just line ->
           let
-            time = timelineScreenToTime line x
-            range = if Time.posixToMillis start <= Time.posixToMillis time then
-                Just (start, time)
+            time = timelineScreenToTime (currentMonuments model) line x
+            s = Time.posixToMillis start
+            t = Time.posixToMillis time
+            (range, length) = if s <= t then
+                (Just (start, time), t - s)
               else
-                Just (time, start)
+                (Just (time, start), s - t)
+            delta = timelineTimeInDistance line 4
           in
-          model
-            |> timelineRange index range
-            |> scrubTime time
+            if length < delta then
+              model
+                |> scrubTime time
+            else
+              model
+                |> timelineRange index range
+                |> scrubTime time
         Nothing ->
           (model, Cmd.none)
     Scrubbing index start ->
       case timeline model index of
         Just line ->
           let
-            time = timelineScreenToTime line x
+            time = timelineScreenToTime (currentMonuments model) line x
           in
           model
             |> scrubTime time
