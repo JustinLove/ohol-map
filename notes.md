@@ -13,8 +13,8 @@
   - x what if data doesn't cover whole timeline range
   - x when to dislay min/max time
   - x snap to edges
-  - monuments?
-    - snap, jump to location
+  - x monuments?
+    - x snap, jump to location
   - live publish range?
   - separate dragging uncommited drag selection
   - truncate world name in header

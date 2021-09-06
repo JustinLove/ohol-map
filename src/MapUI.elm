@@ -243,13 +243,13 @@ update msg model =
           scrubTime time {model | drag = DragStart index time}
         Nothing ->
           (model, Cmd.none)
-    UI (View.WindowUp (x, _)) ->
-      timelineDrag x {model | drag = Released}
+    UI (View.WindowUp (_, _)) ->
+      timelineRelease model
     UI (View.WindowEnter held (x, _)) ->
       if held then
         timelineDrag x model
       else
-        ({model | drag = Released}, Cmd.none)
+        timelineRelease model
     UI (View.WindowLeave (x, _)) ->
       timelineDrag (timelineLeave model x) model
     UI (View.WindowMove (x, _)) ->
@@ -1361,6 +1361,42 @@ timelineDrag x model =
           (model, Cmd.none)
     Released ->
         (model, Cmd.none)
+
+timelineRelease : Model -> (Model, Cmd Msg)
+timelineRelease model =
+  case model.drag of
+    DragStart index start ->
+      case timeline model index of
+        Just line ->
+          let
+            ms = Time.posixToMillis start
+            snapRange = timelineTimeInDistance line 4
+            snaps = currentMonuments model
+              |> RemoteData.withDefault []
+              |> List.filter (\m -> let snap = m.date |> Time.posixToMillis in snap - snapRange < ms && ms < snap + snapRange )
+          in
+            case snaps of
+              [] ->
+                ({model | drag = Released}, Cmd.none)
+              head :: _ ->
+                ( {model | drag = Released}
+                , snaps
+                  |> List.foldl (\m c ->
+                      let
+                        snap = m.date |> Time.posixToMillis
+                        candidate = c.date |> Time.posixToMillis
+                      in
+                      if abs (ms - snap) < abs (ms - candidate) then
+                        m
+                      else
+                        c
+                    ) head
+                  |> (\m -> Leaflet.focusPoint m.x m.y)
+                )
+        Nothing ->
+          ({model | drag = Released}, Cmd.none)
+    _ ->
+      ({model | drag = Released}, Cmd.none)
 
 lifeRangeIfVisible : Model -> Maybe (Posix, Posix) -> Maybe (Posix, Posix)
 lifeRangeIfVisible model timeRange =
