@@ -240,7 +240,7 @@ update msg model =
       case timeline model index of
         Just line ->
           let time = timelineScreenToTime (currentMonuments model) line x in
-          scrubTime time {model | drag = Dragging index time}
+          scrubTime time {model | drag = DragStart index time}
         Nothing ->
           (model, Cmd.none)
     UI (View.WindowUp (x, _)) ->
@@ -1314,6 +1314,24 @@ scrubTime time model =
 timelineDrag : Float -> Model -> (Model, Cmd Msg)
 timelineDrag x model =
   case model.drag of
+    DragStart index start ->
+      case timeline model index of
+        Just line ->
+          let
+            time = timelineScreenToTime (currentMonuments model) line x
+            s = Time.posixToMillis start
+            t = Time.posixToMillis time
+            length = abs (t - s)
+            delta = timelineTimeInDistance line 4
+          in
+            if length < delta then
+              model
+                |> scrubTime time
+            else
+              {model | drag = Dragging index start}
+                |> scrubTime time
+        Nothing ->
+          (model, Cmd.none)
     Dragging index start ->
       case timeline model index of
         Just line ->
@@ -1321,19 +1339,14 @@ timelineDrag x model =
             time = timelineScreenToTime (currentMonuments model) line x
             s = Time.posixToMillis start
             t = Time.posixToMillis time
-            (range, length) = if s <= t then
-                (Just (start, time), t - s)
+            range = if s <= t then
+                Just (start, time)
               else
-                (Just (time, start), s - t)
-            delta = timelineTimeInDistance line 4
+                Just (time, start)
           in
-            if length < delta then
-              model
-                |> scrubTime time
-            else
-              model
-                |> timelineRange index range
-                |> scrubTime time
+            model
+              |> timelineRange index range
+              |> scrubTime time
         Nothing ->
           (model, Cmd.none)
     Scrubbing index start ->

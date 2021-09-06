@@ -362,6 +362,7 @@ type alias ScreenLocation = (Float, Float)
 
 type DragMode
   = Released
+  | DragStart TimelineId Posix
   | Dragging TimelineId Posix
   | Scrubbing TimelineId Posix
 
