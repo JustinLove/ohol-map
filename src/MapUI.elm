@@ -1328,25 +1328,17 @@ timelineDrag x model =
               model
                 |> scrubTime time
             else
-              {model | drag = Dragging index start}
+              {model | drag = Dragging index start time}
                 |> scrubTime time
         Nothing ->
           (model, Cmd.none)
-    Dragging index start ->
+    Dragging index start _ ->
       case timeline model index of
         Just line ->
           let
             time = timelineScreenToTime (currentMonuments model) line x
-            s = Time.posixToMillis start
-            t = Time.posixToMillis time
-            range = if s <= t then
-                Just (start, time)
-              else
-                Just (time, start)
           in
-            model
-              |> timelineRange index range
-              |> scrubTime time
+          ({model | drag = Dragging index start time}, Cmd.none)
         Nothing ->
           (model, Cmd.none)
     Scrubbing index start ->
@@ -1395,6 +1387,22 @@ timelineRelease model =
                 )
         Nothing ->
           ({model | drag = Released}, Cmd.none)
+    Dragging index start time ->
+      case timeline model index of
+        Just line ->
+          let
+            s = Time.posixToMillis start
+            t = Time.posixToMillis time
+            range = if s <= t then
+                Just (start, time)
+              else
+                Just (time, start)
+          in
+            {model | drag = Released}
+              |> timelineRange index range
+              |> scrubTime time
+        Nothing ->
+          (model, Cmd.none)
     _ ->
       ({model | drag = Released}, Cmd.none)
 

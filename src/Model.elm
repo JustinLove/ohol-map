@@ -363,7 +363,7 @@ type alias ScreenLocation = (Float, Float)
 type DragMode
   = Released
   | DragStart TimelineId Posix
-  | Dragging TimelineId Posix
+  | Dragging TimelineId Posix Posix
   | Scrubbing TimelineId Posix
 
 type Hover
@@ -606,6 +606,17 @@ timeline model index =
     width = case model.sidebar of
       OpenSidebar -> model.windowWidth - 330
       ClosedSidebar -> model.windowWidth
+    timeRange = case model.drag of
+      Dragging i start time ->
+        if i == index then
+          if Time.posixToMillis start <= Time.posixToMillis time then
+            Just (start, time)
+          else
+            Just (time, start)
+        else
+          Array.get index model.timelineSelections
+      _ ->
+        Array.get index model.timelineSelections
   in
   if index == 0 then
     let
@@ -617,7 +628,7 @@ timeline model index =
       { id = index
       , minTime = minTime
       , maxTime = maxTime
-      , timeRange = Array.get index model.timelineSelections
+      , timeRange = timeRange
       , width = width
       , data = currentWorlds model
         |> (worldsInRange (minTime, maxTime))
@@ -646,7 +657,7 @@ timeline model index =
           { id = index
           , minTime = min
           , maxTime = max
-          , timeRange = Array.get index model.timelineSelections
+          , timeRange = timeRange
           , width = width
           , data =
             if typicalSpanWidth < 10 then

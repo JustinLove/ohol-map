@@ -15,9 +15,9 @@
   - x snap to edges
   - x monuments?
     - x snap, jump to location
-  - live publish range?
-  - separate dragging uncommited drag selection
+  - x separate dragging uncommited drag selection
   - truncate world name in header
+  - live publish range?
   - lazy background
   - data hit detection??
 - object search header locked
