@@ -3628,7 +3628,7 @@
         var className = 'leaflet-control-map-button'
         var container = this._container = L.DomUtil.create('div', className)
 
-        var link = L.DomUtil.create('a', className + '-toggle', container);
+        var link = L.DomUtil.create('a', className + '-body', container);
         this.redraw(this.options.icon)
 
         L.DomEvent.on(link, 'click', this.toggle, this);

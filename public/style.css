@@ -101,7 +101,7 @@ body {
 }
 .leaflet-control-map-toggle-off,
 .leaflet-control-map-toggle-on,
-.leaflet-control-map-button-toggle {
+.leaflet-control-map-button-body {
   font: bold 18px 'Lucida Console', Monaco, monospace;
   font-size: 22px;
   text-align: center;
@@ -112,13 +112,13 @@ body {
 }
 .leaflet-control-map-toggle-off svg,
 .leaflet-control-map-toggle-on svg,
-.leaflet-control-map-button-toggle svg {
+.leaflet-control-map-button-body svg {
   position: relative;
   top: 10px;
 }
 .leaflet-touch .leaflet-control-map-toggle-off,
 .leaflet-touch .leaflet-control-map-toggle-on,
-.leaflet-touch .leaflet-control-map-button-toggle {
+.leaflet-touch .leaflet-control-map-button-body {
   width: 44px;
   height: 44px;
 }
@@ -157,7 +157,7 @@ svg.icon {
 
 .light .leaflet-control-map-toggle-off svg,
 .light .leaflet-control-map-toggle-on svg,
-.light .leaflet-control-map-button-toggle svg {
+.light .leaflet-control-map-button-body svg {
   color: #aaa;
 }
 
@@ -223,7 +223,7 @@ svg.icon {
 
 .dark .leaflet-control-map-toggle-off svg,
 .dark .leaflet-control-map-toggle-on svg,
-.dark .leaflet-control-map-button-toggle svg {
+.dark .leaflet-control-map-button-body svg {
   color: #666;
 }
 
