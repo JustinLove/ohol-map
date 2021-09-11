@@ -69,7 +69,7 @@ module Model exposing
   , relativeEndTime
   )
 
-import Leaflet exposing (Point, PointColor(..), PointLocation(..))
+import Leaflet exposing (Point, PointColor(..), PointLocation(..), Animatable(..))
 import OHOLData as Data
 import OHOLData.Parse as Parse
 import RemoteData exposing (RemoteData(..))
@@ -135,6 +135,7 @@ type alias Model =
   , evesOnly : Bool
   , timeline : Bool
   , dataAnimated : Bool
+  , mapAnimatable : Animatable
   , lifeDataVisible : Bool
   , graticuleVisible : Bool
   , monumentsVisible : Bool
@@ -202,7 +203,7 @@ initialModel config location key =
   , keySearchNotable = config.keySearchNotable
   , logSearchIndex = config.logSearchIndex
   , logSearch = config.logSearch
-  , sidebar = OpenSidebar
+  , sidebar = ClosedSidebar
   , sidebarMode = DataFilter
   , searchMode = SearchLives
   , lifeSearchTerm = ""
@@ -217,8 +218,9 @@ initialModel config location key =
   , coarseArc = Nothing
   , currentArc = Nothing
   , evesOnly = False
-  , timeline = True --False
+  , timeline = False
   , dataAnimated = False
+  , mapAnimatable = Inert
   , lifeDataVisible = False
   , graticuleVisible = False
   , monumentsVisible = True

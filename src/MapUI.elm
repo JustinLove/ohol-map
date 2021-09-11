@@ -1,6 +1,6 @@
 module MapUI exposing (..)
 
-import Leaflet exposing (Point, PointColor(..), PointLocation(..))
+import Leaflet exposing (Point, PointColor(..), PointLocation(..), Animatable(..))
 import LocalStorage
 import Log
 import Model exposing (..)
@@ -540,6 +540,8 @@ update msg model =
       )
     Event (Ok (Leaflet.AnimToggle)) ->
       toggleAnimated (not model.dataAnimated) model
+    Event (Ok (Leaflet.DataAnimated dataAnimated)) ->
+      ({ model | mapAnimatable = dataAnimated }, Cmd.none)
     Event (Err err) ->
       (model, Log.decodeError "error" err)
     MatchingLives (Ok lives) ->
@@ -1732,6 +1734,7 @@ timeSelectionAround model =
     , coarseStartTime = time
     , startTime = time
     }
+      |> setTimeRange (Just (time, model.time))
 
 fetchDataForTime : Model -> Cmd Msg
 fetchDataForTime model =

@@ -1,5 +1,6 @@
 ## bugs
 - remove band simulation
+- remove notable on other servers
 
 - ?? too man calls to location or history api in a short time - time scrolling while object seach is open - cannot reproduce
 - ?? when objects search is open and location selected, cannot pan - cannot reproduce
@@ -20,7 +21,10 @@
   - x separate dragging uncommited drag selection
   - x truncate world name in header
   - full integration
-    - opening timeline on no-anim servers
+    - x opening timeline on no-anim servers
+    - x play button with no animation?
+    - anim remains avaiable with life data from other server
+    - change timeline when changing servers?
     - arc control feedback?
   - lazy background
   - live publish range?

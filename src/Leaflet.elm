@@ -2,6 +2,7 @@ port module Leaflet exposing
   ( Point
   , PointColor(..)
   , PointLocation(..)
+  , Animatable(..)
   , Event(..)
   , setView
   , currentTime
@@ -58,6 +59,11 @@ type PointColor
 type PointLocation
   = BirthLocation
   | DeathLocation
+
+type Animatable
+  = Static
+  | Animated
+  | Inert
 
 setView : Point -> Cmd msg
 setView {x, y, z} =
@@ -315,6 +321,7 @@ type Event
   | SidebarToggle
   | TimelineToggle
   | AnimToggle
+  | DataAnimated Animatable
 
 event : (Result Decode.Error Event -> msg) -> Sub msg
 event tagger =
@@ -349,6 +356,8 @@ eventDecoder =
           Decode.succeed TimelineToggle
         "animToggle" ->
           Decode.succeed AnimToggle
+        "dataAnimated" ->
+          Decode.map DataAnimated animatableDecoder
         _ ->
           Decode.fail kind
       )
@@ -359,6 +368,16 @@ pointDecoder =
     (Decode.field "x" Decode.int)
     (Decode.field "y" Decode.int)
     (Decode.field "z" Decode.int)
+
+animatableDecoder : Decode.Decoder Animatable
+animatableDecoder =
+  (Decode.field "animated" Decode.string)
+    |> Decode.andThen (\a -> Decode.succeed (case a of
+        "static" -> Static
+        "animated" -> Animated
+        _ -> Inert
+      )
+      )
 
 port leafletCommand : Encode.Value -> Cmd msg
 port leafletEvent : (Decode.Value -> msg) -> Sub msg

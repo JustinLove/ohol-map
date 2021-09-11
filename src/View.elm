@@ -5,7 +5,7 @@ module View exposing
   , document
   )
 
-import Leaflet exposing (Point, PointColor(..), PointLocation(..))
+import Leaflet exposing (Point, PointColor(..), PointLocation(..), Animatable(..))
 import Model exposing (..)
 import RemoteData exposing (RemoteData(..))
 import Theme exposing (Theme)
@@ -211,6 +211,7 @@ displayTimeline model =
       , timelines =
         List.range 0 (Array.length model.timelineSelections)
           |> List.filterMap (timeline model)
+      , mapAnimatable = model.mapAnimatable
       , player = model.player
       , zone = model.zone
       , currentArc = model.currentArc
@@ -233,6 +234,7 @@ displayTimelineLazy :
   , zero : Maybe Timeline
   , one : Maybe Timeline
   , timelines : List Timeline
+  , mapAnimatable : Animatable
   , player : Player
   , zone : Time.Zone
   , currentArc : Maybe Arc
@@ -257,17 +259,20 @@ displayTimelineLazy model =
       in
       column [ width fill ]
         [ row [ ]
-          [ case model.player of
-            Stopped ->
-              Input.button [ width (px 40), padding 4 ]
-                { onPress = Just Play
-                , label = el [ centerX ] <| icon "play3"
-                }
-            _ ->
-              Input.button [ width (px 40), padding 4 ]
-                { onPress = Just Pause
-                , label = el [ centerX ] <| icon "pause2"
-                }
+          [ if model.mapAnimatable == Animated then
+              case model.player of
+                Stopped ->
+                  Input.button [ width (px 40), padding 4 ]
+                    { onPress = Just Play
+                    , label = el [ centerX ] <| icon "play3"
+                    }
+                _ ->
+                  Input.button [ width (px 40), padding 4 ]
+                    { onPress = Just Pause
+                    , label = el [ centerX ] <| icon "pause2"
+                    }
+            else
+              el [ width (px 40), height (px 28), padding 4 ] none
           , Input.button []
               { onPress = Just (ToggleUTC (model.zone /= Time.utc))
               , label = dateWithZone model.zone labelTime palette
@@ -2017,35 +2022,38 @@ activityMapOptions palette model =
 
 animationOptions : Palette -> Model -> Element Msg
 animationOptions palette model =
-  subsectionControl
-    { tagger = ToggleAnimated
-    , checked = model.dataAnimated
-    , label = "Animated"
-    , palette = palette
-    }
-    [ logSlider
-        [ Background.color palette.control ]
-        { onChange = round >> GameSecondsPerSecond
-        , label = Input.labelAbove [] <|
-          text (gameTimeText model.gameSecondsPerSecond)
-        , min = 1
-        , max = 60*60*10
-        , value = model.gameSecondsPerSecond |> toFloat
-        , thumb = Input.defaultThumb
-        , step = Nothing
-        }
-    , logSlider
-        [ Background.color palette.control ]
-        { onChange = round >> FramesPerSecond
-        , label = Input.labelAbove [] <|
-          text ((model.framesPerSecond |> String.fromInt) ++ " Frames/Second")
-        , min = 1
-        , max = 60
-        , value = model.framesPerSecond |> toFloat
-        , thumb = Input.defaultThumb
-        , step = Nothing
-        }
-    ]
+  if model.mapAnimatable == Inert then
+    none
+  else
+    subsectionControl
+      { tagger = ToggleAnimated
+      , checked = model.dataAnimated
+      , label = "Animated"
+      , palette = palette
+      }
+      [ logSlider
+          [ Background.color palette.control ]
+          { onChange = round >> GameSecondsPerSecond
+          , label = Input.labelAbove [] <|
+            text (gameTimeText model.gameSecondsPerSecond)
+          , min = 1
+          , max = 60*60*10
+          , value = model.gameSecondsPerSecond |> toFloat
+          , thumb = Input.defaultThumb
+          , step = Nothing
+          }
+      , logSlider
+          [ Background.color palette.control ]
+          { onChange = round >> FramesPerSecond
+          , label = Input.labelAbove [] <|
+            text ((model.framesPerSecond |> String.fromInt) ++ " Frames/Second")
+          , min = 1
+          , max = 60
+          , value = model.framesPerSecond |> toFloat
+          , thumb = Input.defaultThumb
+          , step = Nothing
+          }
+      ]
 
 monumentOptions : Palette -> Model -> Element Msg
 monumentOptions palette model =

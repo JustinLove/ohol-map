@@ -3967,11 +3967,23 @@
     if (animated > 0) {
       addControl(map, animToggle)
       animToggle.setChecked(true)
+      app.ports.leafletEvent.send({
+        kind: 'dataAnimated',
+        animated: 'animated',
+      })
     } else if (stat > 0) {
       addControl(map, animToggle)
       animToggle.setChecked(false)
+      app.ports.leafletEvent.send({
+        kind: 'dataAnimated',
+        animated: 'static',
+      })
     } else {
       removeControl(map, animToggle)
+      app.ports.leafletEvent.send({
+        kind: 'dataAnimated',
+        animated: 'inert',
+      })
     }
   }
 
