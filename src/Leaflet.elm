@@ -19,6 +19,7 @@ port module Leaflet exposing
   , searchOverlay
   , highlightObjects
   , animOverlay
+  , timeline
   , sidebar
   , overlayVisible
   , dataLayerVisible
@@ -201,6 +202,14 @@ animOverlay status =
     ]
     |> leafletCommand
 
+timeline : Bool -> Cmd msg
+timeline status =
+  Encode.object
+    [ ("kind", Encode.string "timeline")
+    , ("sidebar", Encode.bool status)
+    ]
+    |> leafletCommand
+
 sidebar : String -> Cmd msg
 sidebar status =
   Encode.object
@@ -304,6 +313,7 @@ type Event
   | SelectPoints (List Data.Life)
   | DataRange Posix Posix
   | SidebarToggle
+  | TimelineToggle
   | AnimToggle
 
 event : (Result Decode.Error Event -> msg) -> Sub msg
@@ -335,6 +345,8 @@ eventDecoder =
             (Decode.field "max" Decode.timeStamp)
         "sidebarToggle" ->
           Decode.succeed SidebarToggle
+        "timelineToggle" ->
+          Decode.succeed TimelineToggle
         "animToggle" ->
           Decode.succeed AnimToggle
         _ ->

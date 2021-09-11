@@ -84,6 +84,7 @@
 
   var mapTime = Date.now()
   var mapServer = 17
+  var timelineVisible = false
   var dataAnimated = false
   var biomeLayerVisible = false
 
@@ -3662,9 +3663,15 @@
     message: 'sidebarToggle',
     position: 'bottomright'
   })
-  var animToggle = L.control.mapButton({
+  var timelineToggle = L.control.mapButton({
     title: 'Time',
     icon: 'time',
+    message: 'timelineToggle',
+    position: 'bottomleft'
+  })
+  var animToggle = L.control.mapButton({
+    title: 'Time',
+    icon: 'image',
     message: 'animToggle',
     position: 'bottomleft'
   })
@@ -3976,6 +3983,7 @@
     layersControl.addTo(map)
     L.control.scale({imperial: false}).addTo(map)
     sidebarToggle.addTo(map)
+    timelineToggle.addTo(map)
     //map.setView([0,0], 24)
 
     // --------------- Leaflet --------------------
@@ -4128,6 +4136,10 @@
             L.Util.setOptions(legendControl, {dataAnimated: message.status})
             legendControl.redraw()
             toggleAnimationControls(map)
+            break
+          case 'timeline':
+            timelineVisible = message.status
+            timelineToggle.setChecked(status)
             break
           case 'sidebar':
             toggleSidebarControls(map, message.sidebar)

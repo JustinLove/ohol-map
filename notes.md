@@ -1,6 +1,8 @@
 ## bugs
-- too man calls to location or history api in a short time - time scrolling while object seach is open - cannot reproduce
-- when objects search is open and location selected, cannot pan - cannot reproduce
+- remove band simulation
+
+- ?? too man calls to location or history api in a short time - time scrolling while object seach is open - cannot reproduce
+- ?? when objects search is open and location selected, cannot pan - cannot reproduce
 
 ## server work
 
@@ -17,8 +19,10 @@
     - x snap, jump to location
   - x separate dragging uncommited drag selection
   - x truncate world name in header
-  - live publish range?
+  - full integration
+    - arc control feedback?
   - lazy background
+  - live publish range?
   - data hit detection??
 - object search header locked
 - assembling log search spans?

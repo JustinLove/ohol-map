@@ -133,6 +133,7 @@ type alias Model =
   , coarseArc : Maybe Arc
   , currentArc : Maybe Arc
   , evesOnly : Bool
+  , timeline : Bool
   , dataAnimated : Bool
   , lifeDataVisible : Bool
   , graticuleVisible : Bool
@@ -201,7 +202,7 @@ initialModel config location key =
   , keySearchNotable = config.keySearchNotable
   , logSearchIndex = config.logSearchIndex
   , logSearch = config.logSearch
-  , sidebar = ClosedSidebar
+  , sidebar = OpenSidebar
   , sidebarMode = DataFilter
   , searchMode = SearchLives
   , lifeSearchTerm = ""
@@ -216,12 +217,13 @@ initialModel config location key =
   , coarseArc = Nothing
   , currentArc = Nothing
   , evesOnly = False
-  , dataAnimated = True --False
+  , timeline = True --False
+  , dataAnimated = False
   , lifeDataVisible = False
   , graticuleVisible = False
   , monumentsVisible = True
   , showOnlyCurrentMonuments = True
-  , monumentsOnTimeline = True
+  , monumentsOnTimeline = False
   , gameSecondsPerSecond = 600
   , framesPerSecond = 10
   , timeRange = Nothing
@@ -797,6 +799,9 @@ timelineTimeToScreen line time =
 timelineRange : TimelineId -> Maybe (Posix, Posix) -> Model -> Model
 timelineRange index mrange model =
   let
+    animatable = mrange
+      |> Maybe.map2 (\time range -> isInRange range time) model.mapTime
+      |> Maybe.withDefault False
     lines =
       case mrange of
         Just range ->
@@ -812,15 +817,11 @@ timelineRange index mrange model =
     { model
     | timelineSelections = lines
     , timeRange = mrange
+    , dataAnimated = model.dataAnimated && animatable
     }
 
 setTimeRange : Maybe (Posix, Posix) -> Model -> Model
 setTimeRange mrange model =
-  {-
-    animatable = timeRange
-      |> Maybe.map2 (\time range -> isInRange range time) model.mapTime
-      |> Maybe.withDefault False
-      -}
   case model.currentArc of
     Just arc ->
       if model.timeMode == ArcRange then

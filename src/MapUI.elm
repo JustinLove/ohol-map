@@ -95,6 +95,7 @@ init config location key =
       , Leaflet.pointColor model.pointColor
       , Leaflet.pointLocation model.pointLocation
       , Leaflet.animOverlay model.dataAnimated
+      , Leaflet.timeline model.timeline
       , Leaflet.overlayVisible "Activity Map" model.activityMapVisible
       , Leaflet.worldList (Data.rebuildWorlds Data.oholCodeChanges [] [] [])
       , Leaflet.showNaturalObjectsAboveZoom model.showNaturalObjectsAboveZoom
@@ -533,6 +534,10 @@ update msg model =
       , Cmd.none
       )
         |> addCommand sidebarCommand
+    Event (Ok (Leaflet.TimelineToggle)) ->
+      ( { model | timeline = not model.timeline }
+      , Leaflet.timeline (not model.timeline)
+      )
     Event (Ok (Leaflet.AnimToggle)) ->
       toggleAnimated (not model.dataAnimated) model
     Event (Err err) ->
@@ -1730,25 +1735,33 @@ timeSelectionAround model =
 
 fetchDataForTime : Model -> Cmd Msg
 fetchDataForTime model =
-  case model.timeMode of
-    ServerRange ->
+  case model.timeRange of
+    Just (start, end) ->
       fetchDataLayer model.apiUrl
         (model.selectedServer |> Maybe.withDefault 17)
-        model.startTime
-        (relativeEndTime model.hoursPeriod model.startTime)
+        start
+        end
         model.evesOnly
-    FromNow ->
-      Task.perform FetchUpTo Time.now
-    ArcRange ->
-      case model.currentArc of
-        Just arc ->
+    Nothing ->
+      case model.timeMode of
+        ServerRange ->
           fetchDataLayer model.apiUrl
-            arc.serverId
-            arc.start
-            (arc.end |> Maybe.withDefault model.time)
+            (model.selectedServer |> Maybe.withDefault 17)
+            model.startTime
+            (relativeEndTime model.hoursPeriod model.startTime)
             model.evesOnly
-        Nothing ->
-          Task.succeed () |> Task.perform (always NoDataLayer)
+        FromNow ->
+          Task.perform FetchUpTo Time.now
+        ArcRange ->
+          case model.currentArc of
+            Just arc ->
+              fetchDataLayer model.apiUrl
+                arc.serverId
+                arc.start
+                (arc.end |> Maybe.withDefault model.time)
+                model.evesOnly
+            Nothing ->
+              Task.succeed () |> Task.perform (always NoDataLayer)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
