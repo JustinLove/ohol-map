@@ -20,6 +20,7 @@
   - x separate dragging uncommited drag selection
   - x truncate world name in header
   - full integration
+    - opening timeline on no-anim servers
     - arc control feedback?
   - lazy background
   - live publish range?

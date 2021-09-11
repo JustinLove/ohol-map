@@ -206,7 +206,7 @@ timeline : Bool -> Cmd msg
 timeline status =
   Encode.object
     [ ("kind", Encode.string "timeline")
-    , ("sidebar", Encode.bool status)
+    , ("status", Encode.bool status)
     ]
     |> leafletCommand
 
