@@ -3657,6 +3657,62 @@
     return new L.Control.MapButton(opts);
   }
 
+  L.Control.MapToggle = L.Control.extend({
+      options: {
+        off: {
+          title: 'Button',
+          icon: 'filter',
+        },
+        off: {
+          title: 'Button',
+          icon: 'cancle-circle',
+        },
+        message: 'mapButton',
+      },
+      onAdd: function(map) {
+        return this._initLayout()
+      },
+      onRemove: function(map) {
+        // Nothing to do here
+      },
+      _initLayout: function () {
+        var className = 'leaflet-control-map-toggle'
+        var container = this._container = L.DomUtil.create('div', className)
+
+        var off = L.DomUtil.create('a', className + '-off', container);
+        var on = L.DomUtil.create('a', className + '-on', container);
+        this.redraw(this.options.off.icon)
+
+        L.DomEvent.on(off, 'click', this.toggle, this);
+        L.DomEvent.on(on, 'click', this.toggle, this);
+
+        return container;
+      },
+      toggle: function(e) {
+        app.ports.leafletEvent.send({
+          kind: this.options.message,
+        })
+        L.DomEvent.preventDefault(e)
+      },
+      setChecked: function(checked){
+        this.redraw(checked)
+      },
+      redraw: function(checked) {
+        this.redrawIcon(this._container.firstChild, this.options.off, !checked)
+        this.redrawIcon(this._container.lastChild, this.options.on, checked)
+      },
+      redrawIcon: function(node, opt, highlight) {
+        node.href = '#';
+        node.title = opt.title
+        node.innerHTML = '<svg class="icon icon-' + opt.icon + (highlight ? ' leaflet-control-map-toggle-highlight' : ' ') + '"><use xlink:href="symbol-defs.svg#icon-' + opt.icon + '"></use></svg>'
+      },
+  });
+
+  L.control.mapToggle = function(opts) {
+    return new L.Control.MapToggle(opts);
+  }
+
+
   var sidebarToggle = L.control.mapButton({
     title: 'Data',
     icon: 'filter',
@@ -3669,9 +3725,15 @@
     message: 'timelineToggle',
     position: 'bottomleft'
   })
-  var animToggle = L.control.mapButton({
-    title: 'Time',
-    icon: 'image',
+  var animToggle = L.control.mapToggle({
+    off: {
+      title: 'Snapshot',
+      icon: 'image',
+    },
+    on: {
+      title: 'Animated',
+      icon: 'film',
+    },
     message: 'animToggle',
     position: 'bottomleft'
   })

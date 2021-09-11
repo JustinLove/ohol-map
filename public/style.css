@@ -93,11 +93,14 @@ body {
 
 .leaflet-control-point-legend,
 .leaflet-control-color-scale,
+.leaflet-control-map-toggle,
 .leaflet-control-map-button {
   background-clip: padding-box;
   border: 2px solid;
   border-radius: 5px;
 }
+.leaflet-control-map-toggle-off,
+.leaflet-control-map-toggle-on,
 .leaflet-control-map-button-toggle {
   font: bold 18px 'Lucida Console', Monaco, monospace;
   font-size: 22px;
@@ -107,10 +110,14 @@ body {
   height: 36px;
   position: relative;
 }
+.leaflet-control-map-toggle-off svg,
+.leaflet-control-map-toggle-on svg,
 .leaflet-control-map-button-toggle svg {
   position: relative;
   top: 10px;
 }
+.leaflet-touch .leaflet-control-map-toggle-off,
+.leaflet-touch .leaflet-control-map-toggle-on,
 .leaflet-touch .leaflet-control-map-button-toggle {
   width: 44px;
   height: 44px;
@@ -142,13 +149,20 @@ svg.icon {
 
 .light .leaflet-control-point-legend,
 .light .leaflet-control-color-scale,
+.light .leaflet-control-map-toggle,
 .light .leaflet-control-map-button {
   background-color: #fff;
   border-color: rgba(0,0,0,0.2);
 }
 
+.light .leaflet-control-map-toggle-off svg,
+.light .leaflet-control-map-toggle-on svg,
 .light .leaflet-control-map-button-toggle svg {
   color: #aaa;
+}
+
+.light svg.leaflet-control-map-toggle-highlight {
+  color: rgb(59, 153, 250);
 }
 
 .light .icon-github { color: #24292e; }
@@ -201,13 +215,20 @@ svg.icon {
 
 .dark .leaflet-control-point-legend,
 .dark .leaflet-control-color-scale,
+.dark .leaflet-control-map-toggle,
 .dark .leaflet-control-map-button {
   background-color: #111;
   border-color: rgba(255,255,255,0.2);
 }
 
+.dark .leaflet-control-map-toggle-off svg,
+.dark .leaflet-control-map-toggle-on svg,
 .dark .leaflet-control-map-button-toggle svg {
   color: #666;
+}
+
+.dark svg.leaflet-control-map-toggle-highlight {
+  color: rgb(59, 153, 250);
 }
 
 .dark .leaflet-container .leaflet-control-attribution {
