@@ -27,6 +27,7 @@ module OHOLData exposing
   , terminateMonuments
   , current
   , advance
+  , humanTime
   )
 
 import Dict exposing (Dict)

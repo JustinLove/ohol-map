@@ -26,11 +26,12 @@
     - x play button with no animation?
     - x anim remains avaiable with life data from other server
     - x releaseing drag button out of window
-    - timeline default selection?
+    - ?? timeline default selection?
     - ?? change timeline when changing servers?
     - ?? arc control feedback?
   - lazy background
-  - live publish range?
+  - other data types
+  - live publish range? - server range
   - data hit detection??
 - object search header locked
 - assembling log search spans?
