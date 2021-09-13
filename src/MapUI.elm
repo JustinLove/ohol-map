@@ -577,7 +577,6 @@ update msg model =
           |> List.map (myServer model.versions model.objects model.objectIndex)
           |> (++) [crucible NotAvailable NotAvailable NotAvailable model.time]
           |> (++) [twoHoursOneLife NotAvailable NotAvailable NotAvailable model.time]
-          |> (++) [future model.versions model.objects model.objectIndex model.time]
         current = case model.selectedServer of
           Just sid ->
             servers
@@ -2175,23 +2174,6 @@ keyToBrowseLocation (Parse.Key _ x y) =
 logToBrowsePlacement : Parse.Log -> BrowsePlacement
 logToBrowsePlacement (Parse.Log _ x y t) =
   BrowsePlacement x y t
-
-future : RemoteData (List Version) -> RemoteData (Dict ObjectId String) -> RemoteData (List (ObjectId, String)) -> Posix -> Server
-future versions objects objectIndex currentTime =
-  { id = 20
-  , serverName = "Band"
-  , minTime = List.head Data.futureCodeChanges |> Maybe.map .start |> Maybe.withDefault (Time.millisToPosix 0)
-  , maxTime = currentTime
-  , codeChanges = Data.futureCodeChanges
-  , arcs = NotAvailable
-  , spans = NotAvailable
-  , versions = versions
-  , worlds = Data.rebuildWorlds Data.futureCodeChanges [] [] []
-  , objects = RemoteData.withDefault Dict.empty objects
-  , objectIndex = RemoteData.withDefault [] objectIndex
-  , monuments = NotAvailable
-  , hasLives = False
-  }
 
 crucible : RemoteData (List Version) -> RemoteData (Dict ObjectId String) -> RemoteData (List (ObjectId, String)) -> Posix -> Server
 crucible versions objects objectIndex currentTime =

@@ -1829,17 +1829,7 @@ serverIconForName palette serverName status =
     name = serverDisplayName serverName
   in
   el [ htmlAttribute (Html.Attributes.title serverName) ] <|
-  if "Band" == serverName then
-    el
-      [ width (px 45)
-      , padding 3
-      , Border.width 1
-      , Border.color palette.foreground
-      , Border.rounded 8
-      , Background.color (if status == Input.Selected then palette.selected else palette.control)
-      ]
-      (el [ centerX ] (text "Band"))
-  else if String.endsWith "oho.life" serverName then
+  if String.endsWith "oho.life" serverName then
     el
       [ width (px 45)
       , padding 3

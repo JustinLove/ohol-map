@@ -1,5 +1,5 @@
 ## bugs
-- remove band simulation
+- x remove band simulation
 - remove notable on other servers
 - tab switching on life search
 

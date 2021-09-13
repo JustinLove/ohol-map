@@ -19,7 +19,6 @@ module OHOLData exposing
   , SecondPlaceBiomeObjects(..)
   , completeVersions
   , oholCodeChanges
-  , futureCodeChanges
   , crucibleCodeChanges
   , tholCodeChanges
   , assignDataTime
@@ -664,28 +663,6 @@ oholCodeChanges =
       { defaultGeneration
       | biomeMap = specialBiomeMap
       , biomeRandSeedA = Nothing
-      , randSeed = Nothing
-      , numSpecialBiomes = 3
-      , specialBiomeBandOrder = specialBiomeBandOrder
-      , specialBiomeBandYCenter = specialBiomeBandYCenter20
-      , specialBiomeBandDefault = 3
-      , specialBiomeBandThickness = 200
-      , secondPlaceBiomeObjects = NoSecondPlace
-      } |> topographic specialBiomeWeights
-    }
-  ]
-  |> fixupStartTime
-
-futureCodeChanges : List Age
-futureCodeChanges =
-  [ { name = "Band Age"
-    , start = humanTime "2020-10-19"
-    , biomeLayer = Nothing
-    , generation =
-      { defaultGeneration
-      | biomeMap = specialBiomeMap
-      , biomeRandSeedA = Just 727
-      , biomeRandSeedB = Just 941
       , randSeed = Nothing
       , numSpecialBiomes = 3
       , specialBiomeBandOrder = specialBiomeBandOrder
