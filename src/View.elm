@@ -205,8 +205,6 @@ displayTimeline model =
     Element.lazy displayTimelineLazy
       { theme = model.theme
       , mapTime = model.mapTime
-      , zero = timeline model 0
-      , one = timeline model 1
       , timelines =
         List.range 0 (Array.length model.timelineSelections)
           |> List.filterMap (timeline model)
@@ -221,8 +219,6 @@ displayTimeline model =
 displayTimelineLazy :
   { theme : Theme
   , mapTime : Maybe Posix
-  , zero : Maybe Timeline
-  , one : Maybe Timeline
   , timelines : List Timeline
   , mapAnimatable : Animatable
   , player : Player
@@ -351,15 +347,15 @@ timeControl model line =
         TimelineWorlds worlds ->
           worlds
             |> List.map (worldToRange line.maxTime)
-            |> displayTimelineArcs palette line
+            |> displayTimelineRanges palette line
         TimelineArcs arcs ->
           arcs
             |> List.map (arcToRange line.maxTime)
-            |> displayTimelineArcs palette line
+            |> displayTimelineRanges palette line
         TimelineSpans spans ->
           spans
             |> List.map spanToRange
-            |> displayTimelineArcs palette line
+            |> displayTimelineRanges palette line
       )
     , behindContent
       (el
@@ -393,7 +389,7 @@ timeControl model line =
     ]
     [ el
       [ width (fillPortion (value - min)) ]
-        none
+      none
     , el
       [ width (px 16)
       , height (px 16)
@@ -403,21 +399,21 @@ timeControl model line =
       , Background.color palette.foreground
       , htmlAttribute (Html.Events.custom "mousedown" (Decode.map (\msg -> {message = msg, stopPropagation = True, preventDefault = True}) (mouseDecoder (TimelineGrab line.id))))
       ]
-        none
+      none
     , el
       [ width (fillPortion (max - value)) ]
-        none
+      none
     ]
 
-displayTimelineArcs : Palette -> Timeline -> List (Posix, Posix) -> Element msg
-displayTimelineArcs palette line arcs =
+displayTimelineRanges : Palette -> Timeline -> List (Posix, Posix) -> Element msg
+displayTimelineRanges palette line ranges =
   let
     min = (Time.posixToMillis line.minTime) + 1
     max = Time.posixToMillis line.maxTime
     background = colorToString palette.background
     control = colorToString palette.control
     monumentColor = colorToString palette.gold
-    data = arcs
+    data = ranges
       |> List.indexedMap (\index (start, end) ->
         let
           s = Time.posixToMillis start |> clamp min max |> toFloat
