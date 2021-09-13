@@ -4140,7 +4140,9 @@
           case 'dataLayer':
             setDataLayers(message.lives.data)
             moveIfOutOfView(message.lives.data, map)
-            if(!map.hasLayer(dataOverlay)) {
+            if (message.lives.data
+             && message.lives.data.length > 0
+             && !map.hasLayer(dataOverlay)) {
               map.addLayer(dataOverlay)
             }
             break;

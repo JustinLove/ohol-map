@@ -1,6 +1,7 @@
 ## bugs
 - remove band simulation
 - remove notable on other servers
+- tab switching on life search
 
 - ?? too man calls to location or history api in a short time - time scrolling while object seach is open - cannot reproduce
 - ?? when objects search is open and location selected, cannot pan - cannot reproduce
@@ -23,7 +24,7 @@
   - full integration
     - x opening timeline on no-anim servers
     - x play button with no animation?
-    - anim remains avaiable with life data from other server
+    - x anim remains avaiable with life data from other server
     - change timeline when changing servers?
     - arc control feedback?
   - lazy background

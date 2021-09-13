@@ -806,6 +806,7 @@ update msg model =
         }
       , Cmd.batch
         [ Leaflet.dataLayer (Encode.lives [])
+        , Leaflet.dataLayerVisible False
         ]
       )
     FetchUpTo time ->
@@ -1551,7 +1552,10 @@ setServerUpdate serverId model =
               if x == serverId then
                 Cmd.none
               else
-                Leaflet.dataLayer (Encode.lives [])
+                Cmd.batch
+                  [ Leaflet.dataLayer (Encode.lives [])
+                  , Leaflet.dataLayerVisible False
+                  ]
             _ -> Cmd.none
           , Leaflet.currentServer serverId
           ]
@@ -1738,33 +1742,36 @@ timeSelectionAround model =
 
 fetchDataForTime : Model -> Cmd Msg
 fetchDataForTime model =
-  case model.timeRange of
-    Just (start, end) ->
-      fetchDataLayer model.apiUrl
-        (model.selectedServer |> Maybe.withDefault 17)
-        start
-        end
-        model.evesOnly
-    Nothing ->
-      case model.timeMode of
-        ServerRange ->
-          fetchDataLayer model.apiUrl
-            (model.selectedServer |> Maybe.withDefault 17)
-            model.startTime
-            (relativeEndTime model.hoursPeriod model.startTime)
-            model.evesOnly
-        FromNow ->
-          Task.perform FetchUpTo Time.now
-        ArcRange ->
-          case model.currentArc of
-            Just arc ->
-              fetchDataLayer model.apiUrl
-                arc.serverId
-                arc.start
-                (arc.end |> Maybe.withDefault model.time)
-                model.evesOnly
-            Nothing ->
-              Task.succeed () |> Task.perform (always NoDataLayer)
+  if (currentServer model |> Maybe.map .hasLives |> Maybe.withDefault False) == False then
+    Task.succeed () |> Task.perform (always NoDataLayer)
+  else
+    case model.timeRange of
+      Just (start, end) ->
+        fetchDataLayer model.apiUrl
+          (model.selectedServer |> Maybe.withDefault 17)
+          start
+          end
+          model.evesOnly
+      Nothing ->
+        case model.timeMode of
+          ServerRange ->
+            fetchDataLayer model.apiUrl
+              (model.selectedServer |> Maybe.withDefault 17)
+              model.startTime
+              (relativeEndTime model.hoursPeriod model.startTime)
+              model.evesOnly
+          FromNow ->
+            Task.perform FetchUpTo Time.now
+          ArcRange ->
+            case model.currentArc of
+              Just arc ->
+                fetchDataLayer model.apiUrl
+                  arc.serverId
+                  arc.start
+                  (arc.end |> Maybe.withDefault model.time)
+                  model.evesOnly
+              Nothing ->
+                Task.succeed () |> Task.perform (always NoDataLayer)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -2158,6 +2165,7 @@ myServer versions objects objectIndex server =
   , objects = RemoteData.withDefault Dict.empty objects
   , objectIndex = RemoteData.withDefault [] objectIndex
   , monuments = NotRequested
+  , hasLives = True
   }
 
 keyToBrowseLocation : Parse.Key -> BrowseLocation
@@ -2182,6 +2190,7 @@ future versions objects objectIndex currentTime =
   , objects = RemoteData.withDefault Dict.empty objects
   , objectIndex = RemoteData.withDefault [] objectIndex
   , monuments = NotAvailable
+  , hasLives = False
   }
 
 crucible : RemoteData (List Version) -> RemoteData (Dict ObjectId String) -> RemoteData (List (ObjectId, String)) -> Posix -> Server
@@ -2198,6 +2207,7 @@ crucible versions objects objectIndex currentTime =
   , objects = RemoteData.withDefault Dict.empty objects
   , objectIndex = RemoteData.withDefault [] objectIndex
   , monuments = NotAvailable
+  , hasLives = False
   }
 
 twoHoursOneLife : RemoteData (List Version) -> RemoteData (Dict ObjectId String) -> RemoteData (List (ObjectId, String)) -> Posix -> Server
@@ -2214,6 +2224,7 @@ twoHoursOneLife versions objects objectIndex currentTime =
   , objects = RemoteData.withDefault Dict.empty objects
   , objectIndex = RemoteData.withDefault [] objectIndex
   , monuments = NotAvailable
+  , hasLives = False
   }
 
 fetchMatchingLives : String -> String -> Cmd Msg

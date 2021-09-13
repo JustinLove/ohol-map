@@ -310,6 +310,7 @@ type alias Server =
   , objects : Dict ObjectId String
   , objectIndex : List (ObjectId, String)
   , monuments : RemoteData (List Monument)
+  , hasLives : Bool
   }
 
 type alias SpanData =
