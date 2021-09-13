@@ -202,8 +202,7 @@ displayTimeline model =
   let
     selectedServer = model.selectedServer |> Maybe.andThen (\id -> Dict.get id model.servers)
   in
-  column [ width fill ]
-    [ Element.lazy displayTimelineLazy
+    Element.lazy displayTimelineLazy
       { theme = model.theme
       , mapTime = model.mapTime
       , zero = timeline model 0
@@ -218,15 +217,6 @@ displayTimeline model =
       , drag = model.drag
       , hover = model.hover
       }
-    , Element.lazy displayTimelineLazyBasic
-      { theme = model.theme
-      , mapTime = model.mapTime
-      , timeRange = model.timeRange
-      , player = model.player
-      , zone = model.zone
-      , currentArc = model.currentArc
-      }
-    ]
 
 displayTimelineLazy :
   { theme : Theme
@@ -349,7 +339,7 @@ timeControl model line =
   row
     [ Background.color palette.control
     , width fill
-    , height (px 20)
+    , height (px 21)
     , htmlAttribute (Html.Events.preventDefaultOn "mousedown" (Decode.map (\msg -> (msg,True)) (mouseDecoder (TimelineDown line.id))))
     , htmlAttribute (Html.Events.on "mousemove" (mouseDecoder (TimelineMove line.id)))
     , htmlAttribute (Html.Events.on "mouseleave" (mouseDecoder (TimelineLeave line.id)))
@@ -393,7 +383,7 @@ timeControl model line =
           el
             [ Background.color palette.selected
             , width (px 2)
-            , height (px 20)
+            , height (px 21)
             , moveRight ((toFloat hoverX) - 1)
             ]
               none
@@ -487,73 +477,6 @@ displayTimelineArcs palette line arcs =
         )
       ]
       |> html
-
-displayTimelineLazyBasic :
-  { theme : Theme
-  , mapTime : Maybe Posix
-  , timeRange : Maybe (Posix, Posix)
-  , player : Player
-  , zone : Time.Zone
-  , currentArc : Maybe Arc
-  } -> Element Msg
-displayTimelineLazyBasic model =
-  let
-    palette = themePalette model.theme
-  in
-  case (model.mapTime, model.timeRange) of
-    (Just time, Just (start, end)) ->
-      column [ width fill ]
-        [ row []
-          [ case model.player of
-            Stopped ->
-              Input.button [ width (px 40), padding 4 ]
-                { onPress = Just Play
-                , label = el [ centerX ] <| icon "play3"
-                }
-            _ ->
-              Input.button [ width (px 40), padding 4 ]
-                { onPress = Just Pause
-                , label = el [ centerX ] <| icon "pause2"
-                }
-          , if model.zone == Time.utc then
-              Input.button []
-                { onPress = Just (ToggleUTC False)
-                , label = dateWithZone model.zone time palette
-                }
-            else
-              Input.button []
-                { onPress = Just (ToggleUTC True)
-                , label = dateWithZone model.zone time palette
-                }
-          , ( model.currentArc
-              |> Maybe.andThen (yearOfArc time)
-              |> Maybe.map (\s -> text (", " ++ s))
-              |> Maybe.withDefault none
-            )
-            {-
-          , ( time
-              |> Time.posixToMillis
-              |> String.fromInt
-              |> (\s -> text (", " ++ s))
-            )
-            -}
-          ]
-        , Input.slider
-          [ Background.color palette.control ]
-          { onChange = round
-            >> ((*) 1000)
-            >> Time.millisToPosix
-            >> MapTime
-          , label = Input.labelHidden "timeline"
-          , min = (start |> posixToFloat 0) + 1
-          , max = end |> posixToFloat 0
-          , value = time |> posixToFloat 0
-          , thumb = Input.defaultThumb
-          , step = Just 1
-          }
-        ]
-    _ ->
-      none
 
 sidebar : Model -> Element Msg
 sidebar model =
