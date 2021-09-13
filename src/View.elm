@@ -437,7 +437,7 @@ displayTimelineRanges palette line ranges =
   in
     Chart.chart
       [ CA.width (toFloat line.width)
-      , CA.height 20
+      , CA.height 21
       , CA.range
         [ CA.lowest (toFloat min) CA.exactly
         , CA.highest (toFloat max) CA.exactly

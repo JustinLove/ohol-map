@@ -1351,7 +1351,10 @@ timelineDrag x model =
           let
             time = timelineScreenToTime (currentMonuments model) line x
           in
-          ({model | drag = Dragging index start time}, Cmd.none)
+          ( {model | drag = Dragging index start time}
+            |> rebuildTimelines
+          , Cmd.none
+          )
         Nothing ->
           (model, Cmd.none)
     Scrubbing index start ->

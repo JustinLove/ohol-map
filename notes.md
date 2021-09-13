@@ -30,7 +30,7 @@
     - ?? change timeline when changing servers?
     - ?? arc control feedback?
   - x lazy background
-  - drag selection fails
+  - x selection drag not visible
   - other data types
   - live publish range? - server range
   - data hit detection??
