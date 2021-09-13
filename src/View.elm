@@ -2247,7 +2247,7 @@ mouseWithHeldDecoder tagger =
   Decode.map2 tagger
     buttonPressedDecoder
     clientDecoder
-    |> requireRelatedTarget
+    --|> requireRelatedTarget -- was getting spurious enter events, now causing issue with proper events
 
 mouseDecoder tagger =
   (Decode.map tagger clientDecoder)
