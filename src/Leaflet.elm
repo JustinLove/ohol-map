@@ -20,7 +20,7 @@ port module Leaflet exposing
   , searchOverlay
   , highlightObjects
   , animOverlay
-  , timeline
+  , timelineVisible
   , sidebar
   , overlayVisible
   , dataLayerVisible
@@ -208,10 +208,10 @@ animOverlay status =
     ]
     |> leafletCommand
 
-timeline : Bool -> Cmd msg
-timeline status =
+timelineVisible : Bool -> Cmd msg
+timelineVisible status =
   Encode.object
-    [ ("kind", Encode.string "timeline")
+    [ ("kind", Encode.string "timelineVisible")
     , ("status", Encode.bool status)
     ]
     |> leafletCommand

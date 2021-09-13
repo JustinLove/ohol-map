@@ -25,8 +25,10 @@
     - x opening timeline on no-anim servers
     - x play button with no animation?
     - x anim remains avaiable with life data from other server
-    - change timeline when changing servers?
-    - arc control feedback?
+    - releaseing drag button out of window
+    - timeline default selection?
+    - ?? change timeline when changing servers?
+    - ?? arc control feedback?
   - lazy background
   - live publish range?
   - data hit detection??

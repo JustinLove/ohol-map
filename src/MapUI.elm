@@ -95,7 +95,7 @@ init config location key =
       , Leaflet.pointColor model.pointColor
       , Leaflet.pointLocation model.pointLocation
       , Leaflet.animOverlay model.dataAnimated
-      , Leaflet.timeline model.timeline
+      , Leaflet.timelineVisible model.timelineVisible
       , Leaflet.overlayVisible "Activity Map" model.activityMapVisible
       , Leaflet.worldList (Data.rebuildWorlds Data.oholCodeChanges [] [] [])
       , Leaflet.showNaturalObjectsAboveZoom model.showNaturalObjectsAboveZoom
@@ -535,8 +535,8 @@ update msg model =
       )
         |> addCommand sidebarCommand
     Event (Ok (Leaflet.TimelineToggle)) ->
-      ( { model | timeline = not model.timeline }
-      , Leaflet.timeline (not model.timeline)
+      ( { model | timelineVisible = not model.timelineVisible }
+      , Leaflet.timelineVisible (not model.timelineVisible)
       )
     Event (Ok (Leaflet.AnimToggle)) ->
       toggleAnimated (not model.dataAnimated) model
@@ -1113,10 +1113,14 @@ toggleAnimated : Bool -> Model -> (Model, Cmd Msg)
 toggleAnimated animated model =
   ( { model
     | dataAnimated = animated
+    , timelineVisible = model.timelineVisible || animated
     , player = if animated == False then Stopped else model.player
     }
       |> updateObjectSearch
-  , Leaflet.animOverlay animated
+  , Cmd.batch
+    [ Leaflet.animOverlay animated
+    , Leaflet.timelineVisible (model.timelineVisible || animated)
+    ]
   )
     |> addUpdate requireObjectSearchIndex
     |> addUpdate requireObjectSearch

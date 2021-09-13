@@ -4213,7 +4213,7 @@
             legendControl.redraw()
             toggleAnimationControls(map)
             break
-          case 'timeline':
+          case 'timelineVisible':
             timelineVisible = message.status
             timelineToggle.setChecked(status)
             break
