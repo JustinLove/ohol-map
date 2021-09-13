@@ -52,6 +52,8 @@ module Model exposing
   , TimelineId
   , TimelineData(..)
   , Timeline
+  , rebuildTimelines
+  , makeTimelines
   , timeline
   , timelineScreenToTime
   , timelineTimeInDistance
@@ -145,6 +147,7 @@ type alias Model =
   , framesPerSecond : Int
   , timeRange : Maybe (Posix, Posix)
   , timelineSelections : Array (Posix, Posix)
+  , timelines : List Timeline
   , drag : DragMode
   , hover : Hover
   , player : Player
@@ -230,6 +233,7 @@ initialModel config location key =
   , framesPerSecond = 10
   , timeRange = Nothing
   , timelineSelections = Array.empty
+  , timelines = []
   , drag = Released
   , hover = Away
   , player = Stopped
@@ -602,8 +606,18 @@ type alias Timeline =
   , timeRange : Maybe (Posix, Posix)
   , width : Int
   , data : TimelineData
+  , ranges : List (Posix, Posix)
   , monuments : List Monument
   }
+
+rebuildTimelines : Model -> Model
+rebuildTimelines model =
+  { model | timelines = makeTimelines model }
+
+makeTimelines : Model -> List Timeline
+makeTimelines model =
+  List.range 0 (Array.length model.timelineSelections)
+    |> List.filterMap (timeline model)
 
 timeline : Model -> TimelineId -> Maybe Timeline
 timeline model index =
@@ -628,6 +642,8 @@ timeline model index =
       selectedServer = model.selectedServer |> Maybe.andThen (\id -> Dict.get id model.servers)
       minTime = serverMinTime model.servers selectedServer
       maxTime = serverMaxTime model.servers selectedServer
+      worlds = currentWorlds model
+        |> (worldsInRange (minTime, maxTime))
     in
     Just
       { id = index
@@ -635,9 +651,8 @@ timeline model index =
       , maxTime = maxTime
       , timeRange = timeRange
       , width = width
-      , data = currentWorlds model
-        |> (worldsInRange (minTime, maxTime))
-        |> TimelineWorlds
+      , data = TimelineWorlds worlds
+      , ranges = worlds |> List.map (worldToRange maxTime)
       --, data = currentArcs model
         --|> RemoteData.map (arcsInRange (minTime, maxTime))
         --|> RemoteData.map TimelineArcs
@@ -674,6 +689,16 @@ timeline model index =
                 |> RemoteData.map (spansInRange (min, max))
                 |> RemoteData.map TimelineSpans
                 |> RemoteData.withDefault TimelineBlank
+          , ranges =
+            if typicalSpanWidth < 10 then
+              currentWorlds model
+                |> (worldsInRange (min, max))
+                |> List.map (worldToRange max)
+            else
+              currentSpans model
+                |> RemoteData.map (spansInRange (min, max))
+                |> RemoteData.withDefault []
+                |> List.map spanToRange
           , monuments =
             if model.monumentsOnTimeline then
               currentMonuments model
@@ -822,6 +847,7 @@ timelineRange index mrange model =
     , timeRange = mrange
     , dataAnimated = model.dataAnimated && animatable
     }
+      |> rebuildTimelines
 
 setTimeRange : Maybe (Posix, Posix) -> Model -> Model
 setTimeRange mrange model =

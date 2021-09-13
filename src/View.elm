@@ -205,9 +205,7 @@ displayTimeline model =
     Element.lazy displayTimelineLazy
       { theme = model.theme
       , mapTime = model.mapTime
-      , timelines =
-        List.range 0 (Array.length model.timelineSelections)
-          |> List.filterMap (timeline model)
+      , timelines = model.timelines
       , mapAnimatable = model.mapAnimatable
       , player = model.player
       , zone = model.zone
@@ -345,17 +343,11 @@ timeControl model line =
         TimelineBlank ->
           none
         TimelineWorlds worlds ->
-          worlds
-            |> List.map (worldToRange line.maxTime)
-            |> displayTimelineRanges palette line
+          Element.lazy3 displayTimelineRanges palette line line.ranges
         TimelineArcs arcs ->
-          arcs
-            |> List.map (arcToRange line.maxTime)
-            |> displayTimelineRanges palette line
+          Element.lazy3 displayTimelineRanges palette line line.ranges
         TimelineSpans spans ->
-          spans
-            |> List.map spanToRange
-            |> displayTimelineRanges palette line
+          Element.lazy3 displayTimelineRanges palette line line.ranges
       )
     , behindContent
       (el

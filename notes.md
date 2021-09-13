@@ -29,7 +29,8 @@
     - ?? timeline default selection?
     - ?? change timeline when changing servers?
     - ?? arc control feedback?
-  - lazy background
+  - x lazy background
+  - drag selection fails
   - other data types
   - live publish range? - server range
   - data hit detection??

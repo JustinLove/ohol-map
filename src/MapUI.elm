@@ -899,6 +899,7 @@ update msg model =
       (model, Navigation.load url)
     WindowSize (width, height) ->
       ( {model | windowWidth = width, windowHeight = height}
+        |> rebuildTimelines
       , Cmd.none
       )
 
@@ -958,6 +959,7 @@ rebuildWorldsUpdate model =
     ( case (model.selectedServer, mServer) of
       (Just id, Just server) ->
         { model | servers = Dict.insert id {server | worlds = worlds} model.servers }
+          |> rebuildTimelines
       _ ->
         model
     , Leaflet.worldList worlds
