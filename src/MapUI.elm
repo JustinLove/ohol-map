@@ -531,6 +531,7 @@ update msg model =
           ClosedSidebar -> OpenSidebar
           OpenSidebar -> ClosedSidebar
         }
+          |> rebuildTimelines
       , Cmd.none
       )
         |> addCommand sidebarCommand

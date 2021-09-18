@@ -33,11 +33,11 @@
   - x selection drag not visible
   - x mini bar for animation only
   - x auto selecting entire bar redundant
-  - initial time range does not match top bar - why can they be different?
   - if data lookup fails (e.g. local server offline) then search gets wrong range
   - other data types
   - live publish range? - server range
   - data hit detection??
+- spanlist/arclist load order indetermiate
 - object search header locked
 - animated status when zoom too large for visible layers
 - assembling log search spans?
