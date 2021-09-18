@@ -632,7 +632,7 @@ update msg model =
           , currentArc = marc
           , coarseArc = marc
           }
-            |> setTimeRange (marc |> Maybe.map (arcToRange model.time))
+            |> timelineRange 0 (marc |> Maybe.map (arcToRange model.time))
         , Cmd.none
         )
         |> rebuildWorlds
