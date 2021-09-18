@@ -144,7 +144,7 @@ view model =
               (html <| Html.div [ Html.Attributes.id "map" ] [])
             )
           , ( "timeline"
-            , if model.timelineVisible && model.timeRange /= Nothing then
+            , if (model.timelineVisible || model.dataAnimated) && model.timeRange /= Nothing then
                 displayTimeline model
               else
                 none
@@ -207,6 +207,7 @@ displayTimeline model =
       , mapTime = model.mapTime
       , timelines = model.timelines
       , mapAnimatable = model.mapAnimatable
+      , timelineVisible = model.timelineVisible
       , player = model.player
       , zone = model.zone
       , currentArc = model.currentArc
@@ -219,6 +220,7 @@ displayTimelineLazy :
   , mapTime : Maybe Posix
   , timelines : List Timeline
   , mapAnimatable : Animatable
+  , timelineVisible : Bool
   , player : Player
   , zone : Time.Zone
   , currentArc : Maybe Arc
@@ -279,6 +281,7 @@ displayTimelineLazy model =
         , column [ width fill ]
           (model.timelines
             |> List.reverse
+            |> (if model.timelineVisible then identity else List.take 1)
             |> List.map (timeControl
               { theme = model.theme
               , zone = model.zone

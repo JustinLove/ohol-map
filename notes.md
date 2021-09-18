@@ -31,9 +31,10 @@
     - ?? arc control feedback?
   - x lazy background
   - x selection drag not visible
-  - mini bar for animation only
-  - if data lookup fails (e.g. local server offline) then search gets wrong range
+  - x mini bar for animation only
   - auto selecting entire bar redundant
+  - initial time range does not match top bar - why can they be different?
+  - if data lookup fails (e.g. local server offline) then search gets wrong range
   - other data types
   - live publish range? - server range
   - data hit detection??

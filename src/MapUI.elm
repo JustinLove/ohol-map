@@ -1115,14 +1115,10 @@ toggleAnimated : Bool -> Model -> (Model, Cmd Msg)
 toggleAnimated animated model =
   ( { model
     | dataAnimated = animated
-    , timelineVisible = model.timelineVisible || animated
     , player = if animated == False then Stopped else model.player
     }
       |> updateObjectSearch
-  , Cmd.batch
-    [ Leaflet.animOverlay animated
-    , Leaflet.timelineVisible (model.timelineVisible || animated)
-    ]
+    , Leaflet.animOverlay animated
   )
     |> addUpdate requireObjectSearchIndex
     |> addUpdate requireObjectSearch
