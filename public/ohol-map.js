@@ -4215,7 +4215,7 @@
             break
           case 'timelineVisible':
             timelineVisible = message.status
-            timelineToggle.setChecked(status)
+            timelineToggle.setChecked(message.status)
             break
           case 'sidebar':
             toggleSidebarControls(map, message.sidebar)

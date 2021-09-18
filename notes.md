@@ -31,6 +31,9 @@
     - ?? arc control feedback?
   - x lazy background
   - x selection drag not visible
+  - mini bar for animation only
+  - if data lookup fails (e.g. local server offline) then search gets wrong range
+  - auto selecting entire bar redundant
   - other data types
   - live publish range? - server range
   - data hit detection??
