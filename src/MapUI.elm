@@ -221,11 +221,15 @@ update msg model =
       case timeline model index of
         Just line ->
           let time = timelineScreenToTime (currentMonuments model) line x in
-          if index == 0 then
-            let mnote = worldForTime time (currentWorlds model) |> Maybe.map .name in
-            ({model | hover = Hovering index time mnote}, Cmd.none)
-          else
-            ({model | hover = Hovering index time Nothing}, Cmd.none)
+          case line.data of
+            TimelineWorlds worlds ->
+              let mnote = worldForTime time worlds |> Maybe.map .name in
+              ({model | hover = Hovering index time mnote}, Cmd.none)
+            TimelinePopulation data ->
+              let pop = populationForTime time data |> (\p -> (String.fromInt p) ++ " players") in
+              ({model | hover = Hovering index time (Just pop)}, Cmd.none)
+            _ ->
+              ({model | hover = Hovering index time Nothing}, Cmd.none)
         Nothing ->
           (model, Cmd.none)
     UI (View.TimelineLeave index _) ->
@@ -1475,6 +1479,20 @@ spanForTime time mspans =
         |> List.filter (\span -> isInRange (spanToRange span) time)
         |> List.head
     _ -> Nothing
+
+populationForTime : Posix -> List (Posix, Int) -> Int
+populationForTime time data =
+  let ms = Time.posixToMillis time in
+  data
+    |> List.foldl (\(t, i) (bms, bi) ->
+        let distance = abs ((Time.posixToMillis t) - ms) in
+        if distance < bms then
+          (distance, i)
+        else
+          (bms, bi)
+        )
+        (ms, 0)
+    |> Tuple.second
 
 maybeSetTime : Maybe Posix -> (Model, Cmd Msg) -> (Model, Cmd Msg)
 maybeSetTime mtime =

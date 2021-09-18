@@ -34,9 +34,10 @@
   - x mini bar for animation only
   - x auto selecting entire bar redundant
   - other data types
-    - hover feedback
+    - x hover feedback
     - display conditions
     - popluation switch time
+    - first hour hover feedback
   - live publish range? - server range
   - data hit detection??
   - if data lookup fails (e.g. local server offline) then search gets wrong range??
