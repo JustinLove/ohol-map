@@ -457,7 +457,7 @@ update msg model =
     UI (View.SelectArcCoarse marc) ->
       selectArc model marc marc
     UI (View.SelectShow) ->
-      ( {model | dataLayer = Loading}
+      ( {model | dataLayer = Loading, population = Loading}
       , fetchDataForTime model
       )
     Event (Ok (Leaflet.MoveEnd point)) ->
@@ -565,6 +565,7 @@ update msg model =
               |> Http.BadBody
               |> Failed
         , dataLayer = Data serverId
+        , population = NotRequested
         }
       , Cmd.batch
         [ Leaflet.dataLayer value
@@ -789,19 +790,29 @@ update msg model =
     DataLayer serverId (Ok lives) ->
       ( { model
         | dataLayer = Data serverId
+        , population = case lives |> Json.Decode.decodeValue Decode.softPopulation of
+          Ok data ->
+            Data data
+          Err error ->
+            error
+              |> Json.Decode.errorToString
+              |> Http.BadBody
+              |> Failed
         , player = if model.dataAnimated then Starting else Stopped
         }
+          |> rebuildTimelines
       , Cmd.batch
         [ Leaflet.dataLayer lives
         ]
       )
     DataLayer serverId (Err error) ->
-      ( {model | dataLayer = Failed error}
+      ( {model | dataLayer = Failed error, population = Failed error}
       , Log.httpError "fetch data failed" error
       )
     NoDataLayer ->
       ( { model
         | dataLayer = NotRequested
+        , population = NotRequested
         , player = Stopped
         }
       , Cmd.batch
@@ -1088,11 +1099,11 @@ requireRecentLives : Model -> (Model, Cmd Msg)
 requireRecentLives model =
   case model.dataLayer of
     NotRequested ->
-      ( {model | dataLayer = Loading}
+      ( {model | dataLayer = Loading, population = Loading}
       , fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.withDefault 17)
       )
     Failed _ ->
-      ( {model | dataLayer = Loading}
+      ( {model | dataLayer = Loading, population = Loading}
       , fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.withDefault 17)
       )
     _ ->
@@ -1102,11 +1113,11 @@ requireSelectedLives : Model -> (Model, Cmd Msg)
 requireSelectedLives model =
   case model.dataLayer of
     NotRequested ->
-      ( {model | dataLayer = Loading}
+      ( {model | dataLayer = Loading, population = Loading}
       , fetchDataForTime model
       )
     Failed _ ->
-      ( {model | dataLayer = Loading}
+      ( {model | dataLayer = Loading, population = Loading}
       , fetchDataForTime model
       )
     _ ->
@@ -1230,6 +1241,7 @@ yesterday : Model -> (Model, Cmd Msg)
 yesterday model =
   ( { model
     | dataLayer = Loading
+    , population = Loading
     , timeMode = FromNow
     , dataAnimated = True
     , hoursPeriod = 24
@@ -1246,6 +1258,7 @@ dailyReview : Model -> (Model, Cmd Msg)
 dailyReview model =
   ( { model
     | dataLayer = Loading
+    , population = Loading
     , timeMode = FromNow
     , pointColor = CauseOfDeathColor
     , pointLocation = DeathLocation
@@ -1548,6 +1561,7 @@ setServerUpdate serverId model =
           , coarseStartTime = inRange range model.coarseStartTime
           , startTime = inRange range model.startTime
           , dataLayer = NotRequested
+          , population = NotRequested
           , player = Stopped
           }
         , Cmd.batch

@@ -167,6 +167,7 @@ type alias Model =
   , objectIndex : RemoteData (List (ObjectId, String))
   , dataLayer : RemoteData Int
   , lives : RemoteData (List Life)
+  , population : RemoteData (List (Posix, Int))
   , focusLife : Maybe Life
   , spanData : Maybe SpanData
   , maxiumMatchingObjects: Maybe Int
@@ -253,6 +254,7 @@ initialModel config location key =
   , objectIndex = NotRequested
   , dataLayer = NotRequested
   , lives = NotRequested
+  , population = NotRequested
   , focusLife = Nothing
   , spanData = Nothing
   , maxiumMatchingObjects = Just 20
@@ -598,6 +600,7 @@ type TimelineData
   | TimelineWorlds (List World)
   | TimelineArcs (List Arc)
   | TimelineSpans (List Span)
+  | TimelinePopulation (List (Posix, Int))
 
 type alias Timeline =
   { id : TimelineId
@@ -680,7 +683,11 @@ timeline model index =
           , timeRange = timeRange
           , width = width
           , data =
-            if typicalSpanWidth < 10 then
+            if index == Array.length model.timelineSelections then
+              model.population
+                |> RemoteData.map TimelinePopulation
+                |> RemoteData.withDefault TimelineBlank
+            else if typicalSpanWidth < 10 then
               currentWorlds model
                 |> (worldsInRange (min, max))
                 |> TimelineWorlds
@@ -780,6 +787,8 @@ timelineScreenToTime monuments line x =
         TimelineSpans spans ->
           spans
             |> List.map (.start>>Time.posixToMillis)
+        TimelinePopulation _ ->
+          []
       )
         |> List.append (monuments |> RemoteData.withDefault [] |> List.map (.date>>Time.posixToMillis))
         |> List.filter (\snap -> snap - snapRange < ms && ms < snap + snapRange )

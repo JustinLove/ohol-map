@@ -351,6 +351,8 @@ timeControl model line =
           Element.lazy3 displayTimelineRanges palette line line.ranges
         TimelineSpans spans ->
           Element.lazy3 displayTimelineRanges palette line line.ranges
+        TimelinePopulation data ->
+          Element.lazy3 displayTimelineGraph palette line data
       )
     , behindContent
       (el
@@ -447,6 +449,68 @@ displayTimelineRanges palette line ranges =
         ]
       ]
       [ Chart.withPlane (\_ -> data)
+      , Chart.withPlane (\_ -> monuments)
+      , Chart.withPlane (\_ ->
+        case line.timeRange of
+          Just (from, to) ->
+            let
+              start = (Time.posixToMillis from) + 1
+              end = Time.posixToMillis to
+            in
+              [ Chart.rect
+                [ CA.x1 (toFloat start)
+                , CA.x2 (toFloat end)
+                , CA.color (colorToString palette.selected)
+                , CA.borderWidth 0
+                , CA.opacity 0.5
+                ]
+              ]
+          Nothing ->
+            []
+        )
+      ]
+      |> html
+
+displayTimelineGraph : Palette -> Timeline -> List (Posix, Int) -> Element msg
+displayTimelineGraph palette line points =
+  let
+    min = (Time.posixToMillis line.minTime) + 1
+    max = Time.posixToMillis line.maxTime
+    background = colorToString palette.background
+    control = colorToString palette.control
+    monumentColor = colorToString palette.gold
+    x = Tuple.first >> Time.posixToMillis >> toFloat
+    y = Tuple.second >> toFloat
+    usableTime = List.head points
+      |> Maybe.map (Tuple.first>>Time.posixToMillis)
+      |> Maybe.map (\t -> t + 60 * 60 * 1000)
+      |> Maybe.withDefault min
+    usablePoints = List.filter (\(t, _) -> Time.posixToMillis t >= usableTime) points
+    monuments = line.monuments
+      |> List.indexedMap (\index {date} ->
+        let
+          t = Time.posixToMillis date |> clamp min max |> toFloat
+        in
+          Chart.rect
+            [ CA.x1 t
+            , CA.x2 t
+            , CA.border monumentColor
+            --, CA.borderWidth 0
+            ]
+      )
+  in
+    Chart.chart
+      [ CA.width (toFloat line.width)
+      , CA.height 21
+      , CA.range
+        [ CA.lowest (toFloat min) CA.exactly
+        , CA.highest (toFloat max) CA.exactly
+        ]
+      ]
+      [ Chart.series x
+        [ Chart.interpolated y [ CA.color (colorToString palette.selected) ] []
+        ]
+        usablePoints
       , Chart.withPlane (\_ -> monuments)
       , Chart.withPlane (\_ ->
         case line.timeRange of
