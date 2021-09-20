@@ -697,7 +697,7 @@ timeline model index =
           , data =
             case model.population of
               Data pop ->
-                if (rangeOverlap (min, max) (pop.start, pop.end)) > 0.5 then
+                if (rangeOverlap (min, max) pop.populationRange) > 0.5 then
                   TimelinePopulation pop.data
                 else
                   widthDependentData ()
@@ -993,21 +993,25 @@ monumentsInRange (minTime, maxTime) monuments =
 
 type alias Population =
   { data : List (Posix, Int)
-  , start : Posix
-  , end : Posix
+  , eventRange : (Posix, Posix)
+  , populationRange : (Posix, Posix)
   }
 
 population : Posix -> List (Posix, Int) -> Population
 population default data =
   let
-    min = data
+    firstEvent = data
       |> List.head
       |> Maybe.map Tuple.first
       |> Maybe.withDefault default
+    min = firstEvent
       |> Time.posixToMillis
       |> (\t -> t + 60 * 60 * 1000)
-    max = data
-      |> List.foldl (\(t, d) a -> if d > 0 then t else a ) default
+    (lastBirth, lastEvent) = data
+      |> List.foldl (\(t, delta) (b, _) ->
+          if delta > 0 then (t, t) else (b, t)
+        ) (default, default)
+    max = lastBirth
       |> Time.posixToMillis
     usablePoints = data
       |> cumulativeSum
@@ -1015,10 +1019,11 @@ population default data =
         let i = Time.posixToMillis t in
         min <= i && i <= max
       )
+      |> resample 4096
   in
   { data = usablePoints
-  , start = min |> Time.millisToPosix
-  , end = max |> Time.millisToPosix
+  , eventRange = (firstEvent, lastEvent)
+  , populationRange = (min |> Time.millisToPosix, max |> Time.millisToPosix)
   }
 
 cumulativeSum : List (Posix, Int) -> List (Posix, Int)
@@ -1029,3 +1034,23 @@ cumulativeSum events =
       (\(t, d) (total, results) -> (total+d, (t, total+d)::results))
       (0, [])
     |> Tuple.second
+
+resample : Int -> List (Posix, Int) -> List (Posix, Int)
+resample targetSamples input =
+  let
+    length = List.length input
+  in
+    if length <= targetSamples then
+      input
+    else
+      input
+        |> List.foldl
+          (\x (accum, out) ->
+            let next = accum + targetSamples in
+            if next >= length then
+              (next - length, x::out)
+            else
+              (next, out)
+          )
+          (0, [])
+        |> Tuple.second

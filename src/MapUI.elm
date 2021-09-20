@@ -53,7 +53,7 @@ type Msg
   | NotableObjectsReceived Int Posix (Result Http.Error (List Parse.Key))
   | ObjectsReceived (Result Http.Error Data.Objects)
   | MonumentList Int (Result Http.Error (List Data.Monument))
-  | DataLayer Int (Result Http.Error Json.Decode.Value)
+  | DataLayer RangeSource Int (Result Http.Error Json.Decode.Value)
   | NoDataLayer
   | FetchUpTo Posix
   | FetchBetween Posix Posix
@@ -68,6 +68,10 @@ type Msg
   | CurrentUrl Url
   | Navigate Browser.UrlRequest
   | WindowSize (Int, Int)
+
+type RangeSource
+  = PredeterminedRange
+  | DataRange
 
 main = Browser.application
   { init = init
@@ -785,7 +789,7 @@ update msg model =
         |> checkServerLoaded
     MonumentList serverId (Err error) ->
       (model, Log.httpError "fetch monuments failed" error)
-    DataLayer serverId (Ok value) ->
+    DataLayer rangeSource serverId (Ok value) ->
       ( { model
         | dataLayer = Data serverId
         , population = RemoteData.jsonDecode Decode.softPopulation  value
@@ -797,7 +801,8 @@ update msg model =
         [ Leaflet.dataLayer value
         ]
       )
-    DataLayer serverId (Err error) ->
+        |> (if rangeSource == DataRange then addUpdate setRangeForData else identity)
+    DataLayer _ serverId (Err error) ->
       ( {model | dataLayer = Failed error, population = Failed error}
       , Log.httpError "fetch data failed" error
       )
@@ -818,6 +823,7 @@ update msg model =
           (model.selectedServer |> Maybe.withDefault 17)
           (relativeStartTime model.hoursPeriod time)
           time
+          DataRange
           model.evesOnly
       )
     FetchBetween start now ->
@@ -826,6 +832,7 @@ update msg model =
           (model.selectedServer |> Maybe.withDefault 17)
           start
           now
+          DataRange
           model.evesOnly
       )
     PlayRelativeTo hoursBefore time ->
@@ -1506,6 +1513,31 @@ maybeSetTimeUpdate mtime model =
         ]
       )
 
+setRangeForData : Model -> (Model, Cmd Msg)
+setRangeForData model =
+  case model.population of
+    Data pop ->
+      let
+        mapTime = model.mapTime
+            |> Maybe.map (inRange pop.eventRange)
+      in
+      ( { model
+        | mapTime = mapTime
+        }
+          |> setTimeRange (Just pop.eventRange)
+      , Cmd.batch
+        [ mapTime
+          |> Maybe.map Leaflet.currentTime
+          |> Maybe.withDefault Cmd.none
+        , if isYesterday model then
+            Time.now |> Task.perform (PlayRelativeTo 24)
+          else
+            Cmd.none
+        ]
+      )
+    _ ->
+      (model, Cmd.none)
+
 setYesterday : Model -> (Model, Cmd Msg)
 setYesterday model =
   if isYesterday model then
@@ -1776,6 +1808,7 @@ fetchDataForTime model =
           (model.selectedServer |> Maybe.withDefault 17)
           start
           end
+          PredeterminedRange
           model.evesOnly
       Nothing ->
         case model.timeMode of
@@ -1784,6 +1817,7 @@ fetchDataForTime model =
               (model.selectedServer |> Maybe.withDefault 17)
               model.startTime
               (relativeEndTime model.hoursPeriod model.startTime)
+              DataRange
               model.evesOnly
           FromNow ->
             Task.perform FetchUpTo Time.now
@@ -1794,6 +1828,7 @@ fetchDataForTime model =
                   arc.serverId
                   arc.start
                   (arc.end |> Maybe.withDefault model.time)
+                  DataRange
                   model.evesOnly
               Nothing ->
                 Task.succeed () |> Task.perform (always NoDataLayer)
@@ -2296,11 +2331,11 @@ fetchRecentLives baseUrl serverId =
       [ Url.int "server_id" serverId
       , Url.string "period" "P2D"
       ]
-    , expect = Http.expectJson (DataLayer serverId) Json.Decode.value
+    , expect = Http.expectJson (DataLayer DataRange serverId) Json.Decode.value
     }
 
-fetchDataLayer : String -> Int -> Posix -> Posix -> Bool -> Cmd Msg
-fetchDataLayer baseUrl serverId startTime endTime evesOnly =
+fetchDataLayer : String -> Int -> Posix -> Posix -> RangeSource -> Bool -> Cmd Msg
+fetchDataLayer baseUrl serverId startTime endTime rangeSource evesOnly =
   Http.get
     { url = Url.crossOrigin baseUrl ["lives"]
       ( List.concat
@@ -2312,7 +2347,7 @@ fetchDataLayer baseUrl serverId startTime endTime evesOnly =
         , if evesOnly then [ Url.int "chain" 1 ] else []
         ]
       )
-    , expect = Http.expectJson (DataLayer serverId) Json.Decode.value
+    , expect = Http.expectJson (DataLayer rangeSource serverId) Json.Decode.value
     }
 
 extractHashInt : String -> Url -> Maybe Int

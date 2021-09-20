@@ -8,6 +8,7 @@
 - ?? when objects search is open and location selected, cannot pan - cannot reproduce
 
 ## server work
+- popluation over server crashes
 
 ## Features
 - x why does anim toggle need both toggleAnimated if we are calling baseLayerByTime?
@@ -41,6 +42,7 @@
     - popluation switch time
     - first hour hover feedback
     - if no pop data available?
+    - popluation over server crashes
   - live publish range? - server range
   - data hit detection??
   - if data lookup fails (e.g. local server offline) then search gets wrong range??
