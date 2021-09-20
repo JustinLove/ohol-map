@@ -560,14 +560,8 @@ update msg model =
       ({model | lives = Failed error}, Log.httpError "fetch lives failed" error)
     LineageLives serverId (Ok value) ->
       ( { model
-        | lives = case value |> Json.Decode.decodeValue Decode.lives of
-          Ok lives ->
-            lives |> List.map myLife |> Data
-          Err error ->
-            error
-              |> Json.Decode.errorToString
-              |> Http.BadBody
-              |> Failed
+        | lives = RemoteData.jsonDecode Decode.lives value
+          |> RemoteData.map (List.map myLife)
         , dataLayer = Data serverId
         , population = NotRequested
         }
@@ -791,22 +785,16 @@ update msg model =
         |> checkServerLoaded
     MonumentList serverId (Err error) ->
       (model, Log.httpError "fetch monuments failed" error)
-    DataLayer serverId (Ok lives) ->
+    DataLayer serverId (Ok value) ->
       ( { model
         | dataLayer = Data serverId
-        , population = case lives |> Json.Decode.decodeValue Decode.softPopulation of
-          Ok data ->
-            Data (population model.time data)
-          Err error ->
-            error
-              |> Json.Decode.errorToString
-              |> Http.BadBody
-              |> Failed
+        , population = RemoteData.jsonDecode Decode.softPopulation  value
+          |> RemoteData.map (population model.time)
         , player = if model.dataAnimated then Starting else Stopped
         }
           |> rebuildTimelines
       , Cmd.batch
-        [ Leaflet.dataLayer lives
+        [ Leaflet.dataLayer value
         ]
       )
     DataLayer serverId (Err error) ->
