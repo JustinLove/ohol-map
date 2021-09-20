@@ -39,7 +39,7 @@ life =
 
 softPopulation : Decoder (List (Posix, Int))
 softPopulation =
-  field "data" (map (List.concat>>cumulativeSum) (list softPopulationLife))
+  field "data" (map (List.concat>>List.reverse) (list softPopulationLife))
 
 softPopulationLife : Decoder (List (Posix, Int))
 softPopulationLife =
@@ -49,16 +49,6 @@ softPopulationLife =
       Just t -> [(t, -1)]
       Nothing -> []
       ) (field "death_time" (maybe timeStamp)))
-
-cumulativeSum : List (Posix, Int) -> List (Posix, Int)
-cumulativeSum events =
-  events
-    |> List.sortBy (Tuple.first>>Time.posixToMillis)
-    |> List.foldl
-      (\(t, d) (total, results) -> (total+d, (t, total+d)::results))
-      (0, [])
-    |> Tuple.second
-    |> List.reverse
 
 servers : Decoder (List Server)
 servers =

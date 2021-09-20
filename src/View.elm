@@ -481,11 +481,6 @@ displayTimelineGraph palette line points =
     monumentColor = colorToString palette.gold
     x = Tuple.first >> Time.posixToMillis >> toFloat
     y = Tuple.second >> toFloat
-    usableTime = List.head points
-      |> Maybe.map (Tuple.first>>Time.posixToMillis)
-      |> Maybe.map (\t -> t + 60 * 60 * 1000)
-      |> Maybe.withDefault min
-    usablePoints = List.filter (\(t, _) -> Time.posixToMillis t >= usableTime) points
     monuments = line.monuments
       |> List.indexedMap (\index {date} ->
         let
@@ -510,7 +505,7 @@ displayTimelineGraph palette line points =
       [ Chart.series x
         [ Chart.interpolated y [ CA.color (colorToString palette.selected) ] []
         ]
-        usablePoints
+        points
       , Chart.withPlane (\_ -> monuments)
       , Chart.withPlane (\_ ->
         case line.timeRange of

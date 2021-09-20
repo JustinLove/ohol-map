@@ -69,6 +69,8 @@ module Model exposing
   , lifeToRange
   , relativeStartTime
   , relativeEndTime
+  , Population
+  , population
   )
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..), Animatable(..))
@@ -167,7 +169,7 @@ type alias Model =
   , objectIndex : RemoteData (List (ObjectId, String))
   , dataLayer : RemoteData Int
   , lives : RemoteData (List Life)
-  , population : RemoteData (List (Posix, Int))
+  , population : RemoteData Population
   , focusLife : Maybe Life
   , spanData : Maybe SpanData
   , maxiumMatchingObjects: Maybe Int
@@ -675,19 +677,8 @@ timeline model index =
           range = toFloat ((Time.posixToMillis max) - (Time.posixToMillis min))
           day = 24 * 60 * 60 * 1000
           typicalSpanWidth = (day / range) * (toFloat width)
-        in
-        Just
-          { id = index
-          , minTime = min
-          , maxTime = max
-          , timeRange = timeRange
-          , width = width
-          , data =
-            if index == Array.length model.timelineSelections then
-              model.population
-                |> RemoteData.map TimelinePopulation
-                |> RemoteData.withDefault TimelineBlank
-            else if typicalSpanWidth < 10 then
+          widthDependentData = \() ->
+            if typicalSpanWidth < 10 then
               currentWorlds model
                 |> (worldsInRange (min, max))
                 |> TimelineWorlds
@@ -696,6 +687,22 @@ timeline model index =
                 |> RemoteData.map (spansInRange (min, max))
                 |> RemoteData.map TimelineSpans
                 |> RemoteData.withDefault TimelineBlank
+        in
+        Just
+          { id = index
+          , minTime = min
+          , maxTime = max
+          , timeRange = timeRange
+          , width = width
+          , data =
+            case model.population of
+              Data pop ->
+                if (rangeOverlap (min, max) (pop.start, pop.end)) > 0.5 then
+                  TimelinePopulation pop.data
+                else
+                  widthDependentData ()
+              _ ->
+                widthDependentData ()
           , ranges =
             if typicalSpanWidth < 10 then
               currentWorlds model
@@ -889,6 +896,21 @@ isInRange (mint, maxt) t =
   in
     mini < i && i <= maxi
 
+rangeOverlap : (Posix, Posix) -> (Posix, Posix) -> Float
+rangeOverlap (mina, maxa) (minb, maxb) =
+  let
+    minai = Time.posixToMillis mina
+    maxai = Time.posixToMillis maxa
+    minbi = Time.posixToMillis minb
+    maxbi = Time.posixToMillis maxb
+    start = max minai minbi
+    end = min maxai maxbi
+    length = max 0 (end - start)
+    total = maxai - minai
+    over = (toFloat length) / (toFloat total)
+  in
+    over
+
 worldToRange : Posix -> World -> (Posix, Posix)
 worldToRange default {start,end} =
   (start, end |> Maybe.withDefault default)
@@ -968,3 +990,42 @@ monumentsInRange (minTime, maxTime) monuments =
         let t = Time.posixToMillis date in
         min <= t && t <= max
       )
+
+type alias Population =
+  { data : List (Posix, Int)
+  , start : Posix
+  , end : Posix
+  }
+
+population : Posix -> List (Posix, Int) -> Population
+population default data =
+  let
+    min = data
+      |> List.head
+      |> Maybe.map Tuple.first
+      |> Maybe.withDefault default
+      |> Time.posixToMillis
+      |> (\t -> t + 60 * 60 * 1000)
+    max = data
+      |> List.foldl (\(t, d) a -> if d > 0 then t else a ) default
+      |> Time.posixToMillis
+    usablePoints = data
+      |> cumulativeSum
+      |> List.filter (\(t, _) ->
+        let i = Time.posixToMillis t in
+        min <= i && i <= max
+      )
+  in
+  { data = usablePoints
+  , start = min |> Time.millisToPosix
+  , end = max |> Time.millisToPosix
+  }
+
+cumulativeSum : List (Posix, Int) -> List (Posix, Int)
+cumulativeSum events =
+  events
+    |> List.sortBy (Tuple.first>>Time.posixToMillis)
+    |> List.foldl
+      (\(t, d) (total, results) -> (total+d, (t, total+d)::results))
+      (0, [])
+    |> Tuple.second

@@ -796,7 +796,7 @@ update msg model =
         | dataLayer = Data serverId
         , population = case lives |> Json.Decode.decodeValue Decode.softPopulation of
           Ok data ->
-            Data data
+            Data (population model.time data)
           Err error ->
             error
               |> Json.Decode.errorToString

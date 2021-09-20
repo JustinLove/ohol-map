@@ -2,6 +2,7 @@
 - x remove band simulation
 - remove notable on other servers
 - tab switching on life search
+- arc/span load order indeterminicy
 
 - ?? too man calls to location or history api in a short time - time scrolling while object seach is open - cannot reproduce
 - ?? when objects search is open and location selected, cannot pan - cannot reproduce
@@ -35,9 +36,11 @@
   - x auto selecting entire bar redundant
   - other data types
     - x hover feedback
-    - display conditions
+    - x display conditions - extract population record with range?
+    - range from js is overwritting users range
     - popluation switch time
     - first hour hover feedback
+    - if no pop data available?
   - live publish range? - server range
   - data hit detection??
   - if data lookup fails (e.g. local server offline) then search gets wrong range??
