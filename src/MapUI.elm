@@ -230,8 +230,19 @@ update msg model =
               let mnote = worldForTime time worlds |> Maybe.map .name in
               ({model | hover = Hovering index time mnote}, Cmd.none)
             TimelinePopulation data ->
-              let pop = populationForTime time data |> (\p -> (String.fromInt p) ++ " players") in
-              ({model | hover = Hovering index time (Just pop)}, Cmd.none)
+              let
+                pop =
+                  model.population
+                    |> RemoteData.toMaybe
+                    |> Maybe.andThen (\p ->
+                      if isInRange p.populationRange time then
+                        populationForTime time data
+                          |> Maybe.map (\count -> (String.fromInt count) ++ " players")
+                      else
+                        Nothing
+                      )
+              in
+              ({model | hover = Hovering index time pop}, Cmd.none)
             _ ->
               ({model | hover = Hovering index time Nothing}, Cmd.none)
         Nothing ->
@@ -1475,19 +1486,30 @@ spanForTime time mspans =
         |> List.head
     _ -> Nothing
 
-populationForTime : Posix -> List (Posix, Int) -> Int
+populationForTime : Posix -> List (Posix, Int) -> Maybe Int
 populationForTime time data =
-  let ms = Time.posixToMillis time in
-  data
-    |> List.foldl (\(t, i) (bms, bi) ->
-        let distance = abs ((Time.posixToMillis t) - ms) in
-        if distance < bms then
-          (distance, i)
+  let
+    ms = Time.posixToMillis time
+
+  in
+    case List.head data of
+      Just (start, _) ->
+        if ms < Time.posixToMillis start then
+          Nothing
         else
-          (bms, bi)
-        )
-        (ms, 0)
-    |> Tuple.second
+          data
+            |> List.foldl (\(t, i) (bms, bi) ->
+                let distance = abs ((Time.posixToMillis t) - ms) in
+                if distance < bms then
+                  (distance, i)
+                else
+                  (bms, bi)
+                )
+                (ms, 0)
+            |> Tuple.second
+            |> Just
+      Nothing ->
+        Nothing
 
 maybeSetTime : Maybe Posix -> (Model, Cmd Msg) -> (Model, Cmd Msg)
 maybeSetTime mtime =

@@ -38,9 +38,9 @@
   - other data types
     - x hover feedback
     - x display conditions - extract population record with range?
-    - range from js is overwritting users range
-    - popluation switch time
-    - first hour hover feedback
+    - x range from js is overwritting users range
+    - xx popluation switch time
+    - x first hour hover feedback
     - if no pop data available?
     - popluation over server crashes
   - live publish range? - server range

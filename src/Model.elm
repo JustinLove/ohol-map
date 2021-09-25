@@ -1034,6 +1034,7 @@ cumulativeSum events =
       (\(t, d) (total, results) -> (total+d, (t, total+d)::results))
       (0, [])
     |> Tuple.second
+    |> List.reverse
 
 resample : Int -> List (Posix, Int) -> List (Posix, Int)
 resample targetSamples input =
@@ -1054,3 +1055,4 @@ resample targetSamples input =
           )
           (0, [])
         |> Tuple.second
+        |> List.reverse
