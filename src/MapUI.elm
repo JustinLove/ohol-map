@@ -581,7 +581,7 @@ update msg model =
         , population = NotRequested
         }
       , Cmd.batch
-        [ Leaflet.dataLayer value
+        [ Leaflet.dataLayer value True
         ]
       )
     LineageLives serverId (Err error) ->
@@ -803,13 +803,13 @@ update msg model =
     DataLayer rangeSource serverId (Ok value) ->
       ( { model
         | dataLayer = Data serverId
-        , population = RemoteData.jsonDecode Decode.softPopulation  value
+        , population = RemoteData.jsonDecode Decode.population  value
           |> RemoteData.map (population model.time)
         , player = if model.dataAnimated then Starting else Stopped
         }
           |> rebuildTimelines
       , Cmd.batch
-        [ Leaflet.dataLayer value
+        [ Leaflet.dataLayer value (rangeSource == DataRange)
         ]
       )
         |> (if rangeSource == DataRange then addUpdate setRangeForData else identity)
@@ -824,7 +824,7 @@ update msg model =
         , player = Stopped
         }
       , Cmd.batch
-        [ Leaflet.dataLayer (Encode.lives [])
+        [ Leaflet.dataLayer (Encode.lives []) False
         , Leaflet.dataLayerVisible False
         ]
       )
@@ -1632,7 +1632,7 @@ setServerUpdate serverId model =
                 Cmd.none
               else
                 Cmd.batch
-                  [ Leaflet.dataLayer (Encode.lives [])
+                  [ Leaflet.dataLayer (Encode.lives []) False
                   , Leaflet.dataLayerVisible False
                   ]
             _ -> Cmd.none

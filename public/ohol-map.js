@@ -3018,7 +3018,7 @@
 
   var resultPoints = new L.GridLayer.LifePointOverlay().addTo(searchOverlay)
 
-  var setDataLayers = function(data) {
+  var setDataLayers = function(data, sendRange) {
     var theme = legendControl.options.theme
     var min = null;
     var max = null;
@@ -3075,7 +3075,7 @@
       data: data,
     })
     legendControl.redraw()
-    if (min && max) {
+    if (sendRange && min && max) {
       app.ports.leafletEvent.send({
         kind: 'dataRange',
         min: min,
@@ -4138,7 +4138,7 @@
             updateNotableLayer(notableOverlay, message.locations)
             break;
           case 'dataLayer':
-            setDataLayers(message.lives.data)
+            setDataLayers(message.lives.data, message.sendRange)
             moveIfOutOfView(message.lives.data, map)
             if (message.lives.data
              && message.lives.data.length > 0

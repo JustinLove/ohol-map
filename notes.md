@@ -1,5 +1,6 @@
 ## bugs
 - x remove band simulation
+- not loading monuments
 - remove notable on other servers
 - tab switching on life search
 - arc/span load order indeterminicy
@@ -8,7 +9,6 @@
 - ?? when objects search is open and location selected, cannot pan - cannot reproduce
 
 ## server work
-- popluation over server crashes
 
 ## Features
 - x why does anim toggle need both toggleAnimated if we are calling baseLayerByTime?
@@ -41,11 +41,12 @@
     - x range from js is overwritting users range
     - xx popluation switch time
     - x first hour hover feedback
-    - if no pop data available?
-    - popluation over server crashes
-  - live publish range? - server range
-  - data hit detection??
-  - if data lookup fails (e.g. local server offline) then search gets wrong range??
+    - x if no pop data available?
+    - x popluation over server crashes
+  - xx live publish range? - server range
+  - xx data hit detection??
+  - xx if data lookup fails (e.g. local server offline) then search gets wrong range??
+- compact life results
 - spanlist/arclist load order indetermiate
 - object search header locked
 - animated status when zoom too large for visible layers

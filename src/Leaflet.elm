@@ -133,11 +133,12 @@ keyPlacement (Parse.Key obj x y) =
     , ("y", Encode.int y)
     ]
 
-dataLayer : Encode.Value -> Cmd msg
-dataLayer lives =
+dataLayer : Encode.Value -> Bool -> Cmd msg
+dataLayer lives sendRange =
   Encode.object
     [ ("kind", Encode.string "dataLayer")
     , ("lives", lives)
+    , ("sendRange", Encode.bool sendRange)
     ]
     |> leafletCommand
 

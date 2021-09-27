@@ -1,6 +1,6 @@
 module OHOLData.Decode exposing
   ( lives
-  , softPopulation
+  , population
   , servers
   , monuments
   , arcs
@@ -37,18 +37,25 @@ life =
     |> map2 (|>) (field "death_y" (maybe int))
     |> map2 (|>) (field "death_time" (maybe timeStamp))
 
-softPopulation : Decoder (List (Posix, Int))
-softPopulation =
-  field "data" (map (List.concat>>List.reverse) (list softPopulationLife))
+population : Decoder (List (Posix, Int, Bool))
+population =
+  field "data" (map (List.concat>>List.reverse) (list populationLife))
 
-softPopulationLife : Decoder (List (Posix, Int))
-softPopulationLife =
+populationLife : Decoder (List (Posix, Int, Bool))
+populationLife =
   map2 List.append
-    (map (\t -> [(t, 1)]) (field "birth_time" timeStamp))
-    (map (\mt -> case mt of
-      Just t -> [(t, -1)]
-      Nothing -> []
-      ) (field "death_time" (maybe timeStamp)))
+    (map2 (\mt mp ->
+        case Maybe.map2 (\t p -> (t, p, False)) mt mp of
+          Just item -> [item]
+          Nothing -> []
+      )
+      (field "death_time" (maybe timeStamp))
+      (field "death_population" (maybe int))
+    )
+    (map2 (\t p -> [(t, p, True)])
+      (field "birth_time" timeStamp)
+      (field "birth_population" int)
+    )
 
 servers : Decoder (List Server)
 servers =

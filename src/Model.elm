@@ -997,46 +997,28 @@ type alias Population =
   , populationRange : (Posix, Posix)
   }
 
-population : Posix -> List (Posix, Int) -> Population
+population : Posix -> List (Posix, Int, Bool) -> Population
 population default data =
   let
     firstEvent = data
       |> List.head
-      |> Maybe.map Tuple.first
+      |> Maybe.map (\(t, _, _) -> t)
       |> Maybe.withDefault default
-    min = firstEvent
-      |> Time.posixToMillis
-      |> (\t -> t + 60 * 60 * 1000)
     (lastBirth, lastEvent) = data
-      |> List.foldl (\(t, delta) (b, _) ->
-          if delta > 0 then (t, t) else (b, t)
+      |> List.foldl (\(t, _, kind) (b, _) ->
+          if kind then (t, t) else (b, t)
         ) (default, default)
-    max = lastBirth
-      |> Time.posixToMillis
     usablePoints = data
-      |> cumulativeSum
-      |> List.filter (\(t, _) ->
-        let i = Time.posixToMillis t in
-        min <= i && i <= max
-      )
+      |> List.map (\(t, p, _) -> (t, p))
+      |> List.sortBy (Tuple.first>>Time.posixToMillis)
       |> resample 4096
   in
   { data = usablePoints
-  , eventRange = (firstEvent, lastEvent)
-  , populationRange = (min |> Time.millisToPosix, max |> Time.millisToPosix)
+  , eventRange = (firstEvent, lastBirth)
+  , populationRange = (firstEvent, lastEvent)
   }
 
-cumulativeSum : List (Posix, Int) -> List (Posix, Int)
-cumulativeSum events =
-  events
-    |> List.sortBy (Tuple.first>>Time.posixToMillis)
-    |> List.foldl
-      (\(t, d) (total, results) -> (total+d, (t, total+d)::results))
-      (0, [])
-    |> Tuple.second
-    |> List.reverse
-
-resample : Int -> List (Posix, Int) -> List (Posix, Int)
+resample : Int -> List a -> List a
 resample targetSamples input =
   let
     length = List.length input
