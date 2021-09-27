@@ -26,6 +26,7 @@ life =
     |> map2 (|>) (field "birth_x" int)
     |> map2 (|>) (field "birth_y" int)
     |> map2 (|>) (field "birth_time" timeStamp)
+    |> map2 (|>) (field "birth_population" int)
     |> map2 (|>) (field "chain" int)
     |> map2 (|>) (field "lineage" (oneOf [ int, null 0 ]))
     |> map2 (|>) (field "name" (nullable string))
@@ -36,6 +37,8 @@ life =
     |> map2 (|>) (field "death_x" (maybe int))
     |> map2 (|>) (field "death_y" (maybe int))
     |> map2 (|>) (field "death_time" (maybe timeStamp))
+    |> map2 (|>) (field "death_population" (maybe int))
+    |> map2 (|>) (field "cause" (maybe string))
 
 population : Decoder (List (Posix, Int, Bool))
 population =

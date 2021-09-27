@@ -47,6 +47,9 @@
   - xx data hit detection??
   - xx if data lookup fails (e.g. local server offline) then search gets wrong range??
 - compact life results
+  - compact on other queries
+    - population on other queries
+  - encode death reason
 - spanlist/arclist load order indetermiate
 - object search header locked
 - animated status when zoom too large for visible layers

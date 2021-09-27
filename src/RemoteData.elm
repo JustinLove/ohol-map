@@ -1,4 +1,11 @@
-module RemoteData exposing (RemoteData(..), withDefault, map, toMaybe, jsonDecode)
+module RemoteData exposing
+  ( RemoteData(..)
+  , withDefault
+  , map
+  , toMaybe
+  , fromResult
+  , jsonDecode
+  )
 
 import Http
 import Json.Decode
@@ -33,6 +40,12 @@ toMaybe data =
     Loading -> Nothing
     Data value -> Just value
     Failed err -> Nothing
+
+fromResult : Result Http.Error a -> RemoteData a
+fromResult result =
+  case result of
+    Ok data -> Data data
+    Err err -> Failed err
 
 jsonDecode : Json.Decode.Decoder a -> Json.Decode.Value -> RemoteData a
 jsonDecode decoder value =

@@ -45,6 +45,7 @@ life l =
     , ("death_x", maybe int l.deathX)
     , ("death_y", maybe int l.deathY)
     , ("death_time", maybe timeStamp l.deathTime)
+    , ("cause", maybe string l.deathCause)
     ]
 
 servers : List Server -> Value

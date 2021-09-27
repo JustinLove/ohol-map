@@ -53,7 +53,7 @@ type Msg
   | NotableObjectsReceived Int Posix (Result Http.Error (List Parse.Key))
   | ObjectsReceived (Result Http.Error Data.Objects)
   | MonumentList Int (Result Http.Error (List Data.Monument))
-  | DataLayer RangeSource Int (Result Http.Error Json.Decode.Value)
+  | DataLayer RangeSource Int (Result Http.Error (List Data.Life))
   | NoDataLayer
   | FetchUpTo Posix
   | FetchBetween Posix Posix
@@ -800,16 +800,15 @@ update msg model =
         |> checkServerLoaded
     MonumentList serverId (Err error) ->
       (model, Log.httpError "fetch monuments failed" error)
-    DataLayer rangeSource serverId (Ok value) ->
+    DataLayer rangeSource serverId (Ok lives) ->
       ( { model
         | dataLayer = Data serverId
-        , population = RemoteData.jsonDecode Decode.population  value
-          |> RemoteData.map (population model.time)
+        , population = Data (populationFromLives model.time lives)
         , player = if model.dataAnimated then Starting else Stopped
         }
           |> rebuildTimelines
       , Cmd.batch
-        [ Leaflet.dataLayer value (rangeSource == DataRange)
+        [ Leaflet.dataLayer (Encode.lives lives) (rangeSource == DataRange)
         ]
       )
         |> (if rangeSource == DataRange then addUpdate setRangeForData else identity)
@@ -2219,6 +2218,7 @@ myLife life =
 serverLife : Life -> Data.Life
 serverLife life =
   { birthTime = life.birthTime
+  , birthPopulation = 0
   , chain = life.generation
   , lineage = life.lineage
   , playerid = life.playerid
@@ -2229,8 +2229,10 @@ serverLife life =
   , birthX = life.birthX
   , birthY = life.birthY
   , deathTime = life.deathTime
+  , deathPopulation = Nothing
   , deathX = life.deathX
   , deathY = life.deathY
+  , deathCause = Nothing
   }
 
 myServer : RemoteData (List Version) -> RemoteData (Dict ObjectId String) -> RemoteData (List (ObjectId, String)) -> Data.Server -> Server
@@ -2348,17 +2350,24 @@ fetchMonuments baseUrl serverId =
 
 fetchRecentLives : String -> Int -> Cmd Msg
 fetchRecentLives baseUrl serverId =
-  Http.get
+  Http.request
     { url = Url.crossOrigin baseUrl ["lives"]
       [ Url.int "server_id" serverId
       , Url.string "period" "P2D"
       ]
-    , expect = Http.expectJson (DataLayer DataRange serverId) Json.Decode.value
+    , expect = Http.expectString (parseLives >> (DataLayer DataRange serverId))
+    , method = "GET"
+    , headers =
+        [ Http.header "Accept" "text/plain"
+        ]
+    , body = Http.emptyBody
+    , timeout = Nothing
+    , tracker = Nothing
     }
 
 fetchDataLayer : String -> Int -> Posix -> Posix -> RangeSource -> Bool -> Cmd Msg
 fetchDataLayer baseUrl serverId startTime endTime rangeSource evesOnly =
-  Http.get
+  Http.request
     { url = Url.crossOrigin baseUrl ["lives"]
       ( List.concat
         [ [ Url.int "server_id" serverId
@@ -2369,8 +2378,21 @@ fetchDataLayer baseUrl serverId startTime endTime rangeSource evesOnly =
         , if evesOnly then [ Url.int "chain" 1 ] else []
         ]
       )
-    , expect = Http.expectJson (DataLayer rangeSource serverId) Json.Decode.value
+    , expect = Http.expectString (parseLives >> (DataLayer rangeSource serverId))
+    , method = "GET"
+    , headers =
+        [ Http.header "Accept" "text/plain"
+        ]
+    , body = Http.emptyBody
+    , timeout = Nothing
+    , tracker = Nothing
     }
+
+parseLives : Result Http.Error String -> Result Http.Error (List Data.Life)
+parseLives =
+  Result.andThen
+    (Parser.run Parse.lives
+      >> Result.mapError (Http.BadBody << Parse.deadEndsToString))
 
 extractHashInt : String -> Url -> Maybe Int
 extractHashInt key location =

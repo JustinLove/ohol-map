@@ -15,10 +15,13 @@ module OHOLData.Parse exposing
   , encodedDeltaX
   , objectId
   , objectCount
+  , lives
+  , lifeLine
+  , name
   , deadEndsToString
   )
 
-import OHOLData exposing (ObjectId, ObjectSearchIndex)
+import OHOLData exposing (ObjectId, ObjectSearchIndex, Life)
 
 import Dict exposing (Dict)
 import Parser.Advanced as Parser exposing (..)
@@ -35,6 +38,7 @@ type Log = Log Object Int Int Posix
 
 type alias ObjectSearchParser a = Parser Context Problem a
 type alias KeyValueYXFirstParser a = Parser Context Problem a
+type alias LifeParser a = Parser Context Problem a
 type alias Context = String
 type alias Problem = String
 
@@ -308,6 +312,217 @@ trailingDigits =
   getChompedString <|
     chompWhile Char.isDigit
 
+lives : LifeParser (List Life)
+lives =
+  loop [] livesStep
+
+livesStep : List Life -> LifeParser (Step (List Life) (List Life))
+livesStep list =
+  oneOf
+    [ succeed (\l -> Loop (l :: list))
+      |= lifeLine
+      |. oneOf
+        [ newline
+        , end "something other than newline after recorfd"
+        ]
+    , succeed ()
+      |. end "unparsed trailing characters in lives"
+      |> map (\_ -> Done list)
+    ]
+
+lifeLine : LifeParser Life
+lifeLine =
+  succeed life
+    |= serverId
+    |. spacesOnly
+    |= epoch
+    |. spacesOnly
+    |= playerId
+    |. spacesOnly
+    |= timeStamp
+    |. spacesOnly
+    |= coordinates
+    |. spacesOnly
+    |= playerCount
+    |. spacesOnly
+    |. gender
+    |. spacesOnly
+    |= lineageId
+    |. spacesOnly
+    |= chain
+    |. spacesOnly
+    |= optional timeStamp
+    |. spacesOnly
+    |= optionalCoordinates
+    |. spacesOnly
+    |= optional playerCount
+    |. spacesOnly
+    |= optional age
+    |. spacesOnly
+    |= optional deathReason
+    |= oneOf
+      [ succeed Just
+        |. spacesOnly
+        |= name
+      , succeed Nothing
+      ]
+
+life
+  : Int -- serverid
+  -> Int -- epoch
+  -> Int -- playerid
+  -> Posix -- birthtime
+  -> (Int, Int) -- birth location
+  -> Int -- birth pop
+  -> Int -- lineage
+  -> Int -- chain
+  -> Maybe Posix -- deathtime
+  -> (Maybe Int, Maybe Int) -- death location
+  -> Maybe Int -- death pop
+  -> Maybe Float -- age
+  -> Maybe String -- cause of death
+  -> Maybe String -- name
+  -> Life
+life sid e pid bt (bx, by) bp lin ch dt (dx, dy) dp a dc n =
+  { birthX = bx
+  , birthY = by
+  , birthTime = bt
+  , birthPopulation = bp
+  , chain = ch
+  , lineage = lin
+  , name = n
+  , serverId = sid
+  , epoch = e
+  , playerid = pid
+  , age = a
+  , deathX = dx
+  , deathY = dy
+  , deathTime = dt
+  , deathPopulation = dp
+  , deathCause = dc
+  }
+
+serverId : LifeParser Int
+serverId = positiveInt |> inContext "looking for a serverid"
+
+epoch : LifeParser Int
+epoch = positiveInt |> inContext "looking for epoch"
+
+playerId : LifeParser Int
+playerId = positiveInt |> inContext "looking for player id"
+
+coordinates : LifeParser (Int, Int)
+coordinates =
+  succeed Tuple.pair
+    |= coordinate
+    |. spacesOnly
+    |= coordinate
+    |> inContext "looking for coordinates"
+
+optionalCoordinates : LifeParser (Maybe Int, Maybe Int)
+optionalCoordinates =
+  succeed Tuple.pair
+    |= optional coordinate
+    |. spacesOnly
+    |= optional coordinate
+    |> inContext "looking for coordinates"
+
+playerCount : LifeParser Int
+playerCount = positiveInt |> inContext "looking for player count"
+
+lineageId : LifeParser Int
+lineageId =
+  oneOf
+    [ playerId
+    , succeed 0 |. symbol (Token "X" "looking for no data marker")
+    ]
+    |> inContext "looking for lineage"
+
+chain : LifeParser Int
+chain = positiveInt |> inContext "looking for chain"
+
+gender : LifeParser String
+gender =
+  oneOf
+    [ succeed "M" |. symbol (Token "M" "looking for male")
+    , succeed "F" |. symbol (Token "F" "looking for female")
+    ]
+    |> inContext "looking for gender"
+
+optional : LifeParser a -> LifeParser (Maybe a)
+optional parser =
+  oneOf
+    [ succeed Nothing |. noData
+    , succeed Just
+        |= parser
+    ]
+
+timeStamp : LifeParser Posix
+timeStamp =
+  succeed (\x -> Time.millisToPosix (x * 1000))
+    |= positiveInt
+    |> inContext "timestamp"
+
+positiveInt : LifeParser Int
+positiveInt =
+  int "looking for positive integer" "invalid number"
+
+coordinate : LifeParser Int
+coordinate =
+  negativeInt
+    |> inContext "looking for a coordinate"
+
+negativeInt : LifeParser Int
+negativeInt =
+  succeed Tuple.pair
+    |= leadingNegative
+    |= positiveInt
+    |> andThen assembleNegativeInt
+    |> inContext "looking for possibly negative integer"
+
+leadingNegative : LifeParser Bool
+leadingNegative =
+  oneOf
+    [ succeed True |. symbol (Token "-" "looking for negative sign")
+    , succeed False
+    ]
+
+assembleNegativeInt : (Bool, Int) -> LifeParser Int
+assembleNegativeInt (neg, n) =
+  succeed (if neg then -n else n)
+
+deathReason : LifeParser String
+deathReason =
+  getChompedString <|
+    chompWhile (\c -> c /= ' ' && c /= '\n')
+
+age : LifeParser Float
+age =
+  float "looking for age" "invalid float"
+
+name : LifeParser String
+name =
+  succeed identity
+    |. symbol (Token "\"" "looking for start quote")
+    |= quoteTerminatedString
+    |. symbol (Token "\"" "looking for end quote")
+    |> inContext "looking for name"
+
+quoteTerminatedString : LifeParser String
+quoteTerminatedString =
+  getChompedString <|
+    chompWhile (\c -> c /= quoteChar && c /= newlineChar)
+
+spacesOnly : LifeParser ()
+spacesOnly =
+  succeed ()
+    |. chompIf (\c -> c == ' ') "looking for one or more spaces"
+    |. chompWhile (\c -> c == ' ')
+
+newline : LifeParser ()
+newline =
+  symbol (Token "\n" "looking for newline")
+
 ---------------------
 
 deadEndsToString : List (DeadEnd Context Problem) -> String
@@ -324,3 +539,7 @@ deadEndToString {problem, contextStack} =
 contextToString : {r|context : Context} -> String
 contextToString {context} =
   context
+
+noData = symbol (Token "X" "looking for nodata marker")
+newlineChar = '\n'
+quoteChar = '"'

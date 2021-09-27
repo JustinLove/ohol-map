@@ -42,6 +42,7 @@ type alias Life =
   { birthX : Int
   , birthY : Int
   , birthTime : Posix
+  , birthPopulation : Int
   , chain : Int
   , lineage : Int
   , name : Maybe String
@@ -52,6 +53,8 @@ type alias Life =
   , deathX : Maybe Int
   , deathY : Maybe Int
   , deathTime : Maybe Posix
+  , deathPopulation : Maybe Int
+  , deathCause : Maybe String
   }
 
 type alias Server =

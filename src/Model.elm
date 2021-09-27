@@ -71,6 +71,7 @@ module Model exposing
   , relativeEndTime
   , Population
   , population
+  , populationFromLives
   )
 
 import Leaflet exposing (Point, PointColor(..), PointLocation(..), Animatable(..))
@@ -1012,6 +1013,31 @@ population default data =
       |> List.map (\(t, p, _) -> (t, p))
       |> List.sortBy (Tuple.first>>Time.posixToMillis)
       |> resample 4096
+  in
+  { data = usablePoints
+  , eventRange = (firstEvent, lastBirth)
+  , populationRange = (firstEvent, lastEvent)
+  }
+
+populationFromLives : Posix -> List Data.Life -> Population
+populationFromLives default data =
+  let
+    firstEvent = data
+      |> List.head
+      |> Maybe.map .birthTime
+      |> Maybe.withDefault default
+    lastBirth = data
+      |> List.foldl (\{birthTime} _ -> birthTime) default
+    usablePoints = data
+      |> List.concatMap (\{birthTime, birthPopulation, deathTime, deathPopulation} ->
+          case (deathTime, deathPopulation) of
+            (Just dt, Just dp) -> [(birthTime, birthPopulation), (dt, dp)]
+            _ -> [(birthTime, birthPopulation)]
+        )
+      |> List.sortBy (Tuple.first>>Time.posixToMillis)
+      |> resample 4096
+    lastEvent = usablePoints
+      |> List.foldl (\(t, _) _ -> t) default
   in
   { data = usablePoints
   , eventRange = (firstEvent, lastBirth)
