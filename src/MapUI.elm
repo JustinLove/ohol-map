@@ -370,7 +370,7 @@ update msg model =
       , Cmd.batch
         [ Leaflet.currentTime life.birthTime
         , Time.now |> Task.perform (ShowTimeNotice life.birthTime)
-        , Leaflet.focusLife (serverLife life)
+        , Leaflet.focusLife (leafletLife life)
         ]
       )
        |> setServer life.serverId
@@ -565,9 +565,10 @@ update msg model =
     Event (Err err) ->
       (model, Log.decodeError "error" err)
     MatchingLives (Ok lives) ->
-      ( {model | lives = lives |> List.map myLife |> Data}
+      let l = List.map myLife lives in
+      ( {model | lives = Data l }
       , Cmd.batch
-        [ Leaflet.displayResults lives
+        [ Leaflet.displayResults (List.map leafletLife l)
         , Leaflet.searchOverlay True
         ]
       )
@@ -2198,7 +2199,8 @@ fetchObjects =
     , expect = Http.expectJson ObjectsReceived Decode.objects
     }
 
-myLife : Data.Life -> Life
+--myLife : Data.Life -> Life
+--myLife : Leaflet.Life -> Life
 myLife life =
   { birthTime = life.birthTime
   , generation = life.chain
@@ -2215,10 +2217,9 @@ myLife life =
   , deathY = life.deathY
   }
 
-serverLife : Life -> Data.Life
-serverLife life =
+leafletLife : Life -> Leaflet.Life
+leafletLife life =
   { birthTime = life.birthTime
-  , birthPopulation = 0
   , chain = life.generation
   , lineage = life.lineage
   , playerid = life.playerid
@@ -2229,7 +2230,6 @@ serverLife life =
   , birthX = life.birthX
   , birthY = life.birthY
   , deathTime = life.deathTime
-  , deathPopulation = Nothing
   , deathX = life.deathX
   , deathY = life.deathY
   , deathCause = Nothing

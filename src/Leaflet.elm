@@ -1,5 +1,6 @@
 port module Leaflet exposing
-  ( Point
+  ( Life
+  , Point
   , PointColor(..)
   , PointLocation(..)
   , Animatable(..)
@@ -35,13 +36,18 @@ port module Leaflet exposing
   , event)
 
 import OHOLData as Data
-import OHOLData.Decode as Decode
-import OHOLData.Encode as Encode
+import OHOLData.Decode
+import OHOLData.Encode
 import OHOLData.Parse as Parse
+import Leaflet.Types exposing (..)
+import Leaflet.Decode as Decode
+import Leaflet.Encode as Encode
 
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Time exposing (Posix)
+
+type alias Life = Leaflet.Types.Life
 
 type alias Point =
   { x : Int
@@ -95,7 +101,7 @@ worldList : List Data.World -> Cmd msg
 worldList worlds =
   Encode.object
     [ ("kind", Encode.string "worldList")
-    , ("worlds", Encode.worlds worlds)
+    , ("worlds", OHOLData.Encode.worlds worlds)
     ]
     |> leafletCommand
 
@@ -142,7 +148,7 @@ dataLayer lives sendRange =
     ]
     |> leafletCommand
 
-displayResults : List Data.Life -> Cmd msg
+displayResults : List Life -> Cmd msg
 displayResults lives =
   Encode.object
     [ ("kind", Encode.string "displayResults")
@@ -150,7 +156,7 @@ displayResults lives =
     ]
     |> leafletCommand
 
-focusLife : Data.Life -> Cmd msg
+focusLife : Life -> Cmd msg
 focusLife life =
   Encode.object
     [ ("kind", Encode.string "focusLife")
@@ -317,7 +323,7 @@ type Event
   = MoveEnd Point
   | OverlayAdd String (Maybe Int)
   | OverlayRemove String
-  | SelectPoints (List Data.Life)
+  | SelectPoints (List Life)
   | DataRange Posix Posix
   | SidebarToggle
   | TimelineToggle
