@@ -575,14 +575,21 @@ update msg model =
     MatchingLives (Err error) ->
       ({model | lives = Failed error}, Log.httpError "fetch lives failed" error)
     LineageLives serverId (Ok value) ->
-      ( { model
-        | lives = RemoteData.jsonDecode Decode.lives value
+      let
+        lives = value
+          |> RemoteData.jsonDecode Decode.lives
           |> RemoteData.map (List.map myLife)
+        ll = lives
+          |> RemoteData.map (List.map leafletLife)
+          |> RemoteData.withDefault []
+      in
+      ( { model
+        | lives = lives
         , dataLayer = Data serverId
         , population = NotRequested
         }
       , Cmd.batch
-        [ Leaflet.dataLayer value True
+        [ Leaflet.dataLayer ll True
         ]
       )
     LineageLives serverId (Err error) ->
@@ -809,7 +816,7 @@ update msg model =
         }
           |> rebuildTimelines
       , Cmd.batch
-        [ Leaflet.dataLayer (Encode.lives lives) (rangeSource == DataRange)
+        [ Leaflet.dataLayer (List.map serverToLeaflet lives) (rangeSource == DataRange)
         ]
       )
         |> (if rangeSource == DataRange then addUpdate setRangeForData else identity)
@@ -824,7 +831,7 @@ update msg model =
         , player = Stopped
         }
       , Cmd.batch
-        [ Leaflet.dataLayer (Encode.lives []) False
+        [ Leaflet.dataLayer [] False
         , Leaflet.dataLayerVisible False
         ]
       )
@@ -1632,7 +1639,7 @@ setServerUpdate serverId model =
                 Cmd.none
               else
                 Cmd.batch
-                  [ Leaflet.dataLayer (Encode.lives []) False
+                  [ Leaflet.dataLayer [] False
                   , Leaflet.dataLayerVisible False
                   ]
             _ -> Cmd.none
@@ -2234,6 +2241,25 @@ leafletLife life =
   , deathY = life.deathY
   , deathCause = Nothing
   }
+
+serverToLeaflet : Data.Life -> Leaflet.Life
+serverToLeaflet life =
+  { birthTime = life.birthTime
+  , chain = life.chain
+  , lineage = life.lineage
+  , playerid = life.playerid
+  , name = life.name
+  , serverId = life.serverId
+  , epoch = life.epoch
+  , age = life.age
+  , birthX = life.birthX
+  , birthY = life.birthY
+  , deathTime = life.deathTime
+  , deathX = life.deathX
+  , deathY = life.deathY
+  , deathCause = life.deathCause
+  }
+
 
 myServer : RemoteData (List Version) -> RemoteData (Dict ObjectId String) -> RemoteData (List (ObjectId, String)) -> Data.Server -> Server
 myServer versions objects objectIndex server =
