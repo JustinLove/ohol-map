@@ -42,7 +42,7 @@ type Msg
   | UI View.Msg
   | Event (Result Json.Decode.Error Leaflet.Event)
   | MatchingLives (Result Http.Error (List Data.Life))
-  | LineageLives Int (Result Http.Error Json.Decode.Value)
+  | LineageLives Int (Result Http.Error (List Data.Life))
   | ServerList (Result Http.Error (List Data.Server))
   | ArcList Int (Result Http.Error (List Data.Arc))
   | SpanList Int (Result Http.Error (List Data.Span))
@@ -574,17 +574,15 @@ update msg model =
       )
     MatchingLives (Err error) ->
       ({model | lives = Failed error}, Log.httpError "fetch lives failed" error)
-    LineageLives serverId (Ok value) ->
+    LineageLives serverId (Ok serverLives) ->
       let
-        lives = value
-          |> RemoteData.jsonDecode Decode.lives
-          |> RemoteData.map (List.map myLife)
-        ll = lives
-          |> RemoteData.map (List.map leafletLife)
-          |> RemoteData.withDefault []
+        lives = serverLives
+          |> List.map myLife
+        ll = serverLives
+          |> List.map serverToLeaflet
       in
       ( { model
-        | lives = lives
+        | lives = Data lives
         , dataLayer = Data serverId
         , population = NotRequested
         }
@@ -2338,13 +2336,20 @@ lifeSearchParameter term =
 
 fetchLineage : String -> Life -> Cmd Msg
 fetchLineage baseUrl life =
-  Http.get
+  Http.request
     { url = Url.crossOrigin baseUrl ["lives"]
       [ Url.int "server_id" life.serverId
       , Url.int "epoch" life.epoch
       , Url.int "lineage" life.lineage
       ]
-    , expect = Http.expectJson (LineageLives life.serverId) Json.Decode.value
+    , expect = Http.expectString (parseLives >> (LineageLives life.serverId))
+    , method = "GET"
+    , headers =
+        [ Http.header "Accept" "text/plain"
+        ]
+    , body = Http.emptyBody
+    , timeout = Nothing
+    , tracker = Nothing
     }
 
 requireMonuments : Model -> Server -> (Server, Cmd Msg)
