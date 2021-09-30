@@ -351,8 +351,8 @@ timeControl model line =
           Element.lazy3 displayTimelineRanges palette line line.ranges
         TimelineSpans spans ->
           Element.lazy3 displayTimelineRanges palette line line.ranges
-        TimelinePopulation data ->
-          Element.lazy3 displayTimelineGraph palette line data
+        TimelinePopulation data special ->
+          Element.lazy4 displayTimelineGraph palette line data special
       )
     , behindContent
       (el
@@ -471,8 +471,8 @@ displayTimelineRanges palette line ranges =
       ]
       |> html
 
-displayTimelineGraph : Palette -> Timeline -> List (Posix, Int) -> Element msg
-displayTimelineGraph palette line points =
+displayTimelineGraph : Palette -> Timeline -> List (Posix, Int) -> List (Posix, Int) -> Element msg
+displayTimelineGraph palette line points special =
   let
     min = (Time.posixToMillis line.minTime) + 1
     max = Time.posixToMillis line.maxTime
@@ -503,6 +503,10 @@ displayTimelineGraph palette line points =
         ]
       ]
       [ Chart.series x
+        [ Chart.interpolated y [ CA.color (colorToString palette.highlight) ] []
+        ]
+        special
+      , Chart.series x
         [ Chart.interpolated y [ CA.color (colorToString palette.selected) ] []
         ]
         points

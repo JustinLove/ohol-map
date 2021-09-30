@@ -52,7 +52,7 @@
   - x compact on other queries
     - x population on other queries
   - x encode death reason
-- lowpop line
+- x lowpop line
 - spanlist/arclist load order indetermiate
 - object search header locked
 - animated status when zoom too large for visible layers

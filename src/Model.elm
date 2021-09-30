@@ -603,7 +603,7 @@ type TimelineData
   | TimelineWorlds (List World)
   | TimelineArcs (List Arc)
   | TimelineSpans (List Span)
-  | TimelinePopulation (List (Posix, Int))
+  | TimelinePopulation (List (Posix, Int)) (List (Posix, Int))
 
 type alias Timeline =
   { id : TimelineId
@@ -688,6 +688,8 @@ timeline model index =
                 |> RemoteData.map (spansInRange (min, max))
                 |> RemoteData.map TimelineSpans
                 |> RemoteData.withDefault TimelineBlank
+          worlds = currentWorlds model
+            |> (worldsInRange (min, max))
         in
         Just
           { id = index
@@ -699,15 +701,14 @@ timeline model index =
             case model.population of
               Data pop ->
                 if (rangeOverlap (min, max) pop.populationRange) > 0.5 then
-                  TimelinePopulation pop.data
+                  TimelinePopulation pop.data (worlds |> settingChanges max .minActivePlayersForSpecialBiomes)
                 else
                   widthDependentData ()
               _ ->
                 widthDependentData ()
           , ranges =
             if typicalSpanWidth < 10 then
-              currentWorlds model
-                |> (worldsInRange (min, max))
+              worlds
                 |> List.map (worldToRange max)
             else
               currentSpans model
@@ -795,7 +796,7 @@ timelineScreenToTime monuments line x =
         TimelineSpans spans ->
           spans
             |> List.map (.start>>Time.posixToMillis)
-        TimelinePopulation _ ->
+        TimelinePopulation _ _ ->
           []
       )
         |> List.append (monuments |> RemoteData.withDefault [] |> List.map (.date>>Time.posixToMillis))
@@ -1064,3 +1065,15 @@ resample targetSamples input =
           (0, [])
         |> Tuple.second
         |> List.reverse
+
+settingChanges : Posix -> (World -> Maybe Int) -> List World -> List (Posix, Int)
+settingChanges now field worlds =
+  worlds
+    |> List.concatMap (\w ->
+      case field w of
+        Just value ->
+          [ (w.start, value)
+          , (w.end |> Maybe.withDefault now, value)
+          ]
+        Nothing -> []
+      )

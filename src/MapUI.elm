@@ -229,7 +229,7 @@ update msg model =
             TimelineWorlds worlds ->
               let mnote = worldForTime time worlds |> Maybe.map .name in
               ({model | hover = Hovering index time mnote}, Cmd.none)
-            TimelinePopulation data ->
+            TimelinePopulation data _ ->
               let
                 pop =
                   model.population

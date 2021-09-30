@@ -300,6 +300,7 @@ worldMerge start mage mver marc =
     , start = start
     , end = marc |> Maybe.andThen .end
     , spans = []
+    , minActivePlayersForSpecialBiomes = mage |> Maybe.andThen .minActivePlayersForSpecialBiomes
     , biomeLayer = mage |> Maybe.andThen .biomeLayer
     , generation = generation
     }
@@ -464,6 +465,7 @@ addEndTimeToMonuments arc (pending, processed) =
 type alias Age =
   { name: String
   , start: Posix
+  , minActivePlayersForSpecialBiomes: Maybe Int
   , biomeLayer: Maybe String
   , generation: Generation
   }
@@ -473,6 +475,7 @@ type alias World =
   , start: Posix
   , end: Maybe Posix
   , spans: List Span
+  , minActivePlayersForSpecialBiomes: Maybe Int
   , biomeLayer: Maybe String
   , generation: Generation
   }
@@ -512,6 +515,7 @@ oholCodeChanges : List Age
 oholCodeChanges =
   [ { name = "Badlands Age"
     , start = Time.millisToPosix 0
+    , minActivePlayersForSpecialBiomes = Nothing
     , biomeLayer = Just "badlandsAge"
     , generation =
       { defaultGeneration
@@ -521,6 +525,7 @@ oholCodeChanges =
     }
   , { name = "Arctic Age"
     , start = humanTime "2018-03-08"
+    , minActivePlayersForSpecialBiomes = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -530,6 +535,7 @@ oholCodeChanges =
     }
   , { name = "Desert Age"
     , start = humanTime "2018-03-31"
+    , minActivePlayersForSpecialBiomes = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -539,6 +545,7 @@ oholCodeChanges =
     }
   , { name = "Jungle Age (off biome animals)"
     , start = humanTime "2018-11-19"
+    , minActivePlayersForSpecialBiomes = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -548,6 +555,7 @@ oholCodeChanges =
     }
   , { name = "Jungle Age"
     , start = humanTime "2019-03-29T21:48:07.000Z"
+    , minActivePlayersForSpecialBiomes = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -556,6 +564,7 @@ oholCodeChanges =
     }
   , { name = "Jungle Age (screenshot 1)"
     , start = humanTime "2019-04-27T21:15:24.000Z"
+    , minActivePlayersForSpecialBiomes = Nothing
     , biomeLayer = Just "screenshot" --L.layerGroup([biomeImageLayer screenshotImageLayer]),
     , generation =
       { defaultGeneration
@@ -564,6 +573,7 @@ oholCodeChanges =
     }
   , { name = "Jungle Age (small objects)"
     , start = humanTime "2019-05-04T17:11:31.000Z"
+    , minActivePlayersForSpecialBiomes = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -574,6 +584,7 @@ oholCodeChanges =
     }
   , { name = "Jungle Age (screenshot 2)"
     , start = humanTime "2019-05-17T02:07:50.000Z"
+    , minActivePlayersForSpecialBiomes = Nothing
     , biomeLayer = Just "screenshot" --L.layerGroup([biomeImageLayer screenshotImageLayer]),
     , generation =
       { defaultGeneration
@@ -582,6 +593,7 @@ oholCodeChanges =
     }
   , { name = "Random Age"
     , start = humanTime "2019-07-27T21:00:00Z"
+    , minActivePlayersForSpecialBiomes = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -591,6 +603,7 @@ oholCodeChanges =
     }
   , { name = "Topographic Age"
     , start = humanTime "2019-07-31T01:25:24Z"
+    , minActivePlayersForSpecialBiomes = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -600,6 +613,7 @@ oholCodeChanges =
     }
   , { name = "Special Age"
     , start = humanTime "2019-08-01T02:08:47Z"
+    , minActivePlayersForSpecialBiomes = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -611,6 +625,7 @@ oholCodeChanges =
   , { name = "Special Age (seeded placements)"
     -- the short arc just before here had no tapped tarry spots or nosaj, so ambiguous
     , start = humanTime "2019-10-23T17:57:00Z"
+    , minActivePlayersForSpecialBiomes = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -622,6 +637,7 @@ oholCodeChanges =
     }
   , { name = "Special Age (no animals)"
     , start = humanTime "2019-11-16T09:14:00Z"
+    , minActivePlayersForSpecialBiomes = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -634,6 +650,7 @@ oholCodeChanges =
     }
   , { name = "Special Age (specialists)"
     , start = humanTime "2019-11-18T18:41:00Z"
+    , minActivePlayersForSpecialBiomes = Just 15
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -646,6 +663,7 @@ oholCodeChanges =
     }
   , { name = "Band Age"
     , start = humanTime "2020-10-29T18:54:08Z"
+    , minActivePlayersForSpecialBiomes = Just 15
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -662,6 +680,24 @@ oholCodeChanges =
     }
   , { name = "Band +20 Age"
     , start = humanTime "2020-12-19T20:59:55Z"
+    , minActivePlayersForSpecialBiomes = Just 15
+    , biomeLayer = Nothing
+    , generation =
+      { defaultGeneration
+      | biomeMap = specialBiomeMap
+      , biomeRandSeedA = Nothing
+      , randSeed = Nothing
+      , numSpecialBiomes = 3
+      , specialBiomeBandOrder = specialBiomeBandOrder
+      , specialBiomeBandYCenter = specialBiomeBandYCenter20
+      , specialBiomeBandDefault = 3
+      , specialBiomeBandThickness = 200
+      , secondPlaceBiomeObjects = NoSecondPlace
+      } |> topographic specialBiomeWeights
+    }
+  , { name = "30 Flip Flop Age"
+    , start = humanTime "2021-03-31T18:05:25Z"
+    , minActivePlayersForSpecialBiomes = Just 30
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -683,6 +719,7 @@ crucibleCodeChanges : List Age
 crucibleCodeChanges =
   [ { name = "Cruicible"
     , start = humanTime "2019-06-02"
+    , minActivePlayersForSpecialBiomes = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -701,6 +738,7 @@ tholCodeChanges : List Age
 tholCodeChanges =
   [ { name = "Two Hours One Life (20264)"
     , start = humanTime "2019-08-31T13:00:00Z"
+    , minActivePlayersForSpecialBiomes = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -711,6 +749,7 @@ tholCodeChanges =
     }
   , { name = "Two Hours One Life (20265)"
     , start = humanTime "2019-11-26T19:06:00Z"
+    , minActivePlayersForSpecialBiomes = Nothing
     , biomeLayer = Just "tholMap"
     , generation =
       { defaultGeneration
@@ -721,6 +760,7 @@ tholCodeChanges =
     }
   , { name = "Two Hours One Life (20266)"
     , start = humanTime "2020-03-11T02:00:00Z"
+    , minActivePlayersForSpecialBiomes = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
@@ -731,6 +771,7 @@ tholCodeChanges =
     }
   , { name = "Two Hours One Life (20271)"
     , start = humanTime "2020-09-04T22:00:00Z"
+    , minActivePlayersForSpecialBiomes = Nothing
     , biomeLayer = Nothing
     , generation =
       { defaultGeneration
