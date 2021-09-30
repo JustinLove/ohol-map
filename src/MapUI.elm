@@ -584,7 +584,7 @@ update msg model =
       ( { model
         | lives = Data lives
         , dataLayer = Data serverId
-        , population = NotRequested
+        , population = Data (populationFromLives model.time serverLives)
         }
       , Cmd.batch
         [ Leaflet.dataLayer ll True

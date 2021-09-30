@@ -49,7 +49,7 @@
 - compact life results
   - x pop fields missing (decoder error) on data sent back from js
   - x compact on other queries
-    - population on other queries
+    - x population on other queries
   - encode death reason
 - lowpop line
 - spanlist/arclist load order indetermiate
