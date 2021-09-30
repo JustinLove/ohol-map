@@ -53,6 +53,7 @@ birthOnlyLife =
   { birthX = -108966
   , birthY = -20282
   , birthTime = Time.millisToPosix 1632556779000
+  , birthPopulation = 31
   , chain = 1
   , lineage = 4469793
   , name = Nothing
@@ -63,6 +64,8 @@ birthOnlyLife =
   , deathX = Nothing
   , deathY = Nothing
   , deathTime = Nothing
+  , deathPopulation = Nothing
+  , deathCause = Nothing
   }
 
 namedBirthLine = "17 2 4469793 1632556779 -108966 -20282 31 F 4469793 1 X X X X X X \"FIRST LAST\""
@@ -71,6 +74,7 @@ namedBirthLife =
   { birthX = -108966
   , birthY = -20282
   , birthTime = Time.millisToPosix 1632556779000
+  , birthPopulation = 31
   , chain = 1
   , lineage = 4469793
   , name = Just "FIRST LAST"
@@ -81,6 +85,8 @@ namedBirthLife =
   , deathX = Nothing
   , deathY = Nothing
   , deathTime = Nothing
+  , deathPopulation = Nothing
+  , deathCause = Nothing
   }
 
 unrelatedLine = "17 2 4469793 1632556779 -108966 -20282 31 F X 1 X X X X X X"
@@ -89,6 +95,7 @@ unrelatedLife =
   { birthX = -108966
   , birthY = -20282
   , birthTime = Time.millisToPosix 1632556779000
+  , birthPopulation = 31
   , chain = 1
   , lineage = 0
   , name = Nothing
@@ -99,14 +106,17 @@ unrelatedLife =
   , deathX = Nothing
   , deathY = Nothing
   , deathTime = Nothing
+  , deathPopulation = Nothing
+  , deathCause = Nothing
   }
 
-anonDeathLine = "17 2 4469784 1632556178 -88968 -282 32 F 4469784 1 1632556771 -88687 -41 30 23.89 hunger"
+anonDeathLine = "17 2 4469784 1632556178 -88968 -282 32 F 4469784 1 1632556771 -88687 -41 30 23.89 h"
 anonDeathLife : Life
 anonDeathLife =
   { birthX = -88968
   , birthY = -282
   , birthTime = Time.millisToPosix 1632556178000
+  , birthPopulation = 32
   , chain = 1
   , lineage = 4469784
   , name = Nothing
@@ -117,14 +127,17 @@ anonDeathLife =
   , deathX = Just -88687
   , deathY = Just -41
   , deathTime = Just (Time.millisToPosix 1632556771000)
+  , deathPopulation = Just 30
+  , deathCause = Just "hunger"
   }
 
-namedDeathLine = "17 2 4469784 1632556178 -88968 -282 32 F 4469784 1 1632556771 -88687 -41 30 23.89 hunger \"FIRST LAST\""
+namedDeathLine = "17 2 4469784 1632556178 -88968 -282 32 F 4469784 1 1632556771 -88687 -41 30 23.89 h \"FIRST LAST\""
 namedDeathLife : Life
 namedDeathLife =
   { birthX = -88968
   , birthY = -282
   , birthTime = Time.millisToPosix 1632556178000
+  , birthPopulation = 32
   , chain = 1
   , lineage = 4469784
   , name = Just "FIRST LAST"
@@ -135,7 +148,9 @@ namedDeathLife =
   , deathX = Just -88687
   , deathY = Just -41
   , deathTime = Just (Time.millisToPosix 1632556771000)
+  , deathPopulation = Just 30
+  , deathCause = Just "hunger"
   }
 
 multipleLines = birthOnlyLine ++ "\n" ++ namedDeathLine
-multipleLives = [ birthOnlyLife, namedDeathLife ]
+multipleLives = [ namedDeathLife, birthOnlyLife ]

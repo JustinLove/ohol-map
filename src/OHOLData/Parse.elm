@@ -493,8 +493,18 @@ assembleNegativeInt (neg, n) =
 
 deathReason : LifeParser String
 deathReason =
-  getChompedString <|
-    chompWhile (\c -> c /= ' ' && c /= '\n')
+  oneOf
+    [ succeed "hunger"
+      |. token (Token "h" "looking for hunger")
+    , succeed "disconnect"
+      |. token (Token "d" "looking for disconnect")
+    , succeed "oldAge"
+      |. token (Token "o" "looking for oldAge")
+    , succeed (\id -> "killer_"++id)
+      |. token (Token "k" "looking for killer")
+      |= (getChompedString <|
+          chompWhile Char.isDigit)
+    ]
 
 age : LifeParser Float
 age =
@@ -532,13 +542,17 @@ deadEndsToString deadEnds =
     |> String.join "\n"
 
 deadEndToString : DeadEnd Context Problem -> String
-deadEndToString {problem, contextStack} =
-  problem :: (contextStack |> List.map contextToString)
+deadEndToString r =
+  ((positionToString r) ++ r.problem) :: (r.contextStack |> List.map contextToString)
     |> String.join " while: "
 
-contextToString : {r|context : Context} -> String
-contextToString {context} =
-  context
+contextToString : {r|row : Int, col : Int, context : Context} -> String
+contextToString r =
+  (positionToString r) ++ r.context
+
+positionToString : {r|row : Int, col : Int} -> String
+positionToString {row, col} =
+  (String.fromInt row) ++ "," ++ (String.fromInt col) ++ ": "
 
 noData = symbol (Token "X" "looking for nodata marker")
 newlineChar = '\n'

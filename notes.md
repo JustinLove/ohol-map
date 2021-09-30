@@ -4,6 +4,7 @@
 - remove notable on other servers
 - tab switching on life search
 - arc/span load order indeterminicy
+- daily review after clicking lineage lookup does nothing
 
 - ?? too man calls to location or history api in a short time - time scrolling while object seach is open - cannot reproduce
 - ?? when objects search is open and location selected, cannot pan - cannot reproduce
@@ -46,11 +47,11 @@
   - xx live publish range? - server range
   - xx data hit detection??
   - xx if data lookup fails (e.g. local server offline) then search gets wrong range??
-- compact life results
+- x compact life results
   - x pop fields missing (decoder error) on data sent back from js
   - x compact on other queries
     - x population on other queries
-  - encode death reason
+  - x encode death reason
 - lowpop line
 - spanlist/arclist load order indetermiate
 - object search header locked
