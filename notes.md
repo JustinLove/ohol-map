@@ -48,7 +48,7 @@
   - xx if data lookup fails (e.g. local server offline) then search gets wrong range??
 - compact life results
   - x pop fields missing (decoder error) on data sent back from js
-  - compact on other queries
+  - x compact on other queries
     - population on other queries
   - encode death reason
 - lowpop line

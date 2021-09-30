@@ -568,7 +568,7 @@ update msg model =
       let l = List.map myLife lives in
       ( {model | lives = Data l }
       , Cmd.batch
-        [ Leaflet.displayResults (List.map leafletLife l)
+        [ Leaflet.displayResults (List.map serverToLeaflet lives)
         , Leaflet.searchOverlay True
         ]
       )
@@ -2320,12 +2320,19 @@ twoHoursOneLife versions objects objectIndex currentTime =
 
 fetchMatchingLives : String -> String -> Cmd Msg
 fetchMatchingLives baseUrl term =
-  Http.get
+  Http.request
     { url = Url.crossOrigin baseUrl ["lives"]
       [ lifeSearchParameter term
       , Url.int "limit" 100
       ]
-    , expect = Http.expectJson MatchingLives Decode.lives
+    , expect = Http.expectString (parseLives >> MatchingLives)
+    , method = "GET"
+    , headers =
+        [ Http.header "Accept" "text/plain"
+        ]
+    , body = Http.emptyBody
+    , timeout = Nothing
+    , tracker = Nothing
     }
 
 lifeSearchParameter : String -> Url.QueryParameter
