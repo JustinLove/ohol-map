@@ -640,6 +640,9 @@ update msg model =
           case rspans of
             Data spans -> Data.assignArcDataTime spans
             _ -> identity
+        mspan = rspans
+          |> RemoteData.toMaybe
+          |> Maybe.andThen (List.reverse>>List.head)
         marc = model.mapTime
           |> Maybe.andThen (\time -> arcForTime time (Data arcs))
           |> Maybe.map assignDataTime
@@ -647,13 +650,19 @@ update msg model =
             Just _ -> ma
             Nothing -> lastArc
           )
+        setTimeline =
+          case mspan of
+            Just span -> 
+              setTimeRange (mspan |> Maybe.map spanToRange)
+            Nothing ->
+              timelineRange 0 (marc |> Maybe.map (arcToRange model.time))
       in
         ( { model
           | servers = model.servers |> Dict.update serverId (Maybe.map (\server -> {server | arcs = Data arcs} |> rebuildArcs))
           , currentArc = marc
           , coarseArc = marc
           }
-            |> timelineRange 0 (marc |> Maybe.map (arcToRange model.time))
+            |> setTimeline
         , Cmd.none
         )
         |> rebuildWorlds

@@ -1,9 +1,9 @@
 ## bugs
 - x remove band simulation
+- x arc/span load order indeterminicy
 - not loading monuments
 - remove notable on other servers
 - tab switching on life search
-- arc/span load order indeterminicy
 - daily review after clicking lineage lookup does nothing
 
 - ?? too man calls to location or history api in a short time - time scrolling while object seach is open - cannot reproduce
@@ -54,7 +54,6 @@
   - x encode death reason
 - x lowpop line
 - x double play
-- spanlist/arclist load order indetermiate
 - object search header locked
 - animated status when zoom too large for visible layers
 - assembling log search spans?
