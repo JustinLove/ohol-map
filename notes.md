@@ -1,7 +1,8 @@
 ## bugs
 - x remove band simulation
 - x arc/span load order indeterminicy
-- not loading monuments
+- x not loading monuments - no monuments in current arc
+- x monuments on timeline checkbox
 - remove notable on other servers
 - tab switching on life search
 - daily review after clicking lineage lookup does nothing

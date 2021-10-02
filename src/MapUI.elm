@@ -309,6 +309,7 @@ update msg model =
       ( { model
         | monumentsOnTimeline = show
         }
+          |> rebuildTimelines
       , Cmd.none
       )
     UI (View.ToggleFadeTallObjects fade) ->
