@@ -3,7 +3,7 @@
 - x arc/span load order indeterminicy
 - x not loading monuments - no monuments in current arc
 - x monuments on timeline checkbox
-- remove notable on other servers
+- x remove notable on other servers
 - tab switching on life search
 - daily review after clicking lineage lookup does nothing
 

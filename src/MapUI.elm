@@ -1629,6 +1629,9 @@ setServerUpdate serverId model =
             |> addUpdate (requireArcs model)
             |> addUpdate (requireSpans model)
           range = (server.minTime, server.maxTime)
+          mspanData = model.mapTime
+            |> Maybe.andThen (\time -> spanForTime time s2.spans)
+            |> Maybe.map asSpanData
         in
         ( { model
           | selectedServer = Just serverId
@@ -1638,6 +1641,7 @@ setServerUpdate serverId model =
           , dataLayer = NotRequested
           , population = NotRequested
           , player = Stopped
+          , spanData = mspanData
           }
         , Cmd.batch
           [ c2
