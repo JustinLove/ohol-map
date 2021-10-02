@@ -814,7 +814,7 @@ update msg model =
         }
           |> rebuildTimelines
       , Cmd.batch
-        [ Leaflet.dataLayer (List.map serverToLeaflet lives) (rangeSource == DataRange)
+        [ Leaflet.dataLayer (List.map serverToLeaflet lives) False
         ]
       )
         |> (if rangeSource == DataRange then addUpdate setRangeForData else identity)
