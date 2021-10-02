@@ -18,7 +18,8 @@ port module Leaflet exposing
   , focusPoint
   , focusPlacement
   , focusNone
-  , searchOverlay
+  , lifeSearchOverlay
+  , objectSearchOverlay
   , highlightObjects
   , animOverlay
   , timelineVisible
@@ -190,10 +191,18 @@ focusNone =
     ]
     |> leafletCommand
 
-searchOverlay : Bool -> Cmd msg
-searchOverlay status =
+lifeSearchOverlay : Bool -> Cmd msg
+lifeSearchOverlay status =
   Encode.object
-    [ ("kind", Encode.string "searchOverlay")
+    [ ("kind", Encode.string "lifeSearchOverlay")
+    , ("status", Encode.bool status)
+    ]
+    |> leafletCommand
+
+objectSearchOverlay : Bool -> Cmd msg
+objectSearchOverlay status =
+  Encode.object
+    [ ("kind", Encode.string "objectSearchOverlay")
     , ("status", Encode.bool status)
     ]
     |> leafletCommand

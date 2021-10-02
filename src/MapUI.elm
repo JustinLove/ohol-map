@@ -523,7 +523,7 @@ update msg model =
         }
       , Cmd.batch
         [ Leaflet.displayResults lives
-        , Leaflet.searchOverlay True
+        , Leaflet.lifeSearchOverlay True
         ]
       )
         |> addCommand sidebarCommand
@@ -570,7 +570,7 @@ update msg model =
       ( {model | lives = Data l }
       , Cmd.batch
         [ Leaflet.displayResults (List.map serverToLeaflet lives)
-        , Leaflet.searchOverlay True
+        , Leaflet.lifeSearchOverlay True
         ]
       )
     MatchingLives (Err error) ->
@@ -974,8 +974,9 @@ sidebarCommand model =
   in
     Cmd.batch
       [ Leaflet.sidebar sidebar
-      , Leaflet.searchOverlay
+      , Leaflet.lifeSearchOverlay
         (model.sidebar == OpenSidebar && model.sidebarMode == Search && model.searchMode == SearchLives)
+      , Leaflet.objectSearchOverlay (model.searchMode == SearchObjects)
       ]
 
 rebuildWorlds : (Model, Cmd Msg) -> (Model, Cmd Msg)
@@ -1700,7 +1701,10 @@ changeTheme theme =
 andHighlightObjects : Model -> (Model, Cmd Msg)
 andHighlightObjects model =
   ( { model | debouncedMatchingObjects = model.matchingObjects }
-  , highlightObjectsCommand model
+  , Cmd.batch
+    [ highlightObjectsCommand model
+    , Leaflet.objectSearchOverlay True
+    ]
   )
 
 highlightObjectsCommand : Model -> Cmd Msg

@@ -4,7 +4,7 @@
 - x not loading monuments - no monuments in current arc
 - x monuments on timeline checkbox
 - x remove notable on other servers
-- tab switching on life search
+- x tab switching on object search
 - daily review after clicking lineage lookup does nothing
 
 - ?? too man calls to location or history api in a short time - time scrolling while object seach is open - cannot reproduce

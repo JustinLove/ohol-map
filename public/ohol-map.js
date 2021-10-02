@@ -234,8 +234,8 @@
     "Biomes": biomeLayerToggle,
   }
 
-  var searchOverlay = L.layerGroup([], {className: 'search-overlay'})
-  searchOverlay.name = 'search overlay'
+  var lifeSearchOverlay = L.layerGroup([], {className: 'search-overlay'})
+  lifeSearchOverlay.name = 'life search overlay'
   var focusMarker = null;
 
   var updateMonumentLayer = function(layer, data) {
@@ -3016,7 +3016,7 @@
     lifePointOverlay.addTo(dataOverlay)
   }
 
-  var resultPoints = new L.GridLayer.LifePointOverlay().addTo(searchOverlay)
+  var resultPoints = new L.GridLayer.LifePointOverlay().addTo(lifeSearchOverlay)
 
   var setDataLayers = function(data, sendRange) {
     var theme = legendControl.options.theme
@@ -4160,7 +4160,7 @@
             }
             focusMarker = L.marker([life.birth_y, life.birth_x])
               .bindPopup(life.name)
-              .addTo(searchOverlay)
+              .addTo(lifeSearchOverlay)
               .openPopup()
             map.setView([life.birth_y, life.birth_x])
             var ms = life.birth_time*1000
@@ -4188,18 +4188,22 @@
               focusMarker.remove();
             }
             break
-          case 'searchOverlay':
+          case 'lifeSearchOverlay':
             if (message.status) {
-              searchOverlay.addTo(map)
+              lifeSearchOverlay.addTo(map)
             } else {
-              searchOverlay.remove()
+              lifeSearchOverlay.remove()
+            }
+            break
+          case 'objectSearchOverlay':
+            if (message.status) {
+              objectOverlay.addTo(map)
+            } else {
+              objectOverlay.remove()
             }
             break
           case 'highlightObjects':
             setObjectHighlightOptions({highlightObjectSwatches: message.swatches, highlightObjectImages: message.images})
-            if ((message.swatches.length > 0 || message.images.length > 0 ) && !map.hasLayer(objectOverlay)) {
-              map.addLayer(objectOverlay)
-            }
             break
           case 'animOverlay':
             dataAnimated = message.status
