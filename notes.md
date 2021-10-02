@@ -6,13 +6,11 @@
 
 ## Features
 - x why does anim toggle need both toggleAnimated if we are calling baseLayerByTime?
+- town cluster labels
 - object search header locked
-- animated status when zoom too large for visible layers
+- animated status when zoom too large for visible layers - still lives
 - assembling log search spans?
 - in-app help
-- town cluster labels
-- center view on main area?
-- always load certain objects (walls/floors)
 - tapout radius
 - expired objects
 - other monument reset times
