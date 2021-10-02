@@ -586,6 +586,7 @@ update msg model =
         | lives = Data lives
         , dataLayer = Data serverId
         , population = Data (populationFromLives model.time serverLives)
+        , pointColor = ChainColor -- something other than CauseOfDeathColor in order to differentiate with daily review
         }
       , Cmd.batch
         [ Leaflet.dataLayer ll True
