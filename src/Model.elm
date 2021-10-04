@@ -69,8 +69,9 @@ module Model exposing
   , lifeToRange
   , relativeStartTime
   , relativeEndTime
+  , PopulationSample
+  , SettingValue
   , Population
-  , population
   , populationFromLives
   )
 
@@ -603,7 +604,7 @@ type TimelineData
   | TimelineWorlds (List World)
   | TimelineArcs (List Arc)
   | TimelineSpans (List Span)
-  | TimelinePopulation (List (Posix, Int)) (List (Posix, Int))
+  | TimelinePopulation (List PopulationSample) (List SettingValue)
 
 type alias Timeline =
   { id : TimelineId
@@ -993,31 +994,13 @@ monumentsInRange (minTime, maxTime) monuments =
         min <= t && t <= max
       )
 
+type alias PopulationSample = (Posix, Int)
+type alias SettingValue = (Posix, Int)
+
 type alias Population =
-  { data : List (Posix, Int)
+  { data : List PopulationSample
   , eventRange : (Posix, Posix)
   , populationRange : (Posix, Posix)
-  }
-
-population : Posix -> List (Posix, Int, Bool) -> Population
-population default data =
-  let
-    firstEvent = data
-      |> List.head
-      |> Maybe.map (\(t, _, _) -> t)
-      |> Maybe.withDefault default
-    (lastBirth, lastEvent) = data
-      |> List.foldl (\(t, _, kind) (b, _) ->
-          if kind then (t, t) else (b, t)
-        ) (default, default)
-    usablePoints = data
-      |> List.map (\(t, p, _) -> (t, p))
-      |> List.sortBy (Tuple.first>>Time.posixToMillis)
-      |> resample 4096
-  in
-  { data = usablePoints
-  , eventRange = (firstEvent, lastBirth)
-  , populationRange = (firstEvent, lastEvent)
   }
 
 populationFromLives : Posix -> List Data.Life -> Population
@@ -1066,7 +1049,7 @@ resample targetSamples input =
         |> Tuple.second
         |> List.reverse
 
-settingChanges : Posix -> (World -> Maybe Int) -> List World -> List (Posix, Int)
+settingChanges : Posix -> (World -> Maybe Int) -> List World -> List SettingValue
 settingChanges now field worlds =
   worlds
     |> List.concatMap (\w ->

@@ -471,7 +471,7 @@ displayTimelineRanges palette line ranges =
       ]
       |> html
 
-displayTimelineGraph : Palette -> Timeline -> List (Posix, Int) -> List (Posix, Int) -> Element msg
+displayTimelineGraph : Palette -> Timeline -> List PopulationSample -> List SettingValue -> Element msg
 displayTimelineGraph palette line points special =
   let
     min = (Time.posixToMillis line.minTime) + 1
