@@ -1,4 +1,4 @@
-module Leaflet.Types exposing (Life)
+module Leaflet.Types exposing (Life, Cluster)
 
 import Time exposing (Posix)
 
@@ -18,3 +18,9 @@ type alias Life =
   , deathTime : Maybe Posix
   , deathCause : Maybe String
   }
+
+type alias Cluster =
+  { x : Int
+  , y : Int
+  }
+

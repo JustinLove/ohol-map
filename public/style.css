@@ -57,6 +57,10 @@ body {
   margin-top: 2px;
 }
 
+.cluster-label {
+  background: transparent;
+}
+
 .object-icon {
   height: 100%;
   object-fit: contain;

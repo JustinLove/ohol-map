@@ -1,12 +1,14 @@
 module Leaflet.Encode exposing
   ( lives
   , life
+  , clusters
   , timeStamp
   , msTime
   )
 
-import Leaflet.Types exposing (Life)
+import Leaflet.Types exposing (Life, Cluster)
 
+import Dict exposing (Dict)
 import Json.Encode exposing (..)
 import Time exposing (Posix)
 
@@ -33,6 +35,17 @@ life l =
     , ("death_y", maybe int l.deathY)
     , ("death_time", maybe timeStamp l.deathTime)
     , ("cause", maybe string l.deathCause)
+    ]
+
+clusters : Dict Int (List Cluster) -> Value
+clusters data =
+  dict String.fromInt (list cluster) data
+
+cluster : Cluster -> Value
+cluster {x, y} =
+  object
+    [ ("x", int x)
+    , ("y", int y)
     ]
 
 timeStamp : Posix -> Value

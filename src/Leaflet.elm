@@ -1,5 +1,6 @@
 port module Leaflet exposing
   ( Life
+  , Cluster
   , Point
   , PointColor(..)
   , PointLocation(..)
@@ -14,6 +15,7 @@ port module Leaflet exposing
   , notableObjects
   , dataLayer
   , displayResults
+  , displayClusters
   , focusLife
   , focusPoint
   , focusPlacement
@@ -44,11 +46,13 @@ import Leaflet.Types exposing (..)
 import Leaflet.Decode as Decode
 import Leaflet.Encode as Encode
 
+import Dict exposing (Dict)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Time exposing (Posix)
 
 type alias Life = Leaflet.Types.Life
+type alias Cluster = Leaflet.Types.Cluster
 
 type alias Point =
   { x : Int
@@ -154,6 +158,14 @@ displayResults lives =
   Encode.object
     [ ("kind", Encode.string "displayResults")
     , ("lives", Encode.lives lives)
+    ]
+    |> leafletCommand
+
+displayClusters : Dict Int (List Cluster) -> Cmd msg
+displayClusters clusters =
+  Encode.object
+    [ ("kind", Encode.string "displayClusters")
+    , ("clusters", Encode.clusters clusters)
     ]
     |> leafletCommand
 

@@ -477,7 +477,7 @@ update msg model =
     UI (View.SelectArcCoarse marc) ->
       selectArc model marc marc
     UI (View.SelectShow) ->
-      ( {model | dataLayer = Loading, population = Loading}
+      ( {model | dataLayer = Loading, population = Loading, clusters = Loading}
       , fetchDataForTime model
       )
     Event (Ok (Leaflet.MoveEnd point)) ->
@@ -581,15 +581,18 @@ update msg model =
           |> List.map myLife
         ll = serverLives
           |> List.map serverToLeaflet
+        clusters = clustersFromLives model.pointLocation model.time serverLives
       in
       ( { model
         | lives = Data lives
         , dataLayer = Data serverId
         , population = Data (populationFromLives model.time serverLives)
+        , clusters = Data clusters
         , pointColor = ChainColor -- something other than CauseOfDeathColor in order to differentiate with daily review
         }
       , Cmd.batch
-        [ Leaflet.dataLayer ll True
+        [ Leaflet.displayClusters (Dict.map (\k v -> v.clusters) clusters.lineages)
+        , Leaflet.dataLayer ll True
         ]
       )
     LineageLives serverId (Err error) ->
@@ -818,25 +821,29 @@ update msg model =
     MonumentList serverId (Err error) ->
       (model, Log.httpError "fetch monuments failed" error)
     DataLayer rangeSource serverId (Ok lives) ->
+      let clusters = clustersFromLives model.pointLocation model.time lives in
       ( { model
         | dataLayer = Data serverId
         , population = Data (populationFromLives model.time lives)
+        , clusters = Data clusters
         , player = if model.dataAnimated then Starting else Stopped
         }
           |> rebuildTimelines
       , Cmd.batch
-        [ Leaflet.dataLayer (List.map serverToLeaflet lives) False
+        [ Leaflet.displayClusters (Dict.map (\k v -> v.clusters) clusters.lineages)
+        , Leaflet.dataLayer (List.map serverToLeaflet lives) False
         ]
       )
         |> (if rangeSource == DataRange then addUpdate setRangeForData else identity)
     DataLayer _ serverId (Err error) ->
-      ( {model | dataLayer = Failed error, population = Failed error}
+      ( {model | dataLayer = Failed error, population = Failed error, clusters = Failed error}
       , Log.httpError "fetch data failed" error
       )
     NoDataLayer ->
       ( { model
         | dataLayer = NotRequested
         , population = NotRequested
+        , clusters = NotRequested
         , player = Stopped
         }
       , Cmd.batch
@@ -1126,11 +1133,11 @@ requireRecentLives : Model -> (Model, Cmd Msg)
 requireRecentLives model =
   case model.dataLayer of
     NotRequested ->
-      ( {model | dataLayer = Loading, population = Loading}
+      ( {model | dataLayer = Loading, population = Loading, clusters = Loading}
       , fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.withDefault 17)
       )
     Failed _ ->
-      ( {model | dataLayer = Loading, population = Loading}
+      ( {model | dataLayer = Loading, population = Loading, clusters = Loading}
       , fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.withDefault 17)
       )
     _ ->
@@ -1140,11 +1147,11 @@ requireSelectedLives : Model -> (Model, Cmd Msg)
 requireSelectedLives model =
   case model.dataLayer of
     NotRequested ->
-      ( {model | dataLayer = Loading, population = Loading}
+      ( {model | dataLayer = Loading, population = Loading, clusters = Loading}
       , fetchDataForTime model
       )
     Failed _ ->
-      ( {model | dataLayer = Loading, population = Loading}
+      ( {model | dataLayer = Loading, population = Loading, clusters = Loading}
       , fetchDataForTime model
       )
     _ ->
@@ -1269,6 +1276,7 @@ yesterday model =
   ( { model
     | dataLayer = Loading
     , population = Loading
+    , clusters = Loading
     , timeMode = FromNow
     , dataAnimated = True
     , hoursPeriod = 24
@@ -1286,6 +1294,7 @@ dailyReview model =
   ( { model
     | dataLayer = Loading
     , population = Loading
+    , clusters = Loading
     , timeMode = FromNow
     , pointColor = CauseOfDeathColor
     , pointLocation = DeathLocation
@@ -1294,6 +1303,25 @@ dailyReview model =
     [ Leaflet.pointColor CauseOfDeathColor
     , Leaflet.pointLocation DeathLocation
     , fetchDailyReview model
+    ]
+  )
+
+testData : Model -> (Model, Cmd Msg)
+testData model =
+  ( { model
+    | dataLayer = Loading
+    , population = Loading
+    , clusters = Loading
+    , timeMode = FromNow
+    }
+  , Cmd.batch
+    [ fetchDailyReview model
+    {-[ fetchLineage model.apiUrl
+      { serverId = 17
+      , epoch = 2
+      , lineage = 4485480
+      , playerid = 4485480
+      -}
     ]
   )
 
@@ -1642,6 +1670,7 @@ setServerUpdate serverId model =
           , startTime = inRange range model.startTime
           , dataLayer = NotRequested
           , population = NotRequested
+          , clusters = NotRequested
           , player = Stopped
           , spanData = mspanData
           }
@@ -1687,6 +1716,9 @@ checkServerLoaded (model, msg) =
           DailyReview ->
             ({model|pendingPreset = NoPreset}, msg)
               |> addUpdate setDailyReview
+          TestData ->
+            ({model|pendingPreset = NoPreset}, msg)
+              |> addUpdate testData
           NoPreset -> (model, msg)
       else
         (model, msg)
@@ -2360,7 +2392,7 @@ lifeSearchParameter term =
     Just number -> Url.int "playerid" number
     Nothing -> Url.string "q" term
 
-fetchLineage : String -> Life -> Cmd Msg
+fetchLineage : String -> LifeId l -> Cmd Msg
 fetchLineage baseUrl life =
   Http.request
     { url = Url.crossOrigin baseUrl ["lives"]

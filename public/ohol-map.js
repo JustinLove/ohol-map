@@ -160,6 +160,12 @@
     })
   })
 
+  var clusterOverlay = L.layerGroup([], {
+    className: 'cluster-overlay',
+    pane: 'overlayPane',
+  })
+  clusterOverlay.name = 'cluster overlay'
+
   var objectOverlay = L.layerGroup([], {className: 'object-overlay'})
   objectOverlay.name = 'object overlay'
 
@@ -226,6 +232,7 @@
     "Rift": riftOverlay,
     "Bands": null,
     "Life Data": dataOverlay,
+    "Homelands": clusterOverlay,
     "Object Search": objectOverlay,
     "Fade": baseFade,
     "Monuments": monumentOverlay,
@@ -260,6 +267,37 @@
         .addTo(layer)
       //L.circle([point.y, point.x], {radius: 21000, fill: false}).addTo(layer)
     })
+  }
+
+  var updateClusterLayer = function(layer, data) {
+    var lineages = legendControl.options.lineages || {}
+    if (data) {
+      L.Util.setOptions(layer, {data: data})
+    } else {
+      data = layer.options.data || [];
+    }
+    layer.clearLayers()
+    for (var lineageId in data) {
+      var life = lineages[lineageId]
+      var name = lineageId
+      if (life && life.name) {
+        var words = life.name.split(' ')
+        name = (words[1] || 'unnamed')
+      }
+      data[lineageId].forEach(function(point) {
+        var icon = L.divIcon({
+          html: name,
+          className: 'cluster-label',
+        })
+        point.monument = L.marker([point.y, point.x], {
+            icon: icon,
+            pane: 'overlayPane',
+          })
+          //.bindPopup(lineageId.toString())
+          .addTo(layer)
+        //L.circle([point.y, point.x], {radius: 400, fill: false}).addTo(layer)
+      })
+    }
   }
 
   var monumentsByTime = function(layer, ms, reason) {
@@ -4152,6 +4190,10 @@
               data: data,
             })
             resultPoints.redraw()
+            break;
+          case 'displayClusters':
+            updateClusterLayer(clusterOverlay, message.clusters)
+            clusterOverlay.addTo(map)
             break;
           case 'focusLife':
             var life = message.life;

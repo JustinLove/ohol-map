@@ -2,6 +2,7 @@ module Model exposing
   ( Arc
   , Config
   , Life
+  , LifeId
   , Sidebar(..)
   , SidebarMode(..)
   , SearchMode(..)
@@ -73,9 +74,11 @@ module Model exposing
   , SettingValue
   , Population
   , populationFromLives
+  , Clusters
+  , clustersFromLives
   )
 
-import Leaflet exposing (Point, PointColor(..), PointLocation(..), Animatable(..))
+import Leaflet exposing (Cluster, PointColor(..), PointLocation(..), Animatable(..))
 import OHOLData as Data
 import OHOLData.Parse as Parse
 import RemoteData exposing (RemoteData(..))
@@ -101,7 +104,7 @@ type alias ObjectId = Data.ObjectId
 
 type Center
   = DefaultCenter
-  | SetCenter Point
+  | SetCenter Leaflet.Point
 
 type alias Model =
   { location : Url
@@ -172,6 +175,7 @@ type alias Model =
   , dataLayer : RemoteData Int
   , lives : RemoteData (List Life)
   , population : RemoteData Population
+  , clusters : RemoteData Clusters
   , focusLife : Maybe Life
   , spanData : Maybe SpanData
   , maxiumMatchingObjects: Maybe Int
@@ -200,7 +204,7 @@ initialModel config location key =
   , time = Time.millisToPosix 0
   , notice = NoNotice
   , center = DefaultCenter
-  , pendingPreset = NoPreset
+  , pendingPreset = TestData
   , cachedApiUrl = config.cachedApiUrl
   , apiUrl = config.apiUrl
   , lineageUrl = config.lineageUrl
@@ -259,6 +263,7 @@ initialModel config location key =
   , dataLayer = NotRequested
   , lives = NotRequested
   , population = NotRequested
+  , clusters = NotRequested
   , focusLife = Nothing
   , spanData = Nothing
   , maxiumMatchingObjects = Just 20
@@ -289,7 +294,7 @@ type alias Config =
   , logSearch: String
   }
 
-defaultCenter = (Point 0 0 23)
+defaultCenter = (Leaflet.Point 0 0 23)
 
 type alias Life =
   { birthTime : Posix
@@ -305,6 +310,14 @@ type alias Life =
   , deathTime : Maybe Posix
   , deathX : Maybe Int
   , deathY : Maybe Int
+  }
+
+type alias LifeId r =
+  { r
+  | playerid : Int
+  , lineage : Int
+  , serverId : Int
+  , epoch : Int
   }
 
 type alias Server =
@@ -372,6 +385,7 @@ type Preset
   = NoPreset
   | Yesterday
   | DailyReview
+  | TestData
 
 type alias ScreenLocation = (Float, Float)
 
@@ -425,7 +439,7 @@ currentMonuments model =
     |> Maybe.map .monuments
     |> Maybe.withDefault NotRequested
 
-centerCoord : (Point -> a) -> Center -> Maybe a
+centerCoord : (Leaflet.Point -> a) -> Center -> Maybe a
 centerCoord f center =
   case center of
     DefaultCenter -> Nothing
@@ -449,6 +463,7 @@ centerUrl location mt preset ms center =
         NoPreset -> Nothing
         Yesterday -> Just <| Url.string "preset" "yesterday"
         DailyReview -> Just <| Url.string "preset" "daily-review"
+        TestData -> Nothing
     ]
       |> List.filterMap identity
       |> Url.toQuery
@@ -1060,3 +1075,128 @@ settingChanges now field worlds =
           ]
         Nothing -> []
       )
+
+type alias LocationSample =
+  { time : Posix
+  , lineage : Int
+  , x : Int
+  , y : Int
+  }
+
+type alias Lineage =
+  { locations : List LocationSample
+  , clusters : List Cluster
+  }
+
+type alias Clusters =
+  { locations : List LocationSample
+  , lineages : Dict Int Lineage
+  }
+
+locationsFromLives : PointLocation -> Posix -> List Data.Life -> List LocationSample
+locationsFromLives pointLocation default data =
+  let
+    samples =
+      case pointLocation of
+        BirthLocation ->
+          data
+            |> List.map (\{lineage, birthTime, birthX, birthY} ->
+                { time = birthTime
+                , lineage = lineage
+                , x = birthX
+                , y = birthY
+                }
+              )
+        DeathLocation ->
+          data
+            |> List.filterMap (\{lineage, deathTime, deathX, deathY} ->
+              Maybe.map3 (\dt dx dy ->
+                  { time = dt
+                  , lineage = lineage
+                  , x = dx
+                  , y = dy
+                  }
+                )
+                deathTime deathX deathY
+              )
+  in
+    samples-- |> List.sortBy (.time>>Time.posixToMillis)
+
+clustersFromLives : PointLocation -> Posix -> List Data.Life -> Clusters
+clustersFromLives pointLocation default data =
+  let
+    locations = locationsFromLives pointLocation default data
+    lineageLocations = groupLineages locations
+  in
+  { locations = locations
+  , lineages = mapValues lineageClusters lineageLocations
+  }
+
+groupLineages : List LocationSample -> Dict Int (List LocationSample)
+groupLineages = groupListToDict .lineage
+
+groupListToDict : (a -> comparable) -> List a -> Dict comparable (List a)
+groupListToDict toKey list =
+  List.foldl (\value ->
+      Dict.update (toKey value) (\mprev ->
+        case mprev of
+          Just prev ->
+            Just (value :: prev)
+          Nothing ->
+            Just ([ value ])
+      )
+    )
+    Dict.empty
+    list
+
+mapValues : (a -> b) -> Dict comparable a -> Dict comparable b
+mapValues f dict =
+  Dict.map (\_ a -> f a) dict
+
+clustering : List LocationSample -> List Cluster
+clustering locations =
+  List.foldl clusterStep [] locations
+
+clusterStep : LocationSample -> List Cluster -> List Cluster
+clusterStep location clusters =
+  case nearestCluster 400 location clusters of
+    Just best ->
+      clusters
+    Nothing ->
+      { x = location.x
+      , y = location.y
+      } :: clusters
+
+nearestCluster : Int -> LocationSample -> List Cluster -> Maybe Cluster
+nearestCluster range {x, y} clusters =
+  let
+    range2 = range*range
+  in
+  (List.foldl (\candidate best ->
+      let
+        dx = x - candidate.x
+        dy = y - candidate.y
+        d = dx*dx + dy*dy
+      in
+      if d >= range2 then
+        best
+      else
+        case best of
+          Just (bd, bc) ->
+            if d < bd then
+              Just (d, candidate)
+            else
+              Just (bd, bc)
+          Nothing ->
+            Just (d, candidate)
+    )
+    Nothing
+    clusters
+  )
+    |> Maybe.map Tuple.second
+
+lineageClusters : List LocationSample -> Lineage
+lineageClusters locations =
+  { locations = locations
+  , clusters = clustering locations
+  }
