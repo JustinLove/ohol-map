@@ -10,7 +10,7 @@
   - x count in cluster for outlier removal
   - x center adjustment
   - x label improvements
-  - size filter relative to zoom
+  - x size filter relative to zoom
   - fast enough for animation?
 - object search header locked
 - animated status when zoom too large for visible layers - still lives

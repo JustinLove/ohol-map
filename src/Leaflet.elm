@@ -342,6 +342,7 @@ showActivityMapBelowZoom zoom =
 
 type Event
   = MoveEnd Point
+  | ZoomEnd Int
   | OverlayAdd String (Maybe Int)
   | OverlayRemove String
   | SelectPoints (List Life)
@@ -366,6 +367,9 @@ eventDecoder =
       case kind of
         "moveend" ->
           Decode.map MoveEnd pointDecoder
+        "zoomend" ->
+          Decode.map ZoomEnd
+            (Decode.field "z" Decode.int)
         "overlayadd" ->
           Decode.map2 OverlayAdd
             (Decode.field "name" Decode.string)

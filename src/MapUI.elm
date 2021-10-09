@@ -485,6 +485,12 @@ update msg model =
       , Cmd.none
       )
         |> replaceUrl "MoveEnd"
+    Event (Ok (Leaflet.ZoomEnd zoom)) ->
+      ( model
+      , model.clusters
+        |> RemoteData.map ((displayClusters zoom)>>Leaflet.displayClusters)
+        |> RemoteData.withDefault Cmd.none
+      )
     Event (Ok (Leaflet.OverlayAdd "Life Data" _)) ->
       requireLives model
     Event (Ok (Leaflet.OverlayRemove "Life Data")) ->
@@ -582,6 +588,9 @@ update msg model =
         ll = serverLives
           |> List.map serverToLeaflet
         clusters = clustersFromLives model.pointLocation model.time serverLives
+        zoom = case model.center of
+          DefaultCenter -> 24
+          SetCenter center -> center.z
       in
       ( { model
         | lives = Data lives
@@ -591,7 +600,7 @@ update msg model =
         , pointColor = ChainColor -- something other than CauseOfDeathColor in order to differentiate with daily review
         }
       , Cmd.batch
-        [ Leaflet.displayClusters (Dict.map (\k v -> v.clusters) clusters.lineages)
+        [ Leaflet.displayClusters (displayClusters zoom clusters)
         , Leaflet.dataLayer ll True
         ]
       )
@@ -821,7 +830,12 @@ update msg model =
     MonumentList serverId (Err error) ->
       (model, Log.httpError "fetch monuments failed" error)
     DataLayer rangeSource serverId (Ok lives) ->
-      let clusters = clustersFromLives model.pointLocation model.time lives in
+      let
+        clusters = clustersFromLives model.pointLocation model.time lives
+        zoom = case model.center of
+          DefaultCenter -> 24
+          SetCenter center -> center.z
+      in
       ( { model
         | dataLayer = Data serverId
         , population = Data (populationFromLives model.time lives)
@@ -830,7 +844,7 @@ update msg model =
         }
           |> rebuildTimelines
       , Cmd.batch
-        [ Leaflet.displayClusters (Dict.map (\k v -> v.clusters) clusters.lineages)
+        [ Leaflet.displayClusters (displayClusters zoom clusters)
         , Leaflet.dataLayer (List.map serverToLeaflet lives) False
         ]
       )

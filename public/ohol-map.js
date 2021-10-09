@@ -269,7 +269,7 @@
     })
   }
 
-  var updateClusterLayer = function(layer, data) {
+  var updateClusterLayer = function(layer, data, zoom) {
     var lineages = legendControl.options.lineages || {}
     if (data) {
       L.Util.setOptions(layer, {data: data})
@@ -284,15 +284,7 @@
         var words = life.name.split(' ')
         name = (words[1] || 'unnamed')
       }
-      var threashold = 4
-      var first = true
       data[lineageId].forEach(function(point) {
-        if (point.members <= threashold) return
-        if (first) {
-          threashold = Math.log(point.members)
-          first = false
-        }
-        //threashold = threashold * 2
         var icon = L.divIcon({
           html: "<div>"+name+"</div>",// + " " + point.members.toString(),
           className: 'cluster-label',
@@ -4119,6 +4111,13 @@
           z: ev.target.getZoom()
         })
       })
+      map.on('zoomend', function(ev) {
+        var center = ev.target.getCenter()
+        app.ports.leafletEvent.send({
+          kind: 'zoomend',
+          z: ev.target.getZoom()
+        })
+      })
       map.on('overlayadd', function(ev) {
         app.ports.leafletEvent.send({
           kind: 'overlayadd',
@@ -4202,7 +4201,7 @@
             resultPoints.redraw()
             break;
           case 'displayClusters':
-            updateClusterLayer(clusterOverlay, message.clusters)
+            updateClusterLayer(clusterOverlay, message.clusters, map.getZoom())
             clusterOverlay.addTo(map)
             break;
           case 'focusLife':

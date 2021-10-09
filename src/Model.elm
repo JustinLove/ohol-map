@@ -76,6 +76,7 @@ module Model exposing
   , populationFromLives
   , Clusters
   , clustersFromLives
+  , displayClusters
   )
 
 import Leaflet exposing (Cluster, PointColor(..), PointLocation(..), Animatable(..))
@@ -1214,3 +1215,13 @@ lineageClusters locations =
   { locations = locations
   , clusters = clustering locations
   }
+
+displayClusters : Int -> Clusters -> Dict Int (List Cluster)
+displayClusters zoom clusters =
+  let threashold = 2^(26-zoom) in
+  clusters
+    |> .lineages
+    |> Dict.map (\k v ->
+        v.clusters
+          |> List.filter (\{members} -> members > threashold)
+      )
