@@ -501,6 +501,11 @@ update msg model =
       ({model | monumentsVisible = True}, Cmd.none)
     Event (Ok (Leaflet.OverlayRemove "Monuments")) ->
       ({model | monumentsVisible = False}, Cmd.none)
+    Event (Ok (Leaflet.OverlayAdd "Clusters" _)) ->
+      ({model | clustersVisible = True}, Cmd.none)
+        |> addCommand displayClustersCommand
+    Event (Ok (Leaflet.OverlayRemove "Clusters")) ->
+      ({model | clustersVisible = False}, Cmd.none)
     Event (Ok (Leaflet.OverlayAdd "Activity Map" _)) ->
       ({model | activityMapVisible = True}, Cmd.none)
     Event (Ok (Leaflet.OverlayRemove "Activity Map")) ->
@@ -1169,11 +1174,12 @@ toggleAnimated animated model =
     , player = if animated == False then Stopped else model.player
     }
       |> updateObjectSearch
-    , Leaflet.animOverlay animated
+  , Cmd.none
   )
     |> addUpdate requireObjectSearchIndex
     |> addUpdate requireObjectSearch
     |> addCommand displayClustersCommand
+    |> appendCommand (Leaflet.animOverlay animated)
 
 displayClustersCommand : Model -> Cmd Msg
 displayClustersCommand model =
@@ -1187,17 +1193,20 @@ currentZoom center =
 
 displayClustersAtZoomCommand : Int -> Model -> Cmd Msg
 displayClustersAtZoomCommand zoom model =
-  model.clusters
-    |> RemoteData.map (\c ->
-      if model.dataAnimated then
-        case model.mapTime of
-          Just time -> clustersAtTime time c
-          Nothing -> c
-      else
-        c
-      )
-    |> RemoteData.map ((displayClusters model.dataAnimated zoom)>>Leaflet.displayClusters)
-    |> RemoteData.withDefault Cmd.none
+  if model.clustersVisible then
+    model.clusters
+      |> RemoteData.map (\c ->
+        if model.dataAnimated then
+          case model.mapTime of
+            Just time -> clustersAtTime time c
+            Nothing -> c
+        else
+          c
+        )
+      |> RemoteData.map ((displayClusters model.dataAnimated zoom)>>Leaflet.displayClusters)
+      |> RemoteData.withDefault Cmd.none
+  else
+    Cmd.none
 
 makeObjectMap : List ObjectId -> List String -> Dict ObjectId String
 makeObjectMap ids names =

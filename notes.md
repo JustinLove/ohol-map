@@ -12,8 +12,9 @@
   - x label improvements
   - x size filter relative to zoom
   - x fast enough for animation?
-  - only update when on
+  - x only update when on
   - position stability
+  - track static family names
 - object search header locked
 - animated status when zoom too large for visible layers - still lives
 - assembling log search spans?

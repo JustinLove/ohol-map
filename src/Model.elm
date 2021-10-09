@@ -152,6 +152,7 @@ type alias Model =
   , monumentsVisible : Bool
   , showOnlyCurrentMonuments : Bool
   , monumentsOnTimeline : Bool
+  , clustersVisible : Bool
   , gameSecondsPerSecond : Int
   , framesPerSecond : Int
   , timeRange : Maybe (Posix, Posix)
@@ -240,6 +241,7 @@ initialModel config location key =
   , monumentsVisible = True
   , showOnlyCurrentMonuments = True
   , monumentsOnTimeline = False
+  , clustersVisible = True
   , gameSecondsPerSecond = 600
   , framesPerSecond = 10
   , timeRange = Nothing

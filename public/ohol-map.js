@@ -4092,6 +4092,8 @@
     //overlays['graticule'].addTo(map)
     //base['Fractal'].addTo(map)
     //base['Biome'].addTo(map)
+    clusterOverlay.addTo(map)
+
     //map.addControl(animToggle)
 
     layersControl.addTo(map)
@@ -4202,7 +4204,7 @@
             break;
           case 'displayClusters':
             updateClusterLayer(clusterOverlay, message.clusters, map.getZoom())
-            clusterOverlay.addTo(map)
+            //clusterOverlay.addTo(map)
             break;
           case 'focusLife':
             var life = message.life;
