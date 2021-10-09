@@ -1156,15 +1156,17 @@ mapValues f dict =
 clustering : List LocationSample -> List Cluster
 clustering locations =
   List.foldl clusterStep [] locations
+    |> List.sortBy (\{members} -> -members)
 
 clusterStep : LocationSample -> List Cluster -> List Cluster
 clusterStep location clusters =
-  case nearestCluster 400 location clusters of
+  case nearestCluster 200 location clusters of
     Just best ->
       List.map (clusterUpdate location best) clusters
     Nothing ->
       { x = location.x
       , y = location.y
+      , members = 1
       } :: clusters
 
 nearestCluster : Int -> LocationSample -> List Cluster -> Maybe Cluster
@@ -1202,6 +1204,7 @@ clusterUpdate location previous cluster =
   if cluster == previous then
     { x = cluster.x + (round ((toFloat (location.x - cluster.x)) * clusterFactor))
     , y = cluster.y + (round ((toFloat (location.y - cluster.y)) * clusterFactor))
+    , members = cluster.members + 1
     }
   else
     cluster

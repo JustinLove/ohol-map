@@ -22,5 +22,6 @@ type alias Life =
 type alias Cluster =
   { x : Int
   , y : Int
+  , members : Int
   }
 

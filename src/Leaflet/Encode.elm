@@ -42,10 +42,11 @@ clusters data =
   dict String.fromInt (list cluster) data
 
 cluster : Cluster -> Value
-cluster {x, y} =
+cluster {x, y, members} =
   object
     [ ("x", int x)
     , ("y", int y)
+    , ("members", int members)
     ]
 
 timeStamp : Posix -> Value

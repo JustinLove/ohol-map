@@ -284,9 +284,17 @@
         var words = life.name.split(' ')
         name = (words[1] || 'unnamed')
       }
+      var threashold = 4
+      var first = true
       data[lineageId].forEach(function(point) {
+        if (point.members <= threashold) return
+        if (first) {
+          threashold = Math.log(point.members)
+          first = false
+        }
+        //threashold = threashold * 2
         var icon = L.divIcon({
-          html: name,
+          html: name,// + " " + point.members.toString(),
           className: 'cluster-label',
         })
         point.monument = L.marker([point.y, point.x], {
@@ -295,7 +303,7 @@
           })
           //.bindPopup(lineageId.toString())
           .addTo(layer)
-        //L.circle([point.y, point.x], {radius: 400, fill: false}).addTo(layer)
+        //L.circle([point.y, point.x], {radius: 200, fill: false}).addTo(layer)
       })
     }
   }
