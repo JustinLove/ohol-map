@@ -487,9 +487,7 @@ update msg model =
         |> replaceUrl "MoveEnd"
     Event (Ok (Leaflet.ZoomEnd zoom)) ->
       ( model
-      , model.clusters
-        |> RemoteData.map ((displayClusters zoom)>>Leaflet.displayClusters)
-        |> RemoteData.withDefault Cmd.none
+      , displayClustersAtZoomCommand zoom model
       )
     Event (Ok (Leaflet.OverlayAdd "Life Data" _)) ->
       requireLives model
@@ -588,9 +586,6 @@ update msg model =
         ll = serverLives
           |> List.map serverToLeaflet
         clusters = clustersFromLives model.pointLocation model.time serverLives
-        zoom = case model.center of
-          DefaultCenter -> 24
-          SetCenter center -> center.z
       in
       ( { model
         | lives = Data lives
@@ -599,11 +594,10 @@ update msg model =
         , clusters = Data clusters
         , pointColor = ChainColor -- something other than CauseOfDeathColor in order to differentiate with daily review
         }
-      , Cmd.batch
-        [ Leaflet.displayClusters (displayClusters zoom clusters)
-        , Leaflet.dataLayer ll True
-        ]
+      , Cmd.none
       )
+        |> addCommand displayClustersCommand
+        |> appendCommand (Leaflet.dataLayer ll True)
     LineageLives serverId (Err error) ->
       ({model | lives = Failed error}, Log.httpError "fetch lives failed" error)
     ServerList (Ok serverList) ->
@@ -832,9 +826,6 @@ update msg model =
     DataLayer rangeSource serverId (Ok lives) ->
       let
         clusters = clustersFromLives model.pointLocation model.time lives
-        zoom = case model.center of
-          DefaultCenter -> 24
-          SetCenter center -> center.z
       in
       ( { model
         | dataLayer = Data serverId
@@ -843,11 +834,10 @@ update msg model =
         , player = if model.dataAnimated then Starting else Stopped
         }
           |> rebuildTimelines
-      , Cmd.batch
-        [ Leaflet.displayClusters (displayClusters zoom clusters)
-        , Leaflet.dataLayer (List.map serverToLeaflet lives) False
-        ]
+      , Cmd.none
       )
+        |> addCommand displayClustersCommand
+        |> appendCommand (Leaflet.dataLayer (List.map serverToLeaflet lives) False)
         |> (if rangeSource == DataRange then addUpdate setRangeForData else identity)
     DataLayer _ serverId (Err error) ->
       ( {model | dataLayer = Failed error, population = Failed error, clusters = Failed error}
@@ -942,6 +932,7 @@ update msg model =
                   }
                 , Leaflet.currentTime msCappedTime
                 )
+                  |> addCommand displayClustersCommand
     UpdateUrl _ ->
       ({model | urlTime = model.mapTime}, replaceUrlCommand model)
     UpdateHighlightedObjects _ ->
@@ -1182,6 +1173,31 @@ toggleAnimated animated model =
   )
     |> addUpdate requireObjectSearchIndex
     |> addUpdate requireObjectSearch
+    |> addCommand displayClustersCommand
+
+displayClustersCommand : Model -> Cmd Msg
+displayClustersCommand model =
+  displayClustersAtZoomCommand (currentZoom model.center) model
+
+currentZoom : Center -> Int
+currentZoom center =
+  case center of
+    DefaultCenter -> 24
+    SetCenter c -> c.z
+
+displayClustersAtZoomCommand : Int -> Model -> Cmd Msg
+displayClustersAtZoomCommand zoom model =
+  model.clusters
+    |> RemoteData.map (\c ->
+      if model.dataAnimated then
+        case model.mapTime of
+          Just time -> clustersAtTime time c
+          Nothing -> c
+      else
+        c
+      )
+    |> RemoteData.map ((displayClusters model.dataAnimated zoom)>>Leaflet.displayClusters)
+    |> RemoteData.withDefault Cmd.none
 
 makeObjectMap : List ObjectId -> List String -> Dict ObjectId String
 makeObjectMap ids names =
@@ -1400,6 +1416,7 @@ scrubTime time model =
       |> addUpdate requireObjectSearchIndex
       |> addUpdate requireObjectSearch
       |> addUpdate requireNotableObjects
+      |> addCommand displayClustersCommand
   else
     (model, Cmd.none)
 

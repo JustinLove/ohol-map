@@ -76,6 +76,7 @@ module Model exposing
   , populationFromLives
   , Clusters
   , clustersFromLives
+  , clustersAtTime
   , displayClusters
   )
 
@@ -1133,6 +1134,20 @@ clustersFromLives pointLocation default data =
   , lineages = mapValues lineageClusters lineageLocations
   }
 
+clustersAtTime : Posix -> Clusters -> Clusters
+clustersAtTime time clusters =
+  let
+    start = time
+      |> Time.posixToMillis
+      |> (\x -> x - 60*60*1000)
+      |> Time.millisToPosix
+    range = (start, time)
+    locationsAtTime = clusters.locations
+      |> List.filter (.time>>(isInRange range))
+    lineageLocations = groupLineages locationsAtTime
+  in
+  { clusters | lineages = mapValues lineageClusters lineageLocations }
+
 groupLineages : List LocationSample -> Dict Int (List LocationSample)
 groupLineages = groupListToDict .lineage
 
@@ -1216,9 +1231,15 @@ lineageClusters locations =
   , clusters = clustering locations
   }
 
-displayClusters : Int -> Clusters -> Dict Int (List Cluster)
-displayClusters zoom clusters =
-  let threashold = 2^(26-zoom) in
+displayClusters : Bool -> Int -> Clusters -> Dict Int (List Cluster)
+displayClusters dataAnimated zoom clusters =
+  let
+    threashold =
+      if dataAnimated then
+        2
+      else
+        2^(26-zoom)
+  in
   clusters
     |> .lineages
     |> Dict.map (\k v ->

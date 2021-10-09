@@ -11,7 +11,9 @@
   - x center adjustment
   - x label improvements
   - x size filter relative to zoom
-  - fast enough for animation?
+  - x fast enough for animation?
+  - only update when on
+  - position stability
 - object search header locked
 - animated status when zoom too large for visible layers - still lives
 - assembling log search spans?
