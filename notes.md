@@ -8,7 +8,7 @@
 - x why does anim toggle need both toggleAnimated if we are calling baseLayerByTime?
 - town cluster labels
   - count in cluster for outlier removal
-  - center adjustment
+  - x center adjustment
   - label improvements
   - fast enough for animation?
 - object search header locked

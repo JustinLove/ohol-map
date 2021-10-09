@@ -1161,7 +1161,7 @@ clusterStep : LocationSample -> List Cluster -> List Cluster
 clusterStep location clusters =
   case nearestCluster 400 location clusters of
     Just best ->
-      clusters
+      List.map (clusterUpdate location best) clusters
     Nothing ->
       { x = location.x
       , y = location.y
@@ -1194,6 +1194,17 @@ nearestCluster range {x, y} clusters =
     clusters
   )
     |> Maybe.map Tuple.second
+
+clusterFactor = 0.5
+
+clusterUpdate : LocationSample -> Cluster -> Cluster -> Cluster
+clusterUpdate location previous cluster =
+  if cluster == previous then
+    { x = cluster.x + (round ((toFloat (location.x - cluster.x)) * clusterFactor))
+    , y = cluster.y + (round ((toFloat (location.y - cluster.y)) * clusterFactor))
+    }
+  else
+    cluster
 
 lineageClusters : List LocationSample -> Lineage
 lineageClusters locations =
