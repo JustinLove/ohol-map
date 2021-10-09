@@ -296,6 +296,8 @@
         var icon = L.divIcon({
           html: name,// + " " + point.members.toString(),
           className: 'cluster-label',
+          //iconSize: [12, 12],
+          iconAnchor: [-12, 12 + 12],
         })
         point.monument = L.marker([point.y, point.x], {
             icon: icon,

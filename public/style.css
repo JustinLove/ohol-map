@@ -61,6 +61,17 @@ body {
   background: transparent;
 }
 
+.cluster-label:before {
+  content: "";
+  position: absolute;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  width: 12px;
+  height: 12px;
+  transform: rotate(135deg);
+  transform-origin: 0% 100%;
+}
+
 .object-icon {
   height: 100%;
   object-fit: contain;
@@ -169,6 +180,15 @@ svg.icon {
   color: rgb(59, 153, 250);
 }
 
+.light .cluster-label {
+  color: #141414;
+  text-shadow: 1px 1px rgb(221, 221, 221);
+}
+
+.light .cluster-label:before {
+  border-bottom-color: #141414;
+}
+
 .light .icon-github { color: #24292e; }
 .light .icon-twitter { color: #55acee; }
 
@@ -258,6 +278,15 @@ svg.icon {
 .dark .leaflet-touch .leaflet-control-layers,
 .dark .leaflet-touch .leaflet-bar {
   border-color: rgba(255,255,255,0.2);
+}
+
+.dark .cluster-label {
+  color: #ddd;
+  text-shadow: 1px 1px #141414;
+}
+
+.dark .cluster-label:before {
+  border-bottom-color: #ddd;
 }
 
 .dark .icon-github { color: #777; }
