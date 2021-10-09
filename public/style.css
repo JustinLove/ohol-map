@@ -58,7 +58,15 @@ body {
 }
 
 .cluster-label {
+  /* leaflet supplied box, fixed size */
   background: transparent;
+}
+
+/* inner div, auto to text width */
+.cluster-label div {
+  position: absolute;
+  padding-left: 0.3em;
+  padding-right: 0.3em;
 }
 
 .cluster-label:before {
@@ -185,6 +193,10 @@ svg.icon {
   text-shadow: 1px 1px rgb(221, 221, 221);
 }
 
+.light .cluster-label div {
+  background-color: rgba(221, 221, 221, 0.4);
+}
+
 .light .cluster-label:before {
   border-bottom-color: #141414;
 }
@@ -283,6 +295,10 @@ svg.icon {
 .dark .cluster-label {
   color: #ddd;
   text-shadow: 1px 1px #141414;
+}
+
+.dark .cluster-label div {
+  background-color: rgba(20, 20, 20, 0.4);
 }
 
 .dark .cluster-label:before {

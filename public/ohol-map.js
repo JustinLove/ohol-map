@@ -294,7 +294,7 @@
         }
         //threashold = threashold * 2
         var icon = L.divIcon({
-          html: name,// + " " + point.members.toString(),
+          html: "<div>"+name+"</div>",// + " " + point.members.toString(),
           className: 'cluster-label',
           //iconSize: [12, 12],
           iconAnchor: [-12, 12 + 12],

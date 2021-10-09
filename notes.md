@@ -9,7 +9,8 @@
 - town cluster labels
   - x count in cluster for outlier removal
   - x center adjustment
-  - label improvements
+  - x label improvements
+  - size filter relative to zoom
   - fast enough for animation?
 - object search header locked
 - animated status when zoom too large for visible layers - still lives
