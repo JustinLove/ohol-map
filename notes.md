@@ -15,7 +15,7 @@
   - x only update when on
   - xx birth/death mode
   - x marker cursor
-  - position stability
+  - x position stability
   - track static family names
 - object search header locked
 - animated status when zoom too large for visible layers - still lives

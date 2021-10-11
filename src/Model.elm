@@ -80,7 +80,7 @@ module Model exposing
   , displayClusters
   )
 
-import Leaflet exposing (Cluster, PointColor(..), PointLocation(..), Animatable(..))
+import Leaflet exposing (PointColor(..), PointLocation(..), Animatable(..))
 import OHOLData as Data
 import OHOLData.Parse as Parse
 import RemoteData exposing (RemoteData(..))
@@ -1087,6 +1087,12 @@ type alias LocationSample =
   , y : Int
   }
 
+type alias Cluster =
+  { x : Int
+  , y : Int
+  , members : Int
+  }
+
 type alias Lineage =
   { locations : List LocationSample
   , clusters : List Cluster
@@ -1215,7 +1221,7 @@ nearestCluster range {x, y} clusters =
   )
     |> Maybe.map Tuple.second
 
-clusterFactor = 0.5
+clusterFactor = 0.3
 
 clusterUpdate : LocationSample -> Cluster -> Cluster -> Cluster
 clusterUpdate location previous cluster =
@@ -1247,4 +1253,14 @@ displayClusters dataAnimated zoom clusters =
     |> Dict.map (\k v ->
         v.clusters
           |> List.filter (\{members} -> members > threashold)
+          |> List.map (\{x,y,members} ->
+              { x = collapseToWellGrid x
+              , y = collapseToWellGrid y
+              , members = members
+              }
+            )
       )
+
+collapseToWellGrid : Int -> Int
+collapseToWellGrid x =
+  x + 20 - (modBy 40 (x + 20))
