@@ -346,6 +346,7 @@ type Event
   | OverlayAdd String (Maybe Int)
   | OverlayRemove String
   | SelectPoints (List Life)
+  | SelectLineage Int
   | DataRange Posix Posix
   | SidebarToggle
   | TimelineToggle
@@ -378,6 +379,8 @@ eventDecoder =
           Decode.map OverlayRemove (Decode.field "name" Decode.string)
         "selectPoints" ->
           Decode.map SelectPoints (Decode.field "lives" Decode.lives)
+        "selectLineage" ->
+          Decode.map SelectLineage (Decode.field "lineage" Decode.int)
         "dataRange" ->
           Decode.map2 DataRange
             (Decode.field "min" Decode.timeStamp)

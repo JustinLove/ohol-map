@@ -537,6 +537,23 @@ update msg model =
         ]
       )
         |> addCommand sidebarCommand
+    Event (Ok (Leaflet.SelectLineage lineageId)) ->
+      let
+        cluster = model.clusters
+          |> RemoteData.map .lineages
+          |> RemoteData.toMaybe
+          |> Maybe.andThen (Dict.get lineageId)
+          |> Maybe.map .clusters
+          |> Maybe.andThen List.head
+      in
+      ( model
+      , Cmd.batch
+        [ case cluster of
+          Just {x,y} -> Leaflet.setView {x = x, y = y, z = 26}
+          Nothing -> Cmd.none
+        , Leaflet.overlayVisible "Family Names" True
+        ]
+      )
     Event (Ok (Leaflet.DataRange min max)) ->
       let
         mapTime = model.mapTime

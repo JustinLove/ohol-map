@@ -53,6 +53,7 @@ body {
 }
 
 .swatch {
+  display: block;
   padding: 1px 4px;
   margin-top: 2px;
 }

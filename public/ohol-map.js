@@ -302,7 +302,7 @@
           })
         }
 
-        point.monument = L.marker([point.y + offset, point.x], {
+        point.marker = L.marker([point.y + offset, point.x], {
             icon: nameIcons[iconKey],
             pane: 'overlayPane',
             interactive: false,
@@ -3833,7 +3833,7 @@
             })
           for (var i in lineages) {
             var life = lineages[i]
-            var swatch = L.DomUtil.create('div', 'swatch', container)
+            var swatch = L.DomUtil.create('a', 'swatch leaflet-interactive', container)
             if (height > maxHeight) {
               swatch.style = 'color: black'
               swatch.innerHTML = "...."
@@ -3847,6 +3847,7 @@
               swatch.innerHTML = (words[1] || 'unnamed')
             }
             height += 22
+            L.DomEvent.on(swatch, 'click', focusLineage(life.lineage, this._map), this);
           }
           break;
         case 'birthTimeColor':
@@ -3948,6 +3949,15 @@
     }
 
     return lineages
+  }
+
+  var focusLineage = function(lineageId, map) {
+    return function(e) {
+      app.ports.leafletEvent.send({
+        kind: 'selectLineage',
+        lineage: lineageId,
+      })
+    }
   }
 
   L.Control.PointLegend = L.Control.extend({
