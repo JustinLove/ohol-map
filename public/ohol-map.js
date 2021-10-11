@@ -3888,28 +3888,13 @@
     },
     updateLineages: function() {
       if (this._time == this.options.time && this._dataAnimated == this.options.dataAnimated) return
-      var time = this.options.time/1000
-      var lineages = {}
-      var data = this.options.data
-      var dataAnimated = this.options.dataAnimated
-      for (var i in data) {
-        var point = data[i]
-        if (dataAnimated) {
-          var death_time = (point.death_time || (point.birth_time + 3600))
-          if (time < point.birth_time || death_time < time) {
-            continue;
-          }
-        }
-
-        var key = (point.lineage || 0).toString()
-        var prior = lineages[key]
-        if (prior && prior.name && !point.name) continue;
-        if (!prior || !prior.name || point.chain > prior.chain) {
-          lineages[key] = point
-        }
+      if (this._data != this.options.data) {
+        this._defaultLineages = calculateLineages(false, 0, {}, this.options.data)
       }
-      L.Util.setOptions(this, {lineages: lineages})
+      L.Util.setOptions(this, {lineages: calculateLineages(this.options.dataAnimated, this.options.time, this._defaultLineages, this.options.data)})
       this._time = this.options.time
+      this._dataAnimated = this.options.dataAnimated
+      this._data = this.options.data
     },
   });
 
@@ -3918,6 +3903,37 @@
   }
 
   var legendControl = L.control.legend({ position: 'topleft' })
+
+  var calculateLineages = function(dataAnimated, ms, defaults, data) {
+    var time = ms/1000
+    var lineages = {}
+    for (var i in data) {
+      var point = data[i]
+      if (dataAnimated) {
+        var death_time = (point.death_time || (point.birth_time + 3600))
+        if (time < point.birth_time || death_time < time) {
+          continue;
+        }
+      }
+
+      var key = (point.lineage || 0).toString()
+      var prior = lineages[key]
+      if (prior && prior.name && !point.name) continue;
+      if (!prior || !prior.name || point.chain > prior.chain) {
+        lineages[key] = point
+      }
+    }
+
+    for (var key in lineages) {
+      if (!defaults[key]) continue
+      var prior = lineages[key]
+      if (!prior || !prior.name) {
+        lineages[key] = defaults[key]
+      }
+    }
+
+    return lineages
+  }
 
   L.Control.PointLegend = L.Control.extend({
     options: {

@@ -16,7 +16,8 @@
   - xx birth/death mode
   - x marker cursor
   - x position stability
-  - track static family names
+    - multiple names collapse to same well
+  - x track static family names
 - object search header locked
 - animated status when zoom too large for visible layers - still lives
 - assembling log search spans?
