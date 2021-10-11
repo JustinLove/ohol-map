@@ -269,6 +269,8 @@
     })
   }
 
+  var nameIcons = {}
+
   var updateClusterLayer = function(layer, data, zoom) {
     var lineages = legendControl.options.lineages || {}
     if (data) {
@@ -285,14 +287,16 @@
         name = (words[1] || 'unnamed')
       }
       data[lineageId].forEach(function(point) {
-        var icon = L.divIcon({
-          html: "<div>"+name+"</div>",// + " " + point.members.toString(),
-          className: 'cluster-label',
-          //iconSize: [12, 12],
-          iconAnchor: [-12, 12 + 12],
-        })
+        if (!nameIcons[name]) {
+          nameIcons[name] = L.divIcon({
+            html: "<div>"+name+"</div>",// + " " + point.members.toString(),
+            className: 'cluster-label',
+            //iconSize: [12, 12],
+            iconAnchor: [-12, 12 + 12],
+          })
+        }
         point.monument = L.marker([point.y, point.x], {
-            icon: icon,
+            icon: nameIcons[name],
             pane: 'overlayPane',
             interactive: false,
           })
