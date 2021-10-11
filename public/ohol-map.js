@@ -294,6 +294,7 @@
         point.monument = L.marker([point.y, point.x], {
             icon: icon,
             pane: 'overlayPane',
+            interactive: false,
           })
           //.bindPopup(lineageId.toString())
           .addTo(layer)
@@ -355,6 +356,7 @@
       point.monument = L.marker([point.y, point.x], {
           icon: icons[point.id],
           pane: 'landmarkPane',
+          interactive: false,
         })
         .addTo(layer)
     })

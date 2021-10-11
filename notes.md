@@ -14,7 +14,7 @@
   - x fast enough for animation?
   - x only update when on
   - xx birth/death mode
-  - marker cursor
+  - x marker cursor
   - position stability
   - track static family names
 - object search header locked
