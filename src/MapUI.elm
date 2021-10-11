@@ -481,6 +481,10 @@ update msg model =
       ( {model | dataLayer = Loading, population = Loading, clusters = Loading}
       , fetchDataForTime model
       )
+    UI (View.ToggleTimelineVisible visible) ->
+      ( { model | timelineVisible = visible }
+      , Leaflet.timelineVisible visible
+      )
     Event (Ok (Leaflet.MoveEnd point)) ->
       ( {model|center = SetCenter point}
       , Cmd.none

@@ -103,6 +103,7 @@ type Msg
   | SelectArc (Maybe Arc)
   | SelectArcCoarse (Maybe Arc)
   | SelectShow
+  | ToggleTimelineVisible Bool
 
 timeNoticeDuration = 6000
 
@@ -265,7 +266,7 @@ displayTimelineLazy model =
               }
           , ( model.currentArc
               |> Maybe.andThen (yearOfArc labelTime)
-              |> Maybe.map (\s -> text (", " ++ s))
+              |> Maybe.map (\s -> el [ width (shrink |> minimum 120) ] (text (", " ++ s)))
               |> Maybe.withDefault none
             )
           {-, ( labelTime
@@ -274,8 +275,14 @@ displayTimelineLazy model =
               |> (\s -> text (", " ++ s))
             ) -}
           , ( labelNote
-              |> Maybe.map (\s -> text (", " ++ s))
-              |> Maybe.withDefault none
+            |> Maybe.map (\s -> text (", " ++ s))
+            |> Maybe.withDefault (
+              row []
+                [ el [width (px 10)] none
+                , el [ Font.size 16, Font.color palette.deemphasis, alignRight, padding 2 ]
+                  (text "drag bar to select time range")
+                ]
+              )
             )
           ]
         , column [ width fill ]
@@ -1415,7 +1422,7 @@ dateWithSeconds zone time =
 dateWithZone : Time.Zone -> Posix -> Palette -> Element Msg
 dateWithZone zone time palette =
   row []
-    [ text (dateWithSeconds zone time)
+    [ el [ width (shrink |> minimum 190) ] (text (dateWithSeconds zone time))
     , text " "
     , (if zone == Time.utc then
         "utc"
@@ -1442,7 +1449,7 @@ formatMonth month =
     Time.Nov -> "11"
     Time.Dec -> "12"
 
---yearOfArc : Posix -> Arc -> Maybe String
+yearOfArc : Posix -> Arc -> Maybe String
 yearOfArc time arc =
   let
     arcStart = arc.start |> Time.posixToMillis
@@ -1479,10 +1486,11 @@ dataFilter model =
       , spacing 10
       ]
       [ dataAction model
-      , dateRangeSelect model
-      , dataOptions model
+      , timelineCheckbox model.timelineVisible
       , serverSelect model.servers model.selectedServer (themePalette model.theme)
+      , dataOptions model
       , presets model
+      , dateRangeSelect model
       ]
 
 dataAction model =
@@ -1524,6 +1532,16 @@ dataButtonDisabled palette =
     ]
     { onPress = Nothing
     , label = el [ centerX ] <| text "Show"
+    }
+
+timelineCheckbox : Bool -> Element Msg
+timelineCheckbox timelineVisible =
+  let pad = paddingEach { top = 0, bottom = 0, left = 10, right = 10 } in
+  Input.checkbox [ pad, spacing 2 ]
+    { onChange = ToggleTimelineVisible
+    , checked = timelineVisible
+    , label = Input.labelRight [ padding 6 ] (text "Show Time Selection")
+    , icon = Input.defaultCheckbox
     }
 
 startTimeSelect : Model -> Element Msg
