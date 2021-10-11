@@ -6,18 +6,6 @@
 
 ## Features
 - x why does anim toggle need both toggleAnimated if we are calling baseLayerByTime?
-- town cluster labels
-  - x count in cluster for outlier removal
-  - x center adjustment
-  - x label improvements
-  - x size filter relative to zoom
-  - x fast enough for animation?
-  - x only update when on
-  - xx birth/death mode
-  - x marker cursor
-  - x position stability
-    - multiple names collapse to same well
-  - x track static family names
 - object search header locked
 - animated status when zoom too large for visible layers - still lives
 - assembling log search spans?

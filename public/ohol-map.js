@@ -273,6 +273,7 @@
 
   var updateClusterLayer = function(layer, data, zoom) {
     var lineages = legendControl.options.lineages || {}
+    var points = {}
     if (data) {
       L.Util.setOptions(layer, {data: data})
     } else {
@@ -287,16 +288,22 @@
         name = (words[1] || 'unnamed')
       }
       data[lineageId].forEach(function(point) {
-        if (!nameIcons[name]) {
-          nameIcons[name] = L.divIcon({
+        var key = point.x.toString()+","+point.y.toString()
+        var offset = points[key] || 0
+        points[key] = offset + 1
+
+        var iconKey = name + offset
+        if (!nameIcons[iconKey]) {
+          nameIcons[iconKey] = L.divIcon({
             html: "<div>"+name+"</div>",// + " " + point.members.toString(),
             className: 'cluster-label',
             //iconSize: [12, 12],
-            iconAnchor: [-12, 12 + 12],
+            iconAnchor: [-12, 12 + 12 + (offset * 12)],
           })
         }
-        point.monument = L.marker([point.y, point.x], {
-            icon: nameIcons[name],
+
+        point.monument = L.marker([point.y + offset, point.x], {
+            icon: nameIcons[iconKey],
             pane: 'overlayPane',
             interactive: false,
           })
