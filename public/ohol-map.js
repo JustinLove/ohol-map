@@ -3767,13 +3767,13 @@
 
 
   var sidebarToggle = L.control.mapButton({
-    title: 'Data',
+    title: 'Search and Options',
     icon: 'filter',
     message: 'sidebarToggle',
     position: 'bottomright'
   })
   var timelineToggle = L.control.mapButton({
-    title: 'Time',
+    title: 'Detailed Time Selection',
     icon: 'time',
     message: 'timelineToggle',
     position: 'bottomleft'
