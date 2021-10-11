@@ -232,7 +232,7 @@
     "Rift": riftOverlay,
     "Bands": null,
     "Life Data": dataOverlay,
-    "Homelands": clusterOverlay,
+    "Family Names": clusterOverlay,
     "Object Search": objectOverlay,
     "Fade": baseFade,
     "Monuments": monumentOverlay,
