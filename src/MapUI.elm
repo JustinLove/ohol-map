@@ -362,6 +362,7 @@ update msg model =
         }
       , Leaflet.pointLocation location
       )
+        |> addCommand displayClustersCommand
     UI (View.SelectMatchingLife life) ->
       ( { model
         | focusLife = Just life
@@ -590,7 +591,7 @@ update msg model =
           |> List.map myLife
         ll = serverLives
           |> List.map serverToLeaflet
-        clusters = clustersFromLives model.pointLocation model.time serverLives
+        clusters = clustersFromLives BirthLocation model.time serverLives
       in
       ( { model
         | lives = Data lives
