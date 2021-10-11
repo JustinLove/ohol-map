@@ -272,7 +272,7 @@
   var nameIcons = {}
 
   var updateClusterLayer = function(layer, data, zoom) {
-    var lineages = legendControl.options.lineages || {}
+    var lineages = legendControl.getLineages()
     var points = {}
     if (data) {
       L.Util.setOptions(layer, {data: data})
@@ -3907,6 +3907,10 @@
       this._dataAnimated = this.options.dataAnimated
       this._data = this.options.data
     },
+    getLineages: function() {
+      this.updateLineages()
+      return this.options.lineages || {}
+    }
   });
 
   L.control.legend = function(opts) {
