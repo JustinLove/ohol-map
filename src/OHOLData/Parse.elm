@@ -345,7 +345,7 @@ lifeLine =
     |. spacesOnly
     |= playerCount
     |. spacesOnly
-    |. gender
+    |= gender
     |. spacesOnly
     |= lineageId
     |. spacesOnly
@@ -374,6 +374,7 @@ life
   -> Posix -- birthtime
   -> (Int, Int) -- birth location
   -> Int -- birth pop
+  -> String -- gender
   -> Int -- lineage
   -> Int -- chain
   -> Maybe Posix -- deathtime
@@ -383,11 +384,12 @@ life
   -> Maybe String -- cause of death
   -> Maybe String -- name
   -> Life
-life sid e pid bt (bx, by) bp lin ch dt (dx, dy) dp a dc n =
+life sid e pid bt (bx, by) bp g lin ch dt (dx, dy) dp a dc n =
   { birthX = bx
   , birthY = by
   , birthTime = bt
   , birthPopulation = bp
+  , gender = g
   , chain = ch
   , lineage = lin
   , name = n

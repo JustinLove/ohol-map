@@ -1,7 +1,6 @@
 ## bugs
 - x life search sort reversed
-- wrong data format in family trees
-- no male dots
+- x no male dots
 - ?? too man calls to location or history api in a short time - time scrolling while object seach is open - cannot reproduce
 - ?? when objects search is open and location selected, cannot pan - cannot reproduce
 

@@ -2338,6 +2338,7 @@ myLife life =
 leafletLife : Life -> Leaflet.Life
 leafletLife life =
   { birthTime = life.birthTime
+  , gender = "F"
   , chain = life.generation
   , lineage = life.lineage
   , playerid = life.playerid
@@ -2356,6 +2357,7 @@ leafletLife life =
 serverToLeaflet : Data.Life -> Leaflet.Life
 serverToLeaflet life =
   { birthTime = life.birthTime
+  , gender = life.gender
   , chain = life.chain
   , lineage = life.lineage
   , playerid = life.playerid

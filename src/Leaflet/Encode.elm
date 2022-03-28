@@ -24,6 +24,7 @@ life l =
     [ ("birth_x", int l.birthX)
     , ("birth_y", int l.birthY)
     , ("birth_time", timeStamp l.birthTime)
+    , ("gender", string l.gender)
     , ("chain", int l.chain)
     , ("lineage", int l.lineage)
     , ("name", maybe string l.name)

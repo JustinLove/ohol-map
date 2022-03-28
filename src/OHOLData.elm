@@ -43,6 +43,7 @@ type alias Life =
   , birthY : Int
   , birthTime : Posix
   , birthPopulation : Int
+  , gender : String
   , chain : Int
   , lineage : Int
   , name : Maybe String

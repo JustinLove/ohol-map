@@ -6,6 +6,7 @@ type alias Life =
   { birthX : Int
   , birthY : Int
   , birthTime : Posix
+  , gender : String
   , chain : Int
   , lineage : Int
   , name : Maybe String
