@@ -317,9 +317,9 @@ lives =
   loop [] livesStep
 
 livesStep : List Life -> LifeParser (Step (List Life) (List Life))
-livesStep list =
+livesStep reversedList =
   oneOf
-    [ succeed (\l -> Loop (l :: list))
+    [ succeed (\l -> Loop (l :: reversedList))
       |= lifeLine
       |. oneOf
         [ newline
@@ -327,7 +327,7 @@ livesStep list =
         ]
     , succeed ()
       |. end "unparsed trailing characters in lives"
-      |> map (\_ -> Done list)
+      |> map (\_ -> Done (List.reverse reversedList))
     ]
 
 lifeLine : LifeParser Life
