@@ -1025,11 +1025,11 @@ type alias Population =
 populationFromLives : Posix -> List Data.Life -> Population
 populationFromLives default data =
   let
-    firstEvent = data
+    lastBirth = data
       |> List.head
       |> Maybe.map .birthTime
       |> Maybe.withDefault default
-    lastBirth = data
+    firstEvent = data
       |> List.foldl (\{birthTime} _ -> birthTime) default
     usablePoints = data
       |> List.concatMap (\{birthTime, birthPopulation, deathTime, deathPopulation} ->
