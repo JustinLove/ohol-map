@@ -1,13 +1,31 @@
 ## bugs
-- x life search sort reversed
-- x no male dots
 - ?? too man calls to location or history api in a short time - time scrolling while object seach is open - cannot reproduce
 - ?? when objects search is open and location selected, cannot pan - cannot reproduce
 
 ## server work
+- lifelog cache on web data
+- server list date updates
+- lifelog processing?
+- family trees?
+- family tree app
 
 ## Features
-- x why does anim toggle need both toggleAnimated if we are calling baseLayerByTime?
+- direct lifelog display
+  - searches
+    - life search term fetchMatchingLives
+    - select lineage / fetchLineage
+    - ** fetch between fetchDataLayer
+    - fetch recent fetchRecentLives
+  - x calculate filename
+  - parse log
+  - names
+  - derived data
+    - lineage
+    - age
+    - name attachment
+- processed lifelog display?
+- eves only??
+- life search
 - object search header locked
 - animated status when zoom too large for visible layers - still lives
 - assembling log search spans?

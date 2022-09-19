@@ -31,6 +31,8 @@ module Model exposing
   , currentSpans
   , currentMonuments
   , currentServer
+  , currentServerName
+  , nameForServer
   , serverLoading
   , initialModel
   , defaultCenter
@@ -129,6 +131,7 @@ type alias Model =
   , keySearchNotable: String
   , logSearchIndex: String
   , logSearch: String
+  , publicLifeLogData: String
   , sidebar : Sidebar
   , sidebarMode : SidebarMode
   , searchMode : SearchMode
@@ -218,6 +221,7 @@ initialModel config location key =
   , keySearchNotable = config.keySearchNotable
   , logSearchIndex = config.logSearchIndex
   , logSearch = config.logSearch
+  , publicLifeLogData = config.publicLifeLogData
   , sidebar = ClosedSidebar
   , sidebarMode = DataFilter
   , searchMode = SearchLives
@@ -296,6 +300,7 @@ type alias Config =
   , keySearchNotable: String
   , logSearchIndex: String
   , logSearch: String
+  , publicLifeLogData: String
   }
 
 defaultCenter = (Leaflet.Point 0 0 23)
@@ -407,6 +412,19 @@ currentServer : Model -> Maybe Server
 currentServer model =
   model.selectedServer
     |> Maybe.andThen (\id -> Dict.get id model.servers)
+
+currentServerName : Model -> String
+currentServerName model =
+  model.selectedServer
+    |> Maybe.andThen (\id -> Dict.get id model.servers)
+    |> Maybe.map .serverName
+    |> Maybe.withDefault "bigserver2.onehouronelife.com"
+
+nameForServer : Model -> Int -> String
+nameForServer model serverId =
+  Dict.get serverId model.servers
+    |> Maybe.map .serverName
+    |> Maybe.withDefault "bigserver2.onehouronelife.com"
 
 serverLoading : Server -> Bool
 serverLoading server =

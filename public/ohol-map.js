@@ -3,9 +3,6 @@
 ;(function() {
   var app = Elm.MapUI.init({flags: oholMapConfig})
 
-  var cachedApiUrl = oholMapConfig.cachedApiUrl
-  var apiUrl = oholMapConfig.apiUrl
-
   var worlds = []
 
   var objectLayerOptions = {

@@ -94,7 +94,7 @@ init config location key =
       , case model.mapTime of
         Just time -> Cmd.none
         Nothing -> Time.now |> Task.perform CurrentTimeNotice
-      , fetchServers model.cachedApiUrl
+      , fetchServers
       , fetchObjects
       , Leaflet.pointColor model.pointColor
       , Leaflet.pointLocation model.pointLocation
@@ -884,19 +884,23 @@ update msg model =
       )
     FetchUpTo time ->
       ( model
-      , fetchDataLayer model.apiUrl
+      , fetchDataLayer model.publicLifeLogData
           (model.selectedServer |> Maybe.withDefault 17)
+          (currentServerName model)
           (relativeStartTime model.hoursPeriod time)
           time
+          model.zone
           DataRange
           model.evesOnly
       )
     FetchBetween start now ->
       ( { model | hoursPeriod = 1 }
-      , fetchDataLayer model.apiUrl
+      , fetchDataLayer model.publicLifeLogData
           (model.selectedServer |> Maybe.withDefault 17)
+          (currentServerName model)
           start
           now
+          model.zone
           DataRange
           model.evesOnly
       )
@@ -1944,19 +1948,23 @@ fetchDataForTime model =
   else
     case model.timeRange of
       Just (start, end) ->
-        fetchDataLayer model.apiUrl
+        fetchDataLayer model.publicLifeLogData
           (model.selectedServer |> Maybe.withDefault 17)
+          (currentServerName model)
           start
           end
+          model.zone
           PredeterminedRange
           model.evesOnly
       Nothing ->
         case model.timeMode of
           ServerRange ->
-            fetchDataLayer model.apiUrl
+            fetchDataLayer model.publicLifeLogData
               (model.selectedServer |> Maybe.withDefault 17)
+              (currentServerName model)
               model.startTime
               (relativeEndTime model.hoursPeriod model.startTime)
+              model.zone
               DataRange
               model.evesOnly
           FromNow ->
@@ -1964,10 +1972,12 @@ fetchDataForTime model =
           ArcRange ->
             case model.currentArc of
               Just arc ->
-                fetchDataLayer model.apiUrl
+                fetchDataLayer model.publicLifeLogData
                   arc.serverId
+                  (nameForServer model arc.serverId)
                   arc.start
                   (arc.end |> Maybe.withDefault model.time)
+                  model.zone
                   DataRange
                   model.evesOnly
               Nothing ->
@@ -2002,8 +2012,8 @@ subscriptions model =
     , Browser.Events.onResize (\w h -> WindowSize (w, h))
     ]
 
-fetchServers : String -> Cmd Msg
-fetchServers baseUrl =
+fetchServers : Cmd Msg
+fetchServers =
   Http.get
     { url = Url.relative ["data/servers.json"] []
     , expect = Http.expectJson ServerList Decode.servers
@@ -2435,6 +2445,7 @@ twoHoursOneLife versions objects objectIndex currentTime =
 
 fetchMatchingLives : String -> String -> Cmd Msg
 fetchMatchingLives baseUrl term =
+  let _ = Debug.log "fetchMathingLives" "" in
   Http.request
     { url = Url.crossOrigin baseUrl ["lives"]
       [ lifeSearchParameter term
@@ -2458,6 +2469,7 @@ lifeSearchParameter term =
 
 fetchLineage : String -> LifeId l -> Cmd Msg
 fetchLineage baseUrl life =
+  let _ = Debug.log "fetchLineage" "" in
   Http.request
     { url = Url.crossOrigin baseUrl ["lives"]
       [ Url.int "server_id" life.serverId
@@ -2479,7 +2491,7 @@ requireMonuments model server =
   case server.monuments of
     NotRequested ->
       ({server|monuments = Loading}
-      , fetchMonuments model.cachedApiUrl server.id)
+      , fetchMonuments server.id)
     NotAvailable ->
       (server, Leaflet.monumentList server.id (Encode.monuments []))
     Loading ->
@@ -2494,8 +2506,8 @@ requireMonuments model server =
     Failed _ ->
       (server, Cmd.none)
 
-fetchMonuments : String -> Int -> Cmd Msg
-fetchMonuments baseUrl serverId =
+fetchMonuments : Int -> Cmd Msg
+fetchMonuments serverId =
   Http.get
     { url = Url.relative ["data/monuments/" ++ (String.fromInt serverId) ++ ".json"] []
     , expect = Http.expectJson (MonumentList serverId) Decode.monuments
@@ -2503,6 +2515,7 @@ fetchMonuments baseUrl serverId =
 
 fetchRecentLives : String -> Int -> Cmd Msg
 fetchRecentLives baseUrl serverId =
+  let _ = Debug.log "fetchRecentLives" "" in
   Http.request
     { url = Url.crossOrigin baseUrl ["lives"]
       [ Url.int "server_id" serverId
@@ -2518,19 +2531,15 @@ fetchRecentLives baseUrl serverId =
     , tracker = Nothing
     }
 
-fetchDataLayer : String -> Int -> Posix -> Posix -> RangeSource -> Bool -> Cmd Msg
-fetchDataLayer baseUrl serverId startTime endTime rangeSource evesOnly =
+fetchDataLayer : String -> Int -> String -> Posix -> Posix -> Time.Zone -> RangeSource -> Bool -> Cmd Msg
+fetchDataLayer lifeLogUrl serverId serverName startTime endTime zone rangeSource evesOnly =
+  let _ = Debug.log "fetchDataLayer" (startTime, endTime) in
   Http.request
-    { url = Url.crossOrigin baseUrl ["lives"]
-      ( List.concat
-        [ [ Url.int "server_id" serverId
-          , Url.int "start_time" (startTime |> Time.posixToMillis |> (\x -> x // 1000))
-          , Url.int "end_time" (endTime |> Time.posixToMillis |> (\x -> x // 1000))
-          , Url.string "limit" "70000"
-          ]
-        , if evesOnly then [ Url.int "chain" 1 ] else []
-        ]
-      )
+    { url = Url.relative [
+      lifeLogUrl
+        |> String.replace "{server}" serverName
+        |> String.replace "{filename}" (dateYearMonthMonthDayWeekday zone startTime)
+      ] []
     , expect = Http.expectString (parseLives >> (DataLayer rangeSource serverId))
     , method = "GET"
     , headers =
@@ -2540,6 +2549,43 @@ fetchDataLayer baseUrl serverId startTime endTime rangeSource evesOnly =
     , timeout = Nothing
     , tracker = Nothing
     }
+
+dateYearMonthMonthDayWeekday : Time.Zone -> Posix -> String
+dateYearMonthMonthDayWeekday zone time =
+  let
+    year = Time.toYear zone time |> String.fromInt
+    month = Time.toMonth zone time |> formatMonth
+    day = Time.toDay zone time |> String.fromInt |> String.padLeft 2 '0'
+    weekday = Time.toWeekday zone time |> formatWeekday
+  in
+    year ++ "_" ++ month ++ "_" ++ day ++ "_" ++ weekday
+
+formatMonth : Time.Month -> String
+formatMonth month =
+  case month of
+    Time.Jan -> "01January"
+    Time.Feb -> "02February"
+    Time.Mar -> "03March"
+    Time.Apr -> "04April"
+    Time.May -> "05May"
+    Time.Jun -> "06June"
+    Time.Jul -> "07July"
+    Time.Aug -> "08August"
+    Time.Sep -> "09September"
+    Time.Oct -> "10October"
+    Time.Nov -> "11November"
+    Time.Dec -> "12December"
+
+formatWeekday : Time.Weekday -> String
+formatWeekday weekday =
+  case weekday of
+    Time.Mon -> "Monday"
+    Time.Tue -> "Tuesday"
+    Time.Wed -> "Wednesday"
+    Time.Thu -> "Thursday"
+    Time.Fri -> "Friday"
+    Time.Sat -> "Saturday"
+    Time.Sun -> "Sunday"
 
 parseLives : Result Http.Error String -> Result Http.Error (List Data.Life)
 parseLives =

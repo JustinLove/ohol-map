@@ -1785,12 +1785,12 @@ arcForIndex model index =
 dataOptions : Model -> Element Msg
 dataOptions model =
   column []
-    [ Input.checkbox [ padding 10, spacing 2 ]
+    [ {-Input.checkbox [ padding 10, spacing 2 ]
       { onChange = ToggleEvesOnly
       , checked = model.evesOnly
       , label = Input.labelRight [ padding 6 ] (text "Eves Only")
       , icon = Input.defaultCheckbox
-      }
+      -}
     ]
 
 serverSelect : Dict Int Server -> Maybe Int -> Palette -> Element Msg

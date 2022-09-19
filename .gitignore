@@ -15,6 +15,7 @@ public/kptest
 public/mltest
 public/pl
 public/plbackup
+public/publicLifeLogData
 public/publicMapChangeData
 .~lock*
 elm-stuff

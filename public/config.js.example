@@ -14,6 +14,7 @@ var oholMapConfig = {
   logSearch: 'pl/{server}/{time}/ls/{id}.txt',
   logSearchIndex: 'pl/{server}/{time}/ls/index.txt',
   actIndex: 'pl/{server}/{time}/am/{z}/index.txt',
+  publicLifeLogData: 'publicLifeLogData/lifeLog_{server}/{filename}.txt',
   lineageUrl: 'https://wondible.com/ohol-family-trees/',
   cachedApiUrl: 'http://localhost:5000/',
   apiUrl: 'http://localhost:5000/',
