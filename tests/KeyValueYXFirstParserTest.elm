@@ -1,7 +1,7 @@
 module KeyValueYXFirstParserTest exposing (..)
 
 import OHOLData as Data
-import OHOLData.Parse as Parse exposing (Key(..), Object(..))
+import OHOLData.ParseMap as Parse exposing (Key(..), Object(..))
 
 import Dict exposing (Dict)
 import Parser.Advanced as Parser

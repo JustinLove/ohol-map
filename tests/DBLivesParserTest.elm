@@ -1,9 +1,8 @@
-module LivesParserTest exposing (..)
+module DBLivesParserTest exposing (..)
 
 import OHOLData as Data exposing (Life)
-import OHOLData.Parse as Parse
+import OHOLData.ParseLives as Parse
 
---import Dict exposing (Dict)
 import Parser.Advanced as Parser
 import Time exposing (Posix)
 
@@ -15,27 +14,27 @@ suite =
   describe "compact life parser"
     [ describe "helpers"
       [ test "name parser" <| \_ ->
-        (Parser.run Parse.name "\"FIRST LAST\"")
+        (Parser.run Parse.quotedName "\"FIRST LAST\"")
           |> Expect.equal (Ok "FIRST LAST")
       ]
     , describe "complete records"
       [ test "birth only line" <| \_ ->
-        (Parser.run Parse.lifeLine birthOnlyLine)
+        (Parser.run Parse.dbLifeLine birthOnlyLine)
           |> Expect.equal (Ok birthOnlyLife)
       , test "anon death line" <| \_ ->
-        (Parser.run Parse.lifeLine anonDeathLine)
+        (Parser.run Parse.dbLifeLine anonDeathLine)
           |> Expect.equal (Ok anonDeathLife)
       , test "named death line" <| \_ ->
-        (Parser.run Parse.lifeLine namedDeathLine)
+        (Parser.run Parse.dbLifeLine namedDeathLine)
           |> Expect.equal (Ok namedDeathLife)
       , test "named birth line" <| \_ ->
-        (Parser.run Parse.lifeLine namedBirthLine)
+        (Parser.run Parse.dbLifeLine namedBirthLine)
           |> Expect.equal (Ok namedBirthLife)
       , test "unrelated line" <| \_ ->
-        (Parser.run Parse.lifeLine unrelatedLine)
+        (Parser.run Parse.dbLifeLine unrelatedLine)
           |> Expect.equal (Ok unrelatedLife)
       , test "multiple lines" <| \_ ->
-        (Parser.run Parse.lives multipleLines)
+        (Parser.run Parse.dbLives multipleLines)
           |> Expect.equal (Ok multipleLives)
       ]
     ]
@@ -61,6 +60,7 @@ birthOnlyLife =
   , epoch = 2
   , playerid = 4469793
   , age = Nothing
+  , gender = "F"
   , deathX = Nothing
   , deathY = Nothing
   , deathTime = Nothing
@@ -82,6 +82,7 @@ namedBirthLife =
   , epoch = 2
   , playerid = 4469793
   , age = Nothing
+  , gender = "F"
   , deathX = Nothing
   , deathY = Nothing
   , deathTime = Nothing
@@ -103,6 +104,7 @@ unrelatedLife =
   , epoch = 2
   , playerid = 4469793
   , age = Nothing
+  , gender = "F"
   , deathX = Nothing
   , deathY = Nothing
   , deathTime = Nothing
@@ -124,6 +126,7 @@ anonDeathLife =
   , epoch = 2
   , playerid = 4469784
   , age = Just 23.89
+  , gender = "F"
   , deathX = Just -88687
   , deathY = Just -41
   , deathTime = Just (Time.millisToPosix 1632556771000)
@@ -138,6 +141,7 @@ namedDeathLife =
   , birthY = -282
   , birthTime = Time.millisToPosix 1632556178000
   , birthPopulation = 32
+  , gender = "F"
   , chain = 1
   , lineage = 4469784
   , name = Just "FIRST LAST"
@@ -153,4 +157,4 @@ namedDeathLife =
   }
 
 multipleLines = birthOnlyLine ++ "\n" ++ namedDeathLine
-multipleLives = [ namedDeathLife, birthOnlyLife ]
+multipleLives = [ birthOnlyLife, namedDeathLife ]

@@ -41,7 +41,7 @@ port module Leaflet exposing
 import OHOLData as Data
 import OHOLData.Decode
 import OHOLData.Encode
-import OHOLData.Parse as Parse
+import OHOLData.ParseMap as Parse
 import Leaflet.Types exposing (..)
 import Leaflet.Decode as Decode
 import Leaflet.Encode as Encode

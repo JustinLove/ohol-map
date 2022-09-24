@@ -1,7 +1,7 @@
 module ObjectSearchIndexParserTest exposing (..)
 
 import OHOLData as Data
-import OHOLData.Parse as Parse
+import OHOLData.ParseMap as Parse
 
 import Dict exposing (Dict)
 import Parser.Advanced as Parser

@@ -84,7 +84,7 @@ module Model exposing
 
 import Leaflet exposing (PointColor(..), PointLocation(..), Animatable(..))
 import OHOLData as Data
-import OHOLData.Parse as Parse
+import OHOLData.ParseMap as Parse
 import RemoteData exposing (RemoteData(..))
 import Theme exposing (Theme)
 import Zipper exposing (Zipper)

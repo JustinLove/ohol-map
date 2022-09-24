@@ -1,7 +1,7 @@
 module LogValueYXTFirstParserTest exposing (..)
 
 import OHOLData as Data
-import OHOLData.Parse as Parse exposing (Log(..), Object(..))
+import OHOLData.ParseMap as Parse exposing (Log(..), Object(..))
 
 import Dict exposing (Dict)
 import Parser.Advanced as Parser

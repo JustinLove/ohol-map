@@ -7,7 +7,8 @@ import Model exposing (..)
 import OHOLData as Data
 import OHOLData.Decode as Decode
 import OHOLData.Encode as Encode
-import OHOLData.Parse as Parse
+import OHOLData.ParseMap as Parse
+import OHOLData.ParseLives as Parse
 import Persist exposing (Persist)
 import Persist.Encode
 import Persist.Decode
@@ -2590,7 +2591,7 @@ formatWeekday weekday =
 parseLives : Result Http.Error String -> Result Http.Error (List Data.Life)
 parseLives =
   Result.andThen
-    (Parser.run Parse.lives
+    (Parser.run Parse.dbLives
       >> Result.mapError (Http.BadBody << Parse.deadEndsToString))
 
 extractHashInt : String -> Url -> Maybe Int
