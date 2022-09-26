@@ -2,11 +2,21 @@ module OHOLData.ParseLives exposing
   ( dbLives
   , dbLifeLine
   , rawLives
+  , mergeLifeEvents
+  , mergeStep
+  , matchDeath
+  , fullLife
+  , rawLifeLogs
   , rawLifeLine
+  , rawBirthLine
+  , rawDeathLine
   , quotedName
+  , Birth
+  , Death
+  , LifeLog(..)
   )
 
-import OHOLData exposing (Life)
+import OHOLData exposing (Life, Parent(..))
 
 import Parser.Advanced as Parser exposing (..)
 import Time exposing (Posix)
@@ -15,6 +25,32 @@ import Char
 type alias LifeParser a = Parser Context Problem a
 type alias Context = String
 type alias Problem = String
+
+type alias Birth =
+  { birthTime : Posix
+  , playerid : Int
+  , accountHash : String
+  , gender : String
+  , birthLocation: (Int, Int)
+  , parent : Parent
+  , birthPopulation : Int
+  , chain : Int
+  }
+
+type alias Death =
+  { deathTime : Posix
+  , playerid : Int
+  , accountHash : String
+  , age : Float
+  , gender : String
+  , deathLocation: (Int, Int)
+  , deathCause : String
+  , deathPopulation : Int
+  }
+
+type LifeLog
+  = BirthLog Birth
+  | DeathLog Death
 
 dbLives : LifeParser (List Life)
 dbLives =
@@ -110,9 +146,63 @@ dbLife sid e pid bt (bx, by) bp g lin ch dt (dx, dy) dp a dc n =
 
 rawLives : LifeParser (List Life)
 rawLives =
+  rawLifeLogs |> map mergeLifeEvents
+
+mergeLifeEvents : List LifeLog -> List Life
+mergeLifeEvents logs =
+  let (births, lives) = List.foldl mergeStep ([], []) logs in
+  List.append (List.reverse lives) (List.map rawBirth births)
+
+mergeStep : LifeLog -> (List Birth, List Life) -> (List Birth, List Life)
+mergeStep log (births, lives) =
+  case log of
+    BirthLog b ->
+      (b :: births, lives)
+    DeathLog d ->
+      case matchDeath d births of
+        (bs, Just life) -> (bs, life :: lives)
+        (bs, Nothing) -> (bs, rawDeath d :: lives)
+
+matchDeath : Death -> List Birth -> (List Birth, Maybe Life)
+matchDeath death births =
+  case births of
+    birth :: rest ->
+      if birth.playerid == death.playerid then
+        (rest, Just (fullLife birth death))
+      else
+        case matchDeath death rest of
+          (bs, ml) -> (birth :: bs, ml)
+    [] ->
+      (births, Nothing)
+
+fullLife : Birth -> Death -> Life
+fullLife b d =
+  { birthX = Tuple.first b.birthLocation
+  , birthY = Tuple.second b.birthLocation
+  , birthTime = b.birthTime
+  , birthPopulation = b.birthPopulation
+  , gender = b.gender
+  , chain = b.chain
+  , lineage = case b.parent of
+    ChildOf pid -> pid
+    NoParent -> b.playerid
+  , name = Nothing
+  , serverId = 0
+  , epoch = 0
+  , playerid = b.playerid
+  , age = Just d.age
+  , deathX = Just (Tuple.first d.deathLocation)
+  , deathY = Just (Tuple.second d.deathLocation)
+  , deathTime = Just d.deathTime
+  , deathPopulation = Just d.deathPopulation
+  , deathCause = Just d.deathCause
+  }
+
+rawLifeLogs : LifeParser (List LifeLog)
+rawLifeLogs =
   loop [] rawLivesStep
 
-rawLivesStep : List Life -> LifeParser (Step (List Life) (List Life))
+rawLivesStep : List LifeLog -> LifeParser (Step (List LifeLog) (List LifeLog))
 rawLivesStep reversedList =
   oneOf
     [ succeed (\l -> Loop (l :: reversedList))
@@ -126,16 +216,16 @@ rawLivesStep reversedList =
       |> map (\_ -> Done (List.reverse reversedList))
     ]
 
-rawLifeLine : LifeParser Life
+rawLifeLine : LifeParser LifeLog
 rawLifeLine =
   oneOf
-    [ rawBirthLine
-    , rawDeathLine
+    [ rawBirthLine |> map BirthLog
+    , rawDeathLine |> map DeathLog
     ]
 
-rawBirthLine : LifeParser Life
+rawBirthLine : LifeParser Birth
 rawBirthLine =
-  succeed rawBirth
+  succeed Birth
     |. symbol (Token "B" "looking for birth")
     |. spacesOnly
     |= timeStamp
@@ -156,9 +246,9 @@ rawBirthLine =
     |. tagName "chain"
     |= chain
 
-rawDeathLine : LifeParser Life
+rawDeathLine : LifeParser Death
 rawDeathLine =
-  succeed rawDeath
+  succeed Death
     |. symbol (Token "D" "looking for death")
     |. spacesOnly
     |= timeStamp
@@ -179,28 +269,21 @@ rawDeathLine =
     |. tagName "pop"
     |= playerCount
 
-rawBirth
-  : Posix -- birthtime
-  -> Int -- playerid
-  -> String -- hash
-  -> String -- gender
-  -> (Int, Int) -- birth location
-  -> Int -- lineage
-  -> Int -- birth pop
-  -> Int -- chain
-  -> Life
-rawBirth bt pid hash g (bx, by) lin bp ch =
-  { birthX = bx
-  , birthY = by
-  , birthTime = bt
-  , birthPopulation = bp
-  , gender = g
-  , chain = ch
-  , lineage = lin
+rawBirth : Birth -> Life
+rawBirth b =
+  { birthX = Tuple.first b.birthLocation
+  , birthY = Tuple.second b.birthLocation
+  , birthTime = b.birthTime
+  , birthPopulation = b.birthPopulation
+  , gender = b.gender
+  , chain = b.chain
+  , lineage = case b.parent of
+    ChildOf pid -> pid
+    NoParent -> b.playerid
   , name = Nothing
   , serverId = 0
   , epoch = 0
-  , playerid = pid
+  , playerid = b.playerid
   , age = Nothing
   , deathX = Nothing
   , deathY = Nothing
@@ -209,34 +292,25 @@ rawBirth bt pid hash g (bx, by) lin bp ch =
   , deathCause = Nothing
   }
 
-rawDeath
-  : Posix -- deattime
-  -> Int -- playerid
-  -> String -- hash
-  -> Float -- age
-  -> String -- gender
-  -> (Int, Int) -- death location
-  -> String -- death cause
-  -> Int -- death pop
-  -> Life
-rawDeath dt pid hash a g (dx, dy) dc dp =
-  { birthX = dx
-  , birthY = dy
-  , birthTime = dt
-  , birthPopulation = dp
-  , gender = g
+rawDeath : Death -> Life
+rawDeath d =
+  { birthX = Tuple.first d.deathLocation
+  , birthY = Tuple.second d.deathLocation
+  , birthTime = d.deathTime
+  , birthPopulation = d.deathPopulation
+  , gender = d.gender
   , chain = 0
-  , lineage = pid
+  , lineage = d.playerid
   , name = Nothing
   , serverId = 0
   , epoch = 0
-  , playerid = pid
-  , age = Just a
-  , deathX = Just dx
-  , deathY = Just dy
-  , deathTime = Just dt
-  , deathPopulation = Just dp
-  , deathCause = Just dc
+  , playerid = d.playerid
+  , age = Just d.age
+  , deathX = Just (Tuple.first d.deathLocation)
+  , deathY = Just (Tuple.second d.deathLocation)
+  , deathTime = Just d.deathTime
+  , deathPopulation = Just d.deathPopulation
+  , deathCause = Just d.deathCause
   }
 
 serverId : LifeParser Int
@@ -285,13 +359,13 @@ lineageId =
     ]
     |> inContext "looking for lineage"
 
-parent : LifeParser Int
+parent : LifeParser Parent
 parent =
   oneOf
-    [ succeed identity
+    [ succeed ChildOf
       |. tagName "parent"
       |= playerId
-    , succeed 0 |. keyword (Token "noParent" "looking for no eve marker")
+    , succeed NoParent |. keyword (Token "noParent" "looking for no eve marker")
     ]
     |> inContext "looking for parent"
 

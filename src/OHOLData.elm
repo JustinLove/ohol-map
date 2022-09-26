@@ -1,5 +1,6 @@
 module OHOLData exposing
   ( ObjectId
+  , Parent(..)
   , Life
   , Server
   , Monument
@@ -37,6 +38,10 @@ import Set exposing (Set)
 import Time exposing (Posix)
 
 type alias ObjectId = Int
+
+type Parent
+  = ChildOf Int
+  | NoParent
 
 type alias Life =
   { birthX : Int

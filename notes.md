@@ -18,7 +18,7 @@
     - fetch recent fetchRecentLives
   - x calculate filename
   - x parse log
-  - merge lives
+  - x merge lives
   - names
   - derived data
     - lineage
