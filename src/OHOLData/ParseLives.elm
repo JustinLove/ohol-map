@@ -351,7 +351,10 @@ assembleNegativeInt (neg, n) =
 
 newline : LifeParser ()
 newline =
-  symbol (Token "\n" "looking for newline")
+  oneOf
+    [ symbol (Token "\n" "looking for newline")
+    , symbol (Token "\r\n" "looking for carriage-newline")
+    ]
 
 shortDeathReason : LifeParser String
 shortDeathReason =
@@ -388,7 +391,7 @@ quotedName =
 quoteTerminatedString : LifeParser String
 quoteTerminatedString =
   getChompedString <|
-    chompWhile (\c -> c /= quoteChar && c /= newlineChar)
+    chompWhile (\c -> c /= quoteChar && c /= newlineChar && c /= carriageReturn)
 
 accountHash : LifeParser String
 accountHash =
@@ -411,4 +414,5 @@ comma = symbol (Token "," "Expecting comma separator")
 equals = symbol (Token "=" "Expecting = seperator")
 noData = symbol (Token "X" "looking for nodata marker")
 newlineChar = '\n'
+carriageReturn = '\r'
 quoteChar = '"'

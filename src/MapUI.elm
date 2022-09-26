@@ -2591,7 +2591,7 @@ formatWeekday weekday =
 parseLives : Result Http.Error String -> Result Http.Error (List Data.Life)
 parseLives =
   Result.andThen
-    (Parser.run Parse.dbLives
+    (Parser.run Parse.rawLives
       >> Result.mapError (Http.BadBody << Parse.deadEndsToString))
 
 extractHashInt : String -> Url -> Maybe Int

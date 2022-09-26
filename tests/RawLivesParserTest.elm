@@ -75,5 +75,5 @@ deathLife =
   , deathCause = Just "hunger"
   }
 
-multipleLines = birthLine ++ "\n" ++ deathLine
+multipleLines = birthLine ++ "\r\n" ++ deathLine
 multipleLives = [ birthLife, deathLife ]

@@ -17,11 +17,11 @@
     - ** fetch between fetchDataLayer
     - fetch recent fetchRecentLives
   - x calculate filename
-  - parse log
+  - x parse log
+  - merge lives
   - names
   - derived data
     - lineage
-    - age
     - name attachment
 - processed lifelog display?
 - eves only??
