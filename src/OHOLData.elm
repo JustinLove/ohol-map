@@ -41,6 +41,7 @@ type alias ObjectId = Int
 
 type Parent
   = ChildOf Int
+  | Lineage Int Int
   | NoParent
 
 type alias Life =

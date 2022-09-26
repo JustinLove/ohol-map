@@ -20,12 +20,17 @@
   - x parse log
   - x merge lives
   - names
+    - parser
+    - name filename
+    - extra http request
+    - match data
   - derived data
-    - lineage
+    - x lineage
     - name attachment
-- processed lifelog display?
-- eves only??
-- life search
+  - all logs for target time range
+  - processed lifelog display?
+  - eves only??
+  - life search
 - object search header locked
 - animated status when zoom too large for visible layers - still lives
 - assembling log search spans?

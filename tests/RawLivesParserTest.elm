@@ -29,7 +29,7 @@ suite =
         Parse.fullLife matchingBirth matchingDeath
           |> Expect.equal matchingLife
       , test "match death" <| \_ ->
-        Parse.matchDeath matchingDeath [matchingBirth]
+        Parse.matchDeath [matchingBirth] matchingDeath
           |> Expect.equal ([], Just matchingLife)
       , test "merge step death only" <| \_ ->
         Parse.mergeStep (Parse.DeathLog deathDeath) ([], [])

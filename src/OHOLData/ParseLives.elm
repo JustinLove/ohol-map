@@ -157,20 +157,42 @@ mergeStep : LifeLog -> (List Birth, List Life) -> (List Birth, List Life)
 mergeStep log (births, lives) =
   case log of
     BirthLog b ->
-      (b :: births, lives)
+      ((matchParent births b) :: births, lives)
     DeathLog d ->
-      case matchDeath d births of
+      case matchDeath births d of
         (bs, Just life) -> (bs, life :: lives)
         (bs, Nothing) -> (bs, rawDeath d :: lives)
 
-matchDeath : Death -> List Birth -> (List Birth, Maybe Life)
-matchDeath death births =
+matchParent : List Birth -> Birth -> Birth
+matchParent living child =
+  case child.parent of
+    NoParent -> child
+    ChildOf parentid ->
+      case living of
+        candidate :: rest ->
+          if candidate.playerid == parentid then
+            let
+              lineage =
+                case candidate.parent of
+                  NoParent -> candidate.playerid
+                  ChildOf par -> par
+                  Lineage _ lin -> lin
+            in
+            {child | parent = Lineage parentid lineage }
+          else
+            matchParent rest child
+        [] ->
+          child
+    Lineage parentid _ -> child
+
+matchDeath : List Birth -> Death -> (List Birth, Maybe Life)
+matchDeath births death =
   case births of
     birth :: rest ->
       if birth.playerid == death.playerid then
         (rest, Just (fullLife birth death))
       else
-        case matchDeath death rest of
+        case matchDeath rest death of
           (bs, ml) -> (birth :: bs, ml)
     [] ->
       (births, Nothing)
@@ -184,7 +206,8 @@ fullLife b d =
   , gender = b.gender
   , chain = b.chain
   , lineage = case b.parent of
-    ChildOf pid -> pid
+    ChildOf par -> par
+    Lineage par lin -> lin
     NoParent -> b.playerid
   , name = Nothing
   , serverId = 0
@@ -278,7 +301,8 @@ rawBirth b =
   , gender = b.gender
   , chain = b.chain
   , lineage = case b.parent of
-    ChildOf pid -> pid
+    ChildOf par -> par
+    Lineage par lin -> lin
     NoParent -> b.playerid
   , name = Nothing
   , serverId = 0
