@@ -25,7 +25,9 @@ suite =
       , test "multiple lines" <| \_ ->
         (Parser.run Parse.rawLives multipleLines)
           |> Expect.equal (Ok multipleLives)
-      , test "life merge" <| \_ ->
+      ]
+    , describe "birth death merge"
+      [ test "life merge" <| \_ ->
         Parse.fullLife matchingBirth matchingDeath
           |> Expect.equal matchingLife
       , test "match death" <| \_ ->
@@ -43,6 +45,14 @@ suite =
       , test "merge" <| \_ ->
         (Parse.mergeLifeEvents mergeLogs)
           |> Expect.equal mergeLives
+      ]
+    , describe "name logs"
+      [ test "name line" <| \_ ->
+        (Parser.run Parse.rawNameLine "1234 JOHN DOE")
+          |> Expect.equal (Ok (1234, "JOHN DOE"))
+      , test "name log" <| \_ ->
+        (Parser.run Parse.rawNameLogs "1234 JOHN DOE\r\n123 EVE DOE")
+          |> Expect.equal (Ok [(1234, "JOHN DOE"), (123, "EVE DOE")])
       ]
     ]
 

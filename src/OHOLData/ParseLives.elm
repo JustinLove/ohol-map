@@ -10,6 +10,8 @@ module OHOLData.ParseLives exposing
   , rawLifeLine
   , rawBirthLine
   , rawDeathLine
+  , rawNameLogs
+  , rawNameLine
   , quotedName
   , Birth
   , Death
@@ -51,6 +53,8 @@ type alias Death =
 type LifeLog
   = BirthLog Birth
   | DeathLog Death
+
+type alias NameLog = (Int, String)
 
 dbLives : LifeParser (List Life)
 dbLives =
@@ -337,6 +341,32 @@ rawDeath d =
   , deathCause = Just d.deathCause
   }
 
+rawNameLogs : LifeParser (List NameLog)
+rawNameLogs =
+  loop [] rawNameStep
+
+rawNameStep : List NameLog -> LifeParser (Step (List NameLog) (List NameLog))
+rawNameStep reversedList =
+  oneOf
+    [ succeed (\l -> Loop (l :: reversedList))
+      |= rawNameLine
+      |. oneOf
+        [ newline
+        , end "something other than newline after record"
+        ]
+    , succeed ()
+      |. end "unparsed trailing characters in names"
+      |> map (\_ -> Done (List.reverse reversedList))
+    ]
+
+rawNameLine : LifeParser (Int, String)
+rawNameLine =
+  succeed Tuple.pair
+    |= playerId
+    |. spacesOnly
+    |= toEndOfLine
+    |> inContext "looking for name line"
+
 serverId : LifeParser Int
 serverId = positiveInt |> inContext "looking for a serverid"
 
@@ -490,6 +520,11 @@ quoteTerminatedString : LifeParser String
 quoteTerminatedString =
   getChompedString <|
     chompWhile (\c -> c /= quoteChar && c /= newlineChar && c /= carriageReturn)
+
+toEndOfLine : LifeParser String
+toEndOfLine =
+  getChompedString <|
+    chompWhile (\c -> c /= newlineChar && c /= carriageReturn)
 
 accountHash : LifeParser String
 accountHash =

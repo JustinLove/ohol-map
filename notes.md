@@ -20,7 +20,7 @@
   - x parse log
   - x merge lives
   - names
-    - parser
+    - x parser
     - name filename
     - extra http request
     - match data
@@ -29,6 +29,7 @@
     - name attachment
   - all logs for target time range
   - processed lifelog display?
+  - population graph?
   - eves only??
   - life search
 - object search header locked
