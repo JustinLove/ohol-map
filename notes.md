@@ -32,6 +32,8 @@
   - population graph?
   - eves only??
   - life search
+- check for leaflet updates
+
 - object search header locked
 - animated status when zoom too large for visible layers - still lives
 - assembling log search spans?

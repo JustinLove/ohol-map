@@ -3013,12 +3013,13 @@
       var pse = L.point(pnw.x + padding*2, pnw.y + padding*2)
       //console.log(center, pnw, pse)
       var layer = ev.target
+      if (!layer.options.data) return;
       var map = layer._map
       var zoom = map.getZoom()
       var llnw = map.layerPointToLatLng(pnw, zoom)
       var llse = map.layerPointToLatLng(pse, zoom)
       //console.log(center, llnw, llse)
-      var location = this.options.location || 'birth'
+      var location = layer.options.location || 'birth'
 
       var hit = layer.options.data.filter(function(point) {
         var x = point.birth_x
