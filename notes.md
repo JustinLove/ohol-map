@@ -21,12 +21,12 @@
   - x merge lives
   - names
     - x parser
-    - name filename
-    - extra http request
-    - match data
+    - x name filename
+    - x extra http request
+    - x match data
   - derived data
     - x lineage
-    - name attachment
+    - x name attachment
   - all logs for target time range
   - processed lifelog display?
   - population graph?

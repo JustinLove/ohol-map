@@ -2534,22 +2534,42 @@ fetchRecentLives baseUrl serverId =
 
 fetchDataLayer : String -> Int -> String -> Posix -> Posix -> Time.Zone -> RangeSource -> Bool -> Cmd Msg
 fetchDataLayer lifeLogUrl serverId serverName startTime endTime zone rangeSource evesOnly =
-  let _ = Debug.log "fetchDataLayer" (startTime, endTime) in
-  Http.request
-    { url = Url.relative [
-      lifeLogUrl
-        |> String.replace "{server}" serverName
-        |> String.replace "{filename}" (dateYearMonthMonthDayWeekday zone startTime)
-      ] []
-    , expect = Http.expectString (parseLives >> (DataLayer rangeSource serverId))
-    , method = "GET"
-    , headers =
-        [ Http.header "Accept" "text/plain"
-        ]
-    , body = Http.emptyBody
-    , timeout = Nothing
-    , tracker = Nothing
-    }
+  let
+    _ = Debug.log "fetchDataLayer" (startTime, endTime)
+    lifeTask =
+      Http.task
+        { url = Url.relative [
+          lifeLogUrl
+            |> String.replace "{server}" serverName
+            |> String.replace "{filename}" (dateYearMonthMonthDayWeekday zone startTime)
+          ] []
+        , resolver = Http.stringResolver (resolveStringResponse >> parseLives)
+        --, expect = Http.expectString (parseLives >> (DataLayer rangeSource serverId))
+        , method = "GET"
+        , headers =
+            [ Http.header "Accept" "text/plain"
+            ]
+        , body = Http.emptyBody
+        , timeout = Nothing
+        }
+    nameTask =
+      Http.task
+        { url = Url.relative [
+          lifeLogUrl
+            |> String.replace "{server}" serverName
+            |> String.replace "{filename}" ((dateYearMonthMonthDayWeekday zone startTime) ++ "_names")
+          ] []
+        , resolver = Http.stringResolver (resolveStringResponse >> parseNames)
+        , method = "GET"
+        , headers =
+            [ Http.header "Accept" "text/plain"
+            ]
+        , body = Http.emptyBody
+        , timeout = Nothing
+        }
+  in
+    Task.map2 Parse.mergeNames lifeTask nameTask
+      |> Task.attempt (DataLayer rangeSource serverId)
 
 dateYearMonthMonthDayWeekday : Time.Zone -> Posix -> String
 dateYearMonthMonthDayWeekday zone time =
@@ -2588,10 +2608,30 @@ formatWeekday weekday =
     Time.Sat -> "Saturday"
     Time.Sun -> "Sunday"
 
+resolveStringResponse : Http.Response String -> Result Http.Error String
+resolveStringResponse response =
+  case response of
+    Http.BadUrl_ url ->
+      Err (Http.BadUrl url)
+    Http.Timeout_ ->
+      Err Http.Timeout
+    Http.NetworkError_ ->
+      Err Http.NetworkError
+    Http.BadStatus_ metadata body ->
+      Err (Http.BadStatus metadata.statusCode)
+    Http.GoodStatus_ metadata body ->
+      Ok body
+
 parseLives : Result Http.Error String -> Result Http.Error (List Data.Life)
 parseLives =
   Result.andThen
     (Parser.run Parse.rawLives
+      >> Result.mapError (Http.BadBody << Parse.deadEndsToString))
+
+parseNames : Result Http.Error String -> Result Http.Error (List (Int, String))
+parseNames =
+  Result.andThen
+    (Parser.run Parse.rawNameLogs
       >> Result.mapError (Http.BadBody << Parse.deadEndsToString))
 
 extractHashInt : String -> Url -> Maybe Int

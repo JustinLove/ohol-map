@@ -6,6 +6,7 @@ module OHOLData.ParseLives exposing
   , mergeStep
   , matchDeath
   , fullLife
+  , mergeNames
   , rawLifeLogs
   , rawLifeLine
   , rawBirthLine
@@ -20,6 +21,7 @@ module OHOLData.ParseLives exposing
 
 import OHOLData exposing (Life, Parent(..))
 
+import Dict exposing (Dict)
 import Parser.Advanced as Parser exposing (..)
 import Time exposing (Posix)
 import Char
@@ -224,6 +226,18 @@ fullLife b d =
   , deathPopulation = Just d.deathPopulation
   , deathCause = Just d.deathCause
   }
+
+mergeNames : List Life -> List (Int, String) -> List Life
+mergeNames lives nameList =
+  List.map (mergeName (Dict.fromList nameList)) lives
+
+mergeName : Dict Int String -> Life -> Life
+mergeName names life =
+  case Dict.get life.playerid names of
+    Just name ->
+      {life | name = Just name}
+    Nothing ->
+      life
 
 rawLifeLogs : LifeParser (List LifeLog)
 rawLifeLogs =

@@ -54,6 +54,11 @@ suite =
         (Parser.run Parse.rawNameLogs "1234 JOHN DOE\r\n123 EVE DOE")
           |> Expect.equal (Ok [(1234, "JOHN DOE"), (123, "EVE DOE")])
       ]
+    , describe "life name merge"
+      [ test "name merge" <| \_ ->
+        Parse.mergeNames [matchingLife] [(matchingLife.playerid, "JOHN DOE")]
+          |> Expect.equal [{matchingLife | name = Just "JOHN DOE"}]
+      ]
     ]
 
 isOk : Result x a -> Bool
