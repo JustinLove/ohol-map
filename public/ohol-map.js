@@ -3897,8 +3897,9 @@
       }
     },
     updateLineages: function() {
-      if (this._time == this.options.time && this._dataAnimated == this.options.dataAnimated) return
-      if (this._data != this.options.data) {
+      var dataChange = this._data != this.options.data
+      if (!dataChange && this._time == this.options.time && this._dataAnimated == this.options.dataAnimated) return
+      if (dataChange) {
         this._defaultLineages = calculateLineages(false, 0, {}, this.options.data)
       }
       L.Util.setOptions(this, {lineages: calculateLineages(this.options.dataAnimated, this.options.time, this._defaultLineages, this.options.data)})
