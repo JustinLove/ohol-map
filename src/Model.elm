@@ -72,10 +72,6 @@ module Model exposing
   , lifeToRange
   , relativeStartTime
   , relativeEndTime
-  , PopulationSample
-  , SettingValue
-  , Population
-  , populationFromLives
   )
 
 import Clusters exposing (Clusters)
@@ -178,7 +174,6 @@ type alias Model =
   , objectIndex : RemoteData (List (ObjectId, String))
   , dataLayer : LifeDataLayer
   , lives : RemoteData (List Life)
-  , population : RemoteData Population
   , clusters : RemoteData Clusters
   , focusLife : Maybe Life
   , spanData : Maybe SpanData
@@ -268,7 +263,6 @@ initialModel config location key =
   , objectIndex = NotRequested
   , dataLayer = LifeDataLayer.empty
   , lives = NotRequested
-  , population = NotRequested
   , clusters = NotRequested
   , focusLife = Nothing
   , spanData = Nothing
@@ -639,7 +633,7 @@ type TimelineData
   | TimelineWorlds (List World)
   | TimelineArcs (List Arc)
   | TimelineSpans (List Span)
-  | TimelinePopulation (List PopulationSample) (List SettingValue)
+  | TimelinePopulation (List LifeDataLayer.PopulationSample) (Posix, Posix) (List LifeDataLayer.SettingValue)
 
 type alias Timeline =
   { id : TimelineId
@@ -734,13 +728,13 @@ timeline model index =
           , timeRange = timeRange
           , width = width
           , data =
-            case model.population of
-              Data pop ->
+            case LifeDataLayer.population model.dataLayer of
+              Just pop ->
                 if (rangeOverlap (min, max) pop.populationRange) > 0.5 then
-                  TimelinePopulation pop.data (worlds |> settingChanges max .minActivePlayersForSpecialBiomes)
+                  TimelinePopulation pop.data pop.populationRange (worlds |> settingChanges max .minActivePlayersForSpecialBiomes)
                 else
                   widthDependentData ()
-              _ ->
+              Nothing ->
                 widthDependentData ()
           , ranges =
             if typicalSpanWidth < 10 then
@@ -789,6 +783,18 @@ serverTime field aggragate servers current =
         |> Maybe.withDefault 0
         |> Time.millisToPosix
 
+settingChanges : Posix -> (World -> Maybe Int) -> List World -> List LifeDataLayer.SettingValue
+settingChanges now field worlds =
+  worlds
+    |> List.concatMap (\w ->
+      case field w of
+        Just value ->
+          [ (w.start, value)
+          , (w.end |> Maybe.withDefault now, value)
+          ]
+        Nothing -> []
+      )
+
 timelineLeave : Model -> Float -> Float
 timelineLeave model x =
   let
@@ -832,7 +838,7 @@ timelineScreenToTime monuments line x =
         TimelineSpans spans ->
           spans
             |> List.map (.start>>Time.posixToMillis)
-        TimelinePopulation _ _ ->
+        TimelinePopulation _ _ _ ->
           []
       )
         |> List.append (monuments |> RemoteData.withDefault [] |> List.map (.date>>Time.posixToMillis))
@@ -1027,73 +1033,5 @@ monumentsInRange (minTime, maxTime) monuments =
     |> List.filter (\{date} ->
         let t = Time.posixToMillis date in
         min <= t && t <= max
-      )
-
-type alias PopulationSample = (Posix, Int)
-type alias SettingValue = (Posix, Int)
-
-type alias Population =
-  { data : List PopulationSample
-  , eventRange : (Posix, Posix)
-  , populationRange : (Posix, Posix)
-  }
-
-populationFromLives : Posix -> List Data.Life -> Population
-populationFromLives default unsortedData =
-  let
-    data = List.sortBy (.birthTime>>Time.posixToMillis>>negate) unsortedData
-    lastBirth = data
-      |> List.head
-      |> Maybe.map .birthTime
-      |> Maybe.withDefault default
-    firstEvent = data
-      |> List.foldl (\{birthTime} _ -> birthTime) default
-    usablePoints = data
-      |> List.concatMap (\{birthTime, birthPopulation, deathTime, deathPopulation} ->
-          case (deathTime, deathPopulation) of
-            (Just dt, Just dp) -> [(birthTime, birthPopulation), (dt, dp)]
-            _ -> [(birthTime, birthPopulation)]
-        )
-      |> List.sortBy (Tuple.first>>Time.posixToMillis)
-      |> resample 4096
-    lastEvent = usablePoints
-      |> List.foldl (\(t, _) _ -> t) default
-  in
-  { data = usablePoints
-  , eventRange = (firstEvent, lastBirth)
-  , populationRange = (firstEvent, lastEvent)
-  }
-
-resample : Int -> List a -> List a
-resample targetSamples input =
-  let
-    length = List.length input
-  in
-    if length <= targetSamples then
-      input
-    else
-      input
-        |> List.foldl
-          (\x (accum, out) ->
-            let next = accum + targetSamples in
-            if next >= length then
-              (next - length, x::out)
-            else
-              (next, out)
-          )
-          (0, [])
-        |> Tuple.second
-        |> List.reverse
-
-settingChanges : Posix -> (World -> Maybe Int) -> List World -> List SettingValue
-settingChanges now field worlds =
-  worlds
-    |> List.concatMap (\w ->
-      case field w of
-        Just value ->
-          [ (w.start, value)
-          , (w.end |> Maybe.withDefault now, value)
-          ]
-        Nothing -> []
       )
 

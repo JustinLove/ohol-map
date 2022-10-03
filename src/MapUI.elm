@@ -233,18 +233,14 @@ update msg model =
             TimelineWorlds worlds ->
               let mnote = worldForTime time worlds |> Maybe.map .name in
               ({model | hover = Hovering index time mnote}, Cmd.none)
-            TimelinePopulation data _ ->
+            TimelinePopulation data populationRange _ ->
               let
                 pop =
-                  model.population
-                    |> RemoteData.toMaybe
-                    |> Maybe.andThen (\p ->
-                      if isInRange p.populationRange time then
-                        populationForTime time data
-                          |> Maybe.map (\count -> (String.fromInt count) ++ " players")
-                      else
-                        Nothing
-                      )
+                  if isInRange populationRange time then
+                    populationForTime time data
+                      |> Maybe.map (\count -> (String.fromInt count) ++ " players")
+                  else
+                    Nothing
               in
               ({model | hover = Hovering index time pop}, Cmd.none)
             _ ->
@@ -484,7 +480,7 @@ update msg model =
     UI (View.SelectShow) ->
       case model.selectedServer of
         Just server ->
-          ( {model | dataLayer = LifeDataLayer.load server, population = Loading, clusters = Loading}
+          ( {model | dataLayer = LifeDataLayer.load server, clusters = Loading}
           , fetchDataForTime model
           )
         Nothing ->
@@ -624,8 +620,7 @@ update msg model =
       in
       ( { model
         | lives = Data lives
-        , dataLayer = LifeDataLayer.withLives serverId serverLives
-        , population = Data (populationFromLives model.time serverLives)
+        , dataLayer = LifeDataLayer.withLives serverId model.time serverLives
         , clusters = Data clusters
         , pointColor = ChainColor -- something other than CauseOfDeathColor in order to differentiate with daily review
         }
@@ -863,8 +858,7 @@ update msg model =
         clusters = Clusters.fromLives model.pointLocation model.time lives
       in
       ( { model
-        | dataLayer = LifeDataLayer.withLives serverId lives
-        , population = Data (populationFromLives model.time lives)
+        | dataLayer = LifeDataLayer.withLives serverId model.time lives
         , clusters = Data clusters
         , player = if model.dataAnimated then Starting else Stopped
         }
@@ -875,13 +869,12 @@ update msg model =
         |> appendCommand (Leaflet.dataLayer (List.map serverToLeaflet lives) False)
         |> (if rangeSource == DataRange then addUpdate setRangeForData else identity)
     DataLayer _ serverId (Err error) ->
-      ( {model | dataLayer = LifeDataLayer.failed serverId error, population = Failed error, clusters = Failed error}
+      ( {model | dataLayer = LifeDataLayer.failed serverId error, clusters = Failed error}
       , Log.httpError "fetch data failed" error
       )
     NoDataLayer ->
       ( { model
         | dataLayer = LifeDataLayer.empty
-        , population = NotRequested
         , clusters = NotRequested
         , player = Stopped
         }
@@ -1178,11 +1171,11 @@ requireRecentLives model =
   let serverId = model.selectedServer |> Maybe.withDefault 17 in
   case model.dataLayer.lives of
     NotRequested ->
-      ( {model | dataLayer = LifeDataLayer.load serverId, population = Loading, clusters = Loading}
+      ( {model | dataLayer = LifeDataLayer.load serverId, clusters = Loading}
       , fetchRecentLives model.cachedApiUrl serverId
       )
     Failed _ ->
-      ( {model | dataLayer = LifeDataLayer.load serverId, population = Loading, clusters = Loading}
+      ( {model | dataLayer = LifeDataLayer.load serverId, clusters = Loading}
       , fetchRecentLives model.cachedApiUrl serverId
       )
     _ ->
@@ -1193,11 +1186,11 @@ requireSelectedLives model =
   let serverId = model.selectedServer |> Maybe.withDefault 17 in
   case model.dataLayer.lives of
     NotRequested ->
-      ( {model | dataLayer = LifeDataLayer.load serverId, population = Loading, clusters = Loading}
+      ( {model | dataLayer = LifeDataLayer.load serverId, clusters = Loading}
       , fetchDataForTime model
       )
     Failed _ ->
-      ( {model | dataLayer = LifeDataLayer.load serverId, population = Loading, clusters = Loading}
+      ( {model | dataLayer = LifeDataLayer.load serverId, clusters = Loading}
       , fetchDataForTime model
       )
     _ ->
@@ -1351,7 +1344,6 @@ yesterday model =
   let serverId = model.selectedServer |> Maybe.withDefault 17 in
   ( { model
     | dataLayer = LifeDataLayer.load serverId
-    , population = Loading
     , clusters = Loading
     , timeMode = FromNow
     , dataAnimated = True
@@ -1370,7 +1362,6 @@ dailyReview model =
   let serverId = model.selectedServer |> Maybe.withDefault 17 in
   ( { model
     | dataLayer = LifeDataLayer.load serverId
-    , population = Loading
     , clusters = Loading
     , timeMode = FromNow
     , pointColor = CauseOfDeathColor
@@ -1387,7 +1378,6 @@ testData : Model -> (Model, Cmd Msg)
 testData model =
   ( { model
     | dataLayer = LifeDataLayer.load 17
-    , population = Loading
     , clusters = Loading
     , timeMode = FromNow
     }
@@ -1660,16 +1650,16 @@ maybeSetTimeUpdate mtime model =
 
 setRangeForData : Model -> (Model, Cmd Msg)
 setRangeForData model =
-  case model.population of
-    Data pop ->
+  case LifeDataLayer.eventRange model.dataLayer of
+    Just eventRange ->
       let
         mapTime = model.mapTime
-            |> Maybe.map (inRange pop.eventRange)
+            |> Maybe.map (inRange eventRange)
       in
       ( { model
         | mapTime = mapTime
         }
-          |> setTimeRange (Just pop.eventRange)
+          |> setTimeRange (Just eventRange)
       , Cmd.batch
         [ mapTime
           |> Maybe.map Leaflet.currentTime
@@ -1680,7 +1670,7 @@ setRangeForData model =
             Cmd.none
         ]
       )
-    _ ->
+    Nothing ->
       (model, Cmd.none)
 
 setYesterday : Model -> (Model, Cmd Msg)
@@ -1747,7 +1737,6 @@ setServerUpdate serverId model =
           , coarseStartTime = inRange range model.coarseStartTime
           , startTime = inRange range model.startTime
           , dataLayer = LifeDataLayer.empty
-          , population = NotRequested
           , clusters = NotRequested
           , player = Stopped
           , spanData = mspanData

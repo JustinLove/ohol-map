@@ -17,6 +17,12 @@
     - ** fetch between fetchDataLayer
     - fetch recent fetchRecentLives
   - all logs for target time range
+    - extract data layer
+      - x data layer refs
+      - x population
+      - clusters
+    - refactor loading into data layer
+    - make loading multi file
   - population graph?
     - previously assuming time decending data
   - can't view raw logs for dates before names becuse of tasks

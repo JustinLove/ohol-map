@@ -359,7 +359,7 @@ timeControl model line =
           Element.lazy3 displayTimelineRanges palette line line.ranges
         TimelineSpans spans ->
           Element.lazy3 displayTimelineRanges palette line line.ranges
-        TimelinePopulation data special ->
+        TimelinePopulation data _ special ->
           Element.lazy4 displayTimelineGraph palette line data special
       )
     , behindContent
@@ -479,7 +479,7 @@ displayTimelineRanges palette line ranges =
       ]
       |> html
 
-displayTimelineGraph : Palette -> Timeline -> List PopulationSample -> List SettingValue -> Element msg
+displayTimelineGraph : Palette -> Timeline -> List LifeDataLayer.PopulationSample -> List LifeDataLayer.SettingValue -> Element msg
 displayTimelineGraph palette line points special =
   let
     min = (Time.posixToMillis line.minTime) + 1
