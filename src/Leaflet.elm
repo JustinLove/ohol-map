@@ -1,10 +1,6 @@
 port module Leaflet exposing
   ( Life
   , Cluster
-  , Point
-  , PointColor(..)
-  , PointLocation(..)
-  , Animatable(..)
   , Event(..)
   , setView
   , currentTime
@@ -53,28 +49,6 @@ import Time exposing (Posix)
 
 type alias Life = Leaflet.Types.Life
 type alias Cluster = Leaflet.Types.Cluster
-
-type alias Point =
-  { x : Int
-  , y : Int
-  , z : Int
-  }
-
-type PointColor
-  = LineageColor
-  | BirthTimeColor
-  | ChainColor
-  | CauseOfDeathColor
-  | AgeColor
-
-type PointLocation
-  = BirthLocation
-  | DeathLocation
-
-type Animatable
-  = Static
-  | Animated
-  | Inert
 
 setView : Point -> Cmd msg
 setView {x, y, z} =

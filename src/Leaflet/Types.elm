@@ -1,4 +1,11 @@
-module Leaflet.Types exposing (Life, Cluster)
+module Leaflet.Types exposing
+  ( Life
+  , Cluster
+  , Point
+  , PointLocation(..)
+  , PointColor(..)
+  , Animatable(..)
+  )
 
 import Time exposing (Posix)
 
@@ -25,4 +32,26 @@ type alias Cluster =
   , y : Int
   , members : Int
   }
+
+type alias Point =
+  { x : Int
+  , y : Int
+  , z : Int
+  }
+
+type PointLocation
+  = BirthLocation
+  | DeathLocation
+
+type PointColor
+  = LineageColor
+  | BirthTimeColor
+  | ChainColor
+  | CauseOfDeathColor
+  | AgeColor
+
+type Animatable
+  = Static
+  | Animated
+  | Inert
 

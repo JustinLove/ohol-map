@@ -1,6 +1,8 @@
 module MapUI exposing (..)
 
-import Leaflet exposing (Point, PointColor(..), PointLocation(..), Animatable(..))
+import Clusters
+import Leaflet
+import Leaflet.Types exposing (Point, PointColor(..), PointLocation(..), Animatable(..))
 import LocalStorage
 import Log
 import Model exposing (..)
@@ -613,7 +615,7 @@ update msg model =
           |> List.map myLife
         ll = serverLives
           |> List.map serverToLeaflet
-        clusters = clustersFromLives BirthLocation model.time serverLives
+        clusters = Clusters.fromLives BirthLocation model.time serverLives
       in
       ( { model
         | lives = Data lives
@@ -853,7 +855,7 @@ update msg model =
       (model, Log.httpError "fetch monuments failed" error)
     DataLayer rangeSource serverId (Ok lives) ->
       let
-        clusters = clustersFromLives model.pointLocation model.time lives
+        clusters = Clusters.fromLives model.pointLocation model.time lives
       in
       ( { model
         | dataLayer = Data serverId
@@ -1225,12 +1227,12 @@ displayClustersAtZoomCommand zoom model =
       |> RemoteData.map (\c ->
         if model.dataAnimated then
           case model.mapTime of
-            Just time -> clustersAtTime time c
+            Just time -> Clusters.atTime time c
             Nothing -> c
         else
           c
         )
-      |> RemoteData.map ((displayClusters model.dataAnimated zoom)>>Leaflet.displayClusters)
+      |> RemoteData.map ((Clusters.displayClusters model.dataAnimated zoom)>>Leaflet.displayClusters)
       |> RemoteData.withDefault Cmd.none
   else
     Cmd.none

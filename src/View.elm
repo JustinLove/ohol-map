@@ -5,7 +5,7 @@ module View exposing
   , document
   )
 
-import Leaflet exposing (Point, PointColor(..), PointLocation(..), Animatable(..))
+import Leaflet.Types exposing (Point, PointColor(..), PointLocation(..), Animatable(..))
 import Model exposing (..)
 import RemoteData exposing (RemoteData(..))
 import Theme exposing (Theme)

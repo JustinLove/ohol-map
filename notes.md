@@ -19,6 +19,7 @@
   - all logs for target time range
   - population graph?
     - previously assuming time decending data
+  - can't view raw logs for dates before names becuse of tasks
   - processed lifelog display?
   - eves only??
   - life search
