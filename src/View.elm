@@ -6,6 +6,7 @@ module View exposing
   )
 
 import Leaflet.Types exposing (Point, PointColor(..), PointLocation(..), Animatable(..))
+import LifeDataLayer
 import Model exposing (..)
 import RemoteData exposing (RemoteData(..))
 import Theme exposing (Theme)
@@ -1498,12 +1499,10 @@ dataAction model =
     palette = themePalette model.theme
   in
   el [ width fill, padding 5 ] <|
-    case model.dataLayer of
-      NotRequested -> dataButtonEnabled palette
-      NotAvailable -> dataButtonDisabled palette
-      Loading -> dataButtonDisabled palette
-      Data _ -> dataButtonEnabled palette
-      Failed _ -> dataButtonEnabled palette
+    if LifeDataLayer.canMakeRequest model.dataLayer then
+      dataButtonEnabled palette
+    else
+      dataButtonDisabled palette
 
 dataButtonEnabled : Palette -> Element Msg
 dataButtonEnabled palette =

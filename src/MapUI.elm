@@ -3,6 +3,7 @@ module MapUI exposing (..)
 import Clusters
 import Leaflet
 import Leaflet.Types exposing (Point, PointColor(..), PointLocation(..), Animatable(..))
+import LifeDataLayer
 import LocalStorage
 import Log
 import Model exposing (..)
@@ -481,9 +482,13 @@ update msg model =
     UI (View.SelectArcCoarse marc) ->
       selectArc model marc marc
     UI (View.SelectShow) ->
-      ( {model | dataLayer = Loading, population = Loading, clusters = Loading}
-      , fetchDataForTime model
-      )
+      case model.selectedServer of
+        Just server ->
+          ( {model | dataLayer = LifeDataLayer.load server, population = Loading, clusters = Loading}
+          , fetchDataForTime model
+          )
+        Nothing ->
+          (model, Cmd.none)
     UI (View.ToggleTimelineVisible visible) ->
       ( { model | timelineVisible = visible }
       , Leaflet.timelineVisible visible
@@ -619,7 +624,7 @@ update msg model =
       in
       ( { model
         | lives = Data lives
-        , dataLayer = Data serverId
+        , dataLayer = LifeDataLayer.withLives serverId serverLives
         , population = Data (populationFromLives model.time serverLives)
         , clusters = Data clusters
         , pointColor = ChainColor -- something other than CauseOfDeathColor in order to differentiate with daily review
@@ -858,7 +863,7 @@ update msg model =
         clusters = Clusters.fromLives model.pointLocation model.time lives
       in
       ( { model
-        | dataLayer = Data serverId
+        | dataLayer = LifeDataLayer.withLives serverId lives
         , population = Data (populationFromLives model.time lives)
         , clusters = Data clusters
         , player = if model.dataAnimated then Starting else Stopped
@@ -870,12 +875,12 @@ update msg model =
         |> appendCommand (Leaflet.dataLayer (List.map serverToLeaflet lives) False)
         |> (if rangeSource == DataRange then addUpdate setRangeForData else identity)
     DataLayer _ serverId (Err error) ->
-      ( {model | dataLayer = Failed error, population = Failed error, clusters = Failed error}
+      ( {model | dataLayer = LifeDataLayer.failed serverId error, population = Failed error, clusters = Failed error}
       , Log.httpError "fetch data failed" error
       )
     NoDataLayer ->
       ( { model
-        | dataLayer = NotRequested
+        | dataLayer = LifeDataLayer.empty
         , population = NotRequested
         , clusters = NotRequested
         , player = Stopped
@@ -1170,27 +1175,29 @@ requireLives model =
 
 requireRecentLives : Model -> (Model, Cmd Msg)
 requireRecentLives model =
-  case model.dataLayer of
+  let serverId = model.selectedServer |> Maybe.withDefault 17 in
+  case model.dataLayer.lives of
     NotRequested ->
-      ( {model | dataLayer = Loading, population = Loading, clusters = Loading}
-      , fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.withDefault 17)
+      ( {model | dataLayer = LifeDataLayer.load serverId, population = Loading, clusters = Loading}
+      , fetchRecentLives model.cachedApiUrl serverId
       )
     Failed _ ->
-      ( {model | dataLayer = Loading, population = Loading, clusters = Loading}
-      , fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.withDefault 17)
+      ( {model | dataLayer = LifeDataLayer.load serverId, population = Loading, clusters = Loading}
+      , fetchRecentLives model.cachedApiUrl serverId
       )
     _ ->
       (model, Leaflet.dataLayerVisible True)
 
 requireSelectedLives : Model -> (Model, Cmd Msg)
 requireSelectedLives model =
-  case model.dataLayer of
+  let serverId = model.selectedServer |> Maybe.withDefault 17 in
+  case model.dataLayer.lives of
     NotRequested ->
-      ( {model | dataLayer = Loading, population = Loading, clusters = Loading}
+      ( {model | dataLayer = LifeDataLayer.load serverId, population = Loading, clusters = Loading}
       , fetchDataForTime model
       )
     Failed _ ->
-      ( {model | dataLayer = Loading, population = Loading, clusters = Loading}
+      ( {model | dataLayer = LifeDataLayer.load serverId, population = Loading, clusters = Loading}
       , fetchDataForTime model
       )
     _ ->
@@ -1341,8 +1348,9 @@ imageWhenLocked id model =
 
 yesterday : Model -> (Model, Cmd Msg)
 yesterday model =
+  let serverId = model.selectedServer |> Maybe.withDefault 17 in
   ( { model
-    | dataLayer = Loading
+    | dataLayer = LifeDataLayer.load serverId
     , population = Loading
     , clusters = Loading
     , timeMode = FromNow
@@ -1352,15 +1360,16 @@ yesterday model =
     , framesPerSecond = 1
     }
   , Cmd.batch
-    [ fetchRecentLives model.cachedApiUrl (model.selectedServer |> Maybe.withDefault 17)
+    [ fetchRecentLives model.cachedApiUrl serverId
     , Leaflet.animOverlay True
     ]
   )
 
 dailyReview : Model -> (Model, Cmd Msg)
 dailyReview model =
+  let serverId = model.selectedServer |> Maybe.withDefault 17 in
   ( { model
-    | dataLayer = Loading
+    | dataLayer = LifeDataLayer.load serverId
     , population = Loading
     , clusters = Loading
     , timeMode = FromNow
@@ -1377,7 +1386,7 @@ dailyReview model =
 testData : Model -> (Model, Cmd Msg)
 testData model =
   ( { model
-    | dataLayer = Loading
+    | dataLayer = LifeDataLayer.load 17
     , population = Loading
     , clusters = Loading
     , timeMode = FromNow
@@ -1683,7 +1692,7 @@ setYesterday model =
 
 isYesterday : Model -> Bool
 isYesterday model =
-  model.dataLayer /= NotRequested
+  (LifeDataLayer.hasData model.dataLayer)
     && model.timeMode == FromNow
     && model.hoursPeriod == 24
     && model.gameSecondsPerSecond == 1
@@ -1699,7 +1708,7 @@ setDailyReview model =
 
 isDailyReview : Model -> Bool
 isDailyReview model =
-  model.dataLayer /= NotRequested
+  (LifeDataLayer.hasData model.dataLayer)
     && model.timeMode == FromNow
     && model.pointLocation == DeathLocation
     && model.pointColor == CauseOfDeathColor
@@ -1737,7 +1746,7 @@ setServerUpdate serverId model =
           , servers = Dict.insert serverId s2 model.servers
           , coarseStartTime = inRange range model.coarseStartTime
           , startTime = inRange range model.startTime
-          , dataLayer = NotRequested
+          , dataLayer = LifeDataLayer.empty
           , population = NotRequested
           , clusters = NotRequested
           , player = Stopped
@@ -1745,16 +1754,13 @@ setServerUpdate serverId model =
           }
         , Cmd.batch
           [ c2
-          , case model.dataLayer of
-            Data x ->
-              if x == serverId then
-                Cmd.none
-              else
-                Cmd.batch
-                  [ Leaflet.dataLayer [] False
-                  , Leaflet.dataLayerVisible False
-                  ]
-            _ -> Cmd.none
+          , if LifeDataLayer.hasData model.dataLayer && model.dataLayer.serverId /= serverId then
+              Cmd.batch
+                [ Leaflet.dataLayer [] False
+                , Leaflet.dataLayerVisible False
+                ]
+            else
+              Cmd.none
           , Leaflet.currentServer serverId
           ]
         )

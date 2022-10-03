@@ -80,6 +80,7 @@ module Model exposing
 
 import Clusters exposing (Clusters)
 import Leaflet.Types as Leaflet exposing (PointColor(..), PointLocation(..), Animatable(..))
+import LifeDataLayer exposing (LifeDataLayer)
 import OHOLData as Data
 import OHOLData.ParseMap as Parse
 import RemoteData exposing (RemoteData(..))
@@ -175,7 +176,7 @@ type alias Model =
   , versions : RemoteData (List Version)
   , objects : RemoteData (Dict ObjectId String)
   , objectIndex : RemoteData (List (ObjectId, String))
-  , dataLayer : RemoteData Int
+  , dataLayer : LifeDataLayer
   , lives : RemoteData (List Life)
   , population : RemoteData Population
   , clusters : RemoteData Clusters
@@ -265,7 +266,7 @@ initialModel config location key =
   , versions = NotRequested
   , objects = NotRequested
   , objectIndex = NotRequested
-  , dataLayer = NotRequested
+  , dataLayer = LifeDataLayer.empty
   , lives = NotRequested
   , population = NotRequested
   , clusters = NotRequested
