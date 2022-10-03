@@ -480,7 +480,7 @@ update msg model =
     UI (View.SelectShow) ->
       case model.selectedServer of
         Just server ->
-          ( {model | dataLayer = LifeDataLayer.load server, clusters = Loading}
+          ( {model | dataLayer = LifeDataLayer.load server}
           , fetchDataForTime model
           )
         Nothing ->
@@ -546,17 +546,9 @@ update msg model =
       )
         |> addCommand sidebarCommand
     Event (Ok (Leaflet.SelectLineage lineageId)) ->
-      let
-        cluster = model.clusters
-          |> RemoteData.map .lineages
-          |> RemoteData.toMaybe
-          |> Maybe.andThen (Dict.get lineageId)
-          |> Maybe.map .clusters
-          |> Maybe.andThen List.head
-      in
       ( model
       , Cmd.batch
-        [ case cluster of
+        [ case LifeDataLayer.clusterForLineage lineageId model.dataLayer of
           Just {x,y} -> Leaflet.setView {x = x, y = y, z = 26}
           Nothing -> Cmd.none
         , Leaflet.overlayVisible "Family Names" True
@@ -616,12 +608,10 @@ update msg model =
           |> List.map myLife
         ll = serverLives
           |> List.map serverToLeaflet
-        clusters = Clusters.fromLives BirthLocation model.time serverLives
       in
       ( { model
         | lives = Data lives
-        , dataLayer = LifeDataLayer.withLives serverId model.time serverLives
-        , clusters = Data clusters
+        , dataLayer = LifeDataLayer.fromLives serverId BirthLocation model.time serverLives
         , pointColor = ChainColor -- something other than CauseOfDeathColor in order to differentiate with daily review
         }
       , Cmd.none
@@ -854,12 +844,8 @@ update msg model =
     MonumentList serverId (Err error) ->
       (model, Log.httpError "fetch monuments failed" error)
     DataLayer rangeSource serverId (Ok lives) ->
-      let
-        clusters = Clusters.fromLives model.pointLocation model.time lives
-      in
       ( { model
-        | dataLayer = LifeDataLayer.withLives serverId model.time lives
-        , clusters = Data clusters
+        | dataLayer = LifeDataLayer.fromLives serverId model.pointLocation model.time lives
         , player = if model.dataAnimated then Starting else Stopped
         }
           |> rebuildTimelines
@@ -869,13 +855,12 @@ update msg model =
         |> appendCommand (Leaflet.dataLayer (List.map serverToLeaflet lives) False)
         |> (if rangeSource == DataRange then addUpdate setRangeForData else identity)
     DataLayer _ serverId (Err error) ->
-      ( {model | dataLayer = LifeDataLayer.failed serverId error, clusters = Failed error}
+      ( {model | dataLayer = LifeDataLayer.failed serverId error}
       , Log.httpError "fetch data failed" error
       )
     NoDataLayer ->
       ( { model
         | dataLayer = LifeDataLayer.empty
-        , clusters = NotRequested
         , player = Stopped
         }
       , Cmd.batch
@@ -1171,11 +1156,11 @@ requireRecentLives model =
   let serverId = model.selectedServer |> Maybe.withDefault 17 in
   case model.dataLayer.lives of
     NotRequested ->
-      ( {model | dataLayer = LifeDataLayer.load serverId, clusters = Loading}
+      ( {model | dataLayer = LifeDataLayer.load serverId}
       , fetchRecentLives model.cachedApiUrl serverId
       )
     Failed _ ->
-      ( {model | dataLayer = LifeDataLayer.load serverId, clusters = Loading}
+      ( {model | dataLayer = LifeDataLayer.load serverId}
       , fetchRecentLives model.cachedApiUrl serverId
       )
     _ ->
@@ -1186,11 +1171,11 @@ requireSelectedLives model =
   let serverId = model.selectedServer |> Maybe.withDefault 17 in
   case model.dataLayer.lives of
     NotRequested ->
-      ( {model | dataLayer = LifeDataLayer.load serverId, clusters = Loading}
+      ( {model | dataLayer = LifeDataLayer.load serverId}
       , fetchDataForTime model
       )
     Failed _ ->
-      ( {model | dataLayer = LifeDataLayer.load serverId, clusters = Loading}
+      ( {model | dataLayer = LifeDataLayer.load serverId}
       , fetchDataForTime model
       )
     _ ->
@@ -1223,8 +1208,8 @@ currentZoom center =
 displayClustersAtZoomCommand : Int -> Model -> Cmd Msg
 displayClustersAtZoomCommand zoom model =
   if model.clustersVisible then
-    model.clusters
-      |> RemoteData.map (\c ->
+    LifeDataLayer.clusters model.dataLayer
+      |> Maybe.map (\c ->
         if model.dataAnimated then
           case model.mapTime of
             Just time -> Clusters.atTime time c
@@ -1232,8 +1217,8 @@ displayClustersAtZoomCommand zoom model =
         else
           c
         )
-      |> RemoteData.map ((Clusters.displayClusters model.dataAnimated zoom)>>Leaflet.displayClusters)
-      |> RemoteData.withDefault Cmd.none
+      |> Maybe.map ((Clusters.displayClusters model.dataAnimated zoom)>>Leaflet.displayClusters)
+      |> Maybe.withDefault Cmd.none
   else
     Cmd.none
 
@@ -1344,7 +1329,6 @@ yesterday model =
   let serverId = model.selectedServer |> Maybe.withDefault 17 in
   ( { model
     | dataLayer = LifeDataLayer.load serverId
-    , clusters = Loading
     , timeMode = FromNow
     , dataAnimated = True
     , hoursPeriod = 24
@@ -1362,7 +1346,6 @@ dailyReview model =
   let serverId = model.selectedServer |> Maybe.withDefault 17 in
   ( { model
     | dataLayer = LifeDataLayer.load serverId
-    , clusters = Loading
     , timeMode = FromNow
     , pointColor = CauseOfDeathColor
     , pointLocation = DeathLocation
@@ -1378,7 +1361,6 @@ testData : Model -> (Model, Cmd Msg)
 testData model =
   ( { model
     | dataLayer = LifeDataLayer.load 17
-    , clusters = Loading
     , timeMode = FromNow
     }
   , Cmd.batch
@@ -1737,7 +1719,6 @@ setServerUpdate serverId model =
           , coarseStartTime = inRange range model.coarseStartTime
           , startTime = inRange range model.startTime
           , dataLayer = LifeDataLayer.empty
-          , clusters = NotRequested
           , player = Stopped
           , spanData = mspanData
           }

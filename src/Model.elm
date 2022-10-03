@@ -174,7 +174,6 @@ type alias Model =
   , objectIndex : RemoteData (List (ObjectId, String))
   , dataLayer : LifeDataLayer
   , lives : RemoteData (List Life)
-  , clusters : RemoteData Clusters
   , focusLife : Maybe Life
   , spanData : Maybe SpanData
   , maxiumMatchingObjects: Maybe Int
@@ -263,7 +262,6 @@ initialModel config location key =
   , objectIndex = NotRequested
   , dataLayer = LifeDataLayer.empty
   , lives = NotRequested
-  , clusters = NotRequested
   , focusLife = Nothing
   , spanData = Nothing
   , maxiumMatchingObjects = Just 20

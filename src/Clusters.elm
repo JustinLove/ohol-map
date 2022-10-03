@@ -1,7 +1,9 @@
 module Clusters exposing
   ( Clusters
+  , Cluster
   , fromLives
   , atTime
+  , forLineage
   , displayClusters
   )
 
@@ -169,6 +171,13 @@ lineageClusters locations =
   { locations = locations
   , clusters = clustering locations
   }
+
+forLineage : Int -> Clusters -> Maybe Cluster
+forLineage lineageId clusters =
+  clusters.lineages
+    |> Dict.get lineageId
+    |> Maybe.map .clusters
+    |> Maybe.andThen List.head
 
 displayClusters : Bool -> Int -> Clusters -> Dict Int (List Cluster)
 displayClusters dataAnimated zoom clusters =

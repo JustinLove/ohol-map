@@ -20,7 +20,7 @@
     - extract data layer
       - x data layer refs
       - x population
-      - clusters
+      - x clusters
     - refactor loading into data layer
     - make loading multi file
   - population graph?
