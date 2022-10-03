@@ -1041,8 +1041,9 @@ type alias Population =
   }
 
 populationFromLives : Posix -> List Data.Life -> Population
-populationFromLives default data =
+populationFromLives default unsortedData =
   let
+    data = List.sortBy (.birthTime>>Time.posixToMillis>>negate) unsortedData
     lastBirth = data
       |> List.head
       |> Maybe.map .birthTime

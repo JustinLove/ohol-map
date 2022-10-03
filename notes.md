@@ -16,20 +16,10 @@
     - select lineage / fetchLineage
     - ** fetch between fetchDataLayer
     - fetch recent fetchRecentLives
-  - x calculate filename
-  - x parse log
-  - x merge lives
-  - names
-    - x parser
-    - x name filename
-    - x extra http request
-    - x match data
-  - derived data
-    - x lineage
-    - x name attachment
   - all logs for target time range
-  - processed lifelog display?
   - population graph?
+    - previously assuming time decending data
+  - processed lifelog display?
   - eves only??
   - life search
 - check for leaflet updates
