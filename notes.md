@@ -17,10 +17,7 @@
     - ** fetch between fetchDataLayer
     - fetch recent fetchRecentLives
   - all logs for target time range
-    - extract data layer
-      - x data layer refs
-      - x population
-      - x clusters
+    - x extract data layer
     - refactor loading into data layer
     - make loading multi file
   - population graph?

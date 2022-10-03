@@ -3,9 +3,11 @@ module LifeDataLayer exposing
   , empty
   , load
   , fromLives
-  , failed
+  , fail
   , hasData
+  , hasDataFor
   , canMakeRequest
+  , shouldRequest
   , eventRange
   , population
   , clusters
@@ -53,8 +55,8 @@ fromLives server pointLocation defaultTime lives =
   , clusters = Just (Clusters.fromLives pointLocation defaultTime lives)
   }
 
-failed : Int -> Http.Error -> LifeDataLayer
-failed server error =
+fail : Int -> Http.Error -> LifeDataLayer
+fail server error =
   { serverId = server
   , lives = Failed error
   , population = Nothing
@@ -65,6 +67,10 @@ hasData : LifeDataLayer -> Bool
 hasData data =
   data.lives /= NotRequested
 
+hasDataFor : Int -> LifeDataLayer -> Bool
+hasDataFor serverId data =
+  data.lives == Data serverId
+
 canMakeRequest : LifeDataLayer -> Bool
 canMakeRequest data =
   case data.lives of
@@ -72,6 +78,15 @@ canMakeRequest data =
     NotAvailable -> False
     Loading -> False
     Data _ -> True
+    Failed _ -> True
+
+shouldRequest : LifeDataLayer -> Bool
+shouldRequest data =
+  case data.lives of
+    NotRequested -> True
+    NotAvailable -> False
+    Loading -> False
+    Data _ -> False
     Failed _ -> True
 
 type alias PopulationSample = (Posix, Int)

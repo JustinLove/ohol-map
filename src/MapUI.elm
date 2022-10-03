@@ -855,7 +855,7 @@ update msg model =
         |> appendCommand (Leaflet.dataLayer (List.map serverToLeaflet lives) False)
         |> (if rangeSource == DataRange then addUpdate setRangeForData else identity)
     DataLayer _ serverId (Err error) ->
-      ( {model | dataLayer = LifeDataLayer.failed serverId error}
+      ( {model | dataLayer = LifeDataLayer.fail serverId error}
       , Log.httpError "fetch data failed" error
       )
     NoDataLayer ->
@@ -1154,32 +1154,22 @@ requireLives model =
 requireRecentLives : Model -> (Model, Cmd Msg)
 requireRecentLives model =
   let serverId = model.selectedServer |> Maybe.withDefault 17 in
-  case model.dataLayer.lives of
-    NotRequested ->
-      ( {model | dataLayer = LifeDataLayer.load serverId}
-      , fetchRecentLives model.cachedApiUrl serverId
-      )
-    Failed _ ->
-      ( {model | dataLayer = LifeDataLayer.load serverId}
-      , fetchRecentLives model.cachedApiUrl serverId
-      )
-    _ ->
-      (model, Leaflet.dataLayerVisible True)
+  if LifeDataLayer.shouldRequest model.dataLayer then
+    ( {model | dataLayer = LifeDataLayer.load serverId}
+    , fetchRecentLives model.cachedApiUrl serverId
+    )
+  else
+    (model, Leaflet.dataLayerVisible True)
 
 requireSelectedLives : Model -> (Model, Cmd Msg)
 requireSelectedLives model =
   let serverId = model.selectedServer |> Maybe.withDefault 17 in
-  case model.dataLayer.lives of
-    NotRequested ->
-      ( {model | dataLayer = LifeDataLayer.load serverId}
-      , fetchDataForTime model
-      )
-    Failed _ ->
-      ( {model | dataLayer = LifeDataLayer.load serverId}
-      , fetchDataForTime model
-      )
-    _ ->
-      (model, Leaflet.dataLayerVisible True)
+  if LifeDataLayer.shouldRequest model.dataLayer then
+    ( {model | dataLayer = LifeDataLayer.load serverId}
+    , fetchDataForTime model
+    )
+  else
+    (model, Leaflet.dataLayerVisible True)
 
 toggleAnimated : Bool -> Model -> (Model, Cmd Msg)
 toggleAnimated animated model =
@@ -1724,7 +1714,7 @@ setServerUpdate serverId model =
           }
         , Cmd.batch
           [ c2
-          , if LifeDataLayer.hasData model.dataLayer && model.dataLayer.serverId /= serverId then
+          , if LifeDataLayer.hasData model.dataLayer && not (LifeDataLayer.hasDataFor serverId model.dataLayer) then
               Cmd.batch
                 [ Leaflet.dataLayer [] False
                 , Leaflet.dataLayerVisible False
