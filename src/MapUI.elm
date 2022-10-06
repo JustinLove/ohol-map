@@ -876,7 +876,6 @@ update msg model =
           (currentServerName model)
           (relativeStartTime model.hoursPeriod time)
           time
-          model.zone
           DataRange
           model.evesOnly
       )
@@ -888,7 +887,6 @@ update msg model =
           (currentServerName model)
           start
           now
-          model.zone
           DataRange
           model.evesOnly
       )
@@ -1925,7 +1923,6 @@ fetchDataForTime model =
           (currentServerName model)
           start
           end
-          model.zone
           PredeterminedRange
           model.evesOnly
       Nothing ->
@@ -1936,7 +1933,6 @@ fetchDataForTime model =
               (currentServerName model)
               model.startTime
               (relativeEndTime model.hoursPeriod model.startTime)
-              model.zone
               DataRange
               model.evesOnly
           FromNow ->
@@ -1949,7 +1945,6 @@ fetchDataForTime model =
                   (nameForServer model arc.serverId)
                   arc.start
                   (arc.end |> Maybe.withDefault model.time)
-                  model.zone
                   DataRange
                   model.evesOnly
               Nothing ->
@@ -2507,16 +2502,17 @@ fetchRecentLives baseUrl serverId =
     , tracker = Nothing
     }
 
-fetchDataLayer : String -> Int -> String -> Posix -> Posix -> Time.Zone -> RangeSource -> Bool -> Cmd Msg
-fetchDataLayer lifeLogUrl serverId serverName startTime endTime zone rangeSource evesOnly =
+fetchDataLayer : String -> Int -> String -> Posix -> Posix -> RangeSource -> Bool -> Cmd Msg
+fetchDataLayer lifeLogUrl serverId serverName startTime endTime rangeSource evesOnly =
   let
     _ = Debug.log "fetchDataLayer" (startTime, endTime)
+    filename = dateYearMonthMonthDayWeekday Time.utc startTime
     lifeTask =
       Http.task
         { url = Url.relative [
           lifeLogUrl
             |> String.replace "{server}" serverName
-            |> String.replace "{filename}" (dateYearMonthMonthDayWeekday zone startTime)
+            |> String.replace "{filename}" filename
           ] []
         , resolver = Http.stringResolver (resolveStringResponse >> parseLives)
         --, expect = Http.expectString (parseLives >> (DataLayer rangeSource serverId))
@@ -2532,7 +2528,7 @@ fetchDataLayer lifeLogUrl serverId serverName startTime endTime zone rangeSource
         { url = Url.relative [
           lifeLogUrl
             |> String.replace "{server}" serverName
-            |> String.replace "{filename}" ((dateYearMonthMonthDayWeekday zone startTime) ++ "_names")
+            |> String.replace "{filename}" (filename ++ "_names")
           ] []
         , resolver = Http.stringResolver (resolveStringResponse >> parseNames)
         , method = "GET"

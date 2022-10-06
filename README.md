@@ -114,6 +114,8 @@ Once built, public/index.html` can be opened locally from the filesystem, or set
 
 Tile paths and data server are configured in `public/config.js`
 
+Note: elm.json got a bit messed up when first installing `PanagiotisGeorgiadis/elm-datetime`. Installing should only add the package itself (assuming core and time are already present); anything else is an error.
+
 ## Credits
 
 Icons: [IcoMoon - Free](https://icomoon.io/#icons-icomoon) ([CC BY 4.0](http://creativecommons.org/licenses/by/4.0/))
