@@ -15,7 +15,9 @@
     - life search term fetchMatchingLives
     - select lineage / fetchLineage
     - ** fetch between fetchDataLayer
-    - fetch recent fetchRecentLives
+      - FetchUpTo
+      - FetchBetween - daily review
+    - fetch recent fetchRecentLives (yesterday)
   - all logs for target time range
     - x extract data layer
     - refactor loading into data layer

@@ -346,7 +346,7 @@ update msg model =
         |> addCommand saveState
     UI (View.ToggleShowLifeData show) ->
       if show then
-        requireLives { model | lifeDataVisible = show }
+        lifeDataLayerBecameVisible { model | lifeDataVisible = show }
       else
         ({model | lifeDataVisible = show}
         , Leaflet.dataLayerVisible False)
@@ -499,7 +499,7 @@ update msg model =
       , displayClustersAtZoomCommand zoom model
       )
     Event (Ok (Leaflet.OverlayAdd "Life Data" _)) ->
-      requireLives model
+      lifeDataLayerBecameVisible model
     Event (Ok (Leaflet.OverlayRemove "Life Data")) ->
       ({model | lifeDataVisible = False}, Cmd.none)
     Event (Ok (Leaflet.OverlayAdd "graticule" _)) ->
@@ -869,6 +869,7 @@ update msg model =
         ]
       )
     FetchUpTo time ->
+      let _ = Debug.log "FetchUpTo" time in
       ( model
       , fetchDataLayer model.publicLifeLogData
           (model.selectedServer |> Maybe.withDefault 17)
@@ -880,6 +881,7 @@ update msg model =
           model.evesOnly
       )
     FetchBetween start now ->
+      let _ = Debug.log "FetchBetween" (start, now) in
       ( { model | hoursPeriod = 1 }
       , fetchDataLayer model.publicLifeLogData
           (model.selectedServer |> Maybe.withDefault 17)
@@ -1143,13 +1145,13 @@ selectArc model marc mcourseArc =
         , Cmd.none
         )
 
-requireLives : Model -> (Model, Cmd Msg)
-requireLives model =
+lifeDataLayerBecameVisible : Model -> (Model, Cmd Msg)
+lifeDataLayerBecameVisible model =
   let m2 = {model | lifeDataVisible = True} in
   if model.mapTime == Nothing then
     requireRecentLives m2
   else
-    requireSelectedLives m2
+    requireSpecifiedLives m2
 
 requireRecentLives : Model -> (Model, Cmd Msg)
 requireRecentLives model =
@@ -1161,8 +1163,8 @@ requireRecentLives model =
   else
     (model, Leaflet.dataLayerVisible True)
 
-requireSelectedLives : Model -> (Model, Cmd Msg)
-requireSelectedLives model =
+requireSpecifiedLives : Model -> (Model, Cmd Msg)
+requireSpecifiedLives model =
   let serverId = model.selectedServer |> Maybe.withDefault 17 in
   if LifeDataLayer.shouldRequest model.dataLayer then
     ( {model | dataLayer = LifeDataLayer.load serverId}
@@ -1912,6 +1914,7 @@ timeSelectionAround model =
 
 fetchDataForTime : Model -> Cmd Msg
 fetchDataForTime model =
+  let _ = Debug.log "fetchDataForTime" model.timeRange in
   if (currentServer model |> Maybe.map .hasLives |> Maybe.withDefault False) == False then
     Task.succeed () |> Task.perform (always NoDataLayer)
   else
@@ -2035,23 +2038,27 @@ slowGet time {url, decoder, tagger} =
 
 resolveJson : Json.Decode.Decoder a -> Http.Resolver Http.Error a
 resolveJson decoder =
-  Http.stringResolver <|
-    \response ->
-      case response of
-        Http.BadUrl_ url ->
-          Err (Http.BadUrl url)
-        Http.Timeout_ ->
-          Err Http.Timeout
-        Http.NetworkError_ ->
-          Err Http.NetworkError
-        Http.BadStatus_ metadata body ->
-          Err (Http.BadStatus metadata.statusCode)
-        Http.GoodStatus_ _ body ->
-          case Json.Decode.decodeString decoder body of
-            Ok value ->
-              Ok value
-            Err err ->
-              Err (Http.BadBody (Json.Decode.errorToString err))
+  Http.stringResolver (resolveStringResponse >> decodeJson decoder)
+
+decodeJson : Json.Decode.Decoder a -> Result Http.Error String -> Result Http.Error a
+decodeJson decoder =
+  Result.andThen
+    (Json.Decode.decodeString decoder
+      >> Result.mapError (Http.BadBody << Json.Decode.errorToString))
+
+resolveStringResponse : Http.Response String -> Result Http.Error String
+resolveStringResponse response =
+  case response of
+    Http.BadUrl_ url ->
+      Err (Http.BadUrl url)
+    Http.Timeout_ ->
+      Err Http.Timeout
+    Http.NetworkError_ ->
+      Err Http.NetworkError
+    Http.BadStatus_ metadata body ->
+      Err (Http.BadStatus metadata.statusCode)
+    Http.GoodStatus_ metadata body ->
+      Ok body
 
 requireSpans : Model -> Server -> (Server, Cmd Msg)
 requireSpans model server =
@@ -2575,20 +2582,6 @@ formatWeekday weekday =
     Time.Fri -> "Friday"
     Time.Sat -> "Saturday"
     Time.Sun -> "Sunday"
-
-resolveStringResponse : Http.Response String -> Result Http.Error String
-resolveStringResponse response =
-  case response of
-    Http.BadUrl_ url ->
-      Err (Http.BadUrl url)
-    Http.Timeout_ ->
-      Err Http.Timeout
-    Http.NetworkError_ ->
-      Err Http.NetworkError
-    Http.BadStatus_ metadata body ->
-      Err (Http.BadStatus metadata.statusCode)
-    Http.GoodStatus_ metadata body ->
-      Ok body
 
 parseLives : Result Http.Error String -> Result Http.Error (List Data.Life)
 parseLives =
