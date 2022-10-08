@@ -1,5 +1,6 @@
 module LifeDataLayer exposing
   ( LifeDataLayer
+  , LifeLogDay
   , empty
   , load
   , fromLives
@@ -23,6 +24,7 @@ module LifeDataLayer exposing
 import Clusters exposing (Clusters, Cluster)
 import Leaflet.Types exposing (PointLocation(..))
 import OHOLData as Data
+import OHOLData.ParseLives as Parse
 import RemoteData exposing (RemoteData(..))
 
 import Calendar exposing (Date)
@@ -34,7 +36,14 @@ type alias LifeDataLayer =
   , lives : RemoteData (List Data.Life)
   , population : Maybe Population
   , clusters : Maybe Clusters
-  , logs : List (Date, RemoteData (List Data.Life))
+  , logs : List (Date, RemoteData LifeLogDay)
+  }
+
+type alias LifeLogDay =
+  { serverId : Int
+  , date : Date
+  , lifelogs : List Parse.LifeLog
+  , names : List Parse.NameLog
   }
 
 empty : LifeDataLayer
@@ -61,21 +70,27 @@ fromLives server pointLocation defaultTime lives =
   , lives = Data lives
   , population = Just (populationFromLives defaultTime lives)
   , clusters = Just (Clusters.fromLives pointLocation defaultTime lives)
-  , logs = [(Calendar.fromPosix defaultTime, Data lives)]
+  , logs = []
   }
 
-livesReceived : Int -> Date -> PointLocation -> Posix -> List Data.Life -> LifeDataLayer -> LifeDataLayer
-livesReceived server date pointLocation defaultTime newLives data =
-  if server /= data.serverId then
+livesReceived : PointLocation -> Posix -> LifeLogDay -> LifeDataLayer -> LifeDataLayer
+livesReceived pointLocation defaultTime lifeLogDay data =
+  if lifeLogDay.serverId /= data.serverId then
     data
   else
     let
-      newLogs = ((date, Data newLives) :: data.logs)
+      newLogs = ((lifeLogDay.date, Data lifeLogDay) :: data.logs)
         |> List.sortBy (Tuple.first >> Calendar.toMillis)
-      lives = newLogs
-        |> List.concatMap (Tuple.second >> RemoteData.withDefault [])
+      days = newLogs
+        |> List.map Tuple.second
+      namelessLives = days
+        |> List.concatMap (RemoteData.map .lifelogs >> RemoteData.withDefault [])
+        |> Parse.mergeLifeEvents
+      names = days
+        |> List.concatMap (RemoteData.map .names >> RemoteData.withDefault [])
+      lives = Parse.mergeNames namelessLives names
     in
-    { serverId = server
+    { serverId = data.serverId
     , lives = Data lives
     , population = Just (populationFromLives defaultTime lives)
     , clusters = Just (Clusters.fromLives pointLocation defaultTime lives)

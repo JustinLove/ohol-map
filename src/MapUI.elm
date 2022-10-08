@@ -58,7 +58,8 @@ type Msg
   | NotableObjectsReceived Int Posix (Result Http.Error (List Parse.Key))
   | ObjectsReceived (Result Http.Error Data.Objects)
   | MonumentList Int (Result Http.Error (List Data.Monument))
-  | DataLayer RangeSource Int Date (Result Http.Error (List Data.Life))
+  | OldDataLayer RangeSource Int Date (Result Http.Error (List Data.Life))
+  | DataLayer RangeSource Int Date (Result Http.Error LifeDataLayer.LifeLogDay)
   | NoDataLayer
   | FetchUpTo Posix
   | FetchBetween Posix Posix
@@ -842,8 +843,25 @@ update msg model =
         |> checkServerLoaded
     MonumentList serverId (Err error) ->
       (model, Log.httpError "fetch monuments failed" error)
-    DataLayer rangeSource serverId date (Ok lives) ->
-      let dataLayer = LifeDataLayer.livesReceived serverId date model.pointLocation model.time lives model.dataLayer in
+    OldDataLayer rangeSource serverId date (Ok lives) ->
+      let dataLayer = LifeDataLayer.fromLives serverId model.pointLocation model.time lives in
+      ( { model
+        | dataLayer = dataLayer
+        , player = if model.dataAnimated then Starting else Stopped
+        }
+          |> rebuildTimelines
+      , Cmd.none
+      )
+        |> addCommand displayClustersCommand
+        |> appendCommand (Leaflet.dataLayer (List.map serverToLeaflet (LifeDataLayer.currentLives dataLayer)) False)
+        |> (if rangeSource == DataRange then addUpdate setRangeForData else identity)
+    OldDataLayer _ serverId date (Err error) ->
+      let filename = dateYearMonthMonthDayWeekday Time.utc (date |> Calendar.toMillis |> Time.millisToPosix) in
+      ( {model | dataLayer = LifeDataLayer.fail serverId date error model.dataLayer}
+      , Log.httpError ("fetch data failed " ++ filename) error
+      )
+    DataLayer rangeSource serverId date (Ok lifeLogDay) ->
+      let dataLayer = LifeDataLayer.livesReceived model.pointLocation model.time lifeLogDay model.dataLayer in
       ( { model
         | dataLayer = dataLayer
         , player = if model.dataAnimated then Starting else Stopped
@@ -2484,7 +2502,7 @@ fetchRecentLives baseUrl serverId =
       [ Url.int "server_id" serverId
       , Url.string "period" "P2D"
       ]
-    , expect = Http.expectString (parseLives >> (DataLayer DataRange serverId (0 |> Time.millisToPosix |> Calendar.fromPosix)))
+    , expect = Http.expectString (parseLives >> (OldDataLayer DataRange serverId (0 |> Time.millisToPosix |> Calendar.fromPosix)))
     , method = "GET"
     , headers =
         [ Http.header "Accept" "text/plain"
@@ -2526,7 +2544,7 @@ fetchDataLayerFile lifeLogUrl serverId serverName date rangeSource evesOnly =
             |> String.replace "{server}" serverName
             |> String.replace "{filename}" filename
           ] []
-        , resolver = Http.stringResolver (resolveStringResponse >> parseLives)
+        , resolver = Http.stringResolver (resolveStringResponse >> parseLifeLogs)
         --, expect = Http.expectString (parseLives >> (DataLayer rangeSource serverId))
         , method = "GET"
         , headers =
@@ -2551,7 +2569,7 @@ fetchDataLayerFile lifeLogUrl serverId serverName date rangeSource evesOnly =
         , timeout = Nothing
         }
   in
-    Task.map2 Parse.mergeNames lifeTask nameTask
+    Task.map2 (LifeDataLayer.LifeLogDay serverId date) lifeTask nameTask
       |> Task.attempt (DataLayer rangeSource serverId date)
 
 dateYearMonthMonthDayWeekday : Time.Zone -> Posix -> String
@@ -2595,6 +2613,12 @@ parseLives : Result Http.Error String -> Result Http.Error (List Data.Life)
 parseLives =
   Result.andThen
     (Parser.run Parse.rawLives
+      >> Result.mapError (Http.BadBody << Parse.deadEndsToString))
+
+parseLifeLogs : Result Http.Error String -> Result Http.Error (List Parse.LifeLog)
+parseLifeLogs =
+  Result.andThen
+    (Parser.run Parse.rawLifeLogs
       >> Result.mapError (Http.BadBody << Parse.deadEndsToString))
 
 parseNames : Result Http.Error String -> Result Http.Error (List (Int, String))

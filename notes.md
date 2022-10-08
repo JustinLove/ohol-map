@@ -18,12 +18,13 @@
       - FetchUpTo
       - FetchBetween - daily review
     - fetch recent fetchRecentLives (yesterday)
+    - clean up OldDataLayer
   - all logs for target time range
     - x extract data layer
     - x fetch multi files
+    - x stitch together files
     - load status tracking?
     - incremental or when-done updates?
-    - stitch together files
     - can functions of model become functions of data layer?
     - cahcing/reuse
     - change server

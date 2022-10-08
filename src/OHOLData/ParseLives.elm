@@ -17,6 +17,7 @@ module OHOLData.ParseLives exposing
   , Birth
   , Death
   , LifeLog(..)
+  , NameLog
   )
 
 import OHOLData exposing (Life, Parent(..))
