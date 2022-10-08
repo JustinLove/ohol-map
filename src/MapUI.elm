@@ -1166,7 +1166,7 @@ requireRecentLives : Model -> (Model, Cmd Msg)
 requireRecentLives model =
   let serverId = model.selectedServer |> Maybe.withDefault 17 in
   if LifeDataLayer.shouldRequest model.dataLayer then
-    ( {model | dataLayer = LifeDataLayer.load serverId}
+    ( {model | dataLayer = LifeDataLayer.load serverId []}
     , fetchRecentLives model.cachedApiUrl serverId
     )
   else
@@ -1327,7 +1327,7 @@ yesterday : Model -> (Model, Cmd Msg)
 yesterday model =
   let serverId = model.selectedServer |> Maybe.withDefault 17 in
   ( { model
-    | dataLayer = LifeDataLayer.load serverId
+    | dataLayer = LifeDataLayer.load serverId []
     , timeMode = FromNow
     , dataAnimated = True
     , hoursPeriod = 24
@@ -1344,7 +1344,7 @@ dailyReview : Model -> (Model, Cmd Msg)
 dailyReview model =
   let serverId = model.selectedServer |> Maybe.withDefault 17 in
   ( { model
-    | dataLayer = LifeDataLayer.load serverId
+    | dataLayer = LifeDataLayer.load serverId []
     , timeMode = FromNow
     , pointColor = CauseOfDeathColor
     , pointLocation = DeathLocation
@@ -1359,7 +1359,7 @@ dailyReview model =
 testData : Model -> (Model, Cmd Msg)
 testData model =
   ( { model
-    | dataLayer = LifeDataLayer.load 17
+    | dataLayer = LifeDataLayer.load 17 []
     , timeMode = FromNow
     }
   , Cmd.batch
@@ -2519,7 +2519,7 @@ fetchDataLayer startTime endTime rangeSource model =
     serverName = (currentServerName model)
     dates = LifeDataLayer.lifelogsRequired server startTime endTime model.dataLayer
   in
-  ( { model | dataLayer = LifeDataLayer.load server}
+  ( { model | dataLayer = LifeDataLayer.load server dates}
   , LifeDataLayer.lifelogsRequired server startTime endTime model.dataLayer
     |> List.map (\date ->
       fetchDataLayerFile model.publicLifeLogData

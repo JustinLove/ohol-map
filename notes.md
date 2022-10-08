@@ -23,16 +23,17 @@
     - x extract data layer
     - x fetch multi files
     - x stitch together files
-    - load status tracking?
-    - incremental or when-done updates?
-    - can functions of model become functions of data layer?
-    - cahcing/reuse
+    - x incremental or when-done updates?
+    - x load status tracking?
     - change server
+    - can functions of model become functions of data layer?
+    - caching/reuse
   - data file syntax error attribution
   - selection invisible on server1, second timeline
   - old worlds default to large time queries
   - population graph?
     - previously assuming time decending data
+  - loading status ui feedback
   - processed lifelog display?
   - eves only??
   - life search

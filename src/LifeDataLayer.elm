@@ -55,13 +55,13 @@ empty =
   , logs = []
   }
 
-load : Int -> LifeDataLayer
-load server =
+load : Int -> List Date -> LifeDataLayer
+load server dates =
   { serverId = server
   , lives = Loading
   , population = Nothing
   , clusters = Nothing
-  , logs = []
+  , logs = List.map (\d -> (d, Loading)) dates
   }
 
 fromLives : Int -> PointLocation -> Posix -> List Data.Life -> LifeDataLayer
@@ -78,24 +78,50 @@ livesReceived pointLocation defaultTime lifeLogDay data =
   if lifeLogDay.serverId /= data.serverId then
     data
   else
-    let
-      newLogs = ((lifeLogDay.date, Data lifeLogDay) :: data.logs)
-        |> List.sortBy (Tuple.first >> Calendar.toMillis)
-      days = newLogs
-        |> List.map Tuple.second
-      namelessLives = days
-        |> List.concatMap (RemoteData.map .lifelogs >> RemoteData.withDefault [])
-        |> Parse.mergeLifeEvents
-      names = days
-        |> List.concatMap (RemoteData.map .names >> RemoteData.withDefault [])
-      lives = Parse.mergeNames namelessLives names
-    in
-    { serverId = data.serverId
-    , lives = Data lives
-    , population = Just (populationFromLives defaultTime lives)
-    , clusters = Just (Clusters.fromLives pointLocation defaultTime lives)
-    , logs = newLogs
-    }
+    { data | logs = updateLog lifeLogDay.date (Data lifeLogDay) data.logs }
+      |> resolveLivesIfLoaded pointLocation defaultTime
+
+updateLog : Date -> RemoteData LifeLogDay -> List (Date, RemoteData LifeLogDay) -> List (Date, RemoteData LifeLogDay)
+updateLog date value logs =
+  if List.any ((\(d,_) -> d == date)) logs then
+    List.map (\tuple ->
+      let d = Tuple.first tuple in
+      if d == date then
+        (d, value)
+      else
+        tuple
+      )
+      logs
+  else
+    (date, value) :: logs
+
+resolveLivesIfLoaded : PointLocation -> Posix -> LifeDataLayer -> LifeDataLayer
+resolveLivesIfLoaded pointLocation defaultTime data =
+  if List.all (\(_,rd) -> rd /= Loading) data.logs then
+    resolveLives pointLocation defaultTime data
+  else
+    data
+
+resolveLives : PointLocation -> Posix -> LifeDataLayer -> LifeDataLayer
+resolveLives pointLocation defaultTime data =
+  let
+    sortedLogs = data.logs
+      |> List.sortBy (Tuple.first >> Calendar.toMillis)
+    days = sortedLogs
+      |> List.map Tuple.second
+    namelessLives = days
+      |> List.concatMap (RemoteData.map .lifelogs >> RemoteData.withDefault [])
+      |> Parse.mergeLifeEvents
+    names = days
+      |> List.concatMap (RemoteData.map .names >> RemoteData.withDefault [])
+    lives = Parse.mergeNames namelessLives names
+  in
+  { serverId = data.serverId
+  , lives = Data lives
+  , population = Just (populationFromLives defaultTime lives)
+  , clusters = Just (Clusters.fromLives pointLocation defaultTime lives)
+  , logs = sortedLogs
+  }
 
 fail : Int -> Date -> Http.Error -> LifeDataLayer -> LifeDataLayer
 fail server date error data =
