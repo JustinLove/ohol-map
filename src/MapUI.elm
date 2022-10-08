@@ -855,8 +855,9 @@ update msg model =
         |> appendCommand (Leaflet.dataLayer (List.map serverToLeaflet (LifeDataLayer.currentLives dataLayer)) False)
         |> (if rangeSource == DataRange then addUpdate setRangeForData else identity)
     DataLayer _ serverId date (Err error) ->
+      let filename = dateYearMonthMonthDayWeekday Time.utc (date |> Calendar.toMillis |> Time.millisToPosix) in
       ( {model | dataLayer = LifeDataLayer.fail serverId date error model.dataLayer}
-      , Log.httpError "fetch data failed" error
+      , Log.httpError ("fetch data failed " ++ filename) error
       )
     NoDataLayer ->
       ( { model
@@ -2040,6 +2041,12 @@ resolveStringResponse response =
     Http.GoodStatus_ metadata body ->
       Ok body
 
+ignoreNotFound : Result Http.Error String -> Result Http.Error String
+ignoreNotFound result =
+  case result of
+    Err (Http.BadStatus _) -> Ok ""
+    _ -> result
+
 requireSpans : Model -> Server -> (Server, Cmd Msg)
 requireSpans model server =
   if server.spans == NotRequested then
@@ -2535,7 +2542,7 @@ fetchDataLayerFile lifeLogUrl serverId serverName date rangeSource evesOnly =
             |> String.replace "{server}" serverName
             |> String.replace "{filename}" (filename ++ "_names")
           ] []
-        , resolver = Http.stringResolver (resolveStringResponse >> parseNames)
+        , resolver = Http.stringResolver (resolveStringResponse >> ignoreNotFound >> parseNames)
         , method = "GET"
         , headers =
             [ Http.header "Accept" "text/plain"

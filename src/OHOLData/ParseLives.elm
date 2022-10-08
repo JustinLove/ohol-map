@@ -542,8 +542,10 @@ toEndOfLine =
 
 accountHash : LifeParser String
 accountHash =
-  getChompedString <|
-    chompWhile Char.isHexDigit
+  succeed identity
+    |. chompWhile (\c -> c == '@')
+    |= (getChompedString <|
+        chompWhile Char.isHexDigit)
 
 spacesOnly : LifeParser ()
 spacesOnly =

@@ -21,13 +21,17 @@
   - all logs for target time range
     - x extract data layer
     - x fetch multi files
+    - load status tracking?
     - incremental or when-done updates?
     - stitch together files
     - can functions of model become functions of data layer?
+    - cahcing/reuse
+    - change server
   - data file syntax error attribution
+  - selection invisible on server1, second timeline
+  - old worlds default to large time queries
   - population graph?
     - previously assuming time decending data
-  - can't view raw logs for dates before names becuse of tasks
   - processed lifelog display?
   - eves only??
   - life search
