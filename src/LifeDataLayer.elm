@@ -22,8 +22,8 @@ import Leaflet.Types exposing (PointLocation(..))
 import OHOLData as Data
 import RemoteData exposing (RemoteData(..))
 
-import Http
 import Calendar exposing (Date)
+import Http
 import Time exposing (Posix)
 
 type alias LifeDataLayer =
@@ -91,11 +91,9 @@ shouldRequest data =
     Data _ -> False
     Failed _ -> True
 
-lifelogsRequired : String -> Int -> String -> Posix -> Posix -> List String
-lifelogsRequired lifeLogUrl serverId serverName startTime endTime =
+lifelogsRequired : Posix -> Posix -> List Date
+lifelogsRequired startTime endTime =
   Calendar.getDateRange (Calendar.fromPosix startTime) (Calendar.fromPosix endTime)
-    |> List.map (Calendar.toMillis>>Time.millisToPosix)
-    |> List.concatMap (lifelogFiles lifeLogUrl serverId serverName)
 
 lifelogFiles : String -> Int -> String -> Posix -> List String
 lifelogFiles lifeLogUrl serverId serverName time =
