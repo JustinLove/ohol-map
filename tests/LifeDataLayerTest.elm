@@ -13,12 +13,12 @@ suite =
   describe "LifeDataLayer"
     [ describe "files to download"
       [ test "single file" <| \_ ->
-        (lifelogsRequired wednesdayStart wednesdayEnd )
+        (allPossibleLifelogsRequired wednesdayStart wednesdayEnd )
           |> Expect.equal
             [ date 2022 Time.Oct 5
             ]
       , test "two files" <| \_ ->
-        (lifelogsRequired tuesdayEnd wednesdayEnd )
+        (allPossibleLifelogsRequired tuesdayEnd wednesdayEnd )
           |> Expect.equal
             [ date 2022 Time.Oct 4
             , date 2022 Time.Oct 5

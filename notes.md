@@ -20,8 +20,11 @@
     - fetch recent fetchRecentLives (yesterday)
   - all logs for target time range
     - x extract data layer
-    - refactor loading into data layer
-    - make loading multi file
+    - x fetch multi files
+    - incremental or when-done updates?
+    - stitch together files
+    - can functions of model become functions of data layer?
+  - data file syntax error attribution
   - population graph?
     - previously assuming time decending data
   - can't view raw logs for dates before names becuse of tasks

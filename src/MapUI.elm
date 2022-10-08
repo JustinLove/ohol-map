@@ -25,6 +25,7 @@ import Browser
 import Browser.Events
 import Browser.Dom as Dom
 import Browser.Navigation as Navigation
+import Calendar exposing (Date)
 import Http
 import Json.Decode
 import Json.Encode
@@ -57,7 +58,7 @@ type Msg
   | NotableObjectsReceived Int Posix (Result Http.Error (List Parse.Key))
   | ObjectsReceived (Result Http.Error Data.Objects)
   | MonumentList Int (Result Http.Error (List Data.Monument))
-  | DataLayer RangeSource Int (Result Http.Error (List Data.Life))
+  | DataLayer RangeSource Int Date (Result Http.Error (List Data.Life))
   | NoDataLayer
   | FetchUpTo Posix
   | FetchBetween Posix Posix
@@ -480,9 +481,7 @@ update msg model =
     UI (View.SelectShow) ->
       case model.selectedServer of
         Just server ->
-          ( {model | dataLayer = LifeDataLayer.load server}
-          , fetchDataForTime model
-          )
+          fetchDataForTime model
         Nothing ->
           (model, Cmd.none)
     UI (View.ToggleTimelineVisible visible) ->
@@ -843,19 +842,20 @@ update msg model =
         |> checkServerLoaded
     MonumentList serverId (Err error) ->
       (model, Log.httpError "fetch monuments failed" error)
-    DataLayer rangeSource serverId (Ok lives) ->
+    DataLayer rangeSource serverId date (Ok lives) ->
+      let dataLayer = LifeDataLayer.livesReceived serverId date model.pointLocation model.time lives model.dataLayer in
       ( { model
-        | dataLayer = LifeDataLayer.fromLives serverId model.pointLocation model.time lives
+        | dataLayer = dataLayer
         , player = if model.dataAnimated then Starting else Stopped
         }
           |> rebuildTimelines
       , Cmd.none
       )
         |> addCommand displayClustersCommand
-        |> appendCommand (Leaflet.dataLayer (List.map serverToLeaflet lives) False)
+        |> appendCommand (Leaflet.dataLayer (List.map serverToLeaflet (LifeDataLayer.currentLives dataLayer)) False)
         |> (if rangeSource == DataRange then addUpdate setRangeForData else identity)
-    DataLayer _ serverId (Err error) ->
-      ( {model | dataLayer = LifeDataLayer.fail serverId error}
+    DataLayer _ serverId date (Err error) ->
+      ( {model | dataLayer = LifeDataLayer.fail serverId date error model.dataLayer}
       , Log.httpError "fetch data failed" error
       )
     NoDataLayer ->
@@ -870,26 +870,18 @@ update msg model =
       )
     FetchUpTo time ->
       let _ = Debug.log "FetchUpTo" time in
-      ( model
-      , fetchDataLayer model.publicLifeLogData
-          (model.selectedServer |> Maybe.withDefault 17)
-          (currentServerName model)
-          (relativeStartTime model.hoursPeriod time)
-          time
-          DataRange
-          model.evesOnly
-      )
+      fetchDataLayer
+        (relativeStartTime model.hoursPeriod time)
+        time
+        DataRange
+        model
     FetchBetween start now ->
       let _ = Debug.log "FetchBetween" (start, now) in
-      ( { model | hoursPeriod = 1 }
-      , fetchDataLayer model.publicLifeLogData
-          (model.selectedServer |> Maybe.withDefault 17)
-          (currentServerName model)
-          start
-          now
-          DataRange
-          model.evesOnly
-      )
+      fetchDataLayer
+        start
+        now
+        DataRange
+        { model | hoursPeriod = 1 }
     PlayRelativeTo hoursBefore time ->
       { model
       | player = Starting
@@ -1165,9 +1157,7 @@ requireSpecifiedLives : Model -> (Model, Cmd Msg)
 requireSpecifiedLives model =
   let serverId = model.selectedServer |> Maybe.withDefault 17 in
   if LifeDataLayer.shouldRequest model.dataLayer then
-    ( {model | dataLayer = LifeDataLayer.load serverId}
-    , fetchDataForTime model
-    )
+    fetchDataForTime model
   else
     (model, Leaflet.dataLayerVisible True)
 
@@ -1910,45 +1900,40 @@ timeSelectionAround model =
     }
       |> setTimeRange (Just (time, model.time))
 
-fetchDataForTime : Model -> Cmd Msg
+fetchDataForTime : Model -> (Model, Cmd Msg)
 fetchDataForTime model =
   let _ = Debug.log "fetchDataForTime" model.timeRange in
   if (currentServer model |> Maybe.map .hasLives |> Maybe.withDefault False) == False then
-    Task.succeed () |> Task.perform (always NoDataLayer)
+    (model, Task.succeed () |> Task.perform (always NoDataLayer))
   else
     case model.timeRange of
       Just (start, end) ->
-        fetchDataLayer model.publicLifeLogData
-          (model.selectedServer |> Maybe.withDefault 17)
-          (currentServerName model)
+        fetchDataLayer
           start
           end
           PredeterminedRange
-          model.evesOnly
+          model
       Nothing ->
         case model.timeMode of
           ServerRange ->
-            fetchDataLayer model.publicLifeLogData
-              (model.selectedServer |> Maybe.withDefault 17)
-              (currentServerName model)
+            fetchDataLayer
               model.startTime
               (relativeEndTime model.hoursPeriod model.startTime)
               DataRange
-              model.evesOnly
+              model
           FromNow ->
-            Task.perform FetchUpTo Time.now
+            (model, Task.perform FetchUpTo Time.now)
           ArcRange ->
             case model.currentArc of
               Just arc ->
-                fetchDataLayer model.publicLifeLogData
-                  arc.serverId
-                  (nameForServer model arc.serverId)
+                -- TODO: arc.serverId argument??
+                fetchDataLayer
                   arc.start
                   (arc.end |> Maybe.withDefault model.time)
                   DataRange
-                  model.evesOnly
+                  model
               Nothing ->
-                Task.succeed () |> Task.perform (always NoDataLayer)
+                (model, Task.succeed () |> Task.perform (always NoDataLayer))
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -2492,7 +2477,7 @@ fetchRecentLives baseUrl serverId =
       [ Url.int "server_id" serverId
       , Url.string "period" "P2D"
       ]
-    , expect = Http.expectString (parseLives >> (DataLayer DataRange serverId))
+    , expect = Http.expectString (parseLives >> (DataLayer DataRange serverId (0 |> Time.millisToPosix |> Calendar.fromPosix)))
     , method = "GET"
     , headers =
         [ Http.header "Accept" "text/plain"
@@ -2502,11 +2487,31 @@ fetchRecentLives baseUrl serverId =
     , tracker = Nothing
     }
 
-fetchDataLayer : String -> Int -> String -> Posix -> Posix -> RangeSource -> Bool -> Cmd Msg
-fetchDataLayer lifeLogUrl serverId serverName startTime endTime rangeSource evesOnly =
+fetchDataLayer : Posix -> Posix -> RangeSource -> Model -> (Model, Cmd Msg)
+fetchDataLayer startTime endTime rangeSource model =
   let
-    _ = Debug.log "fetchDataLayer" (startTime, endTime)
-    filename = dateYearMonthMonthDayWeekday Time.utc startTime
+    server = (model.selectedServer |> Maybe.withDefault 17)
+    serverName = (currentServerName model)
+    dates = LifeDataLayer.lifelogsRequired server startTime endTime model.dataLayer
+  in
+  ( { model | dataLayer = LifeDataLayer.load server}
+  , LifeDataLayer.lifelogsRequired server startTime endTime model.dataLayer
+    |> List.map (\date ->
+      fetchDataLayerFile model.publicLifeLogData
+        server
+        serverName
+        date
+        rangeSource
+        model.evesOnly
+      )
+    |> Cmd.batch
+  )
+
+fetchDataLayerFile : String -> Int -> String -> Date -> RangeSource -> Bool -> Cmd Msg
+fetchDataLayerFile lifeLogUrl serverId serverName date rangeSource evesOnly =
+  let
+    _ = Debug.log "fetchDataLayerFile" date
+    filename = dateYearMonthMonthDayWeekday Time.utc (date |> Calendar.toMillis |> Time.millisToPosix)
     lifeTask =
       Http.task
         { url = Url.relative [
@@ -2540,7 +2545,7 @@ fetchDataLayer lifeLogUrl serverId serverName startTime endTime rangeSource eves
         }
   in
     Task.map2 Parse.mergeNames lifeTask nameTask
-      |> Task.attempt (DataLayer rangeSource serverId)
+      |> Task.attempt (DataLayer rangeSource serverId date)
 
 dateYearMonthMonthDayWeekday : Time.Zone -> Posix -> String
 dateYearMonthMonthDayWeekday zone time =

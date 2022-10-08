@@ -3,13 +3,16 @@ module LifeDataLayer exposing
   , empty
   , load
   , fromLives
+  , livesReceived
   , fail
   , hasData
   , hasDataFor
   , canMakeRequest
   , shouldRequest
   , eventRange
+  , currentLives
   , lifelogsRequired
+  , allPossibleLifelogsRequired
   , population
   , clusters
   , clusterForLineage
@@ -28,9 +31,10 @@ import Time exposing (Posix)
 
 type alias LifeDataLayer =
   { serverId : Int
-  , lives : RemoteData Int
+  , lives : RemoteData (List Data.Life)
   , population : Maybe Population
   , clusters : Maybe Clusters
+  , logs : List (Date, RemoteData (List Data.Life))
   }
 
 empty : LifeDataLayer
@@ -39,6 +43,7 @@ empty =
   , lives = NotRequested
   , population = Nothing
   , clusters = Nothing
+  , logs = []
   }
 
 load : Int -> LifeDataLayer
@@ -47,22 +52,43 @@ load server =
   , lives = Loading
   , population = Nothing
   , clusters = Nothing
+  , logs = []
   }
 
 fromLives : Int -> PointLocation -> Posix -> List Data.Life -> LifeDataLayer
 fromLives server pointLocation defaultTime lives =
   { serverId = server
-  , lives = Data server
+  , lives = Data lives
   , population = Just (populationFromLives defaultTime lives)
   , clusters = Just (Clusters.fromLives pointLocation defaultTime lives)
+  , logs = [(Calendar.fromPosix defaultTime, Data lives)]
   }
 
-fail : Int -> Http.Error -> LifeDataLayer
-fail server error =
+livesReceived : Int -> Date -> PointLocation -> Posix -> List Data.Life -> LifeDataLayer -> LifeDataLayer
+livesReceived server date pointLocation defaultTime newLives data =
+  if server /= data.serverId then
+    data
+  else
+    let
+      newLogs = ((date, Data newLives) :: data.logs)
+        |> List.sortBy (Tuple.first >> Calendar.toMillis)
+      lives = newLogs
+        |> List.concatMap (Tuple.second >> RemoteData.withDefault [])
+    in
+    { serverId = server
+    , lives = Data lives
+    , population = Just (populationFromLives defaultTime lives)
+    , clusters = Just (Clusters.fromLives pointLocation defaultTime lives)
+    , logs = newLogs
+    }
+
+fail : Int -> Date -> Http.Error -> LifeDataLayer -> LifeDataLayer
+fail server date error data =
   { serverId = server
   , lives = Failed error
   , population = Nothing
   , clusters = Nothing
+  , logs = [(date, Failed error)]
   }
 
 hasData : LifeDataLayer -> Bool
@@ -71,7 +97,12 @@ hasData data =
 
 hasDataFor : Int -> LifeDataLayer -> Bool
 hasDataFor serverId data =
-  data.lives == Data serverId
+  case data.lives of
+    NotRequested -> False
+    NotAvailable -> False
+    Loading -> False
+    Data _ -> data.serverId == serverId
+    Failed _ -> False
 
 canMakeRequest : LifeDataLayer -> Bool
 canMakeRequest data =
@@ -91,8 +122,16 @@ shouldRequest data =
     Data _ -> False
     Failed _ -> True
 
-lifelogsRequired : Posix -> Posix -> List Date
-lifelogsRequired startTime endTime =
+currentLives : LifeDataLayer -> List Data.Life
+currentLives data =
+  data.lives |> RemoteData.withDefault []
+
+lifelogsRequired : Int -> Posix -> Posix -> LifeDataLayer -> List Date
+lifelogsRequired serverId startTime endTime data =
+  allPossibleLifelogsRequired startTime endTime
+
+allPossibleLifelogsRequired : Posix -> Posix -> List Date
+allPossibleLifelogsRequired startTime endTime =
   Calendar.getDateRange (Calendar.fromPosix startTime) (Calendar.fromPosix endTime)
 
 lifelogFiles : String -> Int -> String -> Posix -> List String
