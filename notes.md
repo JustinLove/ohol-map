@@ -17,7 +17,7 @@
     - x fetch between fetchDataLayer
       - x FetchUpTo
       - -- FetchBetween - daily review - needs server date range
-    - fetch recent fetchRecentLives (yesterday)
+    - x fetch recent fetchRecentLives (yesterday)
     - clean up OldDataLayer
   - all logs for target time range
     - x extract data layer

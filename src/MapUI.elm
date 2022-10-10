@@ -1158,19 +1158,9 @@ lifeDataLayerBecameVisible : Model -> (Model, Cmd Msg)
 lifeDataLayerBecameVisible model =
   let m2 = {model | lifeDataVisible = True} in
   if model.mapTime == Nothing then
-    requireRecentLives m2
+    (m2, Cmd.none)
   else
     requireSpecifiedLives m2
-
-requireRecentLives : Model -> (Model, Cmd Msg)
-requireRecentLives model =
-  let serverId = model.selectedServer |> Maybe.withDefault 17 in
-  if LifeDataLayer.shouldRequest model.dataLayer then
-    ( {model | dataLayer = LifeDataLayer.load serverId []}
-    , fetchRecentLives model.cachedApiUrl serverId
-    )
-  else
-    (model, Leaflet.dataLayerVisible True)
 
 requireSpecifiedLives : Model -> (Model, Cmd Msg)
 requireSpecifiedLives model =
@@ -1325,20 +1315,20 @@ imageWhenLocked id model =
 
 yesterday : Model -> (Model, Cmd Msg)
 yesterday model =
-  let serverId = model.selectedServer |> Maybe.withDefault 17 in
-  ( { model
+  let
+    serverId = model.selectedServer |> Maybe.withDefault 17
+  in
+    { model
     | dataLayer = LifeDataLayer.load serverId []
+    , timeRange = Nothing
     , timeMode = FromNow
     , dataAnimated = True
     , hoursPeriod = 24
     , gameSecondsPerSecond = 1
     , framesPerSecond = 1
     }
-  , Cmd.batch
-    [ fetchRecentLives model.cachedApiUrl serverId
-    , Leaflet.animOverlay True
-    ]
-  )
+      |> fetchDataForTime
+      |> appendCommand (Leaflet.animOverlay True)
 
 dailyReview : Model -> (Model, Cmd Msg)
 dailyReview model =
@@ -2492,24 +2482,6 @@ fetchMonuments serverId =
   Http.get
     { url = Url.relative ["data/monuments/" ++ (String.fromInt serverId) ++ ".json"] []
     , expect = Http.expectJson (MonumentList serverId) Decode.monuments
-    }
-
-fetchRecentLives : String -> Int -> Cmd Msg
-fetchRecentLives baseUrl serverId =
-  let _ = Debug.log "fetchRecentLives" "" in
-  Http.request
-    { url = Url.crossOrigin baseUrl ["lives"]
-      [ Url.int "server_id" serverId
-      , Url.string "period" "P2D"
-      ]
-    , expect = Http.expectString (parseLives >> (OldDataLayer DataRange serverId (0 |> Time.millisToPosix |> Calendar.fromPosix)))
-    , method = "GET"
-    , headers =
-        [ Http.header "Accept" "text/plain"
-        ]
-    , body = Http.emptyBody
-    , timeout = Nothing
-    , tracker = Nothing
     }
 
 fetchDataLayer : Posix -> Posix -> RangeSource -> Model -> (Model, Cmd Msg)
