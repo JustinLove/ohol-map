@@ -200,8 +200,12 @@ idMatches id life =
   life.playerid == id
 
 hashMatches : String -> Data.Life -> Bool
-hashMatches term life =
-  False
+hashMatches term =
+  let compare = String.toLower term in
+  (\life -> case life.accountHash of
+    Just hash -> hash == compare
+    Nothing -> False
+  )
 
 update : Int -> Posix -> Posix -> LifeDataLayer -> LifeDataLayer
 update serverId startTime endTime data =

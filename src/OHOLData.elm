@@ -56,6 +56,7 @@ type alias Life =
   , serverId : Int
   , epoch : Int
   , playerid : Int
+  , accountHash : Maybe String
   , age : Maybe Float
   , deathX : Maybe Int
   , deathY : Maybe Int

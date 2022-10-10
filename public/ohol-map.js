@@ -251,15 +251,18 @@
       data = layer.options.data || [];
     }
     layer.clearLayers()
+    var monumentIcon = icons[835] // TODO: defer until icon available
     data.forEach(function(point) {
       var date = new Date(point.date*1000)
       var end = point.end ? new Date(point.end*1000) : now
       var age = Math.abs(now - date) / (24 * 60 * 60 * 1000)
-      point.monument = L.marker([point.y, point.x], {
-          opacity: Math.max(0.4, Math.min(1.0, 1.0 - (age / (age+30)))),
-          icon: icons[835],
-          pane: 'landmarkPane',
-        })
+      var props = {
+        opacity: Math.max(0.4, Math.min(1.0, 1.0 - (age / (age+30)))),
+        pane: 'landmarkPane',
+      }
+      // leaflet crashes if icon is present but undefined
+      if (monumentIcon) props.icon = monumentIcon
+      point.monument = L.marker([point.y, point.x], props)
         .bindPopup(date.toString())
         .addTo(layer)
       //L.circle([point.y, point.x], {radius: 21000, fill: false}).addTo(layer)

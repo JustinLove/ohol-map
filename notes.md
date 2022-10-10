@@ -1,6 +1,7 @@
 ## bugs
 - ?? too man calls to location or history api in a short time - time scrolling while object seach is open - cannot reproduce
 - ?? when objects search is open and location selected, cannot pan - cannot reproduce
+- monument icon may not be available at marker creation time in updateMonumentLayer
 
 ## server work
 - lifelog cache on web data
@@ -13,10 +14,7 @@
 - direct lifelog display
   - searches
     - life search term fetchMatchingLives
-      - search memory
-        - x names
-        - hashes - data not exposed
-        - x ids
+      - x search memory
       - lazy search
       - fetch data if none loaded
       - handle leaflet click results also

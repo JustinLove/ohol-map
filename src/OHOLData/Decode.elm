@@ -34,6 +34,7 @@ life =
     |> map2 (|>) (field "server_id" int)
     |> map2 (|>) (field "epoch" int)
     |> map2 (|>) (field "playerid" int)
+    |> map2 (|>) (succeed Nothing)
     |> map2 (|>) (field "age" (maybe float))
     |> map2 (|>) (field "death_x" (maybe int))
     |> map2 (|>) (field "death_y" (maybe int))
