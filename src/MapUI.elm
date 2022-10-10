@@ -2517,10 +2517,10 @@ fetchDataLayer startTime endTime rangeSource model =
   let
     server = (model.selectedServer |> Maybe.withDefault 17)
     serverName = (currentServerName model)
-    dates = LifeDataLayer.lifelogsRequired server startTime endTime model.dataLayer
+    updated = LifeDataLayer.update server startTime endTime model.dataLayer
   in
-  ( { model | dataLayer = LifeDataLayer.load server dates}
-  , LifeDataLayer.lifelogsRequired server startTime endTime model.dataLayer
+  ( { model | dataLayer = LifeDataLayer.setLoading updated}
+  , LifeDataLayer.neededDates updated
     |> List.map (\date ->
       fetchDataLayerFile model.publicLifeLogData
         server
@@ -2535,7 +2535,7 @@ fetchDataLayer startTime endTime rangeSource model =
 fetchDataLayerFile : String -> Int -> String -> Date -> RangeSource -> Bool -> Cmd Msg
 fetchDataLayerFile lifeLogUrl serverId serverName date rangeSource evesOnly =
   let
-    _ = Debug.log "fetchDataLayerFile" date
+    _ = Debug.log ("fetchDataLayerFile " ++ (String.fromInt serverId)) date
     filename = dateYearMonthMonthDayWeekday Time.utc (date |> Calendar.toMillis |> Time.millisToPosix)
     lifeTask =
       Http.task

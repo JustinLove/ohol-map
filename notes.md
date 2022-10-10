@@ -25,9 +25,8 @@
     - x stitch together files
     - x incremental or when-done updates?
     - x load status tracking?
-    - change server
     - can functions of model become functions of data layer?
-    - caching/reuse
+    - x caching/reuse
   - data file syntax error attribution
   - selection invisible on server1, second timeline
   - old worlds default to large time queries

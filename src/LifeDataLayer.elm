@@ -12,7 +12,9 @@ module LifeDataLayer exposing
   , shouldRequest
   , eventRange
   , currentLives
-  , lifelogsRequired
+  , update
+  , neededDates
+  , setLoading
   , allPossibleLifelogsRequired
   , population
   , clusters
@@ -167,9 +169,49 @@ currentLives : LifeDataLayer -> List Data.Life
 currentLives data =
   data.lives |> RemoteData.withDefault []
 
-lifelogsRequired : Int -> Posix -> Posix -> LifeDataLayer -> List Date
-lifelogsRequired serverId startTime endTime data =
-  allPossibleLifelogsRequired startTime endTime
+update : Int -> Posix -> Posix -> LifeDataLayer -> LifeDataLayer
+update serverId startTime endTime data =
+  let
+    newDates = allPossibleLifelogsRequired startTime endTime
+    relevantLogs = data.logs
+      |> List.filter (logIsOnServer serverId)
+      |> List.filter (logIsInDates newDates)
+    relevantDates = relevantLogs
+      |> List.map Tuple.first
+    missingLogs = newDates
+      |> List.filter (\date -> not <| List.member date relevantDates)
+      |> List.map (\date -> (date, NotRequested))
+  in
+    { data
+    | serverId = serverId
+    , logs = List.append relevantLogs missingLogs
+    }
+
+neededDates : LifeDataLayer -> List Date
+neededDates data =
+  data.logs
+    |> List.filter (\(_,rd) -> rd == NotRequested)
+    |> List.map Tuple.first
+
+setLoading : LifeDataLayer -> LifeDataLayer
+setLoading data =
+  { serverId = data.serverId
+  , lives = Loading
+  , population = Nothing
+  , clusters = Nothing
+  , logs = data.logs
+    |> List.map (\(date,rd) -> if rd == NotRequested then (date,Loading) else (date,rd))
+  }
+
+logIsOnServer : Int -> (Date, RemoteData LifeLogDay) -> Bool
+logIsOnServer serverId (date, rdLog) =
+  rdLog
+    |> RemoteData.map (\log -> log.serverId == serverId)
+    |> RemoteData.withDefault False
+
+logIsInDates : List Date -> (Date, a) -> Bool
+logIsInDates dates (date, _) =
+  List.member date dates
 
 allPossibleLifelogsRequired : Posix -> Posix -> List Date
 allPossibleLifelogsRequired startTime endTime =
