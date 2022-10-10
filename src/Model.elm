@@ -2,6 +2,8 @@ module Model exposing
   ( Arc
   , Config
   , Life
+  , myLife
+  , lifeSearch
   , LifeId
   , Sidebar(..)
   , SidebarMode(..)
@@ -173,7 +175,7 @@ type alias Model =
   , objects : RemoteData (Dict ObjectId String)
   , objectIndex : RemoteData (List (ObjectId, String))
   , dataLayer : LifeDataLayer
-  , lives : RemoteData (List Life)
+  , lifeSearchResults : RemoteData (List Life)
   , focusLife : Maybe Life
   , spanData : Maybe SpanData
   , maxiumMatchingObjects: Maybe Int
@@ -261,7 +263,7 @@ initialModel config location key =
   , objects = NotRequested
   , objectIndex = NotRequested
   , dataLayer = LifeDataLayer.empty
-  , lives = NotRequested
+  , lifeSearchResults = NotRequested
   , focusLife = Nothing
   , spanData = Nothing
   , maxiumMatchingObjects = Just 20
@@ -310,6 +312,29 @@ type alias Life =
   , deathX : Maybe Int
   , deathY : Maybe Int
   }
+
+--myLife : Data.Life -> Life
+--myLife : Leaflet.Life -> Life
+myLife life =
+  { birthTime = life.birthTime
+  , generation = life.chain
+  , lineage = life.lineage
+  , playerid = life.playerid
+  , name = life.name
+  , serverId = life.serverId
+  , epoch = life.epoch
+  , age = life.age
+  , birthX = life.birthX
+  , birthY = life.birthY
+  , deathTime = life.deathTime
+  , deathX = life.deathX
+  , deathY = life.deathY
+  }
+
+lifeSearch : Model -> RemoteData (List Life)
+lifeSearch model =
+  LifeDataLayer.lifeSearch model.lifeSearchTerm model.dataLayer
+    |> RemoteData.map (List.map myLife)
 
 type alias LifeId r =
   { r

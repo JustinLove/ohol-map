@@ -149,9 +149,9 @@ update msg model =
     UI (View.PerformLifeSearch term) ->
       ( { model
         | lifeSearchTerm = term
-        , lives = Loading
+        , lifeSearchResults = Loading
         }
-      , fetchMatchingLives model.apiUrl term
+      , Cmd.none
       )
     UI (View.LifeTyping term) ->
       ( { model
@@ -534,7 +534,7 @@ update msg model =
       (model, Cmd.none)
     Event (Ok (Leaflet.SelectPoints lives)) ->
       ( { model
-        | lives = lives |> List.map myLife |> Data
+        | lifeSearchResults = lives |> List.map myLife |> Data
         , sidebar = OpenSidebar
         , sidebarMode = Search
         , lifeSearchTerm = ""
@@ -594,14 +594,14 @@ update msg model =
       (model, Log.decodeError "error" err)
     MatchingLives (Ok lives) ->
       let l = List.map myLife lives in
-      ( {model | lives = Data l }
+      ( {model | lifeSearchResults = Data l }
       , Cmd.batch
         [ Leaflet.displayResults (List.map serverToLeaflet lives)
         , Leaflet.lifeSearchOverlay True
         ]
       )
     MatchingLives (Err error) ->
-      ({model | lives = Failed error}, Log.httpError "fetch lives failed" error)
+      ({model | lifeSearchResults = Failed error}, Log.httpError "fetch lives failed" error)
     LineageLives serverId (Ok serverLives) ->
       let
         lives = serverLives
@@ -610,7 +610,7 @@ update msg model =
           |> List.map serverToLeaflet
       in
       ( { model
-        | lives = Data lives
+        | lifeSearchResults = Data lives
         , dataLayer = LifeDataLayer.fromLives serverId BirthLocation model.time serverLives
         , pointColor = ChainColor -- something other than CauseOfDeathColor in order to differentiate with daily review
         }
@@ -619,7 +619,7 @@ update msg model =
         |> addCommand displayClustersCommand
         |> appendCommand (Leaflet.dataLayer ll True)
     LineageLives serverId (Err error) ->
-      ({model | lives = Failed error}, Log.httpError "fetch lives failed" error)
+      ({model | lifeSearchResults = Failed error}, Log.httpError "fetch lives failed" error)
     ServerList (Ok serverList) ->
       let
         servers = serverList
@@ -2298,24 +2298,6 @@ fetchObjects =
     , expect = Http.expectJson ObjectsReceived Decode.objects
     }
 
---myLife : Data.Life -> Life
---myLife : Leaflet.Life -> Life
-myLife life =
-  { birthTime = life.birthTime
-  , generation = life.chain
-  , lineage = life.lineage
-  , playerid = life.playerid
-  , name = life.name
-  , serverId = life.serverId
-  , epoch = life.epoch
-  , age = life.age
-  , birthX = life.birthX
-  , birthY = life.birthY
-  , deathTime = life.deathTime
-  , deathX = life.deathX
-  , deathY = life.deathY
-  }
-
 leafletLife : Life -> Leaflet.Life
 leafletLife life =
   { birthTime = life.birthTime
@@ -2413,24 +2395,6 @@ twoHoursOneLife versions objects objectIndex currentTime =
   , monuments = NotAvailable
   , hasLives = False
   }
-
-fetchMatchingLives : String -> String -> Cmd Msg
-fetchMatchingLives baseUrl term =
-  let _ = Debug.log "fetchMathingLives" "" in
-  Http.request
-    { url = Url.crossOrigin baseUrl ["lives"]
-      [ lifeSearchParameter term
-      , Url.int "limit" 100
-      ]
-    , expect = Http.expectString (parseLives >> MatchingLives)
-    , method = "GET"
-    , headers =
-        [ Http.header "Accept" "text/plain"
-        ]
-    , body = Http.emptyBody
-    , timeout = Nothing
-    , tracker = Nothing
-    }
 
 lifeSearchParameter : String -> Url.QueryParameter
 lifeSearchParameter term =

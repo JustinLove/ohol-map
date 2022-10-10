@@ -13,6 +13,13 @@
 - direct lifelog display
   - searches
     - life search term fetchMatchingLives
+      - search memory
+        - x names
+        - hashes - data not exposed
+        - x ids
+      - lazy search
+      - fetch data if none loaded
+      - handle leaflet click results also
     - select lineage / fetchLineage
     - x fetch between fetchDataLayer
       - x FetchUpTo
@@ -34,6 +41,7 @@
     - previously assuming time decending data
   - loading status ui feedback
   - check daily review once server date range updated
+  - fuzzy name search
   - processed lifelog display?
   - eves only??
   - life search

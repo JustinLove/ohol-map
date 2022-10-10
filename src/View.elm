@@ -651,7 +651,7 @@ lifeSearch model =
     , height fill
     ]
     [ lifeSearchBox (themePalette model.theme) model.lifeSearchTerm
-    , showLifeResult model model.lives
+    , showLifeResult model (Model.lifeSearch model)
     ]
 
 objectSearch : Model -> Element Msg
