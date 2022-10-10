@@ -216,6 +216,14 @@ logIsInDates dates (date, _) =
 allPossibleLifelogsRequired : Posix -> Posix -> List Date
 allPossibleLifelogsRequired startTime endTime =
   Calendar.getDateRange (Calendar.fromPosix startTime) (Calendar.fromPosix endTime)
+    |> limit 7
+
+limit : Int -> List a -> List a
+limit largest list =
+  let
+    length = List.length list |> Debug.log "length"
+  in
+    List.drop (max 0 (length - largest)) list
 
 lifelogFiles : String -> Int -> String -> Posix -> List String
 lifelogFiles lifeLogUrl serverId serverName time =

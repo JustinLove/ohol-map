@@ -14,9 +14,9 @@
   - searches
     - life search term fetchMatchingLives
     - select lineage / fetchLineage
-    - ** fetch between fetchDataLayer
-      - FetchUpTo
-      - FetchBetween - daily review
+    - x fetch between fetchDataLayer
+      - x FetchUpTo
+      - -- FetchBetween - daily review - needs server date range
     - fetch recent fetchRecentLives (yesterday)
     - clean up OldDataLayer
   - all logs for target time range
@@ -25,7 +25,7 @@
     - x stitch together files
     - x incremental or when-done updates?
     - x load status tracking?
-    - can functions of model become functions of data layer?
+    - xx can functions of model become functions of data layer?
     - x caching/reuse
   - data file syntax error attribution
   - selection invisible on server1, second timeline
@@ -33,6 +33,7 @@
   - population graph?
     - previously assuming time decending data
   - loading status ui feedback
+  - check daily review once server date range updated
   - processed lifelog display?
   - eves only??
   - life search
