@@ -650,8 +650,8 @@ lifeSearch model =
     [ width fill
     , height fill
     ]
-    [ lifeSearchBox (themePalette model.theme) model.lifeSearchTerm
-    , showLifeResult model (Model.lifeSearch model)
+    [ lifeSearchBox (themePalette model.theme) model.lifeSearch.term
+    , showLifeResult model model.lifeSearch.results
     ]
 
 objectSearch : Model -> Element Msg
@@ -1107,7 +1107,7 @@ previousNextButtons palette browseProbablyTutorial items =
 
 showMatchingLife model life =
   row
-    [ if Just life == model.focusLife then
+    [ if Just life == model.lifeSearch.focusLife then
         Background.color (themePalette model.theme).highlight
       else
         Background.color (themePalette model.theme).background

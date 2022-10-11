@@ -4,6 +4,7 @@ import Clusters
 import Leaflet
 import Leaflet.Types exposing (Point, PointColor(..), PointLocation(..), Animatable(..))
 import LifeDataLayer
+import LifeSearch
 import LocalStorage
 import Log
 import Model exposing (..)
@@ -148,14 +149,13 @@ update msg model =
     UI (View.None) -> (model, Cmd.none)
     UI (View.PerformLifeSearch term) ->
       ( { model
-        | lifeSearchTerm = term
-        , lifeSearchResults = Loading
+        | lifeSearch = LifeSearch.updateTerm myLife term model.lifeSearch
         }
       , Cmd.none
       )
     UI (View.LifeTyping term) ->
       ( { model
-        | lifeSearchTerm = term
+        | lifeSearch = LifeSearch.updateTerm myLife term model.lifeSearch
         }
       , Cmd.none
       )
@@ -367,7 +367,7 @@ update msg model =
         |> addCommand displayClustersCommand
     UI (View.SelectMatchingLife life) ->
       ( { model
-        | focusLife = Just life
+        | lifeSearch = LifeSearch.focus life model.lifeSearch
         , mapTime = Just life.birthTime
         }
           |> setTimeRange (Just (lifeToRange life))
@@ -537,7 +537,7 @@ update msg model =
         | lifeSearchResults = lives |> List.map myLife |> Data
         , sidebar = OpenSidebar
         , sidebarMode = Search
-        , lifeSearchTerm = ""
+        --, lifeSearchTerm = ""
         }
       , Cmd.batch
         [ Leaflet.displayResults lives
@@ -864,6 +864,7 @@ update msg model =
       let dataLayer = LifeDataLayer.livesReceived model.pointLocation model.time lifeLogDay model.dataLayer in
       ( { model
         | dataLayer = dataLayer
+        , lifeSearch = LifeSearch.updateData myLife dataLayer.lives model.lifeSearch
         , player = if model.dataAnimated then Starting else Stopped
         }
           |> rebuildTimelines

@@ -16,6 +16,9 @@
     - life search term fetchMatchingLives
       - x search memory
       - lazy search
+        - send to leaflet?
+        - point select
+        - typing does search?
       - fetch data if none loaded
       - handle leaflet click results also
     - select lineage / fetchLineage
@@ -43,6 +46,10 @@
   - processed lifelog display?
   - eves only??
   - life search
+  - ui updates to explain changes
+    - life search is in memory
+    - life search is bounded by a time range
+    - life search is no longer cross server
 - check for leaflet updates
 
 - object search header locked

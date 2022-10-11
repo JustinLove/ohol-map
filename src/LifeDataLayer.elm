@@ -12,7 +12,6 @@ module LifeDataLayer exposing
   , shouldRequest
   , eventRange
   , currentLives
-  , lifeSearch
   , update
   , neededDates
   , setLoading
@@ -169,43 +168,6 @@ shouldRequest data =
 currentLives : LifeDataLayer -> List Data.Life
 currentLives data =
   data.lives |> RemoteData.withDefault []
-
-lifeSearch : String -> LifeDataLayer -> RemoteData (List Data.Life)
-lifeSearch term data =
-  data.lives
-    |> RemoteData.map (List.filter (matchFunction term))
-    |> RemoteData.map (List.sortBy (.birthTime >> Time.posixToMillis >> negate))
-    |> RemoteData.map (\lives -> List.take 100 lives)
-
-matchFunction : String -> Data.Life -> Bool
-matchFunction term =
-  case String.toInt term of
-    Just id -> idMatches id
-    Nothing ->
-      if String.length term == 40 && String.all Char.isHexDigit term then
-        hashMatches term
-      else
-        nameMatches term
-
-nameMatches : String -> Data.Life -> Bool
-nameMatches term =
-  let compare = String.toUpper term in
-  (\life -> case life.name of
-    Just name -> String.contains compare name
-    Nothing -> False
-  )
-
-idMatches : Int -> Data.Life -> Bool
-idMatches id life =
-  life.playerid == id
-
-hashMatches : String -> Data.Life -> Bool
-hashMatches term =
-  let compare = String.toLower term in
-  (\life -> case life.accountHash of
-    Just hash -> hash == compare
-    Nothing -> False
-  )
 
 update : Int -> Posix -> Posix -> LifeDataLayer -> LifeDataLayer
 update serverId startTime endTime data =

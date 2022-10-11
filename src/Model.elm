@@ -3,7 +3,6 @@ module Model exposing
   , Config
   , Life
   , myLife
-  , lifeSearch
   , LifeId
   , Sidebar(..)
   , SidebarMode(..)
@@ -79,6 +78,7 @@ module Model exposing
 import Clusters exposing (Clusters)
 import Leaflet.Types as Leaflet exposing (PointColor(..), PointLocation(..), Animatable(..))
 import LifeDataLayer exposing (LifeDataLayer)
+import LifeSearch exposing (LifeSearch)
 import OHOLData as Data
 import OHOLData.ParseMap as Parse
 import RemoteData exposing (RemoteData(..))
@@ -131,7 +131,6 @@ type alias Model =
   , sidebar : Sidebar
   , sidebarMode : SidebarMode
   , searchMode : SearchMode
-  , lifeSearchTerm : String
   , objectSearchTerm : String
   , objectListMode : ObjectListMode
   , timeMode : TimeMode
@@ -176,7 +175,7 @@ type alias Model =
   , objectIndex : RemoteData (List (ObjectId, String))
   , dataLayer : LifeDataLayer
   , lifeSearchResults : RemoteData (List Life)
-  , focusLife : Maybe Life
+  , lifeSearch : LifeSearch Life
   , spanData : Maybe SpanData
   , maxiumMatchingObjects: Maybe Int
   , totalMatchingObjects: Int
@@ -219,7 +218,6 @@ initialModel config location key =
   , sidebar = ClosedSidebar
   , sidebarMode = DataFilter
   , searchMode = SearchLives
-  , lifeSearchTerm = ""
   , objectSearchTerm = ""
   , objectListMode = MatchingObjects
   , timeMode = ServerRange
@@ -264,7 +262,7 @@ initialModel config location key =
   , objectIndex = NotRequested
   , dataLayer = LifeDataLayer.empty
   , lifeSearchResults = NotRequested
-  , focusLife = Nothing
+  , lifeSearch = LifeSearch.empty
   , spanData = Nothing
   , maxiumMatchingObjects = Just 20
   , totalMatchingObjects = 0
@@ -330,11 +328,6 @@ myLife life =
   , deathX = life.deathX
   , deathY = life.deathY
   }
-
-lifeSearch : Model -> RemoteData (List Life)
-lifeSearch model =
-  LifeDataLayer.lifeSearch model.lifeSearchTerm model.dataLayer
-    |> RemoteData.map (List.map myLife)
 
 type alias LifeId r =
   { r
