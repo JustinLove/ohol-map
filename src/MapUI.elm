@@ -47,7 +47,6 @@ type Msg
   = Loaded (Maybe Persist)
   | UI View.Msg
   | Event (Result Json.Decode.Error Leaflet.Event)
-  | MatchingLives (Result Http.Error (List Data.Life))
   | LineageLives Int (Result Http.Error (List Data.Life))
   | ServerList (Result Http.Error (List Data.Server))
   | ArcList Int (Result Http.Error (List Data.Arc))
@@ -148,14 +147,19 @@ update msg model =
         |> resolveLoaded
     UI (View.None) -> (model, Cmd.none)
     UI (View.PerformLifeSearch term) ->
+      let (lifeSearch, _) = LifeSearch.updateTerm myLife term model.lifeSearch in
       ( { model
-        | lifeSearch = LifeSearch.updateTerm myLife term model.lifeSearch
+        | lifeSearch = lifeSearch
         }
-      , Cmd.none
+      , lifeSearch.results
+        |> RemoteData.toMaybe
+        |> Maybe.map (List.map leafletLife)
+        |> displayResultsCommand
       )
     UI (View.LifeTyping term) ->
+      let (lifeSearch, _) = LifeSearch.updateTerm myLife term model.lifeSearch in
       ( { model
-        | lifeSearch = LifeSearch.updateTerm myLife term model.lifeSearch
+        | lifeSearch = lifeSearch
         }
       , Cmd.none
       )
@@ -592,16 +596,6 @@ update msg model =
       ({ model | mapAnimatable = dataAnimated }, Cmd.none)
     Event (Err err) ->
       (model, Log.decodeError "error" err)
-    MatchingLives (Ok lives) ->
-      let l = List.map myLife lives in
-      ( {model | lifeSearchResults = Data l }
-      , Cmd.batch
-        [ Leaflet.displayResults (List.map serverToLeaflet lives)
-        , Leaflet.lifeSearchOverlay True
-        ]
-      )
-    MatchingLives (Err error) ->
-      ({model | lifeSearchResults = Failed error}, Log.httpError "fetch lives failed" error)
     LineageLives serverId (Ok serverLives) ->
       let
         lives = serverLives
@@ -861,10 +855,13 @@ update msg model =
       , Log.httpError ("fetch data failed " ++ filename) error
       )
     DataLayer rangeSource serverId date (Ok lifeLogDay) ->
-      let dataLayer = LifeDataLayer.livesReceived model.pointLocation model.time lifeLogDay model.dataLayer in
+      let
+        dataLayer = LifeDataLayer.livesReceived model.pointLocation model.time lifeLogDay model.dataLayer
+        (lifeSearch, newResults) = LifeSearch.updateData myLife dataLayer.lives model.lifeSearch
+      in
       ( { model
         | dataLayer = dataLayer
-        , lifeSearch = LifeSearch.updateData myLife dataLayer.lives model.lifeSearch
+        , lifeSearch = lifeSearch
         , player = if model.dataAnimated then Starting else Stopped
         }
           |> rebuildTimelines
@@ -872,6 +869,7 @@ update msg model =
       )
         |> addCommand displayClustersCommand
         |> appendCommand (Leaflet.dataLayer (List.map serverToLeaflet (LifeDataLayer.currentLives dataLayer)) False)
+        |> appendCommand (displayResultsCommand (Maybe.map (List.map serverToLeaflet) newResults))
         |> (if rangeSource == DataRange then addUpdate setRangeForData else identity)
     DataLayer _ serverId date (Err error) ->
       let filename = dateYearMonthMonthDayWeekday Time.utc (date |> Calendar.toMillis |> Time.millisToPosix) in
@@ -1211,6 +1209,17 @@ displayClustersAtZoomCommand zoom model =
       |> Maybe.withDefault Cmd.none
   else
     Cmd.none
+
+displayResultsCommand : Maybe (List Leaflet.Life) -> Cmd Msg
+displayResultsCommand newResults =
+  case newResults of
+    Just lives ->
+      Cmd.batch
+        [ Leaflet.displayResults lives
+        , Leaflet.lifeSearchOverlay True
+        ]
+    Nothing ->
+      Cmd.none
 
 makeObjectMap : List ObjectId -> List String -> Dict ObjectId String
 makeObjectMap ids names =

@@ -32,23 +32,28 @@ focus life lifeSearch =
 
 updateTerm trans term lifeSearch =
   if term == lifeSearch.term then
-    lifeSearch
+    (lifeSearch, Nothing)
   else
     update trans term lifeSearch.sourceData lifeSearch
 
 updateData trans sourceData lifeSearch =
   if sourceData == lifeSearch.sourceData then
-    lifeSearch
+    (lifeSearch, Nothing)
   else
     update trans lifeSearch.term sourceData lifeSearch
 
-update : (Data.Life -> life) -> String -> RemoteData (List Data.Life) -> LifeSearch life -> LifeSearch life
+update : (Data.Life -> life) -> String -> RemoteData (List Data.Life) -> LifeSearch life -> (LifeSearch life, Maybe (List Data.Life))
 update trans term sourceData lifeSearch =
-  { term = term
-  , sourceData = sourceData
-  , results = sourceData |> RemoteData.map (lifeListSearch term >> List.map trans)
-  , focusLife = lifeSearch.focusLife
-  }
+  let
+    results = sourceData |> RemoteData.map (lifeListSearch term)
+  in
+  ( { term = term
+    , sourceData = sourceData
+    , results = results |> RemoteData.map (List.map trans)
+    , focusLife = lifeSearch.focusLife
+    }
+  , RemoteData.toMaybe results
+  )
 
 lifeListSearch : String -> List Data.Life -> List Data.Life
 lifeListSearch term lives =

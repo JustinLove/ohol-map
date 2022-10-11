@@ -16,7 +16,7 @@
     - life search term fetchMatchingLives
       - x search memory
       - lazy search
-        - send to leaflet?
+        - x send to leaflet?
         - point select
         - typing does search?
       - fetch data if none loaded
