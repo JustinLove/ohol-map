@@ -1,6 +1,7 @@
 module LifeSearch exposing
   ( LifeSearch
   , empty
+  , outsideResults
   , focus
   , updateTerm
   , updateData
@@ -23,6 +24,14 @@ empty =
   { term = ""
   , sourceData = NotRequested
   , results = NotRequested
+  , focusLife = Nothing
+  }
+
+outsideResults : List life -> LifeSearch life
+outsideResults lives =
+  { term = ""
+  , sourceData = NotAvailable
+  , results = Data lives
   , focusLife = Nothing
   }
 

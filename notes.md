@@ -15,12 +15,9 @@
   - searches
     - life search term fetchMatchingLives
       - x search memory
-      - lazy search
-        - x send to leaflet?
-        - point select
-        - typing does search?
+      - x lazy search
+      - x handle leaflet click results also
       - fetch data if none loaded
-      - handle leaflet click results also
     - select lineage / fetchLineage
     - x fetch between fetchDataLayer
       - x FetchUpTo

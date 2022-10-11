@@ -538,10 +538,9 @@ update msg model =
       (model, Cmd.none)
     Event (Ok (Leaflet.SelectPoints lives)) ->
       ( { model
-        | lifeSearchResults = lives |> List.map myLife |> Data
+        | lifeSearch = LifeSearch.outsideResults (lives |> List.map myLife)
         , sidebar = OpenSidebar
         , sidebarMode = Search
-        --, lifeSearchTerm = ""
         }
       , Cmd.batch
         [ Leaflet.displayResults lives
