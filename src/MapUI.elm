@@ -147,15 +147,23 @@ update msg model =
         |> resolveLoaded
     UI (View.None) -> (model, Cmd.none)
     UI (View.PerformLifeSearch term) ->
-      let (lifeSearch, _) = LifeSearch.updateTerm myLife term model.lifeSearch in
-      ( { model
-        | lifeSearch = lifeSearch
-        }
-      , lifeSearch.results
-        |> RemoteData.toMaybe
-        |> Maybe.map (List.map leafletLife)
-        |> displayResultsCommand
-      )
+      let
+        (lifeSearch, _) = LifeSearch.updateTerm myLife term model.lifeSearch
+        basicUpdate =
+          ( { model
+            | lifeSearch = lifeSearch
+            }
+          , lifeSearch.results
+            |> RemoteData.toMaybe
+            |> Maybe.map (List.map leafletLife)
+            |> displayResultsCommand
+          )
+      in
+        if lifeSearch.results == NotRequested then
+          basicUpdate
+            |> addUpdate lifeDataLayerBecameVisible
+        else
+          basicUpdate
     UI (View.LifeTyping term) ->
       let (lifeSearch, _) = LifeSearch.updateTerm myLife term model.lifeSearch in
       ( { model

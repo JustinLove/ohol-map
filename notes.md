@@ -17,7 +17,7 @@
       - x search memory
       - x lazy search
       - x handle leaflet click results also
-      - fetch data if none loaded
+      - x fetch data if none loaded
     - select lineage / fetchLineage
     - x fetch between fetchDataLayer
       - x FetchUpTo
