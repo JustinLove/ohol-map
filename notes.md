@@ -22,12 +22,13 @@
     - select lineage / fetchLineage
       - x date display filter
       - x lineage display filter
-      - fetch expansion
+      - fetch expansion - one time done
     - x fetch between fetchDataLayer
       - x FetchUpTo
       - -- FetchBetween - daily review - needs server date range
     - x fetch recent fetchRecentLives (yesterday)
     - clean up OldDataLayer
+    - filenames in lifelogdatalayer
   - all logs for target time range
     - x extract data layer
     - x fetch multi files

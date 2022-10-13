@@ -15,7 +15,9 @@ module LifeDataLayer exposing
   , shouldRequest
   , eventRange
   , currentLives
-  , update
+  , queryAroundTime
+  , queryExactTime
+  , queryLineageOfLife
   , neededDates
   , setLoading
   , allPossibleLifelogsRequired
@@ -118,7 +120,22 @@ resolveLivesIfLoaded pointLocation defaultTime data =
 resolveLives : PointLocation -> Posix -> LifeDataLayer -> LifeDataLayer
 resolveLives pointLocation defaultTime data =
   let
-    sortedLogs = data.logs
+    lives = resolveLifeLogs data.logs
+      |> List.map (\life -> {life | serverId = data.serverId})
+      |> applyDisplayFilter data.displayFilter
+  in
+  { serverId = data.serverId
+  , displayFilter = data.displayFilter
+  , lives = Data lives
+  , population = Just (populationFromLives defaultTime lives)
+  , clusters = Just (Clusters.fromLives pointLocation defaultTime lives)
+  , logs = data.logs
+  }
+
+resolveLifeLogs : List (Date, RemoteData LifeLogDay) -> List Data.Life
+resolveLifeLogs logs =
+  let
+    sortedLogs = logs
       |> List.sortBy (Tuple.first >> Calendar.toMillis)
     days = sortedLogs
       |> List.map Tuple.second
@@ -127,16 +144,8 @@ resolveLives pointLocation defaultTime data =
       |> Parse.mergeLifeEvents
     names = days
       |> List.concatMap (RemoteData.map .names >> RemoteData.withDefault [])
-    lives = Parse.mergeNames namelessLives names
-      |> applyDisplayFilter data.displayFilter
   in
-  { serverId = data.serverId
-  , displayFilter = data.displayFilter
-  , lives = Data lives
-  , population = Just (populationFromLives defaultTime lives)
-  , clusters = Just (Clusters.fromLives pointLocation defaultTime lives)
-  , logs = sortedLogs
-  }
+    Parse.mergeNames namelessLives names
 
 applyDisplayFilter : LifeDisplayFilter -> List Data.Life -> List Data.Life
 applyDisplayFilter filter lives =
@@ -171,6 +180,12 @@ fail server date error data =
   , population = Nothing
   , clusters = Nothing
   , logs = [(date, Failed error)]
+  }
+
+displayAll : LifeDataLayer -> LifeDataLayer
+displayAll data =
+  { data
+  | displayFilter = DisplayAll
   }
 
 displayRange : Posix -> Posix -> LifeDataLayer -> LifeDataLayer
@@ -220,6 +235,45 @@ shouldRequest data =
 currentLives : LifeDataLayer -> List Data.Life
 currentLives data =
   data.lives |> RemoteData.withDefault []
+
+queryAroundTime : Int -> Posix -> Posix -> LifeDataLayer -> LifeDataLayer
+queryAroundTime serverId startTime endTime data =
+  update serverId startTime endTime data
+    |> displayAll
+
+queryExactTime : Int -> Posix -> Posix -> LifeDataLayer -> LifeDataLayer
+queryExactTime serverId startTime endTime data =
+  update serverId startTime endTime data
+    |> displayRange startTime endTime
+
+oneHour = 60 * 60 * 1000
+
+queryLineageOfLife : Int -> Int -> Posix -> LifeDataLayer -> LifeDataLayer
+queryLineageOfLife serverId playerid startTime data =
+  case eventRange data of
+    Just (dataStart, dataEnd) ->
+      let
+        startMs = startTime |> Time.posixToMillis
+        lineageBirthTimes = data.logs
+          |> resolveLifeLogs
+          |> applyDisplayFilter (DisplayLineageOf playerid)
+          |> List.map (.birthTime>>Time.posixToMillis)
+        firstBirth = List.minimum lineageBirthTimes
+          |> Maybe.withDefault startMs
+        lastBirth = List.maximum lineageBirthTimes
+          |> Maybe.withDefault startMs
+        dataStartMs = Time.posixToMillis dataStart
+        dataEndMs = Time.posixToMillis dataEnd
+        potentialStart = firstBirth - oneHour
+        potentialEnd = lastBirth + oneHour
+        potentialStartPosix = potentialStart |> Time.millisToPosix
+        potentialEndPosix = potentialEnd |> Time.millisToPosix
+      in
+        update serverId potentialStartPosix potentialEndPosix data
+          |> displayLineageOf playerid
+    Nothing ->
+      update serverId startTime startTime data
+        |> displayLineageOf playerid
 
 update : Int -> Posix -> Posix -> LifeDataLayer -> LifeDataLayer
 update serverId startTime endTime data =
@@ -274,7 +328,7 @@ allPossibleLifelogsRequired startTime endTime =
 limit : Int -> List a -> List a
 limit largest list =
   let
-    length = List.length list |> Debug.log "length"
+    length = List.length list
   in
     List.drop (max 0 (length - largest)) list
 

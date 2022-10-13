@@ -467,7 +467,9 @@ update msg model =
       toggleIconDisplay id checked model
         |> andHighlightObjects
     UI (View.SelectLineage life) ->
-      lifeDataUpdated DataRange (LifeDataLayer.displayLineageOf life.playerid model.dataLayer) model
+      let _ = Debug.log "select" life in
+      --lifeDataUpdated DataRange (LifeDataLayer.displayLineageOf life.playerid model.dataLayer) model
+      fetchLineage life model
     UI (View.SelectSidebarMode mode) ->
       ( { model | sidebarMode = mode }
       , Cmd.none
@@ -2445,13 +2447,38 @@ fetchMonuments serverId =
 fetchDataLayer : Posix -> Posix -> RangeSource -> Model -> (Model, Cmd Msg)
 fetchDataLayer startTime endTime rangeSource model =
   let
-    display = case rangeSource of
-      PredeterminedRange -> LifeDataLayer.displayRange startTime endTime
-      DataRange -> identity
     server = (model.selectedServer |> Maybe.withDefault 17)
     serverName = (currentServerName model)
-    updated = LifeDataLayer.update server startTime endTime model.dataLayer
-      |> display
+    updated = case rangeSource of
+      PredeterminedRange ->
+        LifeDataLayer.queryExactTime server startTime endTime model.dataLayer
+      DataRange ->
+        LifeDataLayer.queryAroundTime server startTime endTime model.dataLayer
+    neededDates = LifeDataLayer.neededDates updated
+  in
+    if List.isEmpty neededDates then
+      lifeDataUpdated rangeSource updated model
+    else
+      ( { model | dataLayer = LifeDataLayer.setLoading updated}
+      , neededDates
+        |> List.map (\date ->
+          fetchDataLayerFile model.publicLifeLogData
+            server
+            serverName
+            date
+            rangeSource
+            model.evesOnly
+          )
+        |> Cmd.batch
+      )
+
+fetchLineage : Life -> Model -> (Model, Cmd Msg)
+fetchLineage life model =
+  let
+    server = life.serverId
+    serverName = nameForServer model server
+    rangeSource = DataRange
+    updated = LifeDataLayer.queryLineageOfLife server life.playerid life.birthTime model.dataLayer
     neededDates = LifeDataLayer.neededDates updated
   in
     if List.isEmpty neededDates then
