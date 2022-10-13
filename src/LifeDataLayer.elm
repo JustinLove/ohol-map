@@ -8,7 +8,7 @@ module LifeDataLayer exposing
   , resolveLivesIfLoaded
   , fail
   , displayRange
-  , displayLineage
+  , displayLineageOf
   , hasData
   , hasDataFor
   , canMakeRequest
@@ -54,7 +54,7 @@ type alias LifeLogDay =
 
 type LifeDisplayFilter
   = DisplayRange Posix Posix
-  | DisplayLineage Int
+  | DisplayLineageOf Int
   | DisplayAll
 
 empty : LifeDataLayer
@@ -151,8 +151,15 @@ applyDisplayFilter filter lives =
             startMs <= ms && ms <= endMs
           )
           lives
-    DisplayLineage lineage ->
-      List.filter (\life -> life.lineage == lineage) lives
+    DisplayLineageOf playerid ->
+      let
+        mplayer = lives
+          |> List.filter (\life -> life.playerid == playerid)
+          |> List.head
+      in
+        case mplayer of
+          Just player -> List.filter (\life -> life.lineage == player.lineage) lives
+          Nothing -> []
     DisplayAll ->
       lives
 
@@ -172,10 +179,10 @@ displayRange startTime endTime data =
   | displayFilter = DisplayRange startTime endTime
   }
 
-displayLineage : Int -> LifeDataLayer -> LifeDataLayer
-displayLineage lineage data =
+displayLineageOf : Int -> LifeDataLayer -> LifeDataLayer
+displayLineageOf playerId data =
   { data
-  | displayFilter = DisplayLineage lineage
+  | displayFilter = DisplayLineageOf playerId
   }
 
 

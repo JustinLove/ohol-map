@@ -467,7 +467,7 @@ update msg model =
       toggleIconDisplay id checked model
         |> andHighlightObjects
     UI (View.SelectLineage life) ->
-      lifeDataUpdated DataRange (LifeDataLayer.displayLineage life.lineage model.dataLayer) model
+      lifeDataUpdated DataRange (LifeDataLayer.displayLineageOf life.playerid model.dataLayer) model
     UI (View.SelectSidebarMode mode) ->
       ( { model | sidebarMode = mode }
       , Cmd.none
