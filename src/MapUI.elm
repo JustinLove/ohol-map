@@ -467,9 +467,7 @@ update msg model =
       toggleIconDisplay id checked model
         |> andHighlightObjects
     UI (View.SelectLineage life) ->
-      ( model
-      , fetchLineage model.apiUrl life
-      )
+      lifeDataUpdated DataRange (LifeDataLayer.displayLineage life.lineage model.dataLayer) model
     UI (View.SelectSidebarMode mode) ->
       ( { model | sidebarMode = mode }
       , Cmd.none
@@ -1356,12 +1354,6 @@ testData model =
     }
   , Cmd.batch
     [ fetchDailyReview model
-    {-[ fetchLineage model.apiUrl
-      { serverId = 17
-      , epoch = 2
-      , lineage = 4485480
-      , playerid = 4485480
-      -}
     ]
   )
 
@@ -2422,25 +2414,6 @@ lifeSearchParameter term =
   case String.toInt term of
     Just number -> Url.int "playerid" number
     Nothing -> Url.string "q" term
-
-fetchLineage : String -> LifeId l -> Cmd Msg
-fetchLineage baseUrl life =
-  let _ = Debug.log "fetchLineage" "" in
-  Http.request
-    { url = Url.crossOrigin baseUrl ["lives"]
-      [ Url.int "server_id" life.serverId
-      , Url.int "epoch" life.epoch
-      , Url.int "lineage" life.lineage
-      ]
-    , expect = Http.expectString (parseLives >> (LineageLives life.serverId))
-    , method = "GET"
-    , headers =
-        [ Http.header "Accept" "text/plain"
-        ]
-    , body = Http.emptyBody
-    , timeout = Nothing
-    , tracker = Nothing
-    }
 
 requireMonuments : Model -> Server -> (Server, Cmd Msg)
 requireMonuments model server =

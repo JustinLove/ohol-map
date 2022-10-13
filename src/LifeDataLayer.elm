@@ -8,6 +8,7 @@ module LifeDataLayer exposing
   , resolveLivesIfLoaded
   , fail
   , displayRange
+  , displayLineage
   , hasData
   , hasDataFor
   , canMakeRequest
@@ -53,6 +54,7 @@ type alias LifeLogDay =
 
 type LifeDisplayFilter
   = DisplayRange Posix Posix
+  | DisplayLineage Int
   | DisplayAll
 
 empty : LifeDataLayer
@@ -149,6 +151,8 @@ applyDisplayFilter filter lives =
             startMs <= ms && ms <= endMs
           )
           lives
+    DisplayLineage lineage ->
+      List.filter (\life -> life.lineage == lineage) lives
     DisplayAll ->
       lives
 
@@ -167,6 +171,13 @@ displayRange startTime endTime data =
   { data
   | displayFilter = DisplayRange startTime endTime
   }
+
+displayLineage : Int -> LifeDataLayer -> LifeDataLayer
+displayLineage lineage data =
+  { data
+  | displayFilter = DisplayLineage lineage
+  }
+
 
 hasData : LifeDataLayer -> Bool
 hasData data =

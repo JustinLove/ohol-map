@@ -21,7 +21,7 @@
       - x default to no search results
     - select lineage / fetchLineage
       - x date display filter
-      - lineage display filter
+      - x lineage display filter
       - fetch expansion
     - x fetch between fetchDataLayer
       - x FetchUpTo
