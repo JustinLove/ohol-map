@@ -861,23 +861,8 @@ update msg model =
       ( {model | dataLayer = LifeDataLayer.fail serverId date error model.dataLayer}
       , Log.httpError ("fetch data failed " ++ filename) error
       )
-    DataLayer rangeSource serverId date (Ok lifeLogDay) ->
-      let
-        dataLayer = LifeDataLayer.livesReceived model.pointLocation model.time lifeLogDay model.dataLayer
-        (lifeSearch, newResults) = LifeSearch.updateData myLife dataLayer.lives model.lifeSearch
-      in
-      ( { model
-        | dataLayer = dataLayer
-        , lifeSearch = lifeSearch
-        , player = if model.dataAnimated then Starting else Stopped
-        }
-          |> rebuildTimelines
-      , Cmd.none
-      )
-        |> addCommand displayClustersCommand
-        |> appendCommand (Leaflet.dataLayer (List.map serverToLeaflet (LifeDataLayer.currentLives dataLayer)) False)
-        |> appendCommand (displayResultsCommand (Maybe.map (List.map serverToLeaflet) newResults))
-        |> (if rangeSource == DataRange then addUpdate setRangeForData else identity)
+    DataLayer rangeSource serverId_ date_ (Ok lifeLogDay) ->
+      lifeDataUpdated rangeSource (LifeDataLayer.livesReceived lifeLogDay model.dataLayer) model
     DataLayer _ serverId date (Err error) ->
       let filename = dateYearMonthMonthDayWeekday Time.utc (date |> Calendar.toMillis |> Time.millisToPosix) in
       ( {model | dataLayer = LifeDataLayer.fail serverId date error model.dataLayer}
@@ -1961,6 +1946,25 @@ fetchDataForTime model =
               Nothing ->
                 (model, Task.succeed () |> Task.perform (always NoDataLayer))
 
+lifeDataUpdated : RangeSource -> LifeDataLayer.LifeDataLayer -> Model -> (Model, Cmd Msg)
+lifeDataUpdated rangeSource unresolvedDataLayer model =
+  let
+    dataLayer = LifeDataLayer.resolveLivesIfLoaded model.pointLocation model.time unresolvedDataLayer
+    (lifeSearch, newResults) = LifeSearch.updateData myLife dataLayer.lives model.lifeSearch
+  in
+  ( { model
+    | dataLayer = dataLayer
+    , lifeSearch = lifeSearch
+    , player = if model.dataAnimated then Starting else Stopped
+    }
+      |> rebuildTimelines
+  , Cmd.none
+  )
+    |> addCommand displayClustersCommand
+    |> appendCommand (Leaflet.dataLayer (List.map serverToLeaflet (LifeDataLayer.currentLives dataLayer)) False)
+    |> appendCommand (displayResultsCommand (Maybe.map (List.map serverToLeaflet) newResults))
+    |> (if rangeSource == DataRange then addUpdate setRangeForData else identity)
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
   Sub.batch
@@ -2468,22 +2472,30 @@ fetchMonuments serverId =
 fetchDataLayer : Posix -> Posix -> RangeSource -> Model -> (Model, Cmd Msg)
 fetchDataLayer startTime endTime rangeSource model =
   let
+    display = case rangeSource of
+      PredeterminedRange -> LifeDataLayer.displayRange startTime endTime
+      DataRange -> identity
     server = (model.selectedServer |> Maybe.withDefault 17)
     serverName = (currentServerName model)
     updated = LifeDataLayer.update server startTime endTime model.dataLayer
+      |> display
+    neededDates = LifeDataLayer.neededDates updated
   in
-  ( { model | dataLayer = LifeDataLayer.setLoading updated}
-  , LifeDataLayer.neededDates updated
-    |> List.map (\date ->
-      fetchDataLayerFile model.publicLifeLogData
-        server
-        serverName
-        date
-        rangeSource
-        model.evesOnly
+    if List.isEmpty neededDates then
+      lifeDataUpdated rangeSource updated model
+    else
+      ( { model | dataLayer = LifeDataLayer.setLoading updated}
+      , neededDates
+        |> List.map (\date ->
+          fetchDataLayerFile model.publicLifeLogData
+            server
+            serverName
+            date
+            rangeSource
+            model.evesOnly
+          )
+        |> Cmd.batch
       )
-    |> Cmd.batch
-  )
 
 fetchDataLayerFile : String -> Int -> String -> Date -> RangeSource -> Bool -> Cmd Msg
 fetchDataLayerFile lifeLogUrl serverId serverName date rangeSource evesOnly =

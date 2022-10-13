@@ -18,7 +18,11 @@
       - x lazy search
       - x handle leaflet click results also
       - x fetch data if none loaded
+      - default to no search results
     - select lineage / fetchLineage
+      - x date display filter
+      - lineage display filter
+      - fetch expansion
     - x fetch between fetchDataLayer
       - x FetchUpTo
       - -- FetchBetween - daily review - needs server date range

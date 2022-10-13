@@ -5,7 +5,9 @@ module LifeDataLayer exposing
   , load
   , fromLives
   , livesReceived
+  , resolveLivesIfLoaded
   , fail
+  , displayRange
   , hasData
   , hasDataFor
   , canMakeRequest
@@ -35,6 +37,7 @@ import Time exposing (Posix)
 
 type alias LifeDataLayer =
   { serverId : Int
+  , displayFilter : LifeDisplayFilter
   , lives : RemoteData (List Data.Life)
   , population : Maybe Population
   , clusters : Maybe Clusters
@@ -48,9 +51,14 @@ type alias LifeLogDay =
   , names : List Parse.NameLog
   }
 
+type LifeDisplayFilter
+  = DisplayRange Posix Posix
+  | DisplayAll
+
 empty : LifeDataLayer
 empty =
   { serverId = 0
+  , displayFilter = DisplayAll
   , lives = NotRequested
   , population = Nothing
   , clusters = Nothing
@@ -60,6 +68,7 @@ empty =
 load : Int -> List Date -> LifeDataLayer
 load server dates =
   { serverId = server
+  , displayFilter = DisplayAll
   , lives = Loading
   , population = Nothing
   , clusters = Nothing
@@ -69,19 +78,19 @@ load server dates =
 fromLives : Int -> PointLocation -> Posix -> List Data.Life -> LifeDataLayer
 fromLives server pointLocation defaultTime lives =
   { serverId = server
+  , displayFilter = DisplayAll
   , lives = Data lives
   , population = Just (populationFromLives defaultTime lives)
   , clusters = Just (Clusters.fromLives pointLocation defaultTime lives)
   , logs = []
   }
 
-livesReceived : PointLocation -> Posix -> LifeLogDay -> LifeDataLayer -> LifeDataLayer
-livesReceived pointLocation defaultTime lifeLogDay data =
+livesReceived : LifeLogDay -> LifeDataLayer -> LifeDataLayer
+livesReceived lifeLogDay data =
   if lifeLogDay.serverId /= data.serverId then
     data
   else
     { data | logs = updateLog lifeLogDay.date (Data lifeLogDay) data.logs }
-      |> resolveLivesIfLoaded pointLocation defaultTime
 
 updateLog : Date -> RemoteData LifeLogDay -> List (Date, RemoteData LifeLogDay) -> List (Date, RemoteData LifeLogDay)
 updateLog date value logs =
@@ -117,21 +126,46 @@ resolveLives pointLocation defaultTime data =
     names = days
       |> List.concatMap (RemoteData.map .names >> RemoteData.withDefault [])
     lives = Parse.mergeNames namelessLives names
+      |> applyDisplayFilter data.displayFilter
   in
   { serverId = data.serverId
+  , displayFilter = data.displayFilter
   , lives = Data lives
   , population = Just (populationFromLives defaultTime lives)
   , clusters = Just (Clusters.fromLives pointLocation defaultTime lives)
   , logs = sortedLogs
   }
 
+applyDisplayFilter : LifeDisplayFilter -> List Data.Life -> List Data.Life
+applyDisplayFilter filter lives =
+  case filter of
+    DisplayRange startTime endTime ->
+      let
+        startMs = Time.posixToMillis startTime
+        endMs = Time.posixToMillis endTime
+      in
+        List.filter (\life ->
+            let ms = Time.posixToMillis life.birthTime in
+            startMs <= ms && ms <= endMs
+          )
+          lives
+    DisplayAll ->
+      lives
+
 fail : Int -> Date -> Http.Error -> LifeDataLayer -> LifeDataLayer
 fail server date error data =
   { serverId = server
+  , displayFilter = data.displayFilter
   , lives = Failed error
   , population = Nothing
   , clusters = Nothing
   , logs = [(date, Failed error)]
+  }
+
+displayRange : Posix -> Posix -> LifeDataLayer -> LifeDataLayer
+displayRange startTime endTime data =
+  { data
+  | displayFilter = DisplayRange startTime endTime
   }
 
 hasData : LifeDataLayer -> Bool
@@ -196,6 +230,7 @@ neededDates data =
 setLoading : LifeDataLayer -> LifeDataLayer
 setLoading data =
   { serverId = data.serverId
+  , displayFilter = data.displayFilter
   , lives = Loading
   , population = Nothing
   , clusters = Nothing
