@@ -84,10 +84,13 @@ matchFunction term =
 nameMatches : String -> Data.Life -> Bool
 nameMatches term =
   let compare = String.toUpper term in
-  (\life -> case life.name of
-    Just name -> String.contains compare name
-    Nothing -> False
-  )
+  if compare == "" then
+    always False
+  else
+    (\life -> case life.name of
+      Just name -> String.contains compare name
+      Nothing -> False
+    )
 
 idMatches : Int -> Data.Life -> Bool
 idMatches id life =
