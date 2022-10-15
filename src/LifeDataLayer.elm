@@ -11,6 +11,7 @@ module LifeDataLayer exposing
   , shouldRequest
   , eventRange
   , currentLives
+  , isDisplayingSingleLineage
   , queryAroundTime
   , queryExactTime
   , queryLineageOfLife
@@ -221,6 +222,12 @@ shouldRequest data =
 currentLives : LifeDataLayer -> List Data.Life
 currentLives data =
   data.lives |> RemoteData.withDefault []
+
+isDisplayingSingleLineage : LifeDataLayer -> Bool
+isDisplayingSingleLineage data =
+  case data.displayFilter of
+    DisplayLineageOf _ -> True
+    _ -> False
 
 queryAroundTime : Int -> Posix -> Posix -> LifeDataLayer -> LifeDataLayer
 queryAroundTime serverId startTime endTime data =

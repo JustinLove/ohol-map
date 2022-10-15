@@ -27,13 +27,13 @@
         - x query lineage: uses prefiltered data
         - x where to query next step?
         - refactoring?
-      - lineage list in search results
+      - x lineage list in search results
       - x chain color
     - x fetch between fetchDataLayer
       - x FetchUpTo
       - -- FetchBetween - daily review - needs server date range
     - x fetch recent fetchRecentLives (yesterday)
-    - autoplay yesterday
+    - ? autoplay yesterday
         , player = if model.dataAnimated then Starting else Stopped
     - x filenames in lifelogdatalayer
   - all logs for target time range
@@ -44,6 +44,7 @@
     - x load status tracking?
     - xx can functions of model become functions of data layer?
     - x caching/reuse
+  - life search data types
   - data file syntax error attribution
   - selection invisible on server1, second timeline
   - old worlds default to large time queries

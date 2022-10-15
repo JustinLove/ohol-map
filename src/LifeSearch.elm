@@ -2,6 +2,7 @@ module LifeSearch exposing
   ( LifeSearch
   , empty
   , outsideResults
+  , completeResults
   , focus
   , updateTerm
   , updateData
@@ -32,6 +33,17 @@ outsideResults lives =
   { term = ""
   , sourceData = NotAvailable
   , results = Data lives
+  , focusLife = Nothing
+  }
+
+completeResults : (Data.Life -> life) -> List Data.Life -> LifeSearch life
+completeResults func lives =
+  { term = ""
+  , sourceData = Data lives
+  , results = lives
+    |> lifeListSort
+    |> List.map func
+    |> Data
   , focusLife = Nothing
   }
 
@@ -68,8 +80,12 @@ lifeListSearch : String -> List Data.Life -> List Data.Life
 lifeListSearch term lives =
   lives
     |> List.filter (matchFunction term)
-    |> List.sortBy (.birthTime >> Time.posixToMillis >> negate)
+    |> lifeListSort
     |> List.take 100
+
+lifeListSort : List Data.Life -> List Data.Life
+lifeListSort =
+    List.sortBy (.birthTime >> Time.posixToMillis >> negate)
 
 matchFunction : String -> Data.Life -> Bool
 matchFunction term =

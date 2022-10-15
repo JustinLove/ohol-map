@@ -1913,7 +1913,14 @@ lifeDataUpdated rangeSource unresolvedDataLayer model =
 lifeDataUpdateComplete : RangeSource -> LifeDataLayer.LifeDataLayer -> Model -> (Model, Cmd Msg)
 lifeDataUpdateComplete rangeSource dataLayer model =
   let
-    (lifeSearch, newResults) = LifeSearch.updateData myLife dataLayer.lives model.lifeSearch
+    (lifeSearch, newResults) =
+      if LifeDataLayer.isDisplayingSingleLineage dataLayer then
+        let
+          serverLives = LifeDataLayer.currentLives dataLayer
+        in
+          (LifeSearch.completeResults myLife serverLives, Just serverLives)
+      else
+        LifeSearch.updateData myLife dataLayer.lives model.lifeSearch
   in
   ( { model
     | dataLayer = dataLayer
