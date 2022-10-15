@@ -1944,6 +1944,16 @@ lifeDataUpdated : RangeSource -> LifeDataLayer.LifeDataLayer -> Model -> (Model,
 lifeDataUpdated rangeSource unresolvedDataLayer model =
   let
     dataLayer = LifeDataLayer.resolveLivesIfLoaded model.pointLocation model.time unresolvedDataLayer
+    neededDates = LifeDataLayer.neededDates dataLayer
+  in
+    if List.isEmpty neededDates then
+      lifeDataUpdateComplete rangeSource dataLayer model
+    else
+      fetchFilesForDataLayer neededDates rangeSource dataLayer model
+
+lifeDataUpdateComplete : RangeSource -> LifeDataLayer.LifeDataLayer -> Model -> (Model, Cmd Msg)
+lifeDataUpdateComplete rangeSource dataLayer model =
+  let
     (lifeSearch, newResults) = LifeSearch.updateData myLife dataLayer.lives model.lifeSearch
   in
   ( { model
@@ -2454,48 +2464,42 @@ fetchDataLayer startTime endTime rangeSource model =
         LifeDataLayer.queryExactTime server startTime endTime model.dataLayer
       DataRange ->
         LifeDataLayer.queryAroundTime server startTime endTime model.dataLayer
-    neededDates = LifeDataLayer.neededDates updated
   in
-    if List.isEmpty neededDates then
-      lifeDataUpdated rangeSource updated model
-    else
-      ( { model | dataLayer = LifeDataLayer.setLoading updated}
-      , neededDates
-        |> List.map (\date ->
-          fetchDataLayerFile model.publicLifeLogData
-            server
-            serverName
-            date
-            rangeSource
-            model.evesOnly
-          )
-        |> Cmd.batch
-      )
+    fetchFilesForDataLayerIfNeeded rangeSource updated model
 
 fetchLineage : Life -> Model -> (Model, Cmd Msg)
 fetchLineage life model =
   let
     server = life.serverId
-    serverName = nameForServer model server
     rangeSource = DataRange
     updated = LifeDataLayer.queryLineageOfLife server life.playerid life.birthTime model.dataLayer
+  in
+    fetchFilesForDataLayerIfNeeded rangeSource updated model
+
+fetchFilesForDataLayerIfNeeded : RangeSource -> LifeDataLayer.LifeDataLayer -> Model -> (Model, Cmd Msg)
+fetchFilesForDataLayerIfNeeded rangeSource updated model =
+  let
     neededDates = LifeDataLayer.neededDates updated
   in
     if List.isEmpty neededDates then
       lifeDataUpdated rangeSource updated model
     else
-      ( { model | dataLayer = LifeDataLayer.setLoading updated}
-      , neededDates
-        |> List.map (\date ->
-          fetchDataLayerFile model.publicLifeLogData
-            server
-            serverName
-            date
-            rangeSource
-            model.evesOnly
-          )
-        |> Cmd.batch
+      fetchFilesForDataLayer neededDates rangeSource updated model
+
+fetchFilesForDataLayer : (List Date) -> RangeSource -> LifeDataLayer.LifeDataLayer -> Model -> (Model, Cmd Msg)
+fetchFilesForDataLayer neededDates rangeSource updated model =
+  ( { model | dataLayer = LifeDataLayer.setLoading updated}
+  , neededDates
+    |> List.map (\date ->
+      fetchDataLayerFile model.publicLifeLogData
+        (updated.serverId)
+        (nameForServer model updated.serverId)
+        date
+        rangeSource
+        model.evesOnly
       )
+    |> Cmd.batch
+  )
 
 fetchDataLayerFile : String -> Int -> String -> Date -> RangeSource -> Bool -> Cmd Msg
 fetchDataLayerFile lifeLogUrl serverId serverName date rangeSource evesOnly =

@@ -36,8 +36,8 @@ type alias Clusters =
   , lineages : Dict Int Lineage
   }
 
-locationsFromLives : PointLocation -> Posix -> List Data.Life -> List LocationSample
-locationsFromLives pointLocation default data =
+locationsFromLives : PointLocation -> List Data.Life -> List LocationSample
+locationsFromLives pointLocation data =
   let
     samples =
       case pointLocation of
@@ -65,10 +65,10 @@ locationsFromLives pointLocation default data =
   in
     samples-- |> List.sortBy (.time>>Time.posixToMillis)
 
-fromLives : PointLocation -> Posix -> List Data.Life -> Clusters
-fromLives pointLocation default data =
+fromLives : PointLocation -> List Data.Life -> Clusters
+fromLives pointLocation data =
   let
-    locations = locationsFromLives pointLocation default data
+    locations = locationsFromLives pointLocation data
     lineageLocations = groupLineages locations
   in
   { locations = locations

@@ -22,7 +22,11 @@
     - select lineage / fetchLineage
       - x date display filter
       - x lineage display filter
-      - fetch expansion - one time done
+      - fetch expansion
+        - x changing display immediately reresolves
+        - x query lineage: uses prefiltered data
+        - x where to query next step?
+        - refactoring?
     - x fetch between fetchDataLayer
       - x FetchUpTo
       - -- FetchBetween - daily review - needs server date range

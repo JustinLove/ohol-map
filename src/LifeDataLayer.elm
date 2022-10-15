@@ -7,8 +7,6 @@ module LifeDataLayer exposing
   , livesReceived
   , resolveLivesIfLoaded
   , fail
-  , displayRange
-  , displayLineageOf
   , hasData
   , hasDataFor
   , canMakeRequest
@@ -85,7 +83,7 @@ fromLives server pointLocation defaultTime lives =
   , displayFilter = DisplayAll
   , lives = Data lives
   , population = Just (populationFromLives defaultTime lives)
-  , clusters = Just (Clusters.fromLives pointLocation defaultTime lives)
+  , clusters = Just (Clusters.fromLives pointLocation lives)
   , logs = []
   }
 
@@ -114,6 +112,7 @@ resolveLivesIfLoaded : PointLocation -> Posix -> LifeDataLayer -> LifeDataLayer
 resolveLivesIfLoaded pointLocation defaultTime data =
   if List.all (\(_,rd) -> rd /= Loading) data.logs then
     resolveLives pointLocation defaultTime data
+      |> expandingQuery defaultTime
   else
     data
 
@@ -128,7 +127,7 @@ resolveLives pointLocation defaultTime data =
   , displayFilter = data.displayFilter
   , lives = Data lives
   , population = Just (populationFromLives defaultTime lives)
-  , clusters = Just (Clusters.fromLives pointLocation defaultTime lives)
+  , clusters = Just (Clusters.fromLives pointLocation lives)
   , logs = data.logs
   }
 
@@ -172,6 +171,14 @@ applyDisplayFilter filter lives =
     DisplayAll ->
       lives
 
+expandingQuery : Posix -> LifeDataLayer -> LifeDataLayer
+expandingQuery defaultTime data =
+  case data.displayFilter of
+    DisplayLineageOf playerid ->
+      queryLineageOfLife data.serverId playerid defaultTime data
+    _ ->
+      data
+
 fail : Int -> Date -> Http.Error -> LifeDataLayer -> LifeDataLayer
 fail server date error data =
   { serverId = server
@@ -184,22 +191,23 @@ fail server date error data =
 
 displayAll : LifeDataLayer -> LifeDataLayer
 displayAll data =
-  { data
-  | displayFilter = DisplayAll
-  }
+  changeDisplay (DisplayAll) data
 
 displayRange : Posix -> Posix -> LifeDataLayer -> LifeDataLayer
 displayRange startTime endTime data =
-  { data
-  | displayFilter = DisplayRange startTime endTime
-  }
+  changeDisplay (DisplayRange startTime endTime) data
 
 displayLineageOf : Int -> LifeDataLayer -> LifeDataLayer
 displayLineageOf playerId data =
-  { data
-  | displayFilter = DisplayLineageOf playerId
-  }
+  changeDisplay (DisplayLineageOf playerId) data
 
+changeDisplay : LifeDisplayFilter -> LifeDataLayer -> LifeDataLayer
+changeDisplay filter data =
+  if data.displayFilter /= filter then
+    { data | displayFilter = filter }
+      |> resolveLives BirthLocation (Time.millisToPosix 0)
+  else
+    data
 
 hasData : LifeDataLayer -> Bool
 hasData data =
@@ -249,14 +257,14 @@ queryExactTime serverId startTime endTime data =
 oneHour = 60 * 60 * 1000
 
 queryLineageOfLife : Int -> Int -> Posix -> LifeDataLayer -> LifeDataLayer
-queryLineageOfLife serverId playerid startTime data =
+queryLineageOfLife serverId playerid startTime dataWithUnknownDisplay =
+  let data = displayLineageOf playerid dataWithUnknownDisplay in
   case eventRange data of
     Just (dataStart, dataEnd) ->
       let
         startMs = startTime |> Time.posixToMillis
-        lineageBirthTimes = data.logs
-          |> resolveLifeLogs
-          |> applyDisplayFilter (DisplayLineageOf playerid)
+        lineageBirthTimes = data.lives
+          |> RemoteData.withDefault []
           |> List.map (.birthTime>>Time.posixToMillis)
         firstBirth = List.minimum lineageBirthTimes
           |> Maybe.withDefault startMs
@@ -270,10 +278,8 @@ queryLineageOfLife serverId playerid startTime data =
         potentialEndPosix = potentialEnd |> Time.millisToPosix
       in
         update serverId potentialStartPosix potentialEndPosix data
-          |> displayLineageOf playerid
     Nothing ->
       update serverId startTime startTime data
-        |> displayLineageOf playerid
 
 update : Int -> Posix -> Posix -> LifeDataLayer -> LifeDataLayer
 update serverId startTime endTime data =
