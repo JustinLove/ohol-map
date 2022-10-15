@@ -12,39 +12,8 @@
 
 ## Features
 - direct lifelog display
-  - searches
-    - life search term fetchMatchingLives
-      - x search memory
-      - x lazy search
-      - x handle leaflet click results also
-      - x fetch data if none loaded
-      - x default to no search results
-    - select lineage / fetchLineage
-      - x date display filter
-      - x lineage display filter
-      - fetch expansion
-        - x changing display immediately reresolves
-        - x query lineage: uses prefiltered data
-        - x where to query next step?
-        - refactoring?
-      - x lineage list in search results
-      - x chain color
-    - x fetch between fetchDataLayer
-      - x FetchUpTo
-      - -- FetchBetween - daily review - needs server date range
-    - x fetch recent fetchRecentLives (yesterday)
-    - ? autoplay yesterday
-        , player = if model.dataAnimated then Starting else Stopped
-    - x filenames in lifelogdatalayer
-  - all logs for target time range
-    - x extract data layer
-    - x fetch multi files
-    - x stitch together files
-    - x incremental or when-done updates?
-    - x load status tracking?
-    - xx can functions of model become functions of data layer?
-    - x caching/reuse
   - life search data types
+  - refactoring data file fetching, esp lineage
   - data file syntax error attribution
   - selection invisible on server1, second timeline
   - old worlds default to large time queries
@@ -52,6 +21,8 @@
     - previously assuming time decending data
   - loading status ui feedback
   - check daily review once server date range updated
+  - ? autoplay yesterday
+      , player = if model.dataAnimated then Starting else Stopped
   - fuzzy name search
   - processed lifelog display?
   - eves only??
