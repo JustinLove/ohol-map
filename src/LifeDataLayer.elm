@@ -338,56 +338,6 @@ limit largest list =
   in
     List.drop (max 0 (length - largest)) list
 
-lifelogFiles : String -> Int -> String -> Posix -> List String
-lifelogFiles lifeLogUrl serverId serverName time =
-  let
-    filename = dateYearMonthMonthDayWeekday Time.utc time
-  in
-  [ lifeLogUrl
-      |> String.replace "{server}" serverName
-      |> String.replace "{filename}" filename
-  , lifeLogUrl
-      |> String.replace "{server}" serverName
-      |> String.replace "{filename}" (filename ++ "_names")
-  ]
-
-dateYearMonthMonthDayWeekday : Time.Zone -> Posix -> String
-dateYearMonthMonthDayWeekday zone time =
-  let
-    year = Time.toYear zone time |> String.fromInt
-    month = Time.toMonth zone time |> formatMonth
-    day = Time.toDay zone time |> String.fromInt |> String.padLeft 2 '0'
-    weekday = Time.toWeekday zone time |> formatWeekday
-  in
-    year ++ "_" ++ month ++ "_" ++ day ++ "_" ++ weekday
-
-formatMonth : Time.Month -> String
-formatMonth month =
-  case month of
-    Time.Jan -> "01January"
-    Time.Feb -> "02February"
-    Time.Mar -> "03March"
-    Time.Apr -> "04April"
-    Time.May -> "05May"
-    Time.Jun -> "06June"
-    Time.Jul -> "07July"
-    Time.Aug -> "08August"
-    Time.Sep -> "09September"
-    Time.Oct -> "10October"
-    Time.Nov -> "11November"
-    Time.Dec -> "12December"
-
-formatWeekday : Time.Weekday -> String
-formatWeekday weekday =
-  case weekday of
-    Time.Mon -> "Monday"
-    Time.Tue -> "Tuesday"
-    Time.Wed -> "Wednesday"
-    Time.Thu -> "Thursday"
-    Time.Fri -> "Friday"
-    Time.Sat -> "Saturday"
-    Time.Sun -> "Sunday"
-
 type alias PopulationSample = (Posix, Int)
 type alias SettingValue = (Posix, Int) -- e.g. race biome specialization population limit
 
