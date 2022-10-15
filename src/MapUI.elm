@@ -47,7 +47,6 @@ type Msg
   = Loaded (Maybe Persist)
   | UI View.Msg
   | Event (Result Json.Decode.Error Leaflet.Event)
-  | LineageLives Int (Result Http.Error (List Data.Life))
   | ServerList (Result Http.Error (List Data.Server))
   | ArcList Int (Result Http.Error (List Data.Arc))
   | SpanList Int (Result Http.Error (List Data.Span))
@@ -58,7 +57,6 @@ type Msg
   | NotableObjectsReceived Int Posix (Result Http.Error (List Parse.Key))
   | ObjectsReceived (Result Http.Error Data.Objects)
   | MonumentList Int (Result Http.Error (List Data.Monument))
-  | OldDataLayer RangeSource Int Date (Result Http.Error (List Data.Life))
   | DataLayer RangeSource Int Date (Result Http.Error LifeDataLayer.LifeLogDay)
   | NoDataLayer
   | FetchUpTo Posix
@@ -603,24 +601,6 @@ update msg model =
       ({ model | mapAnimatable = dataAnimated }, Cmd.none)
     Event (Err err) ->
       (model, Log.decodeError "error" err)
-    LineageLives serverId (Ok serverLives) ->
-      let
-        lives = serverLives
-          |> List.map myLife
-        ll = serverLives
-          |> List.map serverToLeaflet
-      in
-      ( { model
-        | lifeSearchResults = Data lives
-        , dataLayer = LifeDataLayer.fromLives serverId BirthLocation model.time serverLives
-        , pointColor = ChainColor -- something other than CauseOfDeathColor in order to differentiate with daily review
-        }
-      , Cmd.none
-      )
-        |> addCommand displayClustersCommand
-        |> appendCommand (Leaflet.dataLayer ll True)
-    LineageLives serverId (Err error) ->
-      ({model | lifeSearchResults = Failed error}, Log.httpError "fetch lives failed" error)
     ServerList (Ok serverList) ->
       let
         servers = serverList
@@ -844,23 +824,6 @@ update msg model =
         |> checkServerLoaded
     MonumentList serverId (Err error) ->
       (model, Log.httpError "fetch monuments failed" error)
-    OldDataLayer rangeSource serverId date (Ok lives) ->
-      let dataLayer = LifeDataLayer.fromLives serverId model.pointLocation model.time lives in
-      ( { model
-        | dataLayer = dataLayer
-        , player = if model.dataAnimated then Starting else Stopped
-        }
-          |> rebuildTimelines
-      , Cmd.none
-      )
-        |> addCommand displayClustersCommand
-        |> appendCommand (Leaflet.dataLayer (List.map serverToLeaflet (LifeDataLayer.currentLives dataLayer)) False)
-        |> (if rangeSource == DataRange then addUpdate setRangeForData else identity)
-    OldDataLayer _ serverId date (Err error) ->
-      let filename = dateYearMonthMonthDayWeekday Time.utc (date |> Calendar.toMillis |> Time.millisToPosix) in
-      ( {model | dataLayer = LifeDataLayer.fail serverId date error model.dataLayer}
-      , Log.httpError ("fetch data failed " ++ filename) error
-      )
     DataLayer rangeSource serverId_ date_ (Ok lifeLogDay) ->
       lifeDataUpdated rangeSource (LifeDataLayer.livesReceived lifeLogDay model.dataLayer) model
     DataLayer _ serverId date (Err error) ->
