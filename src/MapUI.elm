@@ -1283,8 +1283,7 @@ yesterday model =
     serverId = model.selectedServer |> Maybe.withDefault 17
   in
     { model
-    | dataLayer = LifeDataLayer.load serverId []
-    , timeRange = Nothing
+    | timeRange = Nothing
     , timeMode = FromNow
     , dataAnimated = True
     , hoursPeriod = 24
@@ -1298,8 +1297,7 @@ dailyReview : Model -> (Model, Cmd Msg)
 dailyReview model =
   let serverId = model.selectedServer |> Maybe.withDefault 17 in
   ( { model
-    | dataLayer = LifeDataLayer.load serverId []
-    , timeMode = FromNow
+    | timeMode = FromNow
     , pointColor = CauseOfDeathColor
     , pointLocation = DeathLocation
     }
@@ -1313,8 +1311,7 @@ dailyReview model =
 testData : Model -> (Model, Cmd Msg)
 testData model =
   ( { model
-    | dataLayer = LifeDataLayer.load 17 []
-    , timeMode = FromNow
+    | timeMode = FromNow
     }
   , Cmd.batch
     [ fetchDailyReview model

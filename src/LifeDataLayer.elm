@@ -2,8 +2,6 @@ module LifeDataLayer exposing
   ( LifeDataLayer
   , LifeLogDay
   , empty
-  , load
-  , fromLives
   , livesReceived
   , resolveLivesIfLoaded
   , fail
@@ -64,26 +62,6 @@ empty =
   , lives = NotRequested
   , population = Nothing
   , clusters = Nothing
-  , logs = []
-  }
-
-load : Int -> List Date -> LifeDataLayer
-load server dates =
-  { serverId = server
-  , displayFilter = DisplayAll
-  , lives = Loading
-  , population = Nothing
-  , clusters = Nothing
-  , logs = List.map (\d -> (d, Loading)) dates
-  }
-
-fromLives : Int -> PointLocation -> Posix -> List Data.Life -> LifeDataLayer
-fromLives server pointLocation defaultTime lives =
-  { serverId = server
-  , displayFilter = DisplayAll
-  , lives = Data lives
-  , population = Just (populationFromLives defaultTime lives)
-  , clusters = Just (Clusters.fromLives pointLocation lives)
   , logs = []
   }
 
