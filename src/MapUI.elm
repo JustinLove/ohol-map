@@ -466,7 +466,6 @@ update msg model =
         |> andHighlightObjects
     UI (View.SelectLineage life) ->
       let _ = Debug.log "select" life in
-      --lifeDataUpdated DataRange (LifeDataLayer.displayLineageOf life.playerid model.dataLayer) model
       fetchLineage life model
     UI (View.SelectSidebarMode mode) ->
       ( { model | sidebarMode = mode }
@@ -2437,7 +2436,12 @@ fetchLineage life model =
     rangeSource = DataRange
     updated = LifeDataLayer.queryLineageOfLife server life.playerid life.birthTime model.dataLayer
   in
-    fetchFilesForDataLayerIfNeeded rangeSource updated model
+    ( {model
+      | pointColor = ChainColor -- something other than CauseOfDeathColor in order to differentiate with daily review
+      }
+    , Leaflet.pointColor ChainColor
+    )
+      |> addUpdate (fetchFilesForDataLayerIfNeeded rangeSource updated)
 
 fetchFilesForDataLayerIfNeeded : RangeSource -> LifeDataLayer.LifeDataLayer -> Model -> (Model, Cmd Msg)
 fetchFilesForDataLayerIfNeeded rangeSource updated model =

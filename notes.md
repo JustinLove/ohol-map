@@ -28,14 +28,14 @@
         - x where to query next step?
         - refactoring?
       - lineage list in search results
-      - chain color
+      - x chain color
     - x fetch between fetchDataLayer
       - x FetchUpTo
       - -- FetchBetween - daily review - needs server date range
     - x fetch recent fetchRecentLives (yesterday)
     - autoplay yesterday
         , player = if model.dataAnimated then Starting else Stopped
-    - filenames in lifelogdatalayer
+    - x filenames in lifelogdatalayer
   - all logs for target time range
     - x extract data layer
     - x fetch multi files
