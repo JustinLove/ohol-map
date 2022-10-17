@@ -12,7 +12,6 @@
 
 ## Features
 - direct lifelog display
-  - refactoring data file fetching, esp lineage
   - data file syntax error attribution
   - selection invisible on server1, second timeline
   - old worlds default to large time queries

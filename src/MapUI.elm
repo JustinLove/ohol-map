@@ -1893,6 +1893,7 @@ lifeDataUpdated : LifeDataLayer.LifeDataLayer -> Model -> (Model, Cmd Msg)
 lifeDataUpdated unresolvedDataLayer model =
   let
     dataLayer = LifeDataLayer.resolveLivesIfLoaded model.pointLocation model.time unresolvedDataLayer
+    -- a lineage query may have discovered that the currently loaded data still has possible ancestors/children beyond the loaded data, and needed to expand the range
     neededDates = LifeDataLayer.neededDates dataLayer
   in
     if List.isEmpty neededDates then
@@ -2441,12 +2442,14 @@ fetchLineage life model =
     )
       |> addUpdate (fetchFilesForDataLayerIfNeeded updated)
 
+-- query updated, load data if not covered by currently loaded
 fetchFilesForDataLayerIfNeeded : LifeDataLayer.LifeDataLayer -> Model -> (Model, Cmd Msg)
 fetchFilesForDataLayerIfNeeded updated model =
   let
     neededDates = LifeDataLayer.neededDates updated
   in
     if List.isEmpty neededDates then
+      -- previously loaded data covers new query
       lifeDataUpdated updated model
     else
       fetchFilesForDataLayer neededDates updated model
