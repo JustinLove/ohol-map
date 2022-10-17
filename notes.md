@@ -13,11 +13,11 @@
 ## Features
 - direct lifelog display
   - data file syntax error attribution
-  - selection invisible on server1, second timeline
   - old worlds default to large time queries
   - old style time ranges may be broken
   - population graph?
     - previously assuming time decending data
+  - lazy timeline not correct, uses structure
   - disable debug logs
   - loading status ui feedback
   - check daily review once server date range updated

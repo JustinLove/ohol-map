@@ -352,7 +352,7 @@ timeControl model line =
     , behindContent
       ( case line.data of
         TimelineBlank ->
-          none
+          Element.lazy2 displayTimelineBlank palette line
         TimelineWorlds worlds ->
           Element.lazy3 displayTimelineRanges palette line line.ranges
         TimelineArcs arcs ->
@@ -409,6 +409,57 @@ timeControl model line =
       [ width (fillPortion (max - value)) ]
       none
     ]
+
+displayTimelineBlank : Palette -> Timeline -> Element msg
+displayTimelineBlank palette line =
+  let
+    min = (Time.posixToMillis line.minTime) + 1
+    max = Time.posixToMillis line.maxTime
+    background = colorToString palette.background
+    control = colorToString palette.control
+    monumentColor = colorToString palette.gold
+    monuments = line.monuments
+      |> List.indexedMap (\index {date} ->
+        let
+          t = Time.posixToMillis date |> clamp min max |> toFloat
+        in
+          Chart.rect
+            [ CA.x1 t
+            , CA.x2 t
+            , CA.border monumentColor
+            --, CA.borderWidth 0
+            ]
+      )
+  in
+    Chart.chart
+      [ CA.width (toFloat line.width)
+      , CA.height 21
+      , CA.range
+        [ CA.lowest (toFloat min) CA.exactly
+        , CA.highest (toFloat max) CA.exactly
+        ]
+      ]
+      [ Chart.withPlane (\_ -> monuments)
+      , Chart.withPlane (\_ ->
+        case line.timeRange of
+          Just (from, to) ->
+            let
+              start = (Time.posixToMillis from) + 1
+              end = Time.posixToMillis to
+            in
+              [ Chart.rect
+                [ CA.x1 (toFloat start)
+                , CA.x2 (toFloat end)
+                , CA.color (colorToString palette.selected)
+                , CA.borderWidth 0
+                , CA.opacity 0.5
+                ]
+              ]
+          Nothing ->
+            []
+        )
+      ]
+      |> html
 
 displayTimelineRanges : Palette -> Timeline -> List (Posix, Posix) -> Element msg
 displayTimelineRanges palette line ranges =
