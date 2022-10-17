@@ -57,7 +57,7 @@ type Msg
   | NotableObjectsReceived Int Posix (Result Http.Error (List Parse.Key))
   | ObjectsReceived (Result Http.Error Data.Objects)
   | MonumentList Int (Result Http.Error (List Data.Monument))
-  | DataLayer RangeSource Int Date (Result Http.Error LifeDataLayer.LifeLogDay)
+  | DataLayer Int Date (Result Http.Error LifeDataLayer.LifeLogDay)
   | NoDataLayer
   | FetchUpTo Posix
   | FetchBetween Posix Posix
@@ -72,10 +72,6 @@ type Msg
   | CurrentUrl Url
   | Navigate Browser.UrlRequest
   | WindowSize (Int, Int)
-
-type RangeSource
-  = PredeterminedRange
-  | DataRange
 
 main = Browser.application
   { init = init
@@ -823,9 +819,9 @@ update msg model =
         |> checkServerLoaded
     MonumentList serverId (Err error) ->
       (model, Log.httpError "fetch monuments failed" error)
-    DataLayer rangeSource serverId_ date_ (Ok lifeLogDay) ->
-      lifeDataUpdated rangeSource (LifeDataLayer.livesReceived lifeLogDay model.dataLayer) model
-    DataLayer _ serverId date (Err error) ->
+    DataLayer serverId_ date_ (Ok lifeLogDay) ->
+      lifeDataUpdated (LifeDataLayer.livesReceived lifeLogDay model.dataLayer) model
+    DataLayer serverId date (Err error) ->
       let filename = dateYearMonthMonthDayWeekday Time.utc (date |> Calendar.toMillis |> Time.millisToPosix) in
       ( {model | dataLayer = LifeDataLayer.fail serverId date error model.dataLayer}
       , Log.httpError ("fetch data failed " ++ filename) error
@@ -842,17 +838,15 @@ update msg model =
       )
     FetchUpTo time ->
       let _ = Debug.log "FetchUpTo" time in
-      fetchDataLayer
+      fetchLivesAroundTime
         (relativeStartTime model.hoursPeriod time)
         time
-        DataRange
         model
     FetchBetween start now ->
       let _ = Debug.log "FetchBetween" (start, now) in
-      fetchDataLayer
+      fetchLivesAroundTime
         start
         now
-        DataRange
         { model | hoursPeriod = 1 }
     PlayRelativeTo hoursBefore time ->
       { model
@@ -1086,7 +1080,7 @@ selectArc model marc mcourseArc =
     case marc of
       Just arc ->
         let
-          start = increment arc.start
+          start = incrementByOneSecond arc.start
           end = arc.dataTime
             |> Maybe.withDefault (arc.end
               |> Maybe.withDefault model.time
@@ -1866,24 +1860,21 @@ timeSelectionAround model =
 
 fetchDataForTime : Model -> (Model, Cmd Msg)
 fetchDataForTime model =
-  let _ = Debug.log "fetchDataForTime" model.timeRange in
   if (currentServer model |> Maybe.map .hasLives |> Maybe.withDefault False) == False then
     (model, Task.succeed () |> Task.perform (always NoDataLayer))
   else
     case model.timeRange of
       Just (start, end) ->
-        fetchDataLayer
+        fetchLivesExactRange
           start
           end
-          PredeterminedRange
           model
       Nothing ->
         case model.timeMode of
           ServerRange ->
-            fetchDataLayer
+            fetchLivesAroundTime
               model.startTime
               (relativeEndTime model.hoursPeriod model.startTime)
-              DataRange
               model
           FromNow ->
             (model, Task.perform FetchUpTo Time.now)
@@ -1891,27 +1882,26 @@ fetchDataForTime model =
             case model.currentArc of
               Just arc ->
                 -- TODO: arc.serverId argument??
-                fetchDataLayer
+                fetchLivesAroundTime
                   arc.start
                   (arc.end |> Maybe.withDefault model.time)
-                  DataRange
                   model
               Nothing ->
                 (model, Task.succeed () |> Task.perform (always NoDataLayer))
 
-lifeDataUpdated : RangeSource -> LifeDataLayer.LifeDataLayer -> Model -> (Model, Cmd Msg)
-lifeDataUpdated rangeSource unresolvedDataLayer model =
+lifeDataUpdated : LifeDataLayer.LifeDataLayer -> Model -> (Model, Cmd Msg)
+lifeDataUpdated unresolvedDataLayer model =
   let
     dataLayer = LifeDataLayer.resolveLivesIfLoaded model.pointLocation model.time unresolvedDataLayer
     neededDates = LifeDataLayer.neededDates dataLayer
   in
     if List.isEmpty neededDates then
-      lifeDataUpdateComplete rangeSource dataLayer model
+      lifeDataUpdateComplete dataLayer model
     else
-      fetchFilesForDataLayer neededDates rangeSource dataLayer model
+      fetchFilesForDataLayer neededDates dataLayer model
 
-lifeDataUpdateComplete : RangeSource -> LifeDataLayer.LifeDataLayer -> Model -> (Model, Cmd Msg)
-lifeDataUpdateComplete rangeSource dataLayer model =
+lifeDataUpdateComplete : LifeDataLayer.LifeDataLayer -> Model -> (Model, Cmd Msg)
+lifeDataUpdateComplete dataLayer model =
   let
     (lifeSearch, newResults) =
       if LifeDataLayer.isDisplayingSingleLineage dataLayer then
@@ -1933,7 +1923,7 @@ lifeDataUpdateComplete rangeSource dataLayer model =
     |> addCommand displayClustersCommand
     |> appendCommand (Leaflet.dataLayer (List.map serverToLeaflet (LifeDataLayer.currentLives dataLayer)) False)
     |> appendCommand (displayResultsCommand (Maybe.map (List.map serverToLeaflet) newResults))
-    |> (if rangeSource == DataRange then addUpdate setRangeForData else identity)
+    |> (if not <| LifeDataLayer.isDisplayingExactRange dataLayer then addUpdate setRangeForData else identity)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -2420,24 +2410,28 @@ fetchMonuments serverId =
     , expect = Http.expectJson (MonumentList serverId) Decode.monuments
     }
 
-fetchDataLayer : Posix -> Posix -> RangeSource -> Model -> (Model, Cmd Msg)
-fetchDataLayer startTime endTime rangeSource model =
+fetchLivesExactRange : Posix -> Posix -> Model -> (Model, Cmd Msg)
+fetchLivesExactRange startTime endTime model =
   let
+    _ = Debug.log "fetchLivesExactRange" (startTime, endTime)
     server = (model.selectedServer |> Maybe.withDefault 17)
-    serverName = (currentServerName model)
-    updated = case rangeSource of
-      PredeterminedRange ->
-        LifeDataLayer.queryExactTime server startTime endTime model.dataLayer
-      DataRange ->
-        LifeDataLayer.queryAroundTime server startTime endTime model.dataLayer
+    updated = LifeDataLayer.queryExactTime server startTime endTime model.dataLayer
   in
-    fetchFilesForDataLayerIfNeeded rangeSource updated model
+    fetchFilesForDataLayerIfNeeded updated model
+
+fetchLivesAroundTime : Posix -> Posix -> Model -> (Model, Cmd Msg)
+fetchLivesAroundTime startTime endTime model =
+  let
+    _ = Debug.log "fetchLivesAroundTime" (startTime, endTime)
+    server = (model.selectedServer |> Maybe.withDefault 17)
+    updated = LifeDataLayer.queryAroundTime server startTime endTime model.dataLayer
+  in
+    fetchFilesForDataLayerIfNeeded updated model
 
 fetchLineage : Life -> Model -> (Model, Cmd Msg)
 fetchLineage life model =
   let
     server = life.serverId
-    rangeSource = DataRange
     updated = LifeDataLayer.queryLineageOfLife server life.playerid life.birthTime model.dataLayer
   in
     ( {model
@@ -2445,35 +2439,31 @@ fetchLineage life model =
       }
     , Leaflet.pointColor ChainColor
     )
-      |> addUpdate (fetchFilesForDataLayerIfNeeded rangeSource updated)
+      |> addUpdate (fetchFilesForDataLayerIfNeeded updated)
 
-fetchFilesForDataLayerIfNeeded : RangeSource -> LifeDataLayer.LifeDataLayer -> Model -> (Model, Cmd Msg)
-fetchFilesForDataLayerIfNeeded rangeSource updated model =
+fetchFilesForDataLayerIfNeeded : LifeDataLayer.LifeDataLayer -> Model -> (Model, Cmd Msg)
+fetchFilesForDataLayerIfNeeded updated model =
   let
     neededDates = LifeDataLayer.neededDates updated
   in
     if List.isEmpty neededDates then
-      lifeDataUpdated rangeSource updated model
+      lifeDataUpdated updated model
     else
-      fetchFilesForDataLayer neededDates rangeSource updated model
+      fetchFilesForDataLayer neededDates updated model
 
-fetchFilesForDataLayer : (List Date) -> RangeSource -> LifeDataLayer.LifeDataLayer -> Model -> (Model, Cmd Msg)
-fetchFilesForDataLayer neededDates rangeSource updated model =
+fetchFilesForDataLayer : (List Date) -> LifeDataLayer.LifeDataLayer -> Model -> (Model, Cmd Msg)
+fetchFilesForDataLayer neededDates updated model =
   ( { model | dataLayer = LifeDataLayer.setLoading updated}
   , neededDates
-    |> List.map (\date ->
-      fetchDataLayerFile model.publicLifeLogData
+    |> List.map (fetchDataLayerFile model.publicLifeLogData
         (updated.serverId)
         (nameForServer model updated.serverId)
-        date
-        rangeSource
-        model.evesOnly
       )
     |> Cmd.batch
   )
 
-fetchDataLayerFile : String -> Int -> String -> Date -> RangeSource -> Bool -> Cmd Msg
-fetchDataLayerFile lifeLogUrl serverId serverName date rangeSource evesOnly =
+fetchDataLayerFile : String -> Int -> String -> Date -> Cmd Msg
+fetchDataLayerFile lifeLogUrl serverId serverName date =
   let
     _ = Debug.log ("fetchDataLayerFile " ++ (String.fromInt serverId)) date
     filename = dateYearMonthMonthDayWeekday Time.utc (date |> Calendar.toMillis |> Time.millisToPosix)
@@ -2485,7 +2475,7 @@ fetchDataLayerFile lifeLogUrl serverId serverName date rangeSource evesOnly =
             |> String.replace "{filename}" filename
           ] []
         , resolver = Http.stringResolver (resolveStringResponse >> parseLifeLogs)
-        --, expect = Http.expectString (parseLives >> (DataLayer rangeSource serverId))
+        --, expect = Http.expectString (parseLives >> (DataLayer serverId))
         , method = "GET"
         , headers =
             [ Http.header "Accept" "text/plain"
@@ -2510,7 +2500,7 @@ fetchDataLayerFile lifeLogUrl serverId serverName date rangeSource evesOnly =
         }
   in
     Task.map2 (LifeDataLayer.LifeLogDay serverId date) lifeTask nameTask
-      |> Task.attempt (DataLayer rangeSource serverId date)
+      |> Task.attempt (DataLayer serverId date)
 
 dateYearMonthMonthDayWeekday : Time.Zone -> Posix -> String
 dateYearMonthMonthDayWeekday zone time =
@@ -2579,8 +2569,8 @@ extractHashString key location =
     |> Url.Parser.parse (Url.Parser.query (Url.Parser.Query.string key))
     |> Maybe.withDefault Nothing
 
-increment : Posix -> Posix
-increment =
+incrementByOneSecond : Posix -> Posix
+incrementByOneSecond =
   Time.posixToMillis
   >> (\x -> x + 1000)
   >> Time.millisToPosix

@@ -12,13 +12,14 @@
 
 ## Features
 - direct lifelog display
-  - life search data types
   - refactoring data file fetching, esp lineage
   - data file syntax error attribution
   - selection invisible on server1, second timeline
   - old worlds default to large time queries
+  - old style time ranges may be broken
   - population graph?
     - previously assuming time decending data
+  - disable debug logs
   - loading status ui feedback
   - check daily review once server date range updated
   - ? autoplay yesterday
@@ -31,6 +32,10 @@
     - life search is in memory
     - life search is bounded by a time range
     - life search is no longer cross server
+  - life search data types
+    - needs data.life for hash
+    - needs data.life for comparision with raw data
+    - results directly displayed by view, without hash
 - check for leaflet updates
 
 - object search header locked
