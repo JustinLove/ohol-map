@@ -170,22 +170,14 @@ view model =
 
 timeOverlay : Model -> Element Msg
 timeOverlay model =
-  Element.lazy timeOverlayLazy
-    { notice = model.notice 
-    , zone = model.zone
-    , time = model.time
-    }
+  Element.lazy3 timeOverlayLazy model.notice model.zone model.time
 
-timeOverlayLazy :
-  { notice : Notice
-  , zone : Time.Zone
-  , time : Time.Posix
-  } -> Element Msg
-timeOverlayLazy model =
-  case model.notice of
-    TimeNotice time until ->
-      time
-        |> dateYearMonthDayHourMinute model.zone
+timeOverlayLazy : Notice -> Time.Zone -> Time.Posix -> Element Msg
+timeOverlayLazy notice zone currentTime =
+  case notice of
+    TimeNotice displayTime until ->
+      displayTime
+        |> dateYearMonthDayHourMinute zone
         |> text
         |> el [ centerX, centerY ]
         |> el
@@ -196,7 +188,7 @@ timeOverlayLazy model =
             max 0
               (
                 ( (until |> Time.posixToMillis |> toFloat)
-                - (model.time |>  Time.posixToMillis |> toFloat)
+                - (currentTime |>  Time.posixToMillis |> toFloat)
                 )
               / (timeNoticeDuration/2)
               )

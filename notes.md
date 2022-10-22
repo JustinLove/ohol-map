@@ -12,8 +12,6 @@
 
 ## Features
 - direct lifelog display
-  - population graph?
-    - previously assuming time decending data
   - lazy timeline not correct, uses structure
   - disable debug logs
   - loading status ui feedback
