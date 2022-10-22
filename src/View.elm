@@ -1522,10 +1522,10 @@ dataAction model =
     palette = themePalette model.theme
   in
   el [ width fill, padding 5 ] <|
-    if LifeDataLayer.canMakeRequest model.dataLayer then
-      dataButtonEnabled palette
-    else
-      dataButtonDisabled palette
+    case model.dataLayer.lives of
+      NotAvailable -> dataButtonDisabled palette
+      Loading -> dataButtonLoading palette (LifeDataLayer.loadingProgress model.dataLayer)
+      _ -> dataButtonEnabled palette
 
 dataButtonEnabled : Palette -> Element Msg
 dataButtonEnabled palette =
@@ -1553,8 +1553,24 @@ dataButtonDisabled palette =
     , Font.color palette.divider
     ]
     { onPress = Nothing
-    , label = el [ centerX ] <| text "Show"
+    , label = el [ centerX ] <| text "No Data"
     }
+
+dataButtonLoading : Palette -> (Int, Int) -> Element Msg
+dataButtonLoading palette (loading, total)=
+  Input.button
+    [ width fill
+    , padding 5
+    , Border.color palette.divider
+    , Border.width 1
+    , Border.rounded 6
+    , Background.color palette.background
+    , Font.color palette.divider
+    ]
+    { onPress = Nothing
+    , label = el [ centerX ] <| text ((String.fromInt loading) ++ "/" ++ (String.fromInt total))
+    }
+
 
 timelineCheckbox : Bool -> Element Msg
 timelineCheckbox timelineVisible =

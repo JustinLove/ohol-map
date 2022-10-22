@@ -8,6 +8,7 @@ module LifeDataLayer exposing
   , hasData
   , hasDataFor
   , canMakeRequest
+  , loadingProgress
   , shouldRequest
   , eventRange
   , currentLives
@@ -210,6 +211,10 @@ canMakeRequest data =
     Loading -> False
     Data _ -> True
     Failed _ -> True
+
+loadingProgress : LifeDataLayer -> (Int, Int)
+loadingProgress data =
+  (List.foldl (\(_,rd) accum -> if rd /= Loading then accum + 1 else accum) 0 data.logs, List.length data.logs)
 
 shouldRequest : LifeDataLayer -> Bool
 shouldRequest data =
