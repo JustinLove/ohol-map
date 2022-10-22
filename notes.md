@@ -12,9 +12,6 @@
 
 ## Features
 - direct lifelog display
-  - data file syntax error attribution
-  - old worlds default to large time queries
-  - old style time ranges may be broken
   - population graph?
     - previously assuming time decending data
   - lazy timeline not correct, uses structure
@@ -27,6 +24,7 @@
   - processed lifelog display?
   - eves only??
   - life search
+  - option to uncap file limit?
   - ui updates to explain changes
     - life search is in memory
     - life search is bounded by a time range

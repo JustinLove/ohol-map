@@ -140,6 +140,26 @@ update msg model =
       )
         |> resolveLoaded
     UI (View.None) -> (model, Cmd.none)
+    UI (View.EventDebug value) ->
+      (model, Log.debug "event" value)
+    UI (View.ToggleTimelineVisible visible) ->
+      ( { model | timelineVisible = visible }
+      , Leaflet.timelineVisible visible
+      )
+    UI (View.SelectSidebarMode mode) ->
+      ( { model | sidebarMode = mode }
+      , Cmd.none
+      )
+        |> addCommand sidebarCommand
+    UI (View.SelectSearchMode mode) ->
+      ( { model | searchMode = mode }
+      , Cmd.none
+      )
+        |> addCommand sidebarCommand
+    UI (View.SelectObjectListMode mode) ->
+      ( { model | objectListMode = mode }
+      , Cmd.none
+      )
     UI (View.PerformLifeSearch term) ->
       let
         (lifeSearch, _) = LifeSearch.updateTerm myLife term model.lifeSearch
@@ -169,208 +189,6 @@ update msg model =
       { model | objectSearchTerm = term }
         |> updateObjectSearch
         |> requireObjectSearchIndex
-    UI (View.SelectTimeMode mode) ->
-      ( { model | timeMode = mode }
-      , Cmd.none
-      )
-    UI (View.CoarseStartTime time) ->
-      { model
-      | coarseStartTime = time
-      , startTime = time
-      }
-        |> jumpTime time currentSpanRange
-    UI (View.StartTime time) ->
-      { model
-      | startTime = time
-      }
-        |> jumpTime time currentSpanRange
-    UI (View.HoursBefore hours) ->
-      let
-        start = relativeStartTime hours model.time
-        range = (start, model.time)
-      in
-      { model
-      | hoursPeriod = hours
-      }
-        |> jumpTime start (\_ -> Just range)
-    UI (View.HoursAfter hours) ->
-      let
-        mrange =
-          Just (model.startTime, relativeEndTime hours model.startTime)
-            |> lifeRangeIfVisible model
-      in
-      ( { model
-        | hoursPeriod = hours
-        }
-          |> setTimeRange mrange
-      , Cmd.none
-      )
-    UI (View.ToggleEvesOnly evesOnly) ->
-      ( { model | evesOnly = evesOnly }, Cmd.none )
-    UI (View.ToggleUTC utc) ->
-      if utc then
-        ( { model | zone = Time.utc }, Cmd.none )
-      else
-        ( model, Time.here |> Task.perform CurrentZone )
-    UI (View.ChangeTheme theme) ->
-      ( { model | theme = theme }
-      , changeTheme theme
-      )
-       |> addCommand saveState
-    UI (View.ToggleAnimated animated) ->
-      toggleAnimated animated model
-    UI (View.GameSecondsPerSecond seconds) ->
-      ( { model
-        | gameSecondsPerSecond = seconds
-        }
-      , Cmd.none
-      )
-    UI (View.FramesPerSecond frames) ->
-      ( { model
-        | framesPerSecond = frames
-        }
-      , Cmd.none
-      )
-    UI (View.MapTime time) ->
-      scrubTime time model
-    UI (View.TimelineMove index (x, _)) ->
-      case timeline model index of
-        Just line ->
-          let time = timelineScreenToTime (currentMonuments model) line x in
-          case line.data of
-            TimelineWorlds worlds ->
-              let mnote = worldForTime time worlds |> Maybe.map .name in
-              ({model | hover = Hovering index time mnote}, Cmd.none)
-            TimelinePopulation data populationRange _ ->
-              let
-                pop =
-                  if isInRange populationRange time then
-                    populationForTime time data
-                      |> Maybe.map (\count -> (String.fromInt count) ++ " players")
-                  else
-                    Nothing
-              in
-              ({model | hover = Hovering index time pop}, Cmd.none)
-            _ ->
-              ({model | hover = Hovering index time Nothing}, Cmd.none)
-        Nothing ->
-          (model, Cmd.none)
-    UI (View.TimelineLeave index _) ->
-      ({model | hover = Away}, Cmd.none)
-    UI (View.TimelineGrab index (x, _)) ->
-      case timeline model index of
-        Just line ->
-          let time = timelineScreenToTime (currentMonuments model) line x in
-          scrubTime time {model | drag = Scrubbing index time}
-        Nothing ->
-          (model, Cmd.none)
-    UI (View.TimelineDown index (x, _)) ->
-      case timeline model index of
-        Just line ->
-          let time = timelineScreenToTime (currentMonuments model) line x in
-          scrubTime time {model | drag = DragStart index time}
-        Nothing ->
-          (model, Cmd.none)
-    UI (View.WindowUp (_, _)) ->
-      timelineRelease model
-    UI (View.WindowEnter held (x, _)) ->
-      if held then
-        timelineDrag x model
-      else
-        timelineRelease model
-    UI (View.WindowLeave (x, _)) ->
-      timelineDrag (timelineLeave model x) model
-    UI (View.WindowMove (x, _)) ->
-      timelineDrag x model
-    UI (View.EventDebug value) ->
-      (model, Log.debug "event" value)
-    UI (View.Play) ->
-      ( { model
-        | player = Starting
-        , mapTime =
-          if model.mapTime == (model.timeRange |> Maybe.map Tuple.second) then
-            model.timeRange |> Maybe.map Tuple.first
-          else
-            model.mapTime
-        }
-      , Cmd.none
-      )
-    UI (View.Pause) ->
-      ( { model
-        | player = Stopped
-        }
-      , Cmd.none
-      )
-    UI (View.ToggleShowMonuments show) ->
-      ( { model
-        | monumentsVisible = show
-        }
-      , Leaflet.overlayVisible "Monuments" show
-      )
-    UI (View.ToggleShowOnlyCurrentMonuments show) ->
-      ( { model
-        | showOnlyCurrentMonuments = show
-        }
-      , Leaflet.showOnlyCurrentMonuments show
-      )
-    UI (View.ToggleMonumentsOnTimeline show) ->
-      ( { model
-        | monumentsOnTimeline = show
-        }
-          |> rebuildTimelines
-      , Cmd.none
-      )
-    UI (View.ToggleFadeTallObjects fade) ->
-      ( { model
-        | fadeTallObjects = fade
-        }
-      , Leaflet.fadeTallObjects fade
-      )
-    UI (View.SelectNaturalObjectZoom zoom) ->
-      ( { model
-        | showNaturalObjectsAboveZoom = zoom
-        }
-      , Leaflet.showNaturalObjectsAboveZoom zoom
-      )
-        |> addCommand saveState
-    UI (View.ToggleShowActivityMap show) ->
-      ( { model
-        | activityMapVisible = show
-        }
-      , Leaflet.overlayVisible "Activity Map" show
-      )
-    UI (View.SelectActivityMapSampleSize sampleSize) ->
-      ( { model
-        | activityMapSampleSize = sampleSize
-        }
-      , Leaflet.activityMapSampleSize sampleSize
-      )
-    UI (View.SelectActivityMapZoom zoom) ->
-      ( { model
-        | showActivityMapBelowZoom = zoom
-        }
-      , Leaflet.showActivityMapBelowZoom zoom
-      )
-        |> addCommand saveState
-    UI (View.ToggleShowLifeData show) ->
-      if show then
-        lifeDataLayerBecameVisible { model | lifeDataVisible = show }
-      else
-        ({model | lifeDataVisible = show}
-        , Leaflet.dataLayerVisible False)
-    UI (View.SelectPointColor color) ->
-      ( { model
-        | pointColor = color
-        }
-      , Leaflet.pointColor color
-      )
-    UI (View.SelectPointLocation location) ->
-      ( { model
-        | pointLocation = location
-        }
-      , Leaflet.pointLocation location
-      )
-        |> addCommand displayClustersCommand
     UI (View.SelectMatchingLife life) ->
       ( { model
         | lifeSearch = LifeSearch.focus life model.lifeSearch
@@ -463,36 +281,216 @@ update msg model =
     UI (View.SelectLineage life) ->
       let _ = Debug.log "select" life in
       fetchLineage life model
-    UI (View.SelectSidebarMode mode) ->
-      ( { model | sidebarMode = mode }
-      , Cmd.none
-      )
-        |> addCommand sidebarCommand
-    UI (View.SelectSearchMode mode) ->
-      ( { model | searchMode = mode }
-      , Cmd.none
-      )
-        |> addCommand sidebarCommand
-    UI (View.SelectObjectListMode mode) ->
-      ( { model | objectListMode = mode }
-      , Cmd.none
-      )
-    UI (View.SelectServer serverId) ->
-      ( model, Cmd.none )
-        |> setServer serverId
-    UI (View.SelectArc marc) ->
-      selectArc model marc model.coarseArc
-    UI (View.SelectArcCoarse marc) ->
-      selectArc model marc marc
     UI (View.SelectShow) ->
       case model.selectedServer of
         Just server ->
           fetchDataForTime model
         Nothing ->
           (model, Cmd.none)
-    UI (View.ToggleTimelineVisible visible) ->
-      ( { model | timelineVisible = visible }
-      , Leaflet.timelineVisible visible
+    UI (View.SelectServer serverId) ->
+      ( model, Cmd.none )
+        |> setServer serverId
+    UI (View.SelectTimeMode mode) ->
+      ( { model | timeMode = mode }
+      , Cmd.none
+      )
+    UI (View.CoarseStartTime time) ->
+      { model
+      | coarseStartTime = time
+      , startTime = time
+      }
+        |> jumpTime time currentSpanRange
+    UI (View.StartTime time) ->
+      { model
+      | startTime = time
+      }
+        |> jumpTime time currentSpanRange
+    UI (View.HoursBefore hours) ->
+      let
+        start = relativeStartTime hours model.time
+        range = (start, model.time)
+      in
+      { model
+      | hoursPeriod = hours
+      }
+        |> jumpTime start (\_ -> Just range)
+    UI (View.HoursAfter hours) ->
+      let
+        mrange =
+          Just (model.startTime, relativeEndTime hours model.startTime)
+            |> lifeRangeIfVisible model
+      in
+      ( { model
+        | hoursPeriod = hours
+        }
+          |> setTimeRange mrange
+      , Cmd.none
+      )
+    UI (View.SelectArcCoarse marc) ->
+      selectArc model marc marc
+    UI (View.SelectArc marc) ->
+      selectArc model marc model.coarseArc
+    UI (View.ToggleEvesOnly evesOnly) ->
+      ( { model | evesOnly = evesOnly }, Cmd.none )
+    UI (View.ToggleUTC utc) ->
+      if utc then
+        ( { model | zone = Time.utc }, Cmd.none )
+      else
+        ( model, Time.here |> Task.perform CurrentZone )
+    UI (View.ChangeTheme theme) ->
+      ( { model | theme = theme }
+      , changeTheme theme
+      )
+       |> addCommand saveState
+    UI (View.ToggleAnimated animated) ->
+      toggleAnimated animated model
+    UI (View.GameSecondsPerSecond seconds) ->
+      ( { model
+        | gameSecondsPerSecond = seconds
+        }
+      , Cmd.none
+      )
+    UI (View.FramesPerSecond frames) ->
+      ( { model
+        | framesPerSecond = frames
+        }
+      , Cmd.none
+      )
+    UI (View.ToggleFadeTallObjects fade) ->
+      ( { model
+        | fadeTallObjects = fade
+        }
+      , Leaflet.fadeTallObjects fade
+      )
+    UI (View.SelectNaturalObjectZoom zoom) ->
+      ( { model
+        | showNaturalObjectsAboveZoom = zoom
+        }
+      , Leaflet.showNaturalObjectsAboveZoom zoom
+      )
+        |> addCommand saveState
+    UI (View.ToggleShowActivityMap show) ->
+      ( { model
+        | activityMapVisible = show
+        }
+      , Leaflet.overlayVisible "Activity Map" show
+      )
+    UI (View.SelectActivityMapSampleSize sampleSize) ->
+      ( { model
+        | activityMapSampleSize = sampleSize
+        }
+      , Leaflet.activityMapSampleSize sampleSize
+      )
+    UI (View.SelectActivityMapZoom zoom) ->
+      ( { model
+        | showActivityMapBelowZoom = zoom
+        }
+      , Leaflet.showActivityMapBelowZoom zoom
+      )
+        |> addCommand saveState
+    UI (View.ToggleShowLifeData show) ->
+      if show then
+        lifeDataLayerBecameVisible { model | lifeDataVisible = show }
+      else
+        ({model | lifeDataVisible = show}
+        , Leaflet.dataLayerVisible False)
+    UI (View.SelectPointColor color) ->
+      ( { model
+        | pointColor = color
+        }
+      , Leaflet.pointColor color
+      )
+    UI (View.SelectPointLocation location) ->
+      ( { model
+        | pointLocation = location
+        }
+      , Leaflet.pointLocation location
+      )
+        |> addCommand displayClustersCommand
+    UI (View.TimelineMove index (x, _)) ->
+      case timeline model index of
+        Just line ->
+          let time = timelineScreenToTime (currentMonuments model) line x in
+          case line.data of
+            TimelineWorlds worlds ->
+              let mnote = worldForTime time worlds |> Maybe.map .name in
+              ({model | hover = Hovering index time mnote}, Cmd.none)
+            TimelinePopulation data populationRange _ ->
+              let
+                pop =
+                  if isInRange populationRange time then
+                    populationForTime time data
+                      |> Maybe.map (\count -> (String.fromInt count) ++ " players")
+                  else
+                    Nothing
+              in
+              ({model | hover = Hovering index time pop}, Cmd.none)
+            _ ->
+              ({model | hover = Hovering index time Nothing}, Cmd.none)
+        Nothing ->
+          (model, Cmd.none)
+    UI (View.TimelineLeave index _) ->
+      ({model | hover = Away}, Cmd.none)
+    UI (View.TimelineGrab index (x, _)) ->
+      case timeline model index of
+        Just line ->
+          let time = timelineScreenToTime (currentMonuments model) line x in
+          scrubTime time {model | drag = Scrubbing index time}
+        Nothing ->
+          (model, Cmd.none)
+    UI (View.TimelineDown index (x, _)) ->
+      case timeline model index of
+        Just line ->
+          let time = timelineScreenToTime (currentMonuments model) line x in
+          scrubTime time {model | drag = DragStart index time}
+        Nothing ->
+          (model, Cmd.none)
+    UI (View.WindowUp (_, _)) ->
+      timelineRelease model
+    UI (View.WindowEnter held (x, _)) ->
+      if held then
+        timelineDrag x model
+      else
+        timelineRelease model
+    UI (View.WindowLeave (x, _)) ->
+      timelineDrag (timelineLeave model x) model
+    UI (View.WindowMove (x, _)) ->
+      timelineDrag x model
+    UI (View.Play) ->
+      ( { model
+        | player = Starting
+        , mapTime =
+          if model.mapTime == (model.timeRange |> Maybe.map Tuple.second) then
+            model.timeRange |> Maybe.map Tuple.first
+          else
+            model.mapTime
+        }
+      , Cmd.none
+      )
+    UI (View.Pause) ->
+      ( { model
+        | player = Stopped
+        }
+      , Cmd.none
+      )
+    UI (View.ToggleShowMonuments show) ->
+      ( { model
+        | monumentsVisible = show
+        }
+      , Leaflet.overlayVisible "Monuments" show
+      )
+    UI (View.ToggleShowOnlyCurrentMonuments show) ->
+      ( { model
+        | showOnlyCurrentMonuments = show
+        }
+      , Leaflet.showOnlyCurrentMonuments show
+      )
+    UI (View.ToggleMonumentsOnTimeline show) ->
+      ( { model
+        | monumentsOnTimeline = show
+        }
+          |> rebuildTimelines
+      , Cmd.none
       )
     Event (Ok (Leaflet.MoveEnd point)) ->
       ( {model|center = SetCenter point}

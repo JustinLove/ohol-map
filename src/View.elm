@@ -43,43 +43,18 @@ import Url.Builder as Url
 
 type Msg
   = None
+  -- other
+  | EventDebug Decode.Value
+  -- sidebar
+  | ToggleTimelineVisible Bool
+  | SelectSidebarMode SidebarMode
+  | SelectSearchMode SearchMode
+  | SelectObjectListMode ObjectListMode
+  -- text search
   | PerformLifeSearch String
   | LifeTyping String
   | ObjectTyping String
-  | SelectTimeMode TimeMode
-  | CoarseStartTime Posix
-  | StartTime Posix
-  | HoursBefore Int
-  | HoursAfter Int
-  | ToggleEvesOnly Bool
-  | ToggleUTC Bool
-  | ChangeTheme Theme
-  | ToggleAnimated Bool
-  | GameSecondsPerSecond Int
-  | FramesPerSecond Int
-  | MapTime Posix
-  | TimelineMove TimelineId ScreenLocation
-  | TimelineLeave TimelineId ScreenLocation
-  | TimelineGrab TimelineId ScreenLocation
-  | TimelineDown TimelineId ScreenLocation
-  | WindowUp ScreenLocation
-  | WindowEnter Bool ScreenLocation
-  | WindowLeave ScreenLocation
-  | WindowMove ScreenLocation
-  | EventDebug Decode.Value
-  | Play
-  | Pause
-  | ToggleFadeTallObjects Bool
-  | ToggleShowMonuments Bool
-  | ToggleShowOnlyCurrentMonuments Bool
-  | ToggleMonumentsOnTimeline Bool
-  | SelectNaturalObjectZoom Int
-  | ToggleShowActivityMap Bool
-  | SelectActivityMapSampleSize Int
-  | SelectActivityMapZoom Int
-  | ToggleShowLifeData Bool
-  | SelectPointColor PointColor
-  | SelectPointLocation PointLocation
+  -- results list
   | SelectMatchingLife Life
   | ToggleMatchingObject ObjectId Bool
   | SelectMatchingObject ObjectId
@@ -97,14 +72,47 @@ type Msg
   | ToggleLockObject ObjectId Bool
   | ToggleIconDisplay ObjectId Bool
   | SelectLineage Life
-  | SelectSidebarMode SidebarMode
-  | SelectSearchMode SearchMode
-  | SelectObjectListMode ObjectListMode
-  | SelectServer Int
-  | SelectArc (Maybe Arc)
-  | SelectArcCoarse (Maybe Arc)
+  -- life data
   | SelectShow
-  | ToggleTimelineVisible Bool
+  | SelectServer Int
+  -- legacy life data
+  | SelectTimeMode TimeMode
+  | CoarseStartTime Posix
+  | StartTime Posix
+  | HoursBefore Int
+  | HoursAfter Int
+  | SelectArcCoarse (Maybe Arc)
+  | SelectArc (Maybe Arc)
+  -- other serach params
+  | ToggleEvesOnly Bool
+  -- format
+  | ToggleUTC Bool
+  | ChangeTheme Theme
+  | ToggleAnimated Bool
+  | GameSecondsPerSecond Int
+  | FramesPerSecond Int
+  | ToggleFadeTallObjects Bool
+  | ToggleShowMonuments Bool
+  | ToggleShowOnlyCurrentMonuments Bool
+  | ToggleMonumentsOnTimeline Bool
+  | SelectNaturalObjectZoom Int
+  | ToggleShowActivityMap Bool
+  | SelectActivityMapSampleSize Int
+  | SelectActivityMapZoom Int
+  | ToggleShowLifeData Bool
+  | SelectPointColor PointColor
+  | SelectPointLocation PointLocation
+  -- timeline
+  | TimelineMove TimelineId ScreenLocation
+  | TimelineLeave TimelineId ScreenLocation
+  | TimelineGrab TimelineId ScreenLocation
+  | TimelineDown TimelineId ScreenLocation
+  | WindowUp ScreenLocation
+  | WindowEnter Bool ScreenLocation
+  | WindowLeave ScreenLocation
+  | WindowMove ScreenLocation
+  | Play
+  | Pause
 
 timeNoticeDuration = 6000
 
