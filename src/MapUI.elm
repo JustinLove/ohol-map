@@ -333,6 +333,8 @@ update msg model =
       selectArc model marc model.coarseArc
     UI (View.ToggleEvesOnly evesOnly) ->
       ( { model | evesOnly = evesOnly }, Cmd.none )
+    UI (View.MaxLifeLogs max) ->
+      ( { model | maxLifeLogs = max }, Cmd.none )
     UI (View.ToggleUTC utc) ->
       if utc then
         ( { model | zone = Time.utc }, Cmd.none )
@@ -2412,7 +2414,7 @@ fetchLivesExactRange : Posix -> Posix -> Model -> (Model, Cmd Msg)
 fetchLivesExactRange startTime endTime model =
   let
     server = (model.selectedServer |> Maybe.withDefault 17)
-    updated = LifeDataLayer.queryExactTime server startTime endTime model.dataLayer
+    updated = LifeDataLayer.queryExactTime server startTime endTime model.maxLifeLogs model.dataLayer
   in
     fetchFilesForDataLayerIfNeeded updated model
 
@@ -2420,7 +2422,7 @@ fetchLivesAroundTime : Posix -> Posix -> Model -> (Model, Cmd Msg)
 fetchLivesAroundTime startTime endTime model =
   let
     server = (model.selectedServer |> Maybe.withDefault 17)
-    updated = LifeDataLayer.queryAroundTime server startTime endTime model.dataLayer
+    updated = LifeDataLayer.queryAroundTime server startTime endTime 7 model.dataLayer
   in
     fetchFilesForDataLayerIfNeeded updated model
 

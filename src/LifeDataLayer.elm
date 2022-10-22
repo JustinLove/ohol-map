@@ -241,14 +241,14 @@ isDisplayingSingleLineage data =
     DisplayLineageOf _ -> True
     _ -> False
 
-queryAroundTime : Int -> Posix -> Posix -> LifeDataLayer -> LifeDataLayer
-queryAroundTime serverId startTime endTime data =
-  update serverId startTime endTime data
+queryAroundTime : Int -> Posix -> Posix -> Int -> LifeDataLayer -> LifeDataLayer
+queryAroundTime serverId startTime endTime maxLogs data =
+  update serverId startTime endTime maxLogs data
     |> displayAll
 
-queryExactTime : Int -> Posix -> Posix -> LifeDataLayer -> LifeDataLayer
-queryExactTime serverId startTime endTime data =
-  update serverId startTime endTime data
+queryExactTime : Int -> Posix -> Posix -> Int -> LifeDataLayer -> LifeDataLayer
+queryExactTime serverId startTime endTime maxLogs data =
+  update serverId startTime endTime maxLogs data
     |> displayRange startTime endTime
 
 oneHour = 60 * 60 * 1000
@@ -274,14 +274,15 @@ queryLineageOfLife serverId playerid startTime dataWithUnknownDisplay =
         potentialStartPosix = potentialStart |> Time.millisToPosix
         potentialEndPosix = potentialEnd |> Time.millisToPosix
       in
-        update serverId potentialStartPosix potentialEndPosix data
+        update serverId potentialStartPosix potentialEndPosix 14 data
     Nothing ->
-      update serverId startTime startTime data
+      update serverId startTime startTime 14 data
 
-update : Int -> Posix -> Posix -> LifeDataLayer -> LifeDataLayer
-update serverId startTime endTime data =
+update : Int -> Posix -> Posix -> Int -> LifeDataLayer -> LifeDataLayer
+update serverId startTime endTime maxLogs data =
   let
     newDates = allPossibleLifelogsRequired startTime endTime
+      |> limit maxLogs
     relevantLogs = data.logs
       |> List.filter (logIsOnServer serverId)
       |> List.filter (logIsInDates newDates)
@@ -326,7 +327,6 @@ logIsInDates dates (date, _) =
 allPossibleLifelogsRequired : Posix -> Posix -> List Date
 allPossibleLifelogsRequired startTime endTime =
   Calendar.getDateRange (Calendar.fromPosix startTime) (Calendar.fromPosix endTime)
-    |> limit 7
 
 limit : Int -> List a -> List a
 limit largest list =

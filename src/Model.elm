@@ -142,6 +142,7 @@ type alias Model =
   , coarseArc : Maybe Arc
   , currentArc : Maybe Arc
   , evesOnly : Bool
+  , maxLifeLogs : Int
   , timelineVisible : Bool
   , dataAnimated : Bool
   , mapAnimatable : Animatable
@@ -229,6 +230,7 @@ initialModel config location key =
   , coarseArc = Nothing
   , currentArc = Nothing
   , evesOnly = False
+  , maxLifeLogs = 7
   , timelineVisible = False
   , dataAnimated = False
   , mapAnimatable = Inert

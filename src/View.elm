@@ -86,6 +86,7 @@ type Msg
   | SelectArc (Maybe Arc)
   -- other serach params
   | ToggleEvesOnly Bool
+  | MaxLifeLogs Int
   -- format
   | ToggleUTC Bool
   | ChangeTheme Theme
@@ -1518,6 +1519,7 @@ dataFilter model =
       , dataOptions model
       , presets model
       , dateRangeSelect model
+      , advancedDataOptions model
       ]
 
 dataAction model =
@@ -1828,13 +1830,34 @@ arcForIndex model index =
 
 dataOptions : Model -> Element Msg
 dataOptions model =
-  column []
-    [ {-Input.checkbox [ padding 10, spacing 2 ]
+  column [ width fill ]
+    [ {- Input.checkbox [ padding 10, spacing 2 ]
       { onChange = ToggleEvesOnly
       , checked = model.evesOnly
       , label = Input.labelRight [ padding 6 ] (text "Eves Only")
       , icon = Input.defaultCheckbox
       -}
+    ]
+
+advancedDataOptions : Model -> Element Msg
+advancedDataOptions model =
+  column [ width fill ]
+    [ logSlider
+      [ Background.color (themePalette model.theme).control ]
+      { onChange = round >> MaxLifeLogs
+      , label = Input.labelAbove [] <|
+        row []
+          [ text ("Maximum Logs Loaded")
+          , text (": " ++ (model.maxLifeLogs |> String.fromInt))
+          ]
+      , min = 1
+      , max = 365
+      , value = model.maxLifeLogs |> toFloat
+      , thumb = Input.defaultThumb
+      , step = Nothing
+      }
+    , el [ centerX, Font.size (scaled 0)] <|
+      paragraph [] [ text "Large values may make your browser slow or unstable" ]
     ]
 
 serverSelect : Dict Int Server -> Maybe Int -> Palette -> Element Msg

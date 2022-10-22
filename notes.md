@@ -17,7 +17,7 @@
   - processed lifelog display?
   - eves only??
   - life search
-  - option to uncap file limit?
+  - x option to uncap file limit?
   - x ui updates to explain changes
   - life search data types
     - needs data.life for hash
