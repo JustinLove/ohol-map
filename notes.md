@@ -12,7 +12,6 @@
 
 ## Features
 - direct lifelog display
-  - disable debug logs
   - loading status ui feedback
   - check daily review once server date range updated
   - ? autoplay yesterday

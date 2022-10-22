@@ -281,7 +281,6 @@ update msg model =
       toggleIconDisplay id checked model
         |> andHighlightObjects
     UI (View.SelectLineage life) ->
-      let _ = Debug.log "select" life in
       fetchLineage life model
     UI (View.SelectShow) ->
       case model.selectedServer of
@@ -837,13 +836,11 @@ update msg model =
         ]
       )
     FetchUpTo time ->
-      let _ = Debug.log "FetchUpTo" time in
       fetchLivesAroundTime
         (relativeStartTime model.hoursPeriod time)
         time
         model
     FetchBetween start now ->
-      let _ = Debug.log "FetchBetween" (start, now) in
       fetchLivesAroundTime
         start
         now
@@ -2414,7 +2411,6 @@ fetchMonuments serverId =
 fetchLivesExactRange : Posix -> Posix -> Model -> (Model, Cmd Msg)
 fetchLivesExactRange startTime endTime model =
   let
-    _ = Debug.log "fetchLivesExactRange" (startTime, endTime)
     server = (model.selectedServer |> Maybe.withDefault 17)
     updated = LifeDataLayer.queryExactTime server startTime endTime model.dataLayer
   in
@@ -2423,7 +2419,6 @@ fetchLivesExactRange startTime endTime model =
 fetchLivesAroundTime : Posix -> Posix -> Model -> (Model, Cmd Msg)
 fetchLivesAroundTime startTime endTime model =
   let
-    _ = Debug.log "fetchLivesAroundTime" (startTime, endTime)
     server = (model.selectedServer |> Maybe.withDefault 17)
     updated = LifeDataLayer.queryAroundTime server startTime endTime model.dataLayer
   in
@@ -2468,7 +2463,6 @@ fetchFilesForDataLayer neededDates updated model =
 fetchDataLayerFile : String -> Int -> String -> Date -> Cmd Msg
 fetchDataLayerFile lifeLogUrl serverId serverName date =
   let
-    _ = Debug.log ("fetchDataLayerFile " ++ (String.fromInt serverId)) date
     filename = dateYearMonthMonthDayWeekday Time.utc (date |> Calendar.toMillis |> Time.millisToPosix)
     lifeTask =
       Http.task
