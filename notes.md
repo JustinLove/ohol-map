@@ -12,7 +12,6 @@
 
 ## Features
 - direct lifelog display
-  - servers without data ui feedback
   - check daily review once server date range updated
   - ? autoplay yesterday
       , player = if model.dataAnimated then Starting else Stopped

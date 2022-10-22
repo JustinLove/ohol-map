@@ -1522,10 +1522,13 @@ dataAction model =
     palette = themePalette model.theme
   in
   el [ width fill, padding 5 ] <|
-    case model.dataLayer.lives of
-      NotAvailable -> dataButtonDisabled palette
-      Loading -> dataButtonLoading palette (LifeDataLayer.loadingProgress model.dataLayer)
-      _ -> dataButtonEnabled palette
+    if (currentServer model |> Maybe.map .hasLives |> Maybe.withDefault False) == False then
+      dataButtonDisabled palette
+    else
+      case model.dataLayer.lives of
+        NotAvailable -> dataButtonDisabled palette
+        Loading -> dataButtonLoading palette (LifeDataLayer.loadingProgress model.dataLayer)
+        _ -> dataButtonEnabled palette
 
 dataButtonEnabled : Palette -> Element Msg
 dataButtonEnabled palette =
