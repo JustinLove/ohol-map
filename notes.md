@@ -13,8 +13,6 @@
 ## Features
 - direct lifelog display
   - check daily review once server date range updated
-  - ? autoplay yesterday
-      , player = if model.dataAnimated then Starting else Stopped
   - fuzzy name search
   - processed lifelog display?
   - eves only??
@@ -28,7 +26,7 @@
     - needs data.life for hash
     - needs data.life for comparision with raw data
     - results directly displayed by view, without hash
-- check for leaflet updates
+- x check for leaflet updates
 
 - object search header locked
 - animated status when zoom too large for visible layers - still lives
