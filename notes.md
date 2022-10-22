@@ -18,10 +18,7 @@
   - eves only??
   - life search
   - option to uncap file limit?
-  - ui updates to explain changes
-    - life search is in memory
-    - life search is bounded by a time range
-    - life search is no longer cross server
+  - x ui updates to explain changes
   - life search data types
     - needs data.life for hash
     - needs data.life for comparision with raw data

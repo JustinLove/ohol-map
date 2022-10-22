@@ -772,13 +772,16 @@ objectSearchBox palette term =
 showLifeResult model remote =
   case remote of
     NotRequested ->
-      none
+      showLifeSearchChanges (themePalette model.theme)
     NotAvailable ->
       none
     Loading ->
-      el [ centerX, centerY ] <| text "Loading"
+      showLoading
     Data lives ->
-      showMatchingLives model lives
+      if List.isEmpty lives then
+        showLifeSearchChanges (themePalette model.theme)
+      else
+        showMatchingLives model lives
     Failed error ->
       showError error
 
@@ -2177,6 +2180,42 @@ gameTimeText totalSeconds =
   ]
     |> List.filterMap identity
     |> String.join " "
+
+showLifeSearchChanges : Palette -> Element Msg
+showLifeSearchChanges palette =
+  column [ centerX, centerY ]
+    [ el [ centerX, Font.size (scaled 2)] <|
+      text "Late 2022 Changes"
+    , el [ centerX, Font.size (scaled 1)] <|
+      text "This app no longer has a database server"
+    , el [ centerX, Font.size (scaled 2), height (px (scaled 2))] none
+    , el [ centerX, Font.size (scaled 2)] <|
+      text "Life searches are:"
+    , row [ centerX, Font.size (scaled 1)] <|
+      [ text "only lives alrady "
+      , Input.button [Font.color palette.selected]
+          { onPress = Just (SelectSidebarMode DataFilter)
+          , label = text "loaded into memory"
+          }
+      ]
+    , row [ centerX, Font.size (scaled 1)] <|
+      [ text "only the "
+      , Input.button [Font.color palette.selected]
+          { onPress = Just (ToggleTimelineVisible True)
+          , label = text "time range"
+          }
+      , text " selected (and loaded)"
+      ]
+    , row [ centerX, Font.size (scaled 1)] <|
+      [ text "only the currently "
+      , Input.button [Font.color palette.selected]
+          { onPress = Just (SelectSidebarMode DataFilter)
+          , label = text "selected server"
+          }
+      ]
+    , el [ centerX, Font.size (scaled 1)] <|
+      text "name searches are no longer loose"
+    ]
 
 showLoading : Element Msg
 showLoading =
