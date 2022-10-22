@@ -3,6 +3,7 @@ module View exposing
   , timeNoticeDuration
   , view
   , document
+  , displayTimeline
   )
 
 import Leaflet.Types exposing (Point, PointColor(..), PointLocation(..), Animatable(..))
@@ -201,35 +202,6 @@ timeOverlayLazy notice zone currentTime =
 
 displayTimeline : Model -> Element Msg
 displayTimeline model =
-  let
-    selectedServer = model.selectedServer |> Maybe.andThen (\id -> Dict.get id model.servers)
-  in
-    Element.lazy displayTimelineLazy
-      { theme = model.theme
-      , mapTime = model.mapTime
-      , timelines = model.timelines
-      , mapAnimatable = model.mapAnimatable
-      , timelineVisible = model.timelineVisible
-      , player = model.player
-      , zone = model.zone
-      , currentArc = model.currentArc
-      , drag = model.drag
-      , hover = model.hover
-      }
-
-displayTimelineLazy :
-  { theme : Theme
-  , mapTime : Maybe Posix
-  , timelines : List Timeline
-  , mapAnimatable : Animatable
-  , timelineVisible : Bool
-  , player : Player
-  , zone : Time.Zone
-  , currentArc : Maybe Arc
-  , drag : DragMode
-  , hover : Hover
-  } -> Element Msg
-displayTimelineLazy model =
   let
     palette = themePalette model.theme
   in

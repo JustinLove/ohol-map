@@ -22,6 +22,8 @@ import Theme exposing (Theme)
 import View exposing (timeNoticeDuration)
 import Zipper exposing (Zipper)
 
+import Element exposing (Element)
+
 import Browser
 import Browser.Events
 import Browser.Dom as Dom

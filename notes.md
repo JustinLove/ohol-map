@@ -12,7 +12,6 @@
 
 ## Features
 - direct lifelog display
-  - lazy timeline not correct, uses structure
   - disable debug logs
   - loading status ui feedback
   - check daily review once server date range updated
