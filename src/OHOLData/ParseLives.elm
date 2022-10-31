@@ -367,7 +367,10 @@ rawNameLogs =
 rawNameStep : List NameLog -> LifeParser (Step (List NameLog) (List NameLog))
 rawNameStep reversedList =
   oneOf
-    [ succeed (\l -> Loop (l :: reversedList))
+    [ succeed (\ml -> case ml of
+          Just l -> Loop (l :: reversedList)
+          Nothing -> Done (List.reverse reversedList)
+        )
       |= rawNameLine
       |. oneOf
         [ newline
@@ -378,12 +381,17 @@ rawNameStep reversedList =
       |> map (\_ -> Done (List.reverse reversedList))
     ]
 
-rawNameLine : LifeParser (Int, String)
+rawNameLine : LifeParser (Maybe (Int, String))
 rawNameLine =
-  succeed Tuple.pair
+  succeed (\id name -> Maybe.map (Tuple.pair id) name)
     |= playerId
-    |. spacesOnly
-    |= toEndOfLine
+    |= oneOf
+      [ succeed Just
+        |. spacesOnly
+        |= toEndOfLine
+      , succeed Nothing -- log captured with partial write, partial id
+        |. toEndOfLine
+      ]
     |> inContext "looking for name line"
 
 serverId : LifeParser Int

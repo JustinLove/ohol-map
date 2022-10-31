@@ -1,18 +1,17 @@
 ## bugs
 - ?? too man calls to location or history api in a short time - time scrolling while object seach is open - cannot reproduce
 - ?? when objects search is open and location selected, cannot pan - cannot reproduce
-- monument icon may not be available at marker creation time in updateMonumentLayer
 
 ## server work
-- lifelog cache on web data
-- server list date updates
+- x lifelog cache on web data
+- x server list date updates
 - lifelog processing?
 - family trees?
 - family tree app
 
 ## Features
 - direct lifelog display
-  - check daily review once server date range updated
+  - x check daily review once server date range updated
   - fuzzy name search
   - processed lifelog display?
   - eves only??

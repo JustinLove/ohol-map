@@ -49,10 +49,13 @@ suite =
     , describe "name logs"
       [ test "name line" <| \_ ->
         (Parser.run Parse.rawNameLine "1234 JOHN DOE")
-          |> Expect.equal (Ok (1234, "JOHN DOE"))
+          |> Expect.equal (Ok (Just (1234, "JOHN DOE")))
       , test "name log" <| \_ ->
         (Parser.run Parse.rawNameLogs "1234 JOHN DOE\r\n123 EVE DOE")
           |> Expect.equal (Ok [(1234, "JOHN DOE"), (123, "EVE DOE")])
+      , test "name log with partial write" <| \_ ->
+        (Parser.run Parse.rawNameLogs "1234 JOHN DOE\r\n12")
+          |> Expect.equal (Ok [(1234, "JOHN DOE")])
       ]
     , describe "life name merge"
       [ test "name merge" <| \_ ->
@@ -92,6 +95,7 @@ birthLife =
   , serverId = 0
   , epoch = 0
   , playerid = 5512552
+  , accountHash = Just "0b628e9b63c4e3689d67d5951796d5b54afa01c7"
   , age = Nothing
   , gender = "F"
   , deathX = Nothing
@@ -126,6 +130,7 @@ deathLife =
   , serverId = 0
   , epoch = 0
   , playerid = 5512452
+  , accountHash = Just "ee67bcfe81c26a7190ee1023c2c759219fc75b71"
   , age = Just 48.47
   , gender = "F"
   , deathX = Just -165277
@@ -174,6 +179,7 @@ matchingLife =
   , serverId = 0
   , epoch = 0
   , playerid = 5510708
+  , accountHash = Just "f2669e3148ba99cc5c5d46948b9a2817120426ed"
   , age = Just 60.00
   , gender = "F"
   , deathX = Just -165959
