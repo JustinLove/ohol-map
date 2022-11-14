@@ -1,4 +1,6 @@
 ## bugs
+- data hole /#x=-215680&y=-316&z=23&s=17&t=1667257692
+  2022-10-29 10:00 - 2022-11-01 02:58:19
 - ?? too man calls to location or history api in a short time - time scrolling while object seach is open - cannot reproduce
 - ?? when objects search is open and location selected, cannot pan - cannot reproduce
 
@@ -12,6 +14,10 @@
 ## Features
 - direct lifelog display
   - x check daily review once server date range updated
+  - range set does't seem to be causing more logs to load
+  - failed log obliterates logs list in datalayer
+  - infinite loop in lineage of child log not found: assume server matches if no data
+  - maxlogs to lineage search
   - fuzzy name search
   - processed lifelog display?
   - eves only??
