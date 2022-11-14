@@ -2,9 +2,10 @@ module LifeDataLayer exposing
   ( LifeDataLayer
   , LifeLogDay
   , empty
-  , livesReceived
-  , resolveLivesIfLoaded
   , fail
+  , livesReceived
+  , loadingCount
+  , resolveLivesIfLoaded
   , hasData
   , hasDataFor
   , canMakeRequest
@@ -68,12 +69,23 @@ empty =
   , logs = []
   }
 
+fail : Int -> Date -> Http.Error -> LifeDataLayer -> LifeDataLayer
+fail server date error data =
+  if server /= data.serverId then
+    data
+  else
+    { data | logs = updateLog date (Failed error) data.logs }
+
 livesReceived : LifeLogDay -> LifeDataLayer -> LifeDataLayer
 livesReceived lifeLogDay data =
   if lifeLogDay.serverId /= data.serverId then
     data
   else
     { data | logs = updateLog lifeLogDay.date (Data lifeLogDay) data.logs }
+
+loadingCount : LifeDataLayer -> Int
+loadingCount data =
+  List.foldr (\(_,rd) accum -> if rd == Loading then accum + 1 else accum) 0 data.logs
 
 updateLog : Date -> RemoteData LifeLogDay -> List (Date, RemoteData LifeLogDay) -> List (Date, RemoteData LifeLogDay)
 updateLog date value logs =
@@ -159,16 +171,6 @@ expandingQuery defaultTime data =
       expandingQueryLineageOfLife data.serverId playerid defaultTime data
     _ ->
       data
-
-fail : Int -> Date -> Http.Error -> LifeDataLayer -> LifeDataLayer
-fail server date error data =
-  { serverId = server
-  , displayFilter = data.displayFilter
-  , lives = Failed error
-  , population = Nothing
-  , clusters = Nothing
-  , logs = [(date, Failed error)]
-  }
 
 displayAll : LifeDataLayer -> LifeDataLayer
 displayAll data =
