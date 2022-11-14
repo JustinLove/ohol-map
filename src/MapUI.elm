@@ -823,10 +823,12 @@ update msg model =
     DataLayer serverId_ date_ (Ok lifeLogDay) ->
       lifeDataUpdated (LifeDataLayer.livesReceived lifeLogDay model.dataLayer) model
     DataLayer serverId date (Err error) ->
-      let filename = dateYearMonthMonthDayWeekday Time.utc (date |> Calendar.toMillis |> Time.millisToPosix) in
-      ( {model | dataLayer = LifeDataLayer.fail serverId date error model.dataLayer}
-      , Log.httpError ("fetch data failed " ++ filename) error
-      )
+      let
+        filename = dateYearMonthMonthDayWeekday Time.utc (date |> Calendar.toMillis |> Time.millisToPosix)
+        dataLayer = LifeDataLayer.fail serverId date error model.dataLayer
+      in
+        lifeDataUpdated dataLayer model
+          |> appendCommand (Log.httpError ("fetch data failed " ++ filename) error)
     NoDataLayer ->
       ( { model
         | dataLayer = LifeDataLayer.empty
