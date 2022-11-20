@@ -1148,7 +1148,7 @@ showMatchingLife model life =
       , label = el [ centerX ] <| icon "users"
       }
     , newTabLink [ width(px 30), padding 10 ]
-      { url = lineageUrl model.lineageUrl life.serverId life.epoch life.playerid
+      { url = lineageUrl model.lineageUrl life.serverId life.birthTime life.deathTime life.playerid
       , label = el [ centerX ] <| icon "tree"
       }
     ]
@@ -1493,12 +1493,13 @@ yearOfArc time arc =
     else
       Nothing
 
-lineageUrl : String -> Int -> Int -> Int -> String
-lineageUrl base serverId epoch playerid =
+lineageUrl : String -> Int -> Posix -> Maybe Posix -> Int -> String
+lineageUrl base serverId birthTime deathTime playerid =
   Url.custom (Url.CrossOrigin base) [] []
     (Url.toQuery
       [ Url.int "server_id" serverId
-      , Url.int "epoch" epoch
+      , Url.int "start_time" (((Time.posixToMillis birthTime) // 1000) - 1)
+      , Url.int "end_time" (((Time.posixToMillis (Maybe.withDefault birthTime deathTime)) // 1000) + 1)
       , Url.int "playerid" playerid
       ]
       |> String.dropLeft 1
