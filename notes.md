@@ -1,23 +1,17 @@
 ## bugs
-- data hole /#x=-215680&y=-316&z=23&s=17&t=1667257692
-  2022-10-29 10:00 - 2022-11-01 02:58:19
+- lives on non-map servers
+- hard to use on ipad (touch)
 - ?? too man calls to location or history api in a short time - time scrolling while object seach is open - cannot reproduce
 - ?? when objects search is open and location selected, cannot pan - cannot reproduce
 
+wondible-com-ohol-data-server-1-2022-12-04-04-48
 ## server work
-- x lifelog cache on web data
-- x server list date updates
-- lifelog processing?
-- family trees?
-- family tree app
+- last eight hours
 
 ## Features
+- fix picking search soure data in LifeSearch (cleared when clicking map point, rough patched)
 - direct lifelog display
-  - x check daily review once server date range updated
-  - range set does't seem to be causing more logs to load
-  - failed log obliterates logs list in datalayer
-  - infinite loop in lineage of child log not found: assume server matches if no data
-  - maxlogs to lineage search
+  - remove refs to servers
   - fuzzy name search
   - processed lifelog display?
   - eves only??

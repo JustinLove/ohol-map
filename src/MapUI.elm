@@ -164,7 +164,9 @@ update msg model =
       )
     UI (View.PerformLifeSearch term) ->
       let
-        (lifeSearch, _) = LifeSearch.updateTerm myLife term model.lifeSearch
+        (lifeSearch, _) = model.lifeSearch
+          |> LifeSearch.defaultData model.dataLayer.lives
+          |> LifeSearch.updateTerm myLife term
         basicUpdate =
           ( { model
             | lifeSearch = lifeSearch
@@ -181,7 +183,12 @@ update msg model =
         else
           basicUpdate
     UI (View.LifeTyping term) ->
-      let (lifeSearch, _) = LifeSearch.updateTerm myLife term model.lifeSearch in
+      let
+        (lifeSearch, _) = model.lifeSearch
+          |> LifeSearch.defaultData model.dataLayer.lives
+          |> LifeSearch.updateTerm myLife term
+      in
+
       ( { model
         | lifeSearch = lifeSearch
         }

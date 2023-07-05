@@ -6,6 +6,7 @@ module LifeSearch exposing
   , focus
   , updateTerm
   , updateData
+  , defaultData
   )
 
 import OHOLData as Data
@@ -62,6 +63,14 @@ updateData trans sourceData lifeSearch =
     (lifeSearch, Nothing)
   else
     update trans lifeSearch.term sourceData lifeSearch
+
+defaultData sourceData lifeSearch =
+  case lifeSearch.sourceData of
+    NotRequested -> {lifeSearch | sourceData = sourceData}
+    NotAvailable -> {lifeSearch | sourceData = sourceData}
+    Loading -> lifeSearch
+    Data value -> lifeSearch
+    Failed err -> lifeSearch
 
 update : (Data.Life -> life) -> String -> RemoteData (List Data.Life) -> LifeSearch life -> (LifeSearch life, Maybe (List Data.Life))
 update trans term sourceData lifeSearch =
