@@ -1,4 +1,7 @@
 ## bugs
+x fetch data failed 2023_08August_23_Wednesday 
+  Object { error: "BadBody", message: "1,110: looking for newline\n1,110: looking for carriage-newline\n1,110: something other than newline after record" }
+
 - lives on non-map servers
 - hard to use on ipad (touch)
 - ?? too man calls to location or history api in a short time - time scrolling while object seach is open - cannot reproduce
@@ -9,6 +12,8 @@ wondible-com-ohol-data-server-1-2022-12-04-04-48
 - last eight hours
 
 ## Features
+- lifelog death update
+https://github.com/jasonrohrer/OneLife/commit/965e1937203467e809db36078ce0e047291e8174
 - fix picking search soure data in LifeSearch (cleared when clicking map point, rough patched)
 - direct lifelog display
   - remove refs to servers
