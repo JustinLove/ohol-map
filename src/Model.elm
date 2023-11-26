@@ -305,6 +305,7 @@ type alias Life =
   , name : Maybe String
   , serverId : Int
   , epoch : Int
+  , accountHash : Maybe String
   , age : Maybe Float
   , birthX : Int
   , birthY : Int
@@ -323,6 +324,7 @@ myLife life =
   , name = life.name
   , serverId = life.serverId
   , epoch = life.epoch
+  , accountHash = life.accountHash
   , age = life.age
   , birthX = life.birthX
   , birthY = life.birthY

@@ -917,6 +917,7 @@ lifeListHeader =
     [ lifeDetailHeader
     , el [ width (px 30) ] (el [ centerX ] (text "Lin"))
     , el [ width (px 30) ] (el [ centerX ] (text "Tree"))
+    , el [ width (px 30) ] (el [ centerX ] (text "Prof"))
     ]
 
 objectListHeader : Model -> Element Msg
@@ -1151,6 +1152,14 @@ showMatchingLife model life =
       { url = lineageUrl model.lineageUrl life.serverId life.birthTime life.deathTime life.playerid
       , label = el [ centerX ] <| icon "tree"
       }
+    , case life.accountHash of
+      Just hash ->
+        newTabLink [ width(px 30), padding 10 ]
+          { url = oholcurseUrl hash
+          , label = el [ centerX ] <| text "OC"
+          }
+      Nothing ->
+        none
     ]
 
 showMatchingObject : Model -> ObjectId -> Element Msg
@@ -1505,6 +1514,10 @@ lineageUrl base serverId birthTime deathTime playerid =
       |> String.dropLeft 1
       |> Just
     )
+
+oholcurseUrl : String -> String
+oholcurseUrl accountHash =
+  Url.crossOrigin "https://oholcurse.com/player/hash" [accountHash] []
 
 dataFilter : Model -> Element Msg
 dataFilter model =

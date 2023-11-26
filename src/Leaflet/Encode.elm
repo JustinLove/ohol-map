@@ -31,6 +31,7 @@ life l =
     , ("server_id", int l.serverId)
     , ("epoch", int l.epoch)
     , ("playerid", int l.playerid)
+    , ("account_hash", maybe string l.accountHash)
     , ("age", maybe float l.age)
     , ("death_x", maybe int l.deathX)
     , ("death_y", maybe int l.deathY)
