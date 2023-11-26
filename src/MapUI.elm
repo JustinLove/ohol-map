@@ -1679,6 +1679,7 @@ setServerUpdate serverId model =
           , dataLayer = LifeDataLayer.empty
           , player = Stopped
           , spanData = mspanData
+          , displayServer = Just serverId
           }
         , Cmd.batch
           [ c2
