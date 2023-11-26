@@ -201,6 +201,18 @@ update msg model =
     UI (View.SelectMatchingLife life) ->
       ( { model
         | lifeSearch = LifeSearch.focus life model.lifeSearch
+        }
+      , Leaflet.focusLife (leafletLife life)
+      )
+    UI (View.ExitLifeOperations) ->
+      ( { model
+        | lifeSearch = LifeSearch.unfocus model.lifeSearch
+        }
+      , Cmd.none
+      )
+    UI (View.SelectFocusLife life) ->
+      ( { model
+        | lifeSearch = LifeSearch.focus life model.lifeSearch
         , mapTime = Just life.birthTime
         }
           |> setTimeRange (Just (lifeToRange life))
@@ -211,6 +223,8 @@ update msg model =
         ]
       )
        |> setServer life.serverId
+    UI (View.SelectLineage life) ->
+      fetchLineage life model
     UI (View.ToggleMatchingObject id checked) ->
       let
         selectedMatchingObjects = if checked then
@@ -287,8 +301,6 @@ update msg model =
     UI (View.ToggleIconDisplay id checked) ->
       toggleIconDisplay id checked model
         |> andHighlightObjects
-    UI (View.SelectLineage life) ->
-      fetchLineage life model
     UI (View.SelectShow) ->
       case model.selectedServer of
         Just server ->

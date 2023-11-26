@@ -4,6 +4,7 @@ module LifeSearch exposing
   , outsideResults
   , completeResults
   , focus
+  , unfocus
   , updateTerm
   , updateData
   , defaultData
@@ -51,6 +52,10 @@ completeResults func lives =
 focus : life -> LifeSearch life -> LifeSearch life
 focus life lifeSearch =
   { lifeSearch | focusLife = Just life }
+
+unfocus : LifeSearch life -> LifeSearch life
+unfocus lifeSearch =
+  { lifeSearch | focusLife = Nothing }
 
 updateTerm trans term lifeSearch =
   if term == lifeSearch.term then

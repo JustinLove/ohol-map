@@ -55,8 +55,12 @@ type Msg
   | PerformLifeSearch String
   | LifeTyping String
   | ObjectTyping String
-  -- results list
+  -- life results list
   | SelectMatchingLife Life
+  | ExitLifeOperations
+  | SelectFocusLife Life
+  | SelectLineage Life
+  -- object results list
   | ToggleMatchingObject ObjectId Bool
   | SelectMatchingObject ObjectId
   | ExitBrowseLocations
@@ -72,7 +76,6 @@ type Msg
   | ClearLocked
   | ToggleLockObject ObjectId Bool
   | ToggleIconDisplay ObjectId Bool
-  | SelectLineage Life
   -- life data
   | SelectShow
   | SelectServer Int
@@ -670,6 +673,14 @@ searchPanel model =
 
 lifeSearch : Model -> Element Msg
 lifeSearch model =
+  case model.lifeSearch.focusLife of
+    Just life ->
+      showLifeOperations model life
+    Nothing ->
+      lifeSearchPanel model
+
+lifeSearchPanel : Model -> Element Msg
+lifeSearchPanel model =
   column
     [ width fill
     , height fill
@@ -680,6 +691,14 @@ lifeSearch model =
 
 objectSearch : Model -> Element Msg
 objectSearch model =
+  case model.focusObject of
+    Just id ->
+      showBrowseObjects model id
+    Nothing ->
+      objectSearchPanel model
+
+objectSearchPanel : Model -> Element Msg
+objectSearchPanel model =
   let
     palette = (themePalette model.theme)
     valid = objectSearchValid model
@@ -688,20 +707,16 @@ objectSearch model =
       else
         palette.deemphasis
   in
-  case model.focusObject of
-    Just id ->
-      showBrowseObjects model id
-    Nothing ->
-      column
-        [ width fill
-        , height fill
-        , Font.color color
-        ]
-        [ case model.objectListMode of
-            MatchingObjects -> objectFinder model
-            LockedObjects -> showLockedObjects model (Set.toList model.lockedObjects)
-        , el [ alignBottom, width fill ] <| objectListSelect model
-        ]
+    column
+      [ width fill
+      , height fill
+      , Font.color color
+      ]
+      [ case model.objectListMode of
+          MatchingObjects -> objectFinder model
+          LockedObjects -> showLockedObjects model (Set.toList model.lockedObjects)
+      , el [ alignBottom, width fill ] <| objectListSelect model
+      ]
 
 objectFinder : Model -> Element Msg
 objectFinder model =
@@ -816,6 +831,48 @@ showLockedObjects model objects =
       |> (::) (lockedObjectListHeader model)
     )
 
+showLifeOperations : Model -> Life -> Element Msg
+showLifeOperations model life =
+  let palette = themePalette model.theme in
+  column [ width fill, height fill, scrollbarY ]
+    [ selectedLifeHeader model life
+    , inverseHeading palette (text "Life")
+    , Input.button [ width fill, padding 10 ]
+      { onPress = Just (SelectFocusLife life)
+      , label = row [ width fill, spacing 10 ]
+        [ el [ width (px 20) ] <| icon "time"
+        , text "Focus Life on Map"
+        ]
+      }
+    , inverseHeading palette (text "Lineage")
+    , Input.button [ width fill, padding 10 ]
+      { onPress = Just (SelectLineage life)
+      , label = row [ width fill, spacing 10 ]
+        [ el [ width (px 20) ] <| icon "users"
+        , text "Select Lineage on Map"
+        ]
+      }
+    , newTabLink [ width fill, padding 10 ]
+      { url = lineageUrl model.lineageUrl life.serverId life.birthTime life.deathTime life.playerid
+      , label = row [ width fill, spacing 10 ]
+        [ el [ width (px 20) ] <| icon "tree"
+        , text "Open Family Tree"
+        ]
+      }
+    , inverseHeading palette (text "Player Hash")
+    , case life.accountHash of
+      Just hash ->
+        newTabLink [ width fill, padding 10 ]
+          { url = oholcurseUrl hash
+          , label = row [ width fill, spacing 10 ]
+            [ el [ width (px 20) ] <| text "#"
+            , text "Player on oholcurse"
+            ]
+          }
+      Nothing ->
+        none
+    ]
+
 showBrowseObjects : Model -> ObjectId -> Element Msg
 showBrowseObjects model id =
   let
@@ -915,9 +972,6 @@ lifeListHeader =
     , Font.underline
     ]
     [ lifeDetailHeader
-    , el [ width (px 30) ] (el [ centerX ] (text "Lin"))
-    , el [ width (px 30) ] (el [ centerX ] (text "Tree"))
-    , el [ width (px 30) ] (el [ centerX ] (text "Prof"))
     ]
 
 objectListHeader : Model -> Element Msg
@@ -1061,6 +1115,32 @@ browseObjectsHeader model id =
         }
       ]
 
+selectedLifeHeader : Model -> Life -> Element Msg
+selectedLifeHeader model life =
+  let
+    palette = (themePalette model.theme)
+  in
+    row [ width fill ]
+      [ Input.button
+        [ padding 2
+        , Border.color palette.divider
+        , Border.widthEach
+          { bottom = 1
+          , left = 0
+          , right = 0
+          , top = 0
+          }
+        , Background.color palette.control
+        , width fill
+        ]
+        { onPress = Just ExitLifeOperations
+        , label = row [ centerX, spacing 4 ]
+          [ el [ Font.size 14 ] <| icon "cancel-circle"
+          , showMatchingLifeDetail model life
+          ]
+        }
+      ]
+
 browseLocationListHeader : Palette -> Zipper BrowseLocation -> Element Msg
 browseLocationListHeader palette locations =
   row
@@ -1135,31 +1215,13 @@ previousNextButtons palette browseProbablyTutorial items =
 
 showMatchingLife model life =
   row
-    [ if Just life == model.lifeSearch.focusLife then
-        Background.color (themePalette model.theme).highlight
-      else
-        Background.color (themePalette model.theme).background
+    [ Background.color (themePalette model.theme).background
+    , width fill
     ]
-    [ Input.button []
+    [ Input.button [ width fill ]
       { onPress = Just (SelectMatchingLife life)
-      , label = showMatchingLifeDetail model life
+      , label = el [ width fill ] <| showMatchingLifeDetail model life
       }
-    , Input.button [ width(px 30), padding 10 ]
-      { onPress = Just (SelectLineage life)
-      , label = el [ centerX ] <| icon "users"
-      }
-    , newTabLink [ width(px 30), padding 10 ]
-      { url = lineageUrl model.lineageUrl life.serverId life.birthTime life.deathTime life.playerid
-      , label = el [ centerX ] <| icon "tree"
-      }
-    , case life.accountHash of
-      Just hash ->
-        newTabLink [ width(px 30), padding 10 ]
-          { url = oholcurseUrl hash
-          , label = el [ centerX ] <| text "OC"
-          }
-      Nothing ->
-        none
     ]
 
 showMatchingObject : Model -> ObjectId -> Element Msg
@@ -1366,9 +1428,9 @@ lifeDetailHeader =
       , spacing 10
       , width fill
       ]
-      [ el [ width (px 30) ]
+      [ el [ width (px 50) ]
         (text "Age")
-      , el [ width (px 140) ]
+      , el [ width (px 150) ]
         (text "Born")
       , el [ width (px 30) ]
         (text "Gen")
@@ -1385,14 +1447,14 @@ showMatchingLifeDetail model life =
       [ Font.size 16
       , spacing 10
       ]
-      [ el [ width (px 30) ]
+      [ el [ width (px 50) ]
         (life.age
           |> Maybe.map ceiling
           |> Maybe.map String.fromInt
           |> Maybe.withDefault ""
           |> text
         )
-      , el [ width (px 140) ]
+      , el [ width (px 150) ]
         ( life.birthTime
           |> dateYearMonthDayHourMinute model.zone
           |> text
