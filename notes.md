@@ -12,7 +12,7 @@ wondible-com-ohol-data-server-1-2022-12-04-04-48
 - last eight hours
 
 ## Features
-- https://oholcurse.com/player/hash/{hash}
+- x https://oholcurse.com/player/hash/{hash}
 - lifelog death update
 https://github.com/jasonrohrer/OneLife/commit/965e1937203467e809db36078ce0e047291e8174
 - fix picking search soure data in LifeSearch (cleared when clicking map point, rough patched)
