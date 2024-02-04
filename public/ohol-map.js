@@ -68,6 +68,12 @@
       y: 0,
       id: 3112,
     },
+    {
+      msStart: Date.parse("2024-02-03 14:45:00-05:00"),
+      x: 1,
+      y: 0,
+      id: 4950,
+    },
   ]
 
   var CELL_D = 128
@@ -1654,6 +1660,7 @@
 
   var chooseRandPlacements = function(world) {
     if (world.generation.placements) return;
+    world.generation.placements = specialMapPlacements.concat()
     var options = Object.assign({}, objectGenerationOptions, world.generation)
     if (options.biomes.length < 1
      || options.randPlacements.length < 1
@@ -1664,7 +1671,6 @@
     var safeR = 354 - 2
     var placementRandomSource = new CustomRandomSource(options.randSeed)
     //console.log('------------------------', options.randSeed, safeR)
-    world.generation.placements = specialMapPlacements.concat()
     //console.log('rand placements', world.name)
     options.randPlacements.forEach(function(place) {
       //console.log('vvvv  seeking', place.id, place.biomes)
