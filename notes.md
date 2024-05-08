@@ -12,6 +12,9 @@ wondible-com-ohol-data-server-1-2022-12-04-04-48
 - last eight hours
 
 ## Features
+- x methman monument as a notable object
+- lifelog donkey status
+- x may 7 negative age
 - x https://oholcurse.com/player/hash/{hash}
 - lifelog death update
 https://github.com/jasonrohrer/OneLife/commit/965e1937203467e809db36078ce0e047291e8174

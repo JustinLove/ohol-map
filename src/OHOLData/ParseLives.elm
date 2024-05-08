@@ -558,7 +558,12 @@ deathReason =
 
 age : LifeParser Float
 age =
-  float "looking for age" "invalid float"
+  oneOf
+    [ float "looking for age" "invalid float"
+    , succeed 0
+      |. token (Token "-" "looking for minus")
+      |. float "looking for negative age" "invalid float"
+    ]
 
 quotedName : LifeParser String
 quotedName =
