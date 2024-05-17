@@ -1,6 +1,6 @@
 module RawLivesParserTest exposing (..)
 
-import OHOLData as Data exposing (Life, Parent(..))
+import OHOLData as Data exposing (Life, Parent(..), BirthStatus(..))
 import OHOLData.ParseLives as Parse
 
 import Parser.Advanced as Parser
@@ -16,6 +16,12 @@ suite =
       [ test "birth line" <| \_ ->
         (Parser.run Parse.rawBirthLine birthLine)
           |> Expect.equal (Ok birthBirth)
+      , test "birth line with race" <| \_ ->
+        (Parser.run Parse.rawBirthLine birthRaceLine)
+          |> Expect.equal (Ok birthRaceBirth)
+      , test "birth line with status" <| \_ ->
+        (Parser.run Parse.rawBirthLine birthStatusLine)
+          |> Expect.equal (Ok birthStatusBirth)
       , test "death line" <| \_ ->
         (Parser.run Parse.rawDeathLine deathLine)
           |> Expect.equal (Ok deathDeath)
@@ -81,6 +87,38 @@ birthBirth =
   , parent = ChildOf 5512473
   , birthPopulation = 42
   , chain = 98
+  , race = Nothing
+  , status = Nothing
+  }
+
+birthRaceLine = "B 1663977625 5512552 0b628e9b63c4e3689d67d5951796d5b54afa01c7 F (-165256,233) parent=5512473 pop=42 chain=98 race=A"
+birthRaceBirth : Parse.Birth
+birthRaceBirth =
+  { birthTime = Time.millisToPosix 1663977625000
+  , playerid = 5512552
+  , accountHash = "0b628e9b63c4e3689d67d5951796d5b54afa01c7"
+  , gender = "F"
+  , birthLocation = (-165256,233)
+  , parent = ChildOf 5512473
+  , birthPopulation = 42
+  , chain = 98
+  , race = Just "A"
+  , status = Nothing
+  }
+
+birthStatusLine = "B 1663977625 5512552 0b628e9b63c4e3689d67d5951796d5b54afa01c7 F (-165256,233) parent=5512473 pop=42 chain=98 race=A status=N"
+birthStatusBirth : Parse.Birth
+birthStatusBirth =
+  { birthTime = Time.millisToPosix 1663977625000
+  , playerid = 5512552
+  , accountHash = "0b628e9b63c4e3689d67d5951796d5b54afa01c7"
+  , gender = "F"
+  , birthLocation = (-165256,233)
+  , parent = ChildOf 5512473
+  , birthPopulation = 42
+  , chain = 98
+  , race = Just "A"
+  , status = Just Normal
   }
 
 birthLife : Life
@@ -152,6 +190,8 @@ matchingBirth =
   , parent = ChildOf 5510702
   , birthPopulation = 34
   , chain = 2
+  , race = Nothing
+  , status = Nothing
   }
 
 matchingDeathLine = "D 1663894824 5510708 f2669e3148ba99cc5c5d46948b9a2817120426ed age=60.00 F (-165959,-319) oldAge pop=43"

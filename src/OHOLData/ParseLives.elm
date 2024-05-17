@@ -20,7 +20,7 @@ module OHOLData.ParseLives exposing
   , NameLog
   )
 
-import OHOLData exposing (Life, Parent(..))
+import OHOLData exposing (Life, Parent(..), BirthStatus(..))
 
 import Dict exposing (Dict)
 import Parser.Advanced as Parser exposing (..)
@@ -41,6 +41,7 @@ type alias Birth =
   , birthPopulation : Int
   , chain : Int
   , race : Maybe String
+  , status : Maybe BirthStatus
   }
 
 type alias Death =
@@ -291,6 +292,7 @@ rawBirthLine =
     |. tagName "chain"
     |= chain
     |= race
+    |= birthStatus
 
 rawDeathLine : LifeParser Death
 rawDeathLine =
@@ -472,7 +474,7 @@ race =
       |= raceId
     , succeed Nothing
     ]
-    |> inContext "looking for parent"
+    |> inContext "looking for race"
 
 raceId : LifeParser String
 raceId =
@@ -485,6 +487,25 @@ raceId =
     , succeed "F" |. symbol (Token "F" "looking for race F")
     ]
     |> inContext "looking for race"
+
+birthStatus : LifeParser (Maybe BirthStatus)
+birthStatus =
+  oneOf
+    [ succeed Just
+      |. spacesOnly
+      |. tagName "status"
+      |= birthStatusId
+    , succeed Nothing
+    ]
+    |> inContext "looking for status"
+
+birthStatusId : LifeParser BirthStatus
+birthStatusId =
+  oneOf
+    [ succeed Normal |. symbol (Token "N" "looking for normal")
+    , succeed DonkeyTown |. symbol (Token "D" "looking for donkey")
+    ]
+    |> inContext "looking for status"
 
 optional : LifeParser a -> LifeParser (Maybe a)
 optional parser =

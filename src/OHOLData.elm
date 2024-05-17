@@ -1,6 +1,7 @@
 module OHOLData exposing
   ( ObjectId
   , Parent(..)
+  , BirthStatus(..)
   , Life
   , Server
   , Monument
@@ -43,6 +44,10 @@ type Parent
   = ChildOf Int
   | Lineage Int Int
   | NoParent
+
+type BirthStatus
+  = Normal
+  | DonkeyTown
 
 type alias Life =
   { birthX : Int

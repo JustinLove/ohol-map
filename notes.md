@@ -13,7 +13,7 @@ wondible-com-ohol-data-server-1-2022-12-04-04-48
 
 ## Features
 - x methman monument as a notable object
-- lifelog donkey status
+- x lifelog donkey status
 - x may 7 negative age
 - x https://oholcurse.com/player/hash/{hash}
 - lifelog death update
